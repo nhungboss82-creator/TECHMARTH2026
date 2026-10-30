@@ -2075,9 +2075,11 @@ route(/^\/admin$/, async () => {
 });
 
 /* ================= BÀI VẼ – AI CHẤM QUA ẢNH CHỤP ================= */
-const DRAW_TYPES = { hinhchieu: 'Bản vẽ hình chiếu vuông góc', banve: 'Bản vẽ kĩ thuật (chi tiết, lắp, xây dựng)', machdien: 'Sơ đồ mạch điện (nguyên lí, lắp đặt)', machdientu: 'Sơ đồ mạch điện tử', thietke: 'Bản phác thảo thiết kế kĩ thuật (dự án STEM)' };
+const DRAW_TYPES = { hinhchieu: 'Bản vẽ hình chiếu vuông góc', trucdo: 'Hình chiếu trục đo', hinhcat: 'Hình cắt, mặt cắt', banve: 'Bản vẽ kĩ thuật (chi tiết, lắp, xây dựng)', machdien: 'Sơ đồ mạch điện (nguyên lí, lắp đặt)', machdientu: 'Sơ đồ mạch điện tử', thietke: 'Bản phác thảo thiết kế kĩ thuật (dự án STEM)' };
 const DRAW_SAMPLE = {
   hinhchieu: 'Vẽ đúng vị trí 3 hình chiếu (đứng, bằng, cạnh) – 3 điểm\nĐúng hình dạng từng hình chiếu – 3 điểm\nĐúng loại nét: nét liền đậm, nét đứt cạnh khuất, nét gạch chấm đường tâm – 2 điểm\nGhi kích thước đúng quy ước – 1 điểm\nBản vẽ sạch, rõ, có khung tên – 1 điểm',
+  trucdo: 'Đặt đúng hệ trục đo (hình chiếu trục đo vuông góc đều: 3 trục lệch nhau 120°; xiên góc cân: trục O′x′ ⊥ O′z′, trục O′y′ lệch 135°) – 2 điểm\nĐúng hệ số biến dạng (vuông góc đều p = q = r = 1; xiên góc cân p = r = 1, q = 0,5) – 2 điểm\nĐúng hình dạng vật thể, các cạnh song song với trục được vẽ song song với trục đo tương ứng – 3 điểm\nLỗ tròn, cung tròn trên mặt phẳng vẽ thành elip đúng hướng – 1 điểm\nNét vẽ đúng quy ước (nét liền đậm cạnh thấy; xoá nét dựng hình), bản vẽ sạch, rõ – 2 điểm',
+  hinhcat: 'Chọn đúng vị trí mặt phẳng cắt, có kí hiệu vết mặt phẳng cắt, hướng chiếu và tên (A–A) – 2 điểm\nĐúng loại hình cắt/mặt cắt theo đề (toàn bộ, một nửa, cục bộ; mặt cắt chập hoặc rời) – 2 điểm\nĐúng hình dạng phần vật thể sau mặt phẳng cắt, không vẽ thừa/thiếu cạnh – 3 điểm\nĐường gạch gạch: nét liền mảnh, nghiêng 45°, cách đều, chỉ vẽ ở phần đặc bị cắt – 2 điểm\nNét vẽ đúng quy ước, bản vẽ sạch, rõ – 1 điểm',
   banve: 'Đủ hình biểu diễn cần thiết – 3 điểm\nHình cắt, mặt cắt đúng quy ước – 3 điểm\nGhi kích thước đầy đủ, đúng quy ước – 2 điểm\nKhung tên, yêu cầu kĩ thuật – 2 điểm',
   machdien: 'Đủ phần tử (nguồn, aptomat/cầu chì, công tắc, ổ cắm, đèn…) – 3 điểm\nKí hiệu đúng tiêu chuẩn – 2 điểm\nNối dây đúng nguyên lí (công tắc trên dây pha, phần tử mắc đúng) – 4 điểm\nSơ đồ rõ ràng, có chú thích – 1 điểm',
   machdientu: 'Đủ linh kiện theo yêu cầu (ví dụ: biến áp, 4 diode cầu, tụ lọc, tải) – 3 điểm\nKí hiệu linh kiện đúng, đúng cực tính – 3 điểm\nNối mạch đúng nguyên lí – 3 điểm\nGhi trị số linh kiện – 1 điểm',
