@@ -1745,7 +1745,7 @@ route(/^\/gv\/giaobai$/, async params => {
   };
   const sumLv = () => { const n = lvInputs(), s = deSource(); ($('#xsum') || {}).innerHTML = s ? `Sẽ giao <b>${LV.reduce((a, [f]) => a + Math.min(n[f], s.cnt[f]), 0)}</b> / ${s.qs.length} câu` : ''; };
   const deBox = k => {
-    const pkgs = lessonPackages(k), exams = k === '12' ? deList() : [];
+    const pkgs = lessonPackages(k), exams = []; // đề thi thử TN để HS tự luyện ở thư mục Bộ đề, không giao ở đây
     return `${kChips(k)}
       <label for="de">Chọn bài học / đề giao cho lớp (Khối ${k})</label>
       <select id="de" style="width:100%">
@@ -1777,7 +1777,7 @@ route(/^\/gv\/giaobai$/, async params => {
     const rows = mtLessons(k);
     const srcBtn = (v, t) => `<button type="button" class="btn ghost sm${mt.src === v ? ' on' : ''}" data-src="${esc(v)}">${esc(t)}</button>`;
     const head = `${kChips(k)}<label>Ma trận đề kiểm tra Công nghệ ${k}</label>
-      <div class="row" style="gap:6px;flex-wrap:wrap">${tpls.map(t => srcBtn(t.id, t.loai)).join('')}${mine.map(m => srcBtn('MT:' + m.MaMT, '🏫 ' + m.TenMT)).join('')}${k === '12' ? srcBtn('SO', '🎓 Đề TN THPT (ma trận Sở)') : ''}${srcBtn('', '✏️ Tự nhập')}</div>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap">${tpls.map(t => srcBtn(t.id, t.loai)).join('')}${mine.map(m => srcBtn('MT:' + m.MaMT, '🏫 ' + m.TenMT)).join('')}${srcBtn('', '✏️ Tự nhập')}</div>`;
     if (mt.src === 'SO') return head + '<p class="hint" style="margin-top:8px">Mỗi vị trí câu (Câu 1–24, Đúng/Sai 1–4) được bốc ngẫu nhiên từ 30 đề thi thử cùng cấu trúc ma trận của Sở. Cả lớp làm chung 1 đề, mỗi em được đảo câu và phương án.</p>';
     return head + `<p class="hint" style="margin:8px 0 4px">Bảng lấy sẵn số câu theo ma trận CV 7991 của kì đã chọn; thầy cô sửa số câu từng bài, từng mức tuỳ ý. Số nhỏ bên cạnh là số câu ngân hàng đang có. Bài để trống = không lấy.</p>
       <div class="tablewrap"><table class="mttable"><thead><tr><th>Bài học</th>${LV.map(([, t]) => `<th class="n">${t}</th>`).join('')}<th class="n">Cộng</th></tr></thead><tbody>
@@ -1800,7 +1800,7 @@ route(/^\/gv\/giaobai$/, async params => {
   /* ----- Chủ đề & mức độ ----- */
   const rndBox = k => {
     const tp = topicsOf(k), ls = lessonsOf(k);
-    return `${kChips(k)}<label>Kiểm tra thường xuyên nhanh</label><div class="row">${[[5, 2, 2, 1], [10, 4, 4, 2], [15, 6, 6, 3]].map(([m, b, h, v]) => `<button type="button" class="btn ghost sm" data-pre="${m},${b},${h},${v}">${m} phút · ${b + h + v} câu</button>`).join('')}</div>
+    return `${kChips(k)}
       <label>Chủ đề – Công nghệ ${k}</label><div class="checks">${tp.map(t => `<label class="chk"><input type="checkbox" name="tp" value="${esc(t)}">${esc(t.replace(/^Lớp \d+ – /, ''))}</label>`).join('')}</div>
       ${ls.length ? `<label>Hoặc bài học SGK</label><div class="lessonlist" style="max-height:260px">${ls.map(t => `<label class="lchk"><input type="checkbox" name="ls" value="${esc(t)}"><span class="grow">${esc(t)}</span><span class="n">${bank.q.filter(q => q.k === k && q.bai === t).length}</span></label>`).join('')}</div>` : ''}
       <div class="lvgrid"><div><label for="nb">Số câu Biết</label><input id="nb" type="number" min="0" value="4"></div><div><label for="nh">Số câu Hiểu</label><input id="nh" type="number" min="0" value="4"></div>
@@ -2282,7 +2282,7 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
 
 
 /* ================= MA TRẬN & SINH ĐỀ KIỂM TRA ================= */
-const ASG_TYPES = ['Kiểm tra thường xuyên', 'Kiểm tra 15 phút', 'Bài tập về nhà', 'Ôn luyện', 'Kiểm tra giữa kì', 'Kiểm tra cuối kì', 'Thi thử'];
+const ASG_TYPES = ['Kiểm tra thường xuyên', 'Kiểm tra 15 phút', 'Bài tập về nhà', 'Ôn luyện', 'Kiểm tra giữa kì', 'Kiểm tra cuối kì'];
 const EXAM_TYPES = ['Giữa kì I', 'Cuối kì I', 'Giữa kì II', 'Cuối kì II', 'Kiểm tra thường xuyên', 'Thi thử'];
 function loadScript(src) { return new Promise((ok, no) => { if ([...document.scripts].some(s => s.src === src)) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); }
 async function qrSvg(text, cell = 3) {
