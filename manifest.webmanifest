@@ -1,7 +1,7 @@
 {
-  "name": "SmarttechCN 2026 – Ôn luyện Công nghệ",
+  "name": "SmarttechCN 2026 – AI dạy học, đánh giá Công nghệ",
   "short_name": "SmarttechCN",
-  "description": "Ứng dụng AI trong kiểm tra, đánh giá môn Công nghệ công nghiệp THPT: AI chấm tự luận, bản vẽ; HS tự luyện, làm bài kiểm tra; GV giao bài, xếp hạng",
+  "description": "SmarttechCN 2026 – Ứng dụng trí tuệ nhân tạo và điện toán đám mây hỗ trợ dạy học, kiểm tra, đánh giá năng lực học sinh môn Công nghệ công nghiệp cấp THPT. AI chấm tự luận, bản vẽ; HS tự luyện, làm bài kiểm tra; GV giao bài, xếp hạng.",
   "lang": "vi",
   "start_url": "./",
   "scope": "./",

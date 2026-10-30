@@ -1,4 +1,4 @@
-/* SmarttechCN 2026 – ứng dụng ôn luyện Công nghệ công nghiệp (Giai đoạn 1) */
+/* SmarttechCN 2026 – Ứng dụng trí tuệ nhân tạo và điện toán đám mây hỗ trợ dạy học, kiểm tra, đánh giá năng lực học sinh môn Công nghệ công nghiệp cấp THPT */
 (() => {
 'use strict';
 const CFG = window.STC_CONFIG || {};
@@ -363,7 +363,7 @@ route(/^\/dangnhap$/, params => {
   let tab = params.get('gv') ? 'gv' : 'hs';
   const draw = () => {
     setView(`<div class="auth">
-      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub"><b>Ứng dụng AI trong kiểm tra, đánh giá môn Công nghệ công nghiệp THPT</b><br>🤖 AI chấm tự luận, bản vẽ · 👩‍🎓 HS tự luyện, làm bài kiểm tra · 👨‍🏫 GV giao bài, xếp hạng</p></div>
+      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub"><b>Ứng dụng trí tuệ nhân tạo và điện toán đám mây hỗ trợ dạy học, kiểm tra, đánh giá năng lực học sinh môn Công nghệ công nghiệp cấp THPT</b><br>🤖 AI chấm tự luận, bản vẽ · 👩‍🎓 HS tự luyện, làm bài kiểm tra · 👨‍🏫 GV giao bài, xếp hạng</p></div>
       <div class="tabs"><button data-t="hs" class="${tab === 'hs' ? 'on' : ''}">Học sinh</button><button data-t="gv" class="${tab === 'gv' ? 'on' : ''}">Giáo viên</button></div>
       <form class="card" id="f">
         ${tab === 'hs' ? `<label for="u">Tên đăng nhập</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="Tên tài khoản cá nhân (vd: an12pd)"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
@@ -606,7 +606,7 @@ route(/^\/$/, params => {
   setView(`${DEMO ? '<div class="demo">⚙️ <b>Chế độ dùng thử</b>: chưa nhập địa chỉ máy chủ trong <code>config.js</code>. Em vẫn ôn tập được, nhưng điểm và bảng xếp hạng chưa được lưu.</div>' : ''}
     ${isTeacher ? '<div class="card note row"><span class="grow">👁️ Thầy/Cô đang xem giao diện Học sinh</span><a class="btn sm" href="#/gv">Về trang Giáo viên</a></div>' : ''}
     <section class="hero">
-      <div class="greet"><div><h1>Chào ${first} 👋</h1><p class="sub">${session ? esc([u.TenLop, u.Truong].filter(Boolean).join(' – ')) : 'Ôn luyện Công nghệ công nghiệp'}</p></div>
+      <div class="greet"><div><h1>Chào ${first} 👋</h1><p class="sub">${session ? esc([u.TenLop, u.Truong].filter(Boolean).join(' – ')) : 'AI hỗ trợ dạy học, kiểm tra, đánh giá môn Công nghệ công nghiệp'}</p></div>
         ${st ? `<span class="streak" title="Số ngày học liên tiếp">🔥 ${st} ngày</span>` : ''}</div>
       <div class="dim" aria-label="Tiến độ hôm nay"><div class="lbl"><span>Mục tiêu hôm nay: ${GOAL} lượt ôn</span><b>${Math.min(todayN, GOAL)}/${GOAL}${todayN >= GOAL ? ' ✓' : ''}</b></div>
         <div class="line"><i class="fill" style="width:${Math.min(100, todayN / GOAL * 100)}%"></i></div></div>
