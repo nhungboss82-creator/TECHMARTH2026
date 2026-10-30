@@ -1,7 +1,7 @@
 {
   "name": "SmarttechCN 2026 – Ôn luyện Công nghệ",
   "short_name": "SmarttechCN",
-  "description": "Phần mềm ôn luyện – trợ lý dạy học môn Công nghệ công nghiệp THPT: HS tự luyện tập, làm bài kiểm tra; GV giao bài, chấm điểm",
+  "description": "Ứng dụng AI trong kiểm tra, đánh giá môn Công nghệ công nghiệp THPT: AI chấm tự luận, bản vẽ; HS tự luyện, làm bài kiểm tra; GV giao bài, xếp hạng",
   "lang": "vi",
   "start_url": "./",
   "scope": "./",
