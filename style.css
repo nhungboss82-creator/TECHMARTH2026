@@ -375,3 +375,9 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 .aisai li{margin:6px 0}
 .aio label.row,.aio .row{display:flex;flex-wrap:nowrap;margin:3px 0}.aio .row input{min-width:0}
 .herosub{font-size:14px;line-height:1.45}.herosub b{display:block;font-size:15px}.herosub span{display:block;font-size:12.5px;opacity:.85;margin-top:2px}
+/* Bộ đề luyện thi TN THPT */
+.degrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.decard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;border-left:5px solid var(--line2)}
+.decard.good{border-left-color:var(--ok)}.decard.ok{border-left-color:#e0a800}.decard.low{border-left-color:var(--bad)}
+.deno{min-width:44px;height:44px;border-radius:12px;background:var(--info-soft);color:var(--brand2);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;margin-right:10px}
+.decard>.row:first-child{flex-wrap:nowrap}.decard .grow{min-width:0}

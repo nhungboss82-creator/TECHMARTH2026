@@ -620,7 +620,7 @@ route(/^\/$/, params => {
       <a class="qa" href="#/chude?by=bai"><span class="ic">📖</span>Ôn theo bài</a>
       <a class="qa amber" href="#/dinhki"><span class="ic">📑</span>Đề định kì</a>
       <a class="qa" href="#/chude?by=dang&dang=L"><span class="ic">✍️</span>Tự luận AI chấm</a>
-      <a class="qa green" href="${is12 ? '#/de?tab=de' : '#/de?tab=bai'}"><span class="ic">🎓</span>${is12 ? 'Thi thử TN' : 'Làm nguyên bài'}</a>
+      <a class="qa green" href="${is12 ? '#/thitn' : '#/de?tab=bai'}"><span class="ic">${is12 ? '📁' : '🎓'}</span>${is12 ? 'Bộ đề thi TN' : 'Làm nguyên bài'}</a>
       ${window.STC_SGK ? '<a class="qa" href="#/sgk"><span class="ic">📘</span>Sách giáo khoa</a>' : '<a class="qa" href="#/hinhchieu"><span class="ic">🧊</span>Hình chiếu 3D</a>'}
       <a class="qa red" href="#/sotay"><span class="ic">📕</span>Câu sai${wrong ? ` (${wrong})` : ''}</a>
     </div>
@@ -666,7 +666,7 @@ route(/^\/onluyen$/, () => {
     </div>
     <h2>Luyện đề</h2><div class="rows">
       ${window.STC_MATRAN ? row('#/dinhki', '📑', 'amber', 'Đề kiểm tra định kì', 'Giữa kì, cuối kì đúng ma trận CV 7991') : ''}
-      ${row('#/de?tab=de', '🎓', 'green', 'Đề thi thử tốt nghiệp', is12 ? '30 đề chuẩn cấu trúc, có xếp hạng khối' : 'Dành cho HS lớp 12, tổng hợp 3 khối')}
+      ${row('#/thitn', '📁', 'green', 'Bộ đề luyện thi TN THPT', deList().length + ' đề đủ 28 câu · làm lại thì đảo câu, đảo đáp án' + (is12 ? '' : ' (dành cho HS lớp 12)'))}
       ${row('', '🧪', 'green', is12 ? 'Đề tổng hợp theo ma trận' : 'Đề tổng hợp Lớp ' + g, 'Mỗi lần làm là một đề mới', 'id="mx"')}
     </div>
     <h2>Công cụ học tập</h2><div class="rows">
@@ -749,6 +749,7 @@ async function homeTasks(box, openId) {
 
 /* ================= Chọn đề / chủ đề / sổ tay ================= */
 route(/^\/de$/, params => {
+  if (params && params.get('tab') === 'de') { location.replace('#/thitn'); return; }
   const g = getStudentGrade();
   const allowed = getAllowedGrades();
   let tab = (params && params.get('tab')) || ((g === '10' || g === '11') ? 'bai' : 'bai');
@@ -812,7 +813,7 @@ route(/^\/de$/, params => {
       
       <div class="tabs" style="margin-bottom:14px">
         <button type="button" data-tab="bai" class="${isBai ? 'on' : ''}">📖 Nguyên bài học SGK (${isBai ? 'Lớp ' + selectedK : 'Lớp ' + g})</button>
-        <button type="button" data-tab="de" class="${!isBai ? 'on' : ''}">🎓 Đề thi thử tốt nghiệp THPT (30 đề)</button>
+        <a class="btn ghost" href="#/thitn" style="margin-left:6px">📁 Bộ đề luyện thi TN THPT (${exams.length} đề)</a>
       </div>
 
       ${gradeTabs}
@@ -843,6 +844,35 @@ route(/^\/de$/, params => {
   };
 
   draw();
+});
+
+/* ================= 📁 Bộ đề luyện thi tốt nghiệp THPT (khối 12) ================= */
+route(/^\/thitn$/, () => {
+  const g = getStudentGrade(), is12 = g === '12' || isGV();
+  const exams = deList();
+  const hist = store.get('hist_' + uid(), []);
+  const num = d => (/(\d+)\s*$/.exec(d) || [])[1] || '';
+  const stat = d => { const m = hist.filter(h => h.key === 'DE:' + d); return { n: m.length, best: m.length ? Math.max(...m.map(h => h.diem)) : null, last: m.length ? m[m.length - 1].diem : null }; };
+  const done = exams.filter(d => stat(d).n), avg = done.length ? done.reduce((a, d) => a + stat(d).best, 0) / done.length : null;
+  setView(`<a href="#/onluyen">← Ôn luyện</a>
+    <h1>📁 Bộ đề luyện thi tốt nghiệp THPT</h1>
+    <p class="sub">Môn Công nghệ công nghiệp · ${exams.length} đề, mỗi đề <b>28 câu</b> đúng cấu trúc thi từ 2025: Phần I 24 câu nhiều lựa chọn, Phần II 4 câu Đúng/Sai · 50 phút.</p>
+    ${is12 ? '' : '<div class="card note">💡 Bộ đề tổng hợp kiến thức chủ yếu Lớp 12. HS Lớp ' + esc(g) + ' nên luyện ở mục <a href="#/de?tab=bai">Làm nguyên bài</a> trước.</div>'}
+    <div class="kpis"><div class="kpi"><b>${done.length}/${exams.length}</b><span>đề đã làm</span></div><div class="kpi"><b>${avg == null ? '–' : fmt(avg)}</b><span>điểm TB (cao nhất mỗi đề)</span></div>
+      <div class="kpi"><b>${done.length ? fmt(Math.max(...done.map(d => stat(d).best))) : '–'}</b><span>điểm cao nhất</span></div></div>
+    <div class="card hint" style="margin:10px 0">📌 <b>Làm lần đầu</b>: đúng đề gốc, đủ 28 câu theo thứ tự. <b>Làm lại</b>: app <b>đảo vị trí các câu</b> trong từng phần và <b>đảo thứ tự phương án A, B, C, D</b>, nên em không thể nhớ vị trí đáp án mà phải hiểu bài. Phần Đúng/Sai giữ thứ tự ý a, b, c, d như đề thi thật.</div>
+    <div class="degrid">${exams.map(d => { const st = stat(d), cls = st.best == null ? '' : st.best >= 8 ? ' good' : st.best >= 5 ? ' ok' : ' low';
+      return `<div class="decard${cls}"><div class="row" style="align-items:flex-start"><div class="deno">${esc(num(d))}</div><div class="grow"><b>${esc(d)}</b>
+          <div class="meta">${st.n ? `Đã làm ${st.n} lần · cao nhất <b>${fmt(st.best)}</b>${st.n > 1 ? ' · lần gần nhất ' + fmt(st.last) : ''}` : 'Chưa làm'}</div></div></div>
+        <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap">${st.n
+          ? `<button class="btn sm" data-re="${esc(d)}">🔀 Làm lại (đảo câu, đảo đáp án)</button><button class="btn ghost sm" data-go="${esc(d)}" title="Làm lại đúng thứ tự đề gốc">Đề gốc</button>`
+          : `<button class="btn sm" data-go="${esc(d)}">▶ Làm đề (50 phút)</button>`}
+          ${st.n && !DEMO ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent('DE:' + d)}&t=${encodeURIComponent(d)}" title="Bảng xếp hạng">🏆</a>` : ''}
+          ${isGV() ? `<button class="btn ghost sm" data-pr="${esc(d)}" title="In / lưu PDF đề kèm đáp án">🖨️</button>` : ''}</div></div>`; }).join('')}</div>`);
+  const ids = d => bank.q.filter(q => q.de === d).map(q => q.id);
+  $$('[data-go]').forEach(b => b.onclick = () => startQuiz({ title: b.dataset.go, key: 'DE:' + b.dataset.go, loai: 'de', ids: ids(b.dataset.go), minutes: 50, keep: true }));
+  $$('[data-re]').forEach(b => b.onclick = () => startQuiz({ title: b.dataset.re + ' (đảo câu, đảo đáp án)', key: 'DE:' + b.dataset.re, loai: 'de', ids: ids(b.dataset.re), minutes: 50 }));
+  $$('[data-pr]').forEach(b => b.onclick = () => printExam({ TieuDe: 'ĐỀ LUYỆN THI TỐT NGHIỆP THPT – ' + b.dataset.pr.toUpperCase(), Truong: (session && session.user.Truong) || '', Khoi: '12', ThoiGian: 50, versions: [{ ma: '', ids: ids(b.dataset.pr), perm: {} }] }, 'all', true, { noQr: true }));
 });
 
 route(/^\/chude$/, params => {
@@ -932,9 +962,10 @@ function startQuiz(o) {
   if (cur && !cur.done && cur.ids.length && !confirm('Em đang làm dở "' + cur.title + '". Bỏ bài đó để làm bài mới?')) { location.hash = '#/lambai'; return; }
   // Phần I (nhiều lựa chọn), Phần II (Đúng/Sai), Phần III (tự luận); đảo thứ tự câu trong từng phần
   const mc = ids.filter(id => bank.byId[id].t === 'M'), tf = ids.filter(id => bank.byId[id].t === 'T'), es = ids.filter(id => bank.byId[id].t === 'L');
-  const order = [...shuffle(mc), ...shuffle(tf), ...shuffle(es)];
+  // o.keep: làm đúng đề gốc (giữ thứ tự câu và phương án); mặc định đảo câu trong từng phần và đảo phương án
+  const order = o.keep ? [...mc, ...tf, ...es] : [...shuffle(mc), ...shuffle(tf), ...shuffle(es)];
   const perm = {};
-  order.forEach(id => { const q = bank.byId[id]; if (q.t === 'M') perm[id] = q.nd ? [0, 1, 2, 3] : shuffle([0, 1, 2, 3]); });
+  order.forEach(id => { const q = bank.byId[id]; if (q.t === 'M') perm[id] = q.nd || o.keep ? [0, 1, 2, 3] : shuffle([0, 1, 2, 3]); });
   const a = { attemptId: newId(), title: o.title, key: o.key || '', loai: o.loai, ids: order, perm, resp: {}, flags: {}, cur: 0,
     start: Date.now(), minutes: +o.minutes || 0, hints: o.hints !== false, done: false, tlw: +o.tlw || 0, note: o.note || '', dm: o.dm || '' };
   store.set('attempt_' + uid(), a);
@@ -1121,7 +1152,7 @@ route(/^\/ketquabai$/, params => {
       ${onlyScore ? `<div class="card note" style="margin-top:18px">📌 Thầy/cô cho bài này <b>chỉ xem điểm</b>, không xem đáp án. Em xem lại kiến thức trong SGK và hỏi thầy cô ở lớp nhé.</div>
       <div class="row" style="margin:12px 0 6px"><span class="spacer"></span><a class="btn ghost" href="#/baigiao">Bài được giao</a><a class="btn ghost" href="#/">Trang chủ</a></div>` : `
       <div class="row" style="margin:18px 0 6px"><a class="btn" href="javascript:void 0" id="torv">📝 Xem lại bài làm</a><button class="btn accent" id="again" ${L.sai.length ? '' : 'disabled'}>🔁 Làm lại ${L.sai.length} câu sai</button>
-        ${L.loai !== 'baigiao' ? '<button class="btn ghost" id="redo">Làm lại cả bài (đảo mới)</button>' : ''}<span class="spacer"></span><a class="btn ghost" href="#/">Trang chủ</a></div>
+        ${L.loai !== 'baigiao' ? '<button class="btn ghost" id="redo">🔀 Làm lại cả bài (đảo câu, đảo đáp án)</button>' : ''}<span class="spacer"></span><a class="btn ghost" href="#/">Trang chủ</a></div>
       <h2 id="rvh">Xem lại bài làm</h2>
       <div class="tabs"><button data-f="sai" class="${filter === 'sai' ? 'on' : ''}">Cần xem lại (${L.ids.filter(id => !L.detail[id].ok).length})</button><button data-f="all" class="${filter === 'all' ? 'on' : ''}">Tất cả (${L.ids.length})</button></div>
       <div id="rv">${list.length ? list.map(id => reviewHtml(id)).join('') : '<div class="card empty">Không có câu sai. Giỏi quá!</div>'}</div>`}`);
