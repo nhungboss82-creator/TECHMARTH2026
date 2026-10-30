@@ -80,7 +80,8 @@ function math(el) {
 async function api(action, data = {}) {
   if (DEMO) throw new Error('Chế độ dùng thử chưa kết nối máy chủ');
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 30000);
+  // AI soạn câu, chấm tự luận, chấm bài vẽ, phân tích kết quả có thể mất 1–2 phút (Google bận thì máy chủ tự thử lại)
+  const timer = setTimeout(() => ctl.abort(), /^(ai_|submit|grade_drawing|generate_exam)/.test(action) ? 240000 : 30000);
   let res;
   try {
     res = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action, token: session && session.token }, data)), signal: ctl.signal, redirect: 'follow' });
@@ -1874,7 +1875,7 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
     };
     if (aiOld) showAi(aiOld.r, aiOld.t);
     $('#aian').onclick = e => busy(e.currentTarget, async () => {
-      $('#aiout').innerHTML = '<p class="hint">🤖 AI đang phân tích (10–40 giây)…</p>';
+      $('#aiout').innerHTML = '<p class="hint">🤖 AI đang phân tích (khoảng 10–60 giây, xin chờ)…</p>';
       try { const r = await api('ai_analyze', { maBai }); store.set(aiKey, { r, t: Date.now() }); showAi(r, Date.now()); }
       catch (err) { errBox($('#aiout'), err); }
     });
@@ -1948,7 +1949,7 @@ route(/^\/gv\/aisoancau$/, params => {
           <div style="width:110px"><label for="n">Số câu</label><select id="n">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option ${n === +f.n ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
         <label for="yc">Yêu cầu thêm (không bắt buộc)</label><input id="yc" type="text" maxlength="300" value="${esc(f.yc)}" placeholder="vd: gắn với thiết bị điện trong gia đình ở nông thôn; câu hỏi về an toàn khi sửa chữa…">
         <p class="hint">Ngân hàng hiện có ${bank.q.filter(q => q.k === f.k && q.bai === f.bai).length} câu của bài này – AI được dặn không soạn trùng.</p>
-        <div id="msg"></div><button class="btn block" id="go" ${busyGen ? 'disabled' : ''}>${busyGen ? '🤖 AI đang soạn (10–40 giây)…' : '✨ AI soạn câu hỏi'}</button></div>
+        <div id="msg"></div><button class="btn block" id="go" ${busyGen ? 'disabled' : ''}>${busyGen ? '🤖 AI đang soạn (khoảng 10–60 giây, xin chờ)…' : '✨ AI soạn câu hỏi'}</button></div>
       ${items.length ? `<div class="card note">⚠️ AI có thể sai. Thầy cô kiểm tra kĩ <b>kiến thức, đáp án, phương án nhiễu</b> trước khi thêm. Bỏ tích những câu chưa đạt.</div>
         ${items.map(itemHtml).join('')}
         <div class="card"><div id="msg2"></div><div class="row"><span class="grow hint">Đã chọn <b>${nPick}</b> câu</span><button class="btn" id="save" ${nPick ? '' : 'disabled'}>➕ Thêm ${nPick} câu vào ngân hàng</button></div></div>` : ''}`);
@@ -2936,7 +2937,7 @@ route(/^\/gv\/thietke$/, async params => {
       <h2>Bài toán đã lưu (${saved.length})</h2>${saved.map(d => designHtml(d, null)).join('') || '<div class="card empty">Chưa lưu bài toán nào.</div>'}`);
     const sync = () => { f = { khoi: $('#kh').value, linhVuc: $('#lv').value, diaPhuong: $('#dp').value, mucDo: $('#md').value, soLuong: +$('#sl').value, yeuCau: $('#yc').value }; };
     $('#go').onclick = () => { sync(); busy($('#go'), async () => {
-      $('#go').textContent = '🤖 AI đang soạn (10–40 giây)…';
+      $('#go').textContent = '🤖 AI đang soạn (khoảng 10–60 giây, xin chờ)…';
       try { results = (await api('ai_design_problems', f)).map(d => Object.assign(d, { khoi: f.khoi })); draw(); window.scrollTo(0, $('#res').offsetTop - 70); }
       catch (e) { errBox($('#msg'), e); }
     }); };
