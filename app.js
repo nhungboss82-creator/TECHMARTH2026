@@ -363,7 +363,7 @@ route(/^\/dangnhap$/, params => {
   let tab = params.get('gv') ? 'gv' : 'hs';
   const draw = () => {
     setView(`<div class="auth">
-      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub"><b>Ứng dụng trí tuệ nhân tạo và điện toán đám mây hỗ trợ dạy học, kiểm tra, đánh giá năng lực học sinh môn Công nghệ công nghiệp cấp THPT</b><br>🤖 AI chấm tự luận, bản vẽ · 👩‍🎓 HS tự luyện, làm bài kiểm tra · 👨‍🏫 GV giao bài, xếp hạng</p></div>
+      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub"><b>Phần mềm trợ lý dạy học và kiểm tra đánh giá môn Công nghệ công nghiệp cấp THPT</b><br>🤖 AI chấm tự luận, bản vẽ · 👩‍🎓 HS tự luyện, làm bài kiểm tra · 👨‍🏫 GV giao bài, xếp hạng</p></div>
       <div class="tabs"><button data-t="hs" class="${tab === 'hs' ? 'on' : ''}">Học sinh</button><button data-t="gv" class="${tab === 'gv' ? 'on' : ''}">Giáo viên</button></div>
       <form class="card" id="f">
         ${tab === 'hs' ? `<label for="u">Tên đăng nhập</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="Tên tài khoản cá nhân (vd: an12pd)"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
