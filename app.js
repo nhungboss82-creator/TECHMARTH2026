@@ -363,7 +363,7 @@ route(/^\/dangnhap$/, params => {
   let tab = params.get('gv') ? 'gv' : 'hs';
   const draw = () => {
     setView(`<div class="auth">
-      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub"><b>Phần mềm trợ lý dạy học và kiểm tra đánh giá môn Công nghệ công nghiệp cấp THPT</b><br>🤖 AI chấm tự luận, bản vẽ · 👩‍🎓 HS tự luyện, làm bài kiểm tra · 👨‍🏫 GV giao bài, xếp hạng</p></div>
+      <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub herosub"><b>Trợ lý dạy học và kiểm tra, đánh giá môn CNCN cấp THPT</b><span>🤖 AI chấm bài · HS tự luyện · GV giao bài, xếp hạng</span></p></div>
       <div class="tabs"><button data-t="hs" class="${tab === 'hs' ? 'on' : ''}">Học sinh</button><button data-t="gv" class="${tab === 'gv' ? 'on' : ''}">Giáo viên</button></div>
       <form class="card" id="f">
         ${tab === 'hs' ? `<label for="u">Tên đăng nhập</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="Tên tài khoản cá nhân (vd: an12pd)"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
@@ -1252,6 +1252,7 @@ route(/^\/gv$/, async params => {
         <a class="qa green" href="#/gv/baigiao"><span class="ic">📊</span>Điểm số</a>
         <a class="qa" href="#/gv/baive${kq}"><span class="ic">📷</span>Bài vẽ AI chấm</a>
         <a class="qa amber" href="#/gv/thietke${kq}"><span class="ic">💡</span>Bài toán thiết kế</a>
+        <a class="qa green" href="#/gv/aisoancau${kq}"><span class="ic">🤖</span>AI soạn câu hỏi</a>
         <a class="qa" href="#/gv/nganhang${kq}"><span class="ic">🗂️</span>Ngân hàng</a>
       </div>
       <div class="sechead"><h2>Lớp của tôi</h2><a href="#/gv/taolop">+ Tạo lớp</a></div>
@@ -1260,6 +1261,7 @@ route(/^\/gv$/, async params => {
         : `<div class="card empty">Chưa có lớp${k === 'all' ? '' : ' khối ' + k}. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>`}</div>
       <div class="card" style="margin-top:12px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>
       <h2>Công cụ trên lớp</h2><div class="rows">
+        ${row('#/gv/aisoancau' + kq, '🤖', 'green', 'AI soạn câu hỏi', 'AI soạn câu mới theo bài, mức độ – thầy cô duyệt rồi thêm vào ngân hàng')}
         ${row('#/gv/themcau', '✍️', '', 'Thêm câu hỏi', 'Trắc nghiệm, Đúng/Sai hoặc tự luận có đáp án mẫu')}
         ${row('#/hinhchieu', '🧊', '', 'Hình chiếu 3D', 'Trình chiếu vật thể xoay 360°, tìm hình chiếu đúng')}
         ${row('#/trochoi' + kq, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh')}
@@ -1849,6 +1851,8 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
       <div class="card"><div class="row"><div class="grow"><b>${fr.length}</b> HS lớp tôi đã nộp · điểm TB lần đầu <b>${fmt(avg)}</b></div>
         <button class="btn sm" id="ex">⬇ Xuất Excel</button>${a.cuaToi || session.role === 'admin' ? '<button class="btn sm danger" id="del">Xóa bài</button>' : ''}</div>
         <h3>Phổ điểm</h3><div class="bars">${['0–2', '2–4', '4–6', '6–8', '8–10'].map((t, i) => `<div class="bar"><span>${t} điểm</span><span class="tr"><i style="width:${dist[i] / dmax * 100}%;background:var(--brand2)"></i></span><span class="v">${dist[i]}</span></div>`).join('')}</div></div>
+      <div class="card aicard"><div class="row" style="align-items:center"><div class="grow"><h3 style="margin:0">🤖 AI phân tích kết quả</h3><div class="hint">Chỉ ra nội dung lớp còn hổng, câu sai nhiều, nhóm học sinh cần kèm và gợi ý dạy lại cho tiết sau.</div></div>
+        <button class="btn sm" id="aian" ${fr.length < 3 ? 'disabled title="Cần ít nhất 3 HS nộp bài"' : ''}>✨ Phân tích</button></div><div id="aiout"></div></div>
       <h2>🏆 Top 20 khối ${esc(a.Khoi)}</h2>${lbHtml(lb20)}
       <h2>Chi tiết lớp tôi</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Lớp</th><th class="n">Lần</th><th class="n">Điểm</th><th class="n" title="Hạng trong cả khối ${esc(a.Khoi)} (tính lần làm đầu tiên)">Hạng khối</th><th class="n">Đúng</th><th class="n">T.gian</th><th>Nộp lúc</th></tr></thead><tbody>
       ${all.map(r => { const c = my.find(x => x.MaLop === r.maLop); return `<tr><td>${esc(r.hoTen)}</td><td>${esc(c ? c.TenLop : '')}</td><td class="n">${r.lan}</td><td class="n"><b>${fmt(r.diem)}</b></td><td class="n">${first[r.maHS] === r && hangK[r.maHS] ? `<b>${hangK[r.maHS]}</b>/${lb.total}` : ''}</td><td class="n">${r.dung}/${r.tong}</td><td class="n">${mmss(r.giay)}</td><td>${dt(r.t)}</td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Chưa có bài nộp</td></tr>'}</tbody></table></div>
@@ -1864,6 +1868,16 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
       document.body.appendChild(ov); const close = () => { ov.remove(); document.removeEventListener('keydown', esc1); }; const esc1 = e => { if (e.key === 'Escape') close(); };
       ov.onclick = close; document.addEventListener('keydown', esc1); try { ov.requestFullscreen && ov.requestFullscreen(); } catch (e) {}
     };
+    const aiKey = 'ai_an_' + maBai, aiOld = store.get(aiKey, null);
+    const showAi = (r, t) => { $('#aiout').innerHTML = aiReportHtml(r) + `<div class="row" style="margin-top:8px"><span class="grow hint">Phân tích lúc ${dt(t)}</span><button class="btn ghost sm" id="aipr">🖨️ In báo cáo</button></div>`;
+      $('#aipr').onclick = () => { const w = window.open('', '_blank'); if (!w) return; w.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Phân tích kết quả – ${esc(a.TieuDe)}</title><style>body{font-family:Arial,sans-serif;max-width:190mm;margin:10mm auto;font-size:11.5pt;color:#000;line-height:1.45}h3{margin:12px 0 4px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:4px 6px;text-align:left;vertical-align:top}.bar{display:grid;grid-template-columns:1fr 2fr 50px;gap:6px;align-items:center;margin:3px 0}.tr{background:#eee;height:10px;border-radius:5px;overflow:hidden;display:block}.tr i{display:block;height:100%}.expl{border-left:3px solid #1f5bd6;padding:4px 10px;margin:6px 0}.expl .t{display:block}.hint{color:#444;font-size:10pt}.aigrp{margin:6px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media print{button{display:none}}</style></head><body><button onclick="print()">🖨️ In / Lưu PDF</button><h2>SmarttechCN 2026 – Báo cáo phân tích kết quả</h2>${aiReportHtml(r)}</body></html>`); w.document.close(); };
+    };
+    if (aiOld) showAi(aiOld.r, aiOld.t);
+    $('#aian').onclick = e => busy(e.currentTarget, async () => {
+      $('#aiout').innerHTML = '<p class="hint">🤖 AI đang phân tích (10–40 giây)…</p>';
+      try { const r = await api('ai_analyze', { maBai }); store.set(aiKey, { r, t: Date.now() }); showAi(r, Date.now()); }
+      catch (err) { errBox($('#aiout'), err); }
+    });
     if ($('#pub')) $('#pub').onclick = e => busy(e.currentTarget, async () => { try { await api('publish_scores', { maBai, on: !a.CongBo }); toast(a.CongBo ? 'Đã ẩn điểm' : 'Đã công bố điểm cho HS'); window.dispatchEvent(new HashChangeEvent('hashchange')); } catch (err) { toast(err.message); } });
     $('#ex').onclick = () => csv('KetQua_' + a.TieuDe.replace(/[^\wÀ-ỹ]+/g, '_') + '.csv', [['Họ tên', 'Lớp', 'Lần', 'Điểm', 'Hạng khối', 'Số câu đúng', 'Tổng câu', 'Thời gian (giây)', 'Nộp lúc'], ...all.map(r => { const c = my.find(x => x.MaLop === r.maLop); return [r.hoTen, c ? c.TenLop : '', r.lan, r.diem, first[r.maHS] === r && hangK[r.maHS] ? hangK[r.maHS] + '/' + lb.total : '', r.dung, r.tong, r.giay, dt(r.t)]; })]);
     if ($('#del')) $('#del').onclick = async () => { if (!confirm('Xóa bài này? HS sẽ không thấy bài nữa (kết quả cũ vẫn giữ trong Sheets).')) return; try { await api('delete_assignment', { maBai }); location.hash = '#/gv/baigiao'; } catch (e) { toast(e.message); } };
@@ -1903,12 +1917,105 @@ route(/^\/gv\/nganhang$/, params => {
   draw();
 });
 
+/* ================= AI soạn câu hỏi mới (GV duyệt, sửa rồi thêm vào ngân hàng) ================= */
+route(/^\/gv\/aisoancau$/, params => {
+  if (!needGV()) return;
+  const f = store.get('ai_soan_f', { k: (params && params.get('k')) || '12', bai: '', type: 'M', md: 'Hiểu', n: 5, yc: '' });
+  if (params && params.get('k')) f.k = params.get('k');
+  let items = [], busyGen = false;
+  const cdOf = (k, bai) => { const c = {}; bank.q.filter(q => q.k === k && q.bai === bai).forEach(q => { c[q.cd] = (c[q.cd] || 0) + 1; }); return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || bai; };
+  const itemHtml = (x, i) => {
+    const opt = x.type === 'M' ? `<div class="aio">${[0, 1, 2, 3].map(j => `<label class="row" style="gap:6px;align-items:center;margin:3px 0"><b style="width:18px">${LETTERS[j]}.</b><input type="text" data-i="${i}" data-o="${j}" value="${esc(x.o[j])}" class="grow"></label>`).join('')}
+        <div class="row" style="gap:8px;align-items:center;margin-top:6px"><span>Đáp án đúng:</span><select data-i="${i}" data-a="1">${[...LETTERS].map(L => `<option ${L === x.answer ? 'selected' : ''}>${L}</option>`).join('')}</select></div></div>`
+      : x.type === 'T' ? `<div class="aio">${[0, 1, 2, 3].map(j => `<div class="row" style="gap:6px;align-items:center;margin:3px 0"><b style="width:18px">${'abcd'[j]})</b><input type="text" data-i="${i}" data-o="${j}" value="${esc(x.o[j])}" class="grow"><select data-i="${i}" data-tf="${j}"><option value="Đ" ${x.answer[j] === 'Đ' ? 'selected' : ''}>Đúng</option><option value="S" ${x.answer[j] === 'S' ? 'selected' : ''}>Sai</option></select></div>`).join('')}</div>`
+      : `<label>Đáp án mẫu</label><textarea data-i="${i}" data-f="answer" rows="3">${esc(x.answer)}</textarea>
+         <div class="row" style="gap:8px;align-items:center;margin-top:6px"><span>Điểm câu này:</span><input type="number" min="0.25" max="10" step="0.25" data-i="${i}" data-f="points" value="${x.points || 1}" style="width:90px"></div>`;
+    const expl = x.type === 'T' ? `<label>Giải thích từng ý</label>${[0, 1, 2, 3].map(j => `<input type="text" data-i="${i}" data-e="${j}" value="${esc(x.expl[j] || '')}" placeholder="${'abcd'[j]})" style="margin:2px 0">`).join('')}`
+      : `<label>${x.type === 'L' ? 'Hướng dẫn chấm (AI dựa vào đây để chấm bài HS)' : 'Giải thích'}</label><textarea data-i="${i}" data-f="expl" rows="2">${esc(x.expl || '')}</textarea>`;
+    return `<div class="card aiq${x.saved ? ' saved' : ''}" id="aiq${i}"><div class="row" style="align-items:center"><label class="chk" style="margin:0"><input type="checkbox" data-pick="${i}" ${x.pick && !x.saved ? 'checked' : ''} ${x.saved ? 'disabled' : ''}><b>Câu ${i + 1}</b></label>
+        <span class="pill">${x.type === 'M' ? 'Nhiều lựa chọn · ' + esc(x.md) : x.type === 'T' ? 'Đúng/Sai' : 'Tự luận · ' + esc(x.md)}</span><span class="grow"></span>${x.saved ? '<span class="pill ok">✔ Đã thêm vào ngân hàng</span>' : ''}</div>
+      <label>Nội dung câu hỏi</label><textarea data-i="${i}" data-f="stem" rows="3">${esc(x.stem)}</textarea>${opt}${expl}
+      <label>Gợi ý cho HS</label><input type="text" data-i="${i}" data-f="hint" value="${esc(x.hint || '')}"></div>`;
+  };
+  const draw = () => {
+    const ls = lessonsOf(f.k); if (!ls.includes(f.bai)) f.bai = ls[0] || '';
+    const nPick = items.filter(x => x.pick && !x.saved).length;
+    setView(`<a href="#/gv">← Trang giáo viên</a><h1>🤖 AI soạn câu hỏi</h1><p class="sub">AI soạn câu hỏi mới bám sát SGK Công nghệ (Kết nối tri thức) theo bài và mức độ thầy cô chọn. Thầy cô <b>đọc, sửa</b> rồi mới thêm vào ngân hàng – câu được ghi nguồn “AI soạn, GV duyệt”.</p>
+      <div class="card"><div class="row"><div style="width:110px"><label for="k">Khối</label><select id="k">${['10', '11', '12'].map(k => `<option ${k === f.k ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+          <div class="grow"><label for="bai">Bài học</label><select id="bai">${ls.map(t => `<option ${t === f.bai ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></div></div>
+        <div class="row"><div class="grow"><label for="ty">Dạng câu</label><select id="ty"><option value="M" ${f.type === 'M' ? 'selected' : ''}>Nhiều lựa chọn</option><option value="T" ${f.type === 'T' ? 'selected' : ''}>Đúng/Sai (4 ý a–d)</option><option value="L" ${f.type === 'L' ? 'selected' : ''}>Tự luận</option></select></div>
+          <div class="grow" ${f.type === 'T' ? 'style="opacity:.5"' : ''}><label for="md">Mức độ</label><select id="md" ${f.type === 'T' ? 'disabled' : ''}>${['Biết', 'Hiểu', 'Vận dụng'].map(m => `<option ${m === f.md ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+          <div style="width:110px"><label for="n">Số câu</label><select id="n">${[1, 2, 3, 4, 5, 6, 8, 10].map(n => `<option ${n === +f.n ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
+        <label for="yc">Yêu cầu thêm (không bắt buộc)</label><input id="yc" type="text" maxlength="300" value="${esc(f.yc)}" placeholder="vd: gắn với thiết bị điện trong gia đình ở nông thôn; câu hỏi về an toàn khi sửa chữa…">
+        <p class="hint">Ngân hàng hiện có ${bank.q.filter(q => q.k === f.k && q.bai === f.bai).length} câu của bài này – AI được dặn không soạn trùng.</p>
+        <div id="msg"></div><button class="btn block" id="go" ${busyGen ? 'disabled' : ''}>${busyGen ? '🤖 AI đang soạn (10–40 giây)…' : '✨ AI soạn câu hỏi'}</button></div>
+      ${items.length ? `<div class="card note">⚠️ AI có thể sai. Thầy cô kiểm tra kĩ <b>kiến thức, đáp án, phương án nhiễu</b> trước khi thêm. Bỏ tích những câu chưa đạt.</div>
+        ${items.map(itemHtml).join('')}
+        <div class="card"><div id="msg2"></div><div class="row"><span class="grow hint">Đã chọn <b>${nPick}</b> câu</span><button class="btn" id="save" ${nPick ? '' : 'disabled'}>➕ Thêm ${nPick} câu vào ngân hàng</button></div></div>` : ''}`);
+    const sync = () => { f.k = $('#k').value; f.bai = $('#bai').value; f.type = $('#ty').value; f.md = $('#md').value; f.n = +$('#n').value; f.yc = $('#yc').value; store.set('ai_soan_f', f); };
+    ['#k', '#ty'].forEach(s => $(s).onchange = () => { sync(); draw(); });
+    ['#bai', '#md', '#n', '#yc'].forEach(s => $(s).onchange = sync);
+    $$('[data-i]').forEach(el => el.oninput = el.onchange = () => {
+      const x = items[+el.dataset.i]; if (!x) return;
+      if (el.dataset.f) x[el.dataset.f] = el.dataset.f === 'points' ? +el.value : el.value;
+      else if (el.dataset.o != null) x.o[+el.dataset.o] = el.value;
+      else if (el.dataset.a) x.answer = el.value;
+      else if (el.dataset.tf != null) { const a = x.answer.split(''); a[+el.dataset.tf] = el.value; x.answer = a.join(''); }
+      else if (el.dataset.e != null) x.expl[+el.dataset.e] = el.value;
+    });
+    $$('[data-pick]').forEach(c => c.onchange = () => { items[+c.dataset.pick].pick = c.checked; draw(); });
+    $('#go').onclick = async () => {
+      sync(); busyGen = true; draw();
+      try { const got = await api('ai_questions', { khoi: f.k, bai: f.bai, type: f.type, md: f.md, n: f.n, yeuCau: f.yc }); items = got.map(x => Object.assign(x, { pick: true, k: f.k, bai: f.bai })).concat(items.filter(x => x.saved)); }
+      catch (e) { busyGen = false; draw(); errBox($('#msg'), e); return; }
+      busyGen = false; draw(); const c = $('.aiq'); if (c) window.scrollTo({ top: c.getBoundingClientRect().top + scrollY - 80, behavior: 'smooth' });
+    };
+    if ($('#save')) $('#save').onclick = e => busy(e.currentTarget, async () => {
+      let ok = 0;
+      for (const x of items.filter(y => y.pick && !y.saved)) {
+        const q = { type: x.type, khoi: x.k, bai: x.bai, cd: cdOf(x.k, x.bai), md: x.md, stem: x.stem, hint: x.hint, ai: true };
+        if (x.type === 'M') Object.assign(q, { o: x.o, answer: x.answer, expl: x.expl });
+        else if (x.type === 'T') Object.assign(q, { o: x.o, answer: x.answer, expl: x.expl.map((v, j) => 'abcd'[j] + ') ' + v).join(' || ') });
+        else Object.assign(q, { answer: x.answer, expl: x.expl, points: x.points || 1 });
+        try { await api('add_question', { question: q }); x.saved = true; ok++; }
+        catch (err) { errBox($('#msg2'), 'Câu ' + (items.indexOf(x) + 1) + ': ' + err.message); break; }
+      }
+      if (ok) { toast('Đã thêm ' + ok + ' câu vào ngân hàng'); syncBank(true); }
+      draw();
+    });
+  };
+  draw();
+});
+
+/* ================= AI phân tích kết quả bài kiểm tra ================= */
+function aiReportHtml(r) {
+  const s = r.stats, a = r.ai || {}, li = arr => (arr || []).map(x => `<li>${esc(typeof x === 'string' ? x : JSON.stringify(x))}</li>`).join('');
+  const bar = (t, p) => `<div class="bar"><span>${esc(t)}</span><span class="tr"><i style="width:${Math.max(0, p)}%;background:${p >= 70 ? 'var(--ok)' : p >= 50 ? 'var(--accent)' : 'var(--bad)'}"></i></span><span class="v">${p}%</span></div>`;
+  const grp = (t, l, cls) => `<div class="aigrp ${cls}"><b>${t} (${l.length})</b><div class="hint">${l.map(x => esc(x.ten) + ' <span>' + esc(x.lop) + ' · ' + fmt(x.diem) + '</span>').join(', ') || '—'}</div></div>`;
+  return `<div class="airep">
+    <p><b>${esc(s.bai_kiem_tra)}</b> · ${s.so_hs} học sinh (lần làm đầu) · điểm TB <b>${fmt(s.diem_tb)}</b> · lớp ${esc(r.lop.join(', '))}</p>
+    ${a.nhan_xet_chung ? `<div class="expl ai"><b class="t">🤖 Nhận xét chung</b>${esc(a.nhan_xet_chung)}</div>` : ''}
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div><h3>Tỉ lệ đúng theo mức độ</h3><div class="bars">${s.theo_muc_do.map(x => bar(x.ten + ' (' + x.so_cau + ' câu)', x.ti_le_dung)).join('')}</div></div>
+      <div><h3>Tỉ lệ đúng theo bài học</h3><div class="bars">${s.theo_bai.slice(0, 8).map(x => bar(x.ten.replace(/^Bài (\d+)\..*/, 'Bài $1') + ' (' + x.so_cau + ')', x.ti_le_dung)).join('')}</div></div></div>
+    ${(a.diem_manh || []).length ? `<h3>✅ Học sinh làm tốt</h3><ul>${li(a.diem_manh)}</ul>` : ''}
+    ${(a.lo_hong || []).length ? `<h3>⚠️ Lỗ hổng kiến thức</h3><div class="tablewrap"><table><thead><tr><th>Nội dung</th><th>Biểu hiện</th><th>Nguyên nhân có thể</th></tr></thead><tbody>${a.lo_hong.map(x => `<tr><td><b>${esc(x.noi_dung || '')}</b></td><td>${esc(x.bieu_hien || '')}</td><td>${esc(x.nguyen_nhan || '')}</td></tr>`).join('')}</tbody></table></div>` : ''}
+    ${s.cau_sai_nhieu.length ? `<h3>Câu sai nhiều nhất</h3><ol class="aisai">${s.cau_sai_nhieu.slice(0, 5).map(x => `<li><b>${esc(x.ti_le_sai)} sai</b> · ${esc(x.bai.replace(/^(Bài \d+)\..*/, '$1'))} · ${esc(x.muc_do)}<div class="hint">${esc(x.cau.slice(0, 220))}${x.cau.length > 220 ? '…' : ''}</div></li>`).join('')}</ol>` : ''}
+    ${(a.goi_y_day_lai || []).length ? `<h3>🧑‍🏫 Gợi ý dạy lại</h3>${a.goi_y_day_lai.map(x => `<div class="expl"><b class="t">${esc(x.hoat_dong || '')}</b>${esc(x.cach_lam || '')}</div>`).join('')}` : ''}
+    <h3>👥 Nhóm học sinh</h3>
+    ${grp('🔴 Cần kèm thêm – dưới 5 điểm', r.nhom.can_kem, 'bad')}${a.goi_y_nhom && a.goi_y_nhom.can_kem ? `<p class="hint">→ ${esc(a.goi_y_nhom.can_kem)}</p>` : ''}
+    ${grp('🟡 Ổn định – 5 đến dưới 8 điểm', r.nhom.on_dinh, 'mid')}${a.goi_y_nhom && a.goi_y_nhom.on_dinh ? `<p class="hint">→ ${esc(a.goi_y_nhom.on_dinh)}</p>` : ''}
+    ${grp('🟢 Nâng cao – từ 8 điểm', r.nhom.nang_cao, 'ok')}${a.goi_y_nhom && a.goi_y_nhom.nang_cao ? `<p class="hint">→ ${esc(a.goi_y_nhom.nang_cao)}</p>` : ''}
+    ${(a.cau_hoi_on || []).length ? `<h3>❓ Câu hỏi kiểm tra lại đầu tiết sau</h3><ol>${li(a.cau_hoi_on)}</ol>` : ''}
+    <p class="hint">Tên học sinh không gửi cho AI; AI chỉ nhận số liệu thống kê đã ẩn danh. Nhận xét của AI để thầy cô tham khảo.</p></div>`;
+}
+
 route(/^\/gv\/themcau$/, () => {
   if (!needGV()) return;
   let type = 'M';
   const draw = () => {
     const tps = [...new Set(bank.q.map(q => q.cd))].sort((a, b) => a.localeCompare(b, 'vi'));
-    setView(`<h1>Thêm câu hỏi</h1><p class="sub">Soạn theo bản đặc tả và nội dung SGK. Có thể dùng &lt;b&gt;đậm&lt;/b&gt;, &lt;sub&gt;chỉ số&lt;/sub&gt;, dán link ảnh Google Drive (đã chia sẻ công khai) bằng &lt;img src="link"&gt;.</p>
+    setView(`<h1>Thêm câu hỏi</h1><div class="card note">🤖 Muốn soạn nhanh nhiều câu? Dùng <a href="#/gv/aisoancau">AI soạn câu hỏi</a> – AI soạn theo bài, mức độ, thầy cô duyệt rồi thêm.</div><p class="sub">Soạn theo bản đặc tả và nội dung SGK. Có thể dùng &lt;b&gt;đậm&lt;/b&gt;, &lt;sub&gt;chỉ số&lt;/sub&gt;, dán link ảnh Google Drive (đã chia sẻ công khai) bằng &lt;img src="link"&gt;.</p>
       <form class="card" id="f">
         <div class="tabs"><button type="button" data-t="M" class="${type === 'M' ? 'on' : ''}">Nhiều lựa chọn</button><button type="button" data-t="T" class="${type === 'T' ? 'on' : ''}">Đúng/Sai</button><button type="button" data-t="L" class="${type === 'L' ? 'on' : ''}">Tự luận</button></div>
         <div class="row"><div style="width:110px"><label for="k">Khối</label><select id="k"><option>10</option><option>11</option><option selected>12</option></select></div>
