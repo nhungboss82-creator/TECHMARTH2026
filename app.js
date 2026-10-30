@@ -846,6 +846,111 @@ route(/^\/de$/, params => {
   draw();
 });
 
+/* ================= GV: Quản lý đề luyện thi TN – kết quả, câu hay sai, bài làm HS ================= */
+route(/^\/gv\/thitn$/, async params => {
+  if (!needGV()) return;
+  const key = params.get('de') ? 'DE:' + params.get('de') : '', code = params.get('lop') || '';
+  setView('<div class="card empty">Đang tải kết quả…</div>');
+  let res;
+  try { res = await api('tn_results', { key, code }); } catch (e) { errBox(V, e); return; }
+  if (bank.q.length && res.rows.some(r => r.sai.some(id => !bank.byId[id]))) await syncBank(true);
+  const exams = deList(), rows = res.rows, classes = res.classes || {};
+  const nm = d => (/(\d+)\s*$/.exec(d) || [])[1] || d;
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const lopSel = `<select id="lsel" style="max-width:220px"><option value="">Tất cả lớp của tôi (${Object.keys(classes).length})</option>${Object.entries(classes).sort((a, b) => a[1].localeCompare(b[1], 'vi', { numeric: true })).map(([c, t]) => `<option value="${esc(c)}" ${c === code ? 'selected' : ''}>Lớp ${esc(t)}</option>`).join('')}</select>`;
+  const go = (de, lop) => { location.hash = '#/gv/thitn' + (de || lop ? '?' + [de ? 'de=' + encodeURIComponent(de) : '', lop ? 'lop=' + encodeURIComponent(lop) : ''].filter(Boolean).join('&') : ''); };
+  /* thống kê sai theo câu / theo bài học từ danh sách lượt làm */
+  const qStats = rs => {
+    const st = {};
+    rs.forEach(r => { const d = r.key.slice(3); bank.q.filter(q => q.de === d).forEach(q => { const s = st[q.id] = st[q.id] || { q, lam: 0, sai: 0, chon: {} }; s.lam++; if (r.sai.includes(q.id)) s.sai++;
+      const a = r.ct && r.ct[q.id]; if (a && q.t === 'M' && a !== normAns(q)) s.chon[a] = (s.chon[a] || 0) + 1;
+      if (a && q.t === 'T') { const ok = normAns(q); String(a).split('').forEach((x, i) => { if (x !== '-' && x !== ok[i]) s.chon['abcd'[i]] = (s.chon['abcd'[i]] || 0) + 1; }); } }); });
+    return Object.values(st);
+  };
+  const lessonStats = qs => {
+    const m = {};
+    qs.forEach(s => { const b = (s.q.bai || s.q.cd || '').replace(/^Lớp \d+ – /, ''), k = s.q.k + '|' + b; const x = m[k] = m[k] || { k: s.q.k, b, lam: 0, sai: 0 }; x.lam += s.lam; x.sai += s.sai; });
+    return Object.values(m).filter(x => x.lam).sort((a, b) => b.sai / b.lam - a.sai / a.lam);
+  };
+  const bar = p => `<span class="tr" style="display:inline-block;width:90px;height:8px;border-radius:4px;background:var(--line);vertical-align:middle;margin-right:6px"><i style="display:block;height:100%;width:${p}%;border-radius:4px;background:${p >= 60 ? 'var(--bad)' : p >= 35 ? '#e0a800' : 'var(--ok)'}"></i></span>${p}%`;
+  const lessonTable = ls => ls.length ? `<div class="tablewrap"><table><thead><tr><th>Bài học</th><th class="n">Lớp</th><th class="n">Lượt trả lời</th><th>Tỉ lệ sai</th></tr></thead><tbody>${ls.slice(0, 12).map(x => `<tr><td>${esc(x.b)}</td><td class="n">${esc(x.k)}</td><td class="n">${x.lam}</td><td>${bar(pct(x.sai, x.lam))}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Chưa có dữ liệu</div>';
+
+  if (!key) {
+    /* ---- Danh sách đề (hàng dọc) ---- */
+    const by = {}; rows.forEach(r => (by[r.key] = by[r.key] || []).push(r));
+    const ls = lessonStats(qStats(rows));
+    const allQ = qStats(rows).filter(s => s.lam >= 3).sort((a, b) => b.sai / b.lam - a.sai / a.lam).slice(0, 8);
+    setView(`<a href="#/gv">← Trang giáo viên</a>
+      <div class="row" style="align-items:center"><h1 class="grow">🎓 Quản lý đề luyện thi TN THPT</h1><a class="btn ghost sm" href="#/thitn">👁 Xem bộ đề như HS</a></div>
+      <p class="sub">${exams.length} đề · mỗi đề 28 câu · mỗi lần HS mở đề đều đảo câu, đảo đáp án. Thống kê theo đúng câu gốc của đề nên vẫn chính xác dù thứ tự bị đảo.</p>
+      <div class="row" style="margin:6px 0 10px">${lopSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
+      <div class="kpis"><div class="kpi"><b>${new Set(rows.map(r => r.maHS)).size}</b><span>HS đã luyện</span></div><div class="kpi"><b>${rows.length}</b><span>lượt làm đề</span></div>
+        <div class="kpi"><b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b><span>điểm TB mọi lượt</span></div><div class="kpi"><b>${Object.keys(by).length}/${exams.length}</b><span>đề đã có HS làm</span></div></div>
+      <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
+        ${exams.map(d => { const rs = by['DE:' + d] || [], ds = rs.map(r => r.diem);
+          const top = rs.length ? qStats(rs).sort((a, b) => b.sai - a.sai)[0] : null;
+          const pos = top ? (/_(C|DS)(\d+)$/.exec(top.q.id) || []) : [];
+          return `<tr class="${rs.length ? 'click' : 'muted'}" data-de="${esc(d)}"><td><b>Đề ${esc(nm(d))}</b></td><td class="n">${new Set(rs.map(r => r.maHS)).size || '–'}</td><td class="n">${rs.length || '–'}</td>
+            <td class="n"><b>${rs.length ? fmt(ds.reduce((a, b) => a + b, 0) / ds.length) : '–'}</b></td><td class="n">${rs.length ? fmt(Math.max(...ds)) : '–'}</td><td class="n">${rs.length ? fmt(Math.min(...ds)) : '–'}</td>
+            <td>${top && top.sai ? `${pos[1] === 'DS' ? 'Đ/S câu ' + +pos[2] : 'Câu ' + +pos[2]} – sai ${pct(top.sai, top.lam)}%` : '<span class="hint">–</span>'}</td><td>${rs.length ? '<span class="btn ghost sm">Xem ›</span>' : ''}</td></tr>`; }).join('')}
+      </tbody></table></div></div>
+      <h2>📉 Bài học HS hay sai nhất (toàn bộ đề đã làm)</h2><div class="card">${lessonTable(ls)}<p class="hint">Tỉ lệ sai = số lần trả lời sai / số lần gặp câu của bài đó. Bài đỏ (≥ 60%) nên dạy lại; vàng (35–60%) cần ôn thêm.</p></div>
+      ${allQ.length ? `<h2>❗ Câu sai nhiều nhất</h2><div class="card"><div class="list compact">${allQ.map(s => `<a class="item" href="#/gv/thitn?de=${encodeURIComponent(s.q.de)}${code ? '&lop=' + code : ''}"><div class="grow"><b>Đề ${esc(nm(s.q.de))}</b> · ${esc(plainQ(s.q.s).slice(0, 110))}…<div class="meta">${esc((s.q.bai || '').replace(/^Lớp \d+ – /, ''))} · ${esc(s.q.md)}</div></div><span>${bar(pct(s.sai, s.lam))}</span></a>`).join('')}</div></div>` : ''}`);
+    $('#lsel').onchange = e => go('', e.target.value);
+    $$('tr.click[data-de]').forEach(tr => tr.onclick = () => go(tr.dataset.de, code));
+    $('#ex').onclick = () => csv('LuyenThiTN_' + (code ? classes[code] : 'tat_ca') + '.csv', [['Họ tên', 'Lớp', 'Đề', 'Lần', 'Điểm', 'Số câu đúng', 'Thời gian (phút)', 'Thời điểm'],
+      ...rows.slice().sort((a, b) => viNameCmp(a.hoTen, b.hoTen) || a.key.localeCompare(b.key, 'vi', { numeric: true })).map(r => [r.hoTen, r.lop, r.key.slice(3), r.lan, r.diem, r.dung + '/' + r.tong, Math.round(r.giay / 60), dt(r.t)])]);
+    return;
+  }
+
+  /* ---- Chi tiết một đề ---- */
+  const d = key.slice(3), qs = qStats(rows), qsBy = {}; qs.forEach(s => { qsBy[s.q.id] = s; });
+  const order = bank.q.filter(q => q.de === d);
+  const posOf = q => { const m = /_(C|DS)(\d+)$/.exec(q.id) || []; return m[1] === 'DS' ? 'Đ/S ' + +m[2] : 'Câu ' + +m[2]; };
+  let sortBy = 'sai', open = {}, who = '';
+  const hs = {}; rows.forEach(r => { const x = hs[r.maHS] = hs[r.maHS] || { ten: r.hoTen, lop: r.lop, l: [] }; x.l.push(r); });
+  const draw = () => {
+    const list = order.slice().sort((a, b) => sortBy === 'sai' ? ((qsBy[b.id] || {}).sai || 0) - ((qsBy[a.id] || {}).sai || 0) : 0);
+    const hsList = Object.entries(hs).sort((a, b) => viNameCmp(a[1].ten, b[1].ten));
+    const one = who && hs[who];
+    setView(`<a href="#/gv/thitn${code ? '?lop=' + code : ''}">← Quản lý đề luyện thi TN</a>
+      <h1>${esc(d)}</h1><p class="sub">${rows.length} lượt làm · ${hsList.length} học sinh${code ? ' · lớp ' + esc(classes[code] || '') : ''} · điểm TB <b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b></p>
+      <div class="row" style="margin-bottom:8px">${lopSel}<span class="grow"></span><button class="btn ghost sm" id="pr">🖨️ In đề kèm đáp án</button></div>
+      <h2>📉 Bài học hay sai trong đề này</h2><div class="card">${lessonTable(lessonStats(qs))}</div>
+      <div class="row" style="align-items:center"><h2 class="grow">📝 Từng câu của đề</h2><div class="tabs" style="margin:0"><button data-sort="sai" class="${sortBy === 'sai' ? 'on' : ''}">Sai nhiều trước</button><button data-sort="de" class="${sortBy === 'de' ? 'on' : ''}">Theo thứ tự đề</button></div></div>
+      <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Câu</th><th>Nội dung</th><th class="n">Lượt</th><th>Tỉ lệ sai</th><th>HS hay chọn nhầm</th></tr></thead><tbody>
+        ${list.map(q => { const s = qsBy[q.id] || { lam: 0, sai: 0, chon: {} }, wrong = Object.entries(s.chon).sort((a, b) => b[1] - a[1]);
+          return `<tr class="click" data-q="${q.id}"><td><b>${posOf(q)}</b><div class="hint">${esc(q.t === 'T' ? 'Đúng/Sai' : q.md)}</div></td><td>${esc(plainQ(q.s).slice(0, 120))}${plainQ(q.s).length > 120 ? '…' : ''}<div class="hint">${esc((q.bai || q.cd || '').replace(/^Lớp \d+ – /, ''))} · Lớp ${esc(q.k)}</div></td>
+            <td class="n">${s.lam || '–'}</td><td>${s.lam ? bar(pct(s.sai, s.lam)) : '–'}</td>
+            <td>${wrong.length ? wrong.slice(0, 2).map(([x, c]) => q.t === 'M' ? `<span class="pill bad">${x}. ${esc(plainQ(q.o[LETTERS.indexOf(x)]).slice(0, 28))} · ${c}</span>` : `<span class="pill bad">ý ${x}) sai ${c} lần</span>`).join(' ') : '<span class="hint">–</span>'}</td></tr>
+            ${open[q.id] ? `<tr><td colspan="5"><div class="preview">${qHtml(q, { ids: [q.id], perm: { [q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}${q.e ? `<div class="expl ans"><b class="t">Lời giải</b>${q.t === 'T' ? (q.e || []).map((e, k) => e ? `<div><b>${'abcd'[k]})</b> ${sanitize(e)}</div>` : '').join('') : sanitize(q.e)}</div>` : ''}</div></td></tr>` : ''}`; }).join('')}
+      </tbody></table></div><p class="hint">Bấm vào một câu để xem đầy đủ đề, đáp án và lời giải. "HS hay chọn nhầm" tính theo phương án gốc của đề (A, B, C, D như bản in), dù HS làm trên app bị đảo.</p></div>
+      <h2>👩‍🎓 Bài làm của học sinh</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Lớp</th><th class="n">Số lượt</th><th class="n">Cao nhất</th><th class="n">Lần gần nhất</th><th></th></tr></thead><tbody>
+        ${hsList.map(([id, x]) => { const ds = x.l.map(r => r.diem), last = x.l.slice().sort((a, b) => new Date(b.t) - new Date(a.t))[0];
+          return `<tr><td>${esc(x.ten)}</td><td>${esc(x.lop)}</td><td class="n">${x.l.length}</td><td class="n"><b>${fmt(Math.max(...ds))}</b></td><td class="n">${fmt(last.diem)}</td><td><button class="btn ghost sm" data-who="${esc(id)}">${who === id ? 'Ẩn' : 'Xem bài làm'}</button></td></tr>
+          ${who === id ? `<tr><td colspan="6">${studentView(x, last)}</td></tr>` : ''}`; }).join('') || '<tr><td colspan="6" class="empty">Chưa có học sinh làm đề này</td></tr>'}
+      </tbody></table></div></div>`);
+    math(V);
+    $('#lsel').onchange = e => go(key, e.target.value);
+    $$('[data-sort]').forEach(b => b.onclick = () => { sortBy = b.dataset.sort; draw(); });
+    $$('tr.click[data-q]').forEach(tr => tr.onclick = () => { open[tr.dataset.q] = !open[tr.dataset.q]; draw(); });
+    $$('[data-who]').forEach(b => b.onclick = () => { who = who === b.dataset.who ? '' : b.dataset.who; draw(); });
+    $('#pr').onclick = () => printExam({ TieuDe: 'ĐỀ LUYỆN THI TỐT NGHIỆP THPT – ' + d.toUpperCase(), Truong: (session && session.user.Truong) || '', Khoi: '12', ThoiGian: 50, versions: [{ ma: '', ids: order.map(q => q.id), perm: {} }] }, 'all', true, { noQr: true });
+  };
+  /* bài làm lần gần nhất của 1 HS: từng câu đúng/sai, phương án em chọn */
+  const studentView = (x, r) => {
+    const ct = r.ct || {};
+    return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · ${fmt(r.diem)} điểm · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}</div><div class="stuans">${order.map(q => {
+      const a = ct[q.id], ok = !r.sai.includes(q.id), ans = normAns(q);
+      const txt = q.t === 'M' ? (a ? a : '–') : (a ? String(a).split('').map((v, i) => 'abcd'[i] + ')' + (v === '-' ? '–' : v)).join(' ') : '–');
+      return `<span class="sa ${a ? (ok ? 'ok' : 'bad') : 'skip'}" title="${esc(plainQ(q.s).slice(0, 140))}"><b>${posOf(q)}</b> ${esc(txt)}${!ok ? ` <i>(đúng: ${esc(q.t === 'M' ? ans : ans.split('').map((v, i) => 'abcd'[i] + ')' + v).join(' '))})</i>` : ''}</span>`;
+    }).join('')}</div><p class="hint">Xanh: đúng · Đỏ: sai · Xám: bỏ trống. Chữ cái là phương án theo đề gốc.</p>`;
+  };
+  draw();
+});
+/** nội dung câu hỏi dạng chữ thường (bỏ thẻ HTML, ảnh) để hiện tóm tắt */
+function plainQ(h) { return String(h || '').replace(/<img[^>]*>/gi, ' [hình] ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); }
+
 /* ================= 📁 Bộ đề luyện thi tốt nghiệp THPT (khối 12) ================= */
 route(/^\/thitn$/, () => {
   const g = getStudentGrade(), is12 = g === '12' || isGV();
@@ -1282,7 +1387,7 @@ route(/^\/gv$/, async params => {
         <a class="qa" href="#/gv/baive${kq}"><span class="ic">📷</span>Bài vẽ AI chấm</a>
         <a class="qa amber" href="#/gv/thietke${kq}"><span class="ic">💡</span>Bài toán thiết kế</a>
         <a class="qa green" href="#/gv/aisoancau${kq}"><span class="ic">🤖</span>AI soạn câu hỏi</a>
-        <a class="qa" href="#/thitn"><span class="ic">🎓</span>Luyện thi Tốt nghiệp</a>
+        <a class="qa" href="#/gv/thitn"><span class="ic">🎓</span>Quản lý đề luyện thi TN</a>
       </div>
       <div class="sechead"><h2>Lớp của tôi</h2><a href="#/gv/taolop">+ Tạo lớp</a></div>
       <div id="cl">${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`

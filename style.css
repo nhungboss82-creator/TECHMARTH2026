@@ -381,3 +381,9 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 .decard.good{border-left-color:var(--ok)}.decard.ok{border-left-color:#e0a800}.decard.low{border-left-color:var(--bad)}
 .deno{min-width:44px;height:44px;border-radius:12px;background:var(--info-soft);color:var(--brand2);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;margin-right:10px}
 .decard>.row:first-child{flex-wrap:nowrap}.decard .grow{min-width:0}
+/* GV quản lý đề luyện thi TN */
+.detable tr.click{cursor:pointer}.detable tr.click:hover td{background:var(--info-soft)}.detable tr.muted td{color:var(--muted)}
+.stuans{display:flex;flex-wrap:wrap;gap:6px}
+.stuans .sa{font-size:13px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card)}
+.stuans .sa.ok{border-color:var(--ok);background:var(--ok-soft)}.stuans .sa.bad{border-color:var(--bad);background:var(--bad-soft)}.stuans .sa.skip{opacity:.6}
+.stuans .sa i{font-style:normal;color:var(--muted)}
