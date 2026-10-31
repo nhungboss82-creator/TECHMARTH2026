@@ -2828,6 +2828,29 @@ const GC = {
   3: { ten: 'phương pháp chiếu góc thứ ba', top: 'above', side: 'left' }
 };
 const GC_COL = { front: '#e53935', top: '#1e63d6', side: '#c026d3' };
+const GC_SHAPES = SHAPES.concat([
+  { ten: 'Khối ba bậc', L: [['###', '###'], ['.##', '.##'], ['..#', '..#']] },
+  { ten: 'Khối chữ U ngửa', L: [['###', '###'], ['#.#', '#.#'], ['#.#', '#.#']] },
+  { ten: 'Khối hộp có rãnh trên', L: [['####', '####', '####'], ['#..#', '#..#', '#..#']] },
+  { ten: 'Khối chữ L có tấm đứng', L: [['###', '###', '###'], ['#..', '#..', '#..'], ['#..', '#..', '#..']] },
+  { ten: 'Khối chữ T đứng', L: [['.#.', '.#.'], ['.#.', '.#.'], ['###', '###']] },
+  { ten: 'Khối bậc có rãnh', L: [['####', '####', '####'], ['##.#', '##.#', '....']] },
+  { ten: 'Khối bậc cao phía sau', L: [['###', '###', '###'], ['###', '###', '...'], ['#..', '#..', '...']] },
+  { ten: 'Khối có bậc hai bên', L: [['###', '###', '###'], ['.#.', '###', '.#.']] }
+]);
+/* hình mẫu của thầy cô (ảnh) dùng trong Tìm hiểu và luyện tập */
+const GC_IMG = { hop1: ['img/GC_hop_goc1.webp', 'Hộp chiếu – phương pháp chiếu góc thứ nhất'], hop3: ['img/GC_hop_goc3.webp', 'Hộp chiếu – phương pháp chiếu góc thứ ba'],
+  giado: ['img/GC_giado_3d.webp', 'Giá đỡ (hình 3D)'], giado3: ['img/GC_giado_3hc.webp', 'Giá đỡ – ba hình chiếu'] };
+const gcGiaDo = () => `<div class="gcimgs"><figure><img src="img/GC_giado_3d.webp" alt="Giá đỡ"><figcaption>Giá đỡ</figcaption></figure>${['A', 'B', 'C'].map((k, i) => `<figure><img src="img/GC_giado_${k}.webp" alt="Hình ${i + 1}"><figcaption>Hình ${i + 1}</figcaption></figure>`).join('')}</div>`;
+const GC_FIXED = [
+  { fig: () => `<img class="gcbig" src="img/GC_hop_goc1.webp" alt="Hộp chiếu">`, stem: 'Hình bên mô tả cách xây dựng ba hình chiếu của vật thể theo phương pháp nào?', opts: ['Phương pháp chiếu góc thứ nhất', 'Phương pháp chiếu góc thứ ba', 'Phương pháp chiếu trục đo', 'Phương pháp chiếu phối cảnh'], why: 'Vật thể nằm giữa người quan sát và các mặt phẳng chiếu (mặt phẳng đứng phía sau, mặt phẳng bằng phía dưới, mặt phẳng cạnh bên phải). Trải phẳng ra: hình chiếu bằng nằm dưới, hình chiếu cạnh nằm bên phải hình chiếu đứng.' },
+  { fig: () => `<img class="gcbig" src="img/GC_hop_goc3.webp" alt="Hộp chiếu">`, stem: 'Hình bên mô tả cách xây dựng ba hình chiếu của vật thể theo phương pháp nào?', opts: ['Phương pháp chiếu góc thứ ba', 'Phương pháp chiếu góc thứ nhất', 'Phương pháp chiếu trục đo', 'Phương pháp chiếu phối cảnh'], why: 'Các mặt phẳng chiếu nằm giữa người quan sát và vật thể (mặt phẳng đứng phía trước, mặt phẳng bằng phía trên, mặt phẳng cạnh bên trái). Trải phẳng ra: hình chiếu bằng nằm trên, hình chiếu cạnh nằm bên trái hình chiếu đứng.' },
+  { fig: gcGiaDo, stem: 'Cho giá đỡ và ba hình chiếu 1, 2, 3 của nó. Biết hình 2 là hình chiếu đứng. Hình nào là hình chiếu bằng?', opts: ['Hình 1', 'Hình 3', 'Hình 2'], why: 'Hình 1 là hình nhìn từ trên xuống: thấy đế có hai lỗ tròn, gân ở giữa và tấm đứng ở bên phải.' },
+  { fig: gcGiaDo, stem: 'Cho giá đỡ và ba hình chiếu 1, 2, 3 của nó. Biết hình 2 là hình chiếu đứng. Hình nào là hình chiếu cạnh?', opts: ['Hình 3', 'Hình 1', 'Hình 2'], why: 'Hình 3 là hình nhìn từ trái (từ phía đế sang tấm đứng): thấy tấm đứng có đầu tròn, lỗ tròn và gân; các lỗ ở đế bị che nên vẽ nét đứt.' },
+  { fig: gcGiaDo, stem: 'Vẽ giá đỡ theo phương pháp chiếu góc thứ nhất thì hình 1 (hình chiếu bằng) phải đặt ở đâu so với hình 2 (hình chiếu đứng)?', opts: ['Phía dưới hình 2', 'Phía trên hình 2', 'Bên trái hình 2', 'Bên phải hình 2'], why: 'Phương pháp chiếu góc thứ nhất: hình chiếu bằng đặt dưới, hình chiếu cạnh đặt bên phải hình chiếu đứng.' },
+  { fig: gcGiaDo, stem: 'Vẽ giá đỡ theo phương pháp chiếu góc thứ ba thì hình 3 (hình chiếu cạnh) phải đặt ở đâu so với hình 2 (hình chiếu đứng)?', opts: ['Bên trái hình 2', 'Bên phải hình 2', 'Phía trên hình 2', 'Phía dưới hình 2'], why: 'Phương pháp chiếu góc thứ ba: hình chiếu bằng đặt trên, hình chiếu cạnh đặt bên trái hình chiếu đứng.' },
+  { fig: gcGiaDo, stem: 'Trong hình 3, các nét đứt ở phần đế thể hiện điều gì?', opts: ['Các lỗ ở đế bị che khuất (cạnh khuất)', 'Đường tâm của lỗ', 'Đường gạch gạch của mặt cắt', 'Đường giới hạn của ren'], why: 'Nét đứt dùng để vẽ cạnh khuất: hai lỗ ở đế nằm phía trong, bị che nên không nhìn thấy. Đường tâm vẽ bằng nét gạch chấm mảnh.' }
+];
 /** ghép 3 hình chiếu thành một bản vẽ: pos = { top: 'above'|'below', side: 'left'|'right' }; o.frame: khung màu, o.label: ghi tên */
 function gcLayoutSvg(V, pos, o = {}) {
   const lab = o.label || o.mark, c = o.cell || 26, gap = Math.max(c * 1.2, lab ? 34 : 20), pad = lab ? 34 : 12;
@@ -2846,6 +2869,61 @@ function gcLayoutSvg(V, pos, o = {}) {
   };
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;height:auto;background:#fff;border-radius:10px" role="img" aria-label="Bản vẽ ba hình chiếu">${draw('front', V.front) + draw('top', V.top) + draw('side', V.side)}</svg>`;
 }
+/** Hộp chiếu (giống hình SGK): vật thể, ba mặt phẳng chiếu và ba hình chiếu trên đó, vẽ bằng phép chiếu xiên.
+ *  m = 1: vật thể nằm giữa người quan sát và các mặt phẳng chiếu (mp đứng phía sau, mp bằng phía dưới, mp cạnh bên phải).
+ *  m = 3: các mặt phẳng chiếu nằm giữa người quan sát và vật thể (mp đứng phía trước, mp bằng phía trên, mp cạnh bên trái). */
+function gcBoxSvg(s, m, o = {}) {
+  const U = o.unit || 20, K = 0.62, CS = Math.cos(Math.PI / 4), SN = Math.sin(Math.PI / 4), g = 1.4, G = 2.2;
+  const X = s.X, Y = s.Y, Z = s.Z;
+  const P = (x, y, z) => [x * U + K * U * (-y) * CS, -z * U + K * U * (-y) * SN];   // y nhỏ = gần người nhìn → lệch xuống phải
+  const pts = [], add = p => { pts.push(p); return p; };
+  // mặt phẳng chiếu (chỉ vẽ khung) + hình chiếu trên mặt phẳng
+  const V = { front: projView(s, 'front'), top: projView(s, 'top'), side: projView(s, 'side') };
+  let planes, maps;
+  if (m === 1) {
+    const yb = Y + g, zb = -g, xr = X + g;
+    planes = { front: [[-g, yb, -g], [X + g, yb, -g], [X + g, yb, Z + g], [-g, yb, Z + g]],
+      top: [[-g, -G, zb], [X + g, -G, zb], [X + g, yb, zb], [-g, yb, zb]],
+      side: [[xr, -G, -g], [xr, yb, -g], [xr, yb, Z + g], [xr, -G, Z + g]] };
+    maps = { front: (u, w) => [u, yb, w], top: (u, w) => [u, w, zb], side: (u, w) => [xr, Y - u, w] };
+  } else {
+    const yf = -g, zt = Z + g, xl = -g;
+    planes = { front: [[-g, yf, -g], [X + g, yf, -g], [X + g, yf, Z + g], [-g, yf, Z + g]],
+      top: [[-g, yf, zt], [X + g, yf, zt], [X + g, Y + G, zt], [-g, Y + G, zt]],
+      side: [[xl, yf, -g], [xl, Y + G, -g], [xl, Y + G, Z + g], [xl, yf, Z + g]] };
+    maps = { front: (u, w) => [u, yf, w], top: (u, w) => [u, w, zt], side: (u, w) => [xl, Y - u, w] };
+  }
+  Object.values(planes).forEach(q => q.forEach(p => add(P(...p))));
+  // mặt của vật thể (các mặt nhìn thấy: trái, trước, trên), vẽ từ xa đến gần
+  const has = (x, y, z) => s.set.has(x + ',' + y + ',' + z), faces = [];
+  const W3 = [-K * CS, -1, K * SN];
+  s.v.forEach(([x, y, z]) => [[-1, 0, 0], [0, -1, 0], [0, 0, 1]].forEach(n => {
+    if (has(x + n[0], y + n[1], z + n[2])) return;
+    const i = n.findIndex(v => v !== 0), [a, b] = [0, 1, 2].filter(k => k !== i), o0 = [x, y, z]; if (n[i] > 0) o0[i] += 1;
+    const c = (da, db) => { const p = o0.slice(); p[a] += da; p[b] += db; return p; };
+    const q = [c(0, 0), c(1, 0), c(1, 1), c(0, 1)], ctr = q.reduce((A, p) => A.map((v, k) => v + p[k] / 4), [0, 0, 0]);
+    // cạnh đặc trưng: không có mặt đồng phẳng liền kề (bỏ đường ghép giữa các khối)
+    const edge = [[0, -1], [1, 0], [0, 1], [-1, 0]].map(([da, db]) => { const r = [x, y, z]; r[a] += da; r[b] += db; const r2 = [r[0] + n[0], r[1] + n[1], r[2] + n[2]]; return !(has(...r) && !has(...r2)); });
+    faces.push({ q, n, edge, d: ctr[0] * W3[0] + ctr[1] * W3[1] + ctr[2] * W3[2] });
+  }));
+  faces.sort((A, B) => A.d - B.d);
+  faces.forEach(f => f.q.forEach(p => add(P(...p))));
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), pad = 14, x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad;
+  const T = p => [p[0] - x0, p[1] - y0], W = Math.max(...xs) - x0 + pad, H = Math.max(...ys) - y0 + pad;
+  const poly = (q, attr) => `<polygon points="${q.map(p => T(P(...p)).map(v => v.toFixed(1)).join(',')).join(' ')}" ${attr}/>`;
+  const line = (a, b, attr) => { const A = T(P(...a)), B = T(P(...b)); return `<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" ${attr}/>`; };
+  const viewOn = k => V[k].segs.map(sg => line(maps[k](sg.x1, sg.y1), maps[k](sg.x2, sg.y2), `stroke="#111" stroke-width="${sg.an ? 1.3 : 2.4}" ${sg.an ? 'stroke-dasharray="4 3"' : ''} stroke-linecap="round"`)).join('');
+  const frame = k => poly(planes[k], `fill="${GC_COL[k]}" fill-opacity="0.06" stroke="${GC_COL[k]}" stroke-width="2.4" stroke-linejoin="round"`);
+  // đường dóng (nét chấm) từ các góc của vật thể tới ba mặt phẳng
+  const cor = [[0, 0, Z], [X, 0, Z], [0, Y, Z], [X, 0, 0], [0, 0, 0]];
+  const proj = c => [maps.front(c[0], c[2]), maps.top(c[0], c[1]), maps.side(Y - c[1], c[2])];
+  const rays = cor.map(c => proj(c).map(p => line(c, p, 'stroke="#555" stroke-width="1.2" stroke-dasharray="1.5 4" stroke-linecap="round"')).join('')).join('');
+  const shade = n => n[2] ? '#dfe9ee' : n[0] ? '#b9cdd6' : '#cbdbe2';
+  const obj = faces.map(f => poly(f.q, `fill="${shade(f.n)}" stroke="${shade(f.n)}" stroke-width="0.8"`) + f.edge.map((e, i) => e ? line(f.q[i], f.q[(i + 1) % 4], 'stroke="#16262c" stroke-width="2.2" stroke-linecap="round"') : '').join('')).join('');
+  const back = m === 1 ? ['front', 'top', 'side'] : ['top', 'side'], fore = m === 1 ? [] : ['front'];
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" width="${W.toFixed(0)}" height="${H.toFixed(0)}" style="max-width:100%;height:auto;background:#fff;border-radius:10px" role="img" aria-label="Hộp chiếu">
+    ${back.map(k => frame(k) + viewOn(k)).join('')}${rays}${obj}${fore.map(k => frame(k) + viewOn(k)).join('')}</svg>`;
+}
 const gcViews = s => ({ front: projView(s, 'front'), top: projView(s, 'top'), side: projView(s, 'side'), right: projView(s, 'right'), back: projView(s, 'back') });
 /** sơ đồ góc chiếu: vị trí vật thể, mặt phẳng chiếu và người quan sát (nhìn từ cạnh) */
 function gcSchema(m) {
@@ -2861,7 +2939,8 @@ function gcSchema(m) {
 
 route(/^\/gocchieu$/, () => {
   let mode = 'hoc', m = 1, sh = SHAPES[0], viewer = null, qs = [], qi = 0, score = 0, picked = null, slots = {}, held = null, done = false;
-  const pool = () => shuffle([...SHAPES, ...Array.from({ length: 8 }, randomShape)]);
+  const pool = () => shuffle(GC_SHAPES.slice());
+  let fig = '';   // hình mẫu của thầy cô đang mở trong Tìm hiểu
   const finish = (ten, n) => {
     const hk = 'hist_' + uid(), hist = store.get(hk, []);
     hist.push({ t: Date.now(), title: ten, key: '', loai: 'game', diem: Math.round(score / n * 1000) / 100, dung: score, tong: n, giay: 0 }); store.set(hk, hist.slice(-300));
@@ -2878,7 +2957,9 @@ route(/^\/gocchieu$/, () => {
     const s = shapeVox(sh.L), V = gcViews(s), g = GC[m];
     setView(`<h1>📐 Phương pháp chiếu góc thứ nhất & góc thứ ba</h1>
       <p class="sub">Công nghệ 10 – Bài 9. Hình chiếu vuông góc (HC: hình chiếu). Xoay vật thể, đổi phương pháp chiếu để thấy vị trí các hình chiếu thay đổi thế nào.</p>${tabs()}
-      <div class="gcwrap"><div class="card"><div class="row" style="align-items:center"><b class="grow">🧊 ${esc(sh.ten)}</b><button class="btn ghost sm" id="nx">Vật thể khác ↻</button></div>
+      <div class="card"><b>🧊 Chọn vật thể</b> <span class="hint">– bấm vào tên vật thể để xem</span>
+        <div class="gcpick">${GC_SHAPES.map((x, i) => `<button class="${x === sh ? 'on' : ''}" data-sh="${i}">${esc(x.ten)}</button>`).join('')}</div></div>
+      <div class="gcwrap"><div class="card"><div class="row" style="align-items:center"><b class="grow">🧊 ${esc(sh.ten)}</b></div>
           <canvas id="cv" style="width:100%;height:300px;touch-action:none;background:linear-gradient(#f4f7f7,#e6eeee);border-radius:12px;margin-top:8px;cursor:grab"></canvas>
           <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="front">Nhìn từ trước</button><button class="btn ghost sm" data-v="top">Nhìn từ trên</button><button class="btn ghost sm" data-v="side">Nhìn từ trái</button></div></div>
         <div class="card"><div class="tabs" style="margin-top:0"><button data-m="1" class="${m === 1 ? 'on' : ''}">Góc chiếu thứ nhất</button><button data-m="3" class="${m === 3 ? 'on' : ''}">Góc chiếu thứ ba</button></div>
@@ -2889,14 +2970,19 @@ route(/^\/gocchieu$/, () => {
             • <b style="color:${GC_COL.top}">Hình chiếu bằng</b> (nhìn từ trên) đặt <b>${m === 1 ? 'dưới' : 'trên'}</b> hình chiếu đứng.<br>
             • <b style="color:${GC_COL.side}">Hình chiếu cạnh</b> (nhìn từ trái) đặt bên <b>${m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng.<br>
             • Các hình chiếu phải <b>dóng thẳng hàng</b> với nhau; cạnh khuất vẽ bằng nét đứt.</div>
+          <div style="text-align:center;margin-top:6px"><b>Hộp chiếu và cách trải phẳng</b><div style="margin-top:6px">${gcBoxSvg(s, m, { unit: 22 })}</div></div>
           <div style="text-align:center">${gcSchema(m)}</div>
           <p class="hint">Việt Nam (TCVN) và nhiều nước châu Âu dùng phương pháp chiếu góc thứ nhất; phương pháp chiếu góc thứ ba được dùng ở Mỹ và một số nước khác. Đọc bản vẽ nước ngoài cần xem kí hiệu phương pháp chiếu trên khung tên.</p></div></div>
-      <div class="card"><b>🎯 Luyện tập</b><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" data-mode="nhanbiet">🔍 Nhận biết góc chiếu (10 câu)</button><button class="btn accent" data-mode="xephinh">🧩 Xếp hình chiếu đúng vị trí (5 câu)</button>${isGV() ? '<button class="btn ghost" id="fs">🖥️ Trình chiếu toàn màn hình</button>' : ''}</div></div>`);
+      <div class="card"><b>🖼️ Hình mẫu của thầy cô</b> <span class="hint">– bấm để mở hình</span>
+        <div class="gcpick">${Object.entries(GC_IMG).map(([k, v]) => `<button class="${fig === k ? 'on' : ''}" data-fig="${k}">${esc(v[1])}</button>`).join('')}</div>
+        ${fig ? `<div style="text-align:center;margin-top:10px">${fig === 'giado3' ? gcGiaDo() : `<img class="gcbig" src="${GC_IMG[fig][0]}" alt="${esc(GC_IMG[fig][1])}">`}</div>` : ''}</div>
+      <div class="card"><b>🎯 Luyện tập</b><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" data-mode="nhanbiet">🔍 Nhận biết góc chiếu (12 câu)</button><button class="btn accent" data-mode="xephinh">🧩 Xếp hình chiếu đúng vị trí (5 câu)</button>${isGV() ? '<button class="btn ghost" id="fs">🖥️ Trình chiếu toàn màn hình</button>' : ''}</div></div>`);
     bind();
     viewer = Viewer3D($('#cv'), s);
     $$('[data-v]').forEach(b => b.onclick = () => viewer[b.dataset.v]());
     $$('[data-m]').forEach(b => b.onclick = () => { m = +b.dataset.m; draw(); });
-    $('#nx').onclick = () => { sh = pool()[0]; draw(); };
+    $$('[data-sh]').forEach(b => b.onclick = () => { sh = GC_SHAPES[+b.dataset.sh]; draw(); });
+    $$('[data-fig]').forEach(b => b.onclick = () => { fig = fig === b.dataset.fig ? '' : b.dataset.fig; draw(); });
     if ($('#fs')) $('#fs').onclick = () => { try { (document.querySelector('main') || document.documentElement).requestFullscreen(); } catch (e) {} };
   };
 
@@ -2904,12 +2990,16 @@ route(/^\/gocchieu$/, () => {
   const startNB = () => {
     if (viewer) { viewer.destroy(); viewer = null; }
     const P = [[1, GC[1]], [1, GC[1]], [3, GC[3]], [3, GC[3]], [0, { top: 'below', side: 'left' }], [0, { top: 'above', side: 'right' }]];
-    qs = pool().slice(0, 10).map(x => { const [ans, pos] = P[rnd(P.length)]; return { sh: x, V: gcViews(shapeVox(x.L)), ans, pos }; });
+    const gen = pool().slice(0, 5).map((x, i) => { const s = shapeVox(x.L); if (i % 2 === 0) { const mm = rnd(2) ? 1 : 3; return { box: true, sh: x, s, ans: mm }; } const [ans, pos] = P[rnd(P.length)]; return { sh: x, V: gcViews(s), ans, pos }; });
+    const fix = GC_FIXED.map(f => ({ fixed: f, order: shuffle(f.opts.map((t, k) => ({ t, ok: k === 0 }))) }));
+    qs = shuffle(fix.concat(gen));
     qi = 0; score = 0; picked = null; drawNB();
   };
   const drawNB = () => {
     if (qi >= qs.length) return finish('Nhận biết góc chiếu', qs.length);
-    const q = qs[qi], lab = { 1: 'Góc chiếu thứ nhất', 3: 'Góc chiếu thứ ba', 0: 'Bố trí sai, không theo phương pháp nào' };
+    const q = qs[qi];
+    if (q.fixed || q.box) return drawNB2(q);
+    const lab = { 1: 'Góc chiếu thứ nhất', 3: 'Góc chiếu thứ ba', 0: 'Bố trí sai, không theo phương pháp nào' };
     const why = q.ans ? `Hình chiếu bằng nằm <b>${q.pos.top === 'below' ? 'dưới' : 'trên'}</b>, hình chiếu cạnh nằm bên <b>${q.pos.side === 'right' ? 'phải' : 'trái'}</b> hình chiếu đứng → <b>${GC[q.ans].ten}</b>.`
       : `Hình chiếu bằng nằm <b>${q.pos.top === 'below' ? 'dưới' : 'trên'}</b> nhưng hình chiếu cạnh lại nằm bên <b>${q.pos.side === 'right' ? 'phải' : 'trái'}</b>. Góc thứ nhất: dưới – phải; góc thứ ba: trên – trái. Bản vẽ này trộn lẫn hai cách nên sai.`;
     setView(`<h1>🔍 Nhận biết góc chiếu</h1>${tabs()}
@@ -2920,6 +3010,24 @@ route(/^\/gocchieu$/, () => {
         ${picked != null ? `<div class="expl ${picked === q.ans ? 'ans' : ''}"><b class="t">${picked === q.ans ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${why}</div><button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
     bind();
     $$('[data-k]').forEach(b => b.onclick = () => { picked = +b.dataset.k; if (picked === q.ans) score++; drawNB(); });
+    if ($('#nx')) $('#nx').onclick = () => { qi++; picked = null; drawNB(); };
+  };
+
+  /* câu hỏi có hình mẫu của thầy cô hoặc hình hộp chiếu sinh từ vật thể */
+  const drawNB2 = q => {
+    const opts = q.fixed ? q.order : [{ t: 'Phương pháp chiếu góc thứ nhất', ok: q.ans === 1 }, { t: 'Phương pháp chiếu góc thứ ba', ok: q.ans === 3 }];
+    const stem = q.fixed ? q.fixed.stem : 'Hình hộp chiếu dưới đây mô tả cách xây dựng ba hình chiếu của vật thể theo phương pháp nào?';
+    const fig = q.fixed ? q.fixed.fig() : gcBoxSvg(q.s, q.ans, { unit: 24 });
+    const why = q.fixed ? q.fixed.why : (q.ans === 1 ? 'Vật thể nằm giữa người quan sát và các mặt phẳng chiếu: mặt phẳng chiếu đứng ở phía sau, mặt phẳng chiếu bằng ở dưới, mặt phẳng chiếu cạnh bên phải.' : 'Các mặt phẳng chiếu nằm giữa người quan sát và vật thể: mặt phẳng chiếu đứng ở phía trước, mặt phẳng chiếu bằng ở trên, mặt phẳng chiếu cạnh bên trái.');
+    setView(`<h1>🔍 Nhận biết góc chiếu</h1>${tabs()}
+      <div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard"><div class="stem">${esc(stem)}</div><div style="text-align:center;margin:10px 0">${fig}</div>
+        ${opts.map((o, k) => `<button class="opt ${picked != null ? (o.ok ? 'right' : picked === k ? 'wrong' : '') : ''}" data-k="${k}" ${picked != null ? 'disabled' : ''}><span class="L">${LETTERS[k]}</span><span class="tx">${esc(o.t)}</span></button>`).join('')}
+        ${picked != null ? `<div class="expl ${opts[picked].ok ? 'ans' : ''}"><b class="t">${opts[picked].ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${esc(why)}</div>
+          ${q.box ? `<div style="text-align:center;margin-top:8px">${gcLayoutSvg(gcViews(q.s), GC[q.ans], { frame: true, label: true, cell: 20 })}</div>` : ''}
+          <button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
+    bind();
+    $$('[data-k]').forEach(b => b.onclick = () => { picked = +b.dataset.k; if (opts[picked].ok) score++; drawNB(); });
     if ($('#nx')) $('#nx').onclick = () => { qi++; picked = null; drawNB(); };
   };
 

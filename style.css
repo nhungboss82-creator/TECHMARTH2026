@@ -398,3 +398,11 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 .gccard{border:2px solid var(--line);border-radius:12px;background:#fff;padding:6px;cursor:pointer}
 .gccard.on{border-color:var(--brand2);box-shadow:0 0 0 3px var(--info-soft)}
 .gcslot svg,.gccard svg,.gcfront svg{max-width:100%;height:auto}
+.gcpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.gcpick button{border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;cursor:pointer}
+.gcpick button.on{background:var(--brand2);border-color:var(--brand2);color:#fff}
+.gcbig{max-width:100%;height:auto;border-radius:10px;background:#fff}
+.gcimgs{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:flex-end}
+.gcimgs figure{margin:0;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px}
+.gcimgs img{max-height:170px;max-width:220px;height:auto;width:auto;display:block}
+.gcimgs figcaption{font-weight:700;font-size:13px;margin-top:4px;color:#334}
