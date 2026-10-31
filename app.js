@@ -1405,28 +1405,30 @@ const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('m
 route(/^\/gv$/, async params => {
   if (!needGV()) return;
   const u = session.user;
-  let k = (params && params.get('khoi')) || store.get('gv_active_khoi', '10');
-  if (!['10', '11', '12'].includes(k)) k = '10';
+  // trạng thái gọn: mục nào đang mở, khối nào đang chọn (null = chưa chọn)
+  let open = store.get('gv_open', {}), k = (params && params.get('khoi')) || store.get('gv_active_khoi', null);
+  if (k && !['10', '11', '12'].includes(k)) k = null;
+  if (params && params.get('khoi')) open.ht = 1;
   let classes = window._gvCls || null;
   const nameOf = s => esc(String(s || '').trim().split(' ').slice(-2).join(' '));
   const draw = () => {
     const hs = (classes || []).reduce((s, c) => s + (+c.siSo || 0), 0);
-    setView(`<section class="hero">
-        <div class="greet"><div><h1>Chào thầy/cô ${nameOf(u.HoTen)} 👋</h1><p class="sub">${esc(u.Truong || '')}${session.role === 'admin' ? ' – Quản trị viên' : ''}</p></div></div>
-        <div class="stats"><div class="stat"><b>${classes ? classes.length : '…'}</b><span>lớp</span></div><div class="stat"><b>${classes ? hs : '…'}</b><span>học sinh</span></div><div class="stat"><b>${bank.q.length.toLocaleString('vi-VN')}</b><span>câu hỏi</span></div></div>
-      </section>
-      <h2>👥 Quản lý học sinh</h2>
-      <div class="rows applist">${[
-        { href: '#/gv/lop', ic: '🏫', c: 'green', t: 'Các lớp', d: `${classes ? classes.length + ' lớp · ' + hs + ' học sinh · ' : ''}danh sách học sinh, mã đăng ký` },
-        { href: '#/gv/diem', ic: '📊', c: 'green', t: 'Điểm', d: 'Bảng điểm từng lớp, xếp hạng – xuất Excel' },
-        { href: '#/gv/giaobai', ic: '📤', c: '', t: 'Giao bài', d: 'Chọn bài / ma trận, xem trước đề, mã QR cho HS' },
-        { href: '#/gv/baigiao', ic: '📋', c: '', t: 'Bài đã giao', d: 'Theo dõi HS nộp bài, công bố điểm' }].map(appTile).join('')}</div>
-      <h2>🎓 Hỗ trợ dạy học</h2>
-      <div class="tabs">${['10', '11', '12'].map(v => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">Khối ${v}</button>`).join('')}</div>
-      ${GV_APPS(k).map(([t, xs]) => xs.length ? `<div class="appgrp"><h3>${t}</h3><div class="rows applist">${xs.map(appTile).join('')}</div></div>` : '').join('')}
-      <p class="hint" style="margin-top:14px">Nhãn <span class="who">GV·HS</span> dùng được cho cả thầy cô (trình chiếu) và học sinh (tự học) · <span class="who hs">HS</span> học sinh tự ôn · <span class="who gv">GV</span> chỉ giáo viên.</p>
-      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
-    $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
+    const sec = (id, ic, t, d, body) => `<div class="gvsec ${open[id] ? 'open' : ''}"><button class="gvsech" data-sec="${id}"><span class="ic">${ic}</span><span class="tx"><b>${t}</b><span>${d}</span></span><span class="chev">${open[id] ? '▾' : '▸'}</span></button>${open[id] ? `<div class="gvsecb">${body}</div>` : ''}</div>`;
+    const ql = `<div class="rows applist">${[
+      { href: '#/gv/lop', ic: '🏫', c: 'green', t: 'Các lớp', d: `${classes ? classes.length + ' lớp · ' + hs + ' HS · ' : ''}danh sách, mã đăng ký` },
+      { href: '#/gv/diem', ic: '📊', c: 'green', t: 'Điểm', d: 'Bảng điểm, xếp hạng – xuất Excel' },
+      { href: '#/gv/giaobai', ic: '📤', c: '', t: 'Giao bài', d: 'Chọn bài / ma trận, xem trước đề, mã QR' },
+      { href: '#/gv/baigiao', ic: '📋', c: '', t: 'Bài đã giao', d: 'Theo dõi nộp bài, công bố điểm' }].map(appTile).join('')}</div>`;
+    const ht = `<div class="gvkhoi">${['10', '11', '12'].map(v => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">Khối ${v}</button>`).join('')}</div>
+      ${k ? GV_APPS(k).map(([t, xs]) => xs.length ? `<div class="appgrp"><h3>${t}</h3><div class="rows applist">${xs.map(appTile).join('')}</div></div>` : '').join('')
+          + '<p class="hint" style="margin-top:10px"><span class="who">GV·HS</span> trình chiếu và HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>'
+        : '<p class="hint" style="margin:8px 2px 0">Chọn khối để xem nội dung dạy học.</p>'}`;
+    setView(`<div class="gvhello"><b>Chào thầy/cô ${nameOf(u.HoTen)} 👋</b><span>${esc(u.Truong || '')}${session.role === 'admin' ? ' · Quản trị viên' : ''}</span></div>
+      ${sec('ql', '👥', 'Quản lý học sinh', classes ? `${classes.length} lớp · ${hs} học sinh` : 'Các lớp, điểm, giao bài', ql)}
+      ${sec('ht', '🎓', 'Hỗ trợ dạy học', k && open.ht ? 'Khối ' + k : 'Chọn khối → chọn nội dung', ht)}
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
+    $$('[data-sec]').forEach(b => b.onclick = () => { const id = b.dataset.sec; open[id] = open[id] ? 0 : 1; store.set('gv_open', open); draw(); });
+    $$('[data-khoi]').forEach(b => b.onclick = () => { k = k === b.dataset.khoi ? null : b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
   };
   draw();
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
@@ -3474,10 +3476,9 @@ route(/^\/hcvg$/, params => {
   let tab = (params && params.get('tab')) || 'g1', oi = 0, sc = null, step = 'object';
   let qs = [], qi = 0, qm = 1, slots = {}, held = null, done = false, score = 0, cards = [];
   const TABS = [['g1', '① Góc chiếu thứ nhất'], ['g3', '② Góc chiếu thứ ba'], ['ss', '③ So sánh'], ['lt', '④ Luyện tập']];
-  const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hcvg')}<h1>📁 Khối 10 · Hình chiếu vuông góc</h1>
-    <p class="sub">Công nghệ 10 – Bài 9. Xây dựng ba hình chiếu bằng phương pháp chiếu góc thứ nhất và góc thứ ba, so sánh cách bố trí, rồi tự tìm hình chiếu cho các vật thể.</p>
+  const head = () => `${k10nav('#/hcvg')}
     <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
-  const pickObj = () => `<div class="gcpick">${OBJ.map((o, i) => `<button class="${i === oi ? 'on' : ''}" data-o="${i}">Hình ${i + 1}. ${esc(o.ten)}</button>`).join('')}</div>`;
+  const pickObj = () => `<div class="gcpick compact">${OBJ.map((o, i) => hcBtn(i === oi, `data-o="${i}"`, i, o.ten)).join('')}</div>`;
   const bindTop = () => {
     $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 'object'; if (tab === 'lt') startLT(); else draw(); });
     $$('[data-o]').forEach(b => b.onclick = () => { oi = +b.dataset.o; step = 'object'; draw(); });
@@ -3497,7 +3498,7 @@ route(/^\/hcvg$/, params => {
         : 'Giữ nguyên mặt phẳng chiếu đứng; <b>lật mặt phẳng chiếu bằng lên trên</b> và <b>mặt phẳng chiếu cạnh sang trái</b> 90° cho trùng với mặt phẳng chiếu đứng. Kết quả: <b>hình chiếu bằng ở trên</b>, <b>hình chiếu cạnh ở bên trái</b> hình chiếu đứng.'
     };
     setView(`${head()}
-      <div class="card"><b>Chọn vật thể</b>${pickObj()}</div>
+      ${pickObj()}
       <div class="card"><div class="hcsteps">${STEPS.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
         <canvas id="hc3d" class="hc3d"></canvas>
         <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
@@ -3521,7 +3522,7 @@ route(/^\/hcvg$/, params => {
   /* ---- So sánh ---- */
   const drawSS = () => {
     const O = OBJ[oi];
-    setView(`${head()}<div class="card"><b>Chọn vật thể</b>${pickObj()}</div>
+    setView(`${head()}${pickObj()}
       <div class="hccompare"><div class="card"><h3 style="margin-top:0;color:#0f766e">Phương pháp chiếu góc thứ nhất</h3>${hcLayoutHtml(O, 1, { cell: 26 })}</div>
         <div class="card"><h3 style="margin-top:0;color:#7c3aed">Phương pháp chiếu góc thứ ba</h3>${hcLayoutHtml(O, 3, { cell: 26 })}</div></div>
       <div class="card"><div class="tablewrap"><table><thead><tr><th></th><th>Góc chiếu thứ nhất</th><th>Góc chiếu thứ ba</th></tr></thead><tbody>
@@ -3551,7 +3552,7 @@ route(/^\/hcvg$/, params => {
     const slot = pos => { const id = slots[pos], st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
       return `<button class="gcslot ${st} ${held ? 'can' : ''}" data-slot="${pos}">${id ? HC.svg(O.views[id], 22) : `<span class="hint">${{ above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
     setView(`${head()}
-      <div class="qbar"><div class="title">Bài ${qi + 1}/${qs.length} · Hình ${q.i + 1}. ${esc(O.ten)}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qbar"><div class="title">Bài ${qi + 1}/${qs.length} · Hình ${q.i + 1}. ${esc(hcShort(O.ten))}</div><span class="timer">✔ ${score}</span></div>
       <div class="qcard"><div class="stem">Quan sát vật thể rồi vẽ ba hình chiếu theo <b style="color:${q.m === 1 ? '#0f766e' : '#7c3aed'}">phương pháp chiếu góc thứ ${q.m === 1 ? 'nhất' : 'ba'}</b>: chọn đúng <b>hình chiếu bằng</b> và <b>hình chiếu cạnh</b> rồi đặt vào đúng ô quanh hình chiếu đứng. <span class="hint">Bấm chọn thẻ, rồi bấm vào ô. Có thẻ thừa gây nhiễu.</span></div>
         <div class="hcpractice"><div><canvas id="hc3d" class="hc3d" style="height:260px"></canvas><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="fr">Từ trước</button><button class="btn ghost sm" data-v="tp">Từ trên</button><button class="btn ghost sm" data-v="lf">Từ trái</button></div>
           ${O.anh ? `<details style="margin-top:6px"><summary>🖼️ Hình mẫu của thầy cô</summary><img class="gcbig" src="${O.anh}" alt="Hình mẫu"></details>` : ''}</div>
@@ -3572,6 +3573,13 @@ route(/^\/hcvg$/, params => {
   cleanup = kill;
   if (tab === 'lt') startLT(); else draw();
 });
+
+/** tên ngắn gọn của vật thể trên nút chọn (tên đầy đủ, số hình SGK hiện khi rê chuột) */
+const HC_SHORT = { 'Khối bậc có vát (hình mẫu của cô)': 'Khối bậc vát', 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)': 'Gối đỡ', 'Khối chữ L có hai lỗ (SGK H.9.1)': 'Chữ L hai lỗ', 'Giá đỡ (SGK H.9.10)': 'Giá đỡ',
+  'Gối đỡ chữ U': 'Chữ U', 'Khối chữ L có lỗ': 'Chữ L có lỗ', 'Khối hộp vát góc có lỗ (SGK H.11.14)': 'Khối vát có lỗ', 'Tấm có lỗ bậc': 'Tấm lỗ bậc', 'Ống lót có vai': 'Ống lót', 'Vật thể có rãnh và lỗ (SGK H.10.16)': 'Khối có rãnh',
+  'Giá đỡ (SGK H.10.10)': 'Giá đỡ', 'Khay (SGK H.10.6)': 'Khay', 'Gối đỡ (SGK H.10.17)': 'Gối đỡ', 'Trục có rãnh then (SGK H.10.9)': 'Trục', 'Giá chữ L (SGK H.12.5)': 'Giá chữ L', 'Ngôi nhà (SGK H.12.7a)': 'Ngôi nhà', 'Khối chữ T ngược': 'Chữ T ngược', 'Khối chữ L': 'Chữ L', 'Khối bậc thang': 'Bậc thang' };
+const hcShort = t => HC_SHORT[t] || String(t).replace(/\s*\(.*\)\s*$/, '');
+const hcBtn = (on, attr, i, ten, extra = '') => `<button class="${on ? 'on' : ''}" ${attr} title="${esc(ten)}">${extra}Hình ${i + 1}. ${esc(hcShort(ten))}</button>`;
 
 /* ================= KHỐI 10 – BỘ VẼ 3D CHUNG (z-buffer) ================= */
 /** vẽ các mặt bằng bộ đệm độ sâu rồi vẽ cạnh thấy và đường bao mặt cong.
@@ -3720,8 +3728,8 @@ function HCView(canvas, opt) {
 }
 
 /* ================= KHỐI 10 – VẬT THỂ CHO HÌNH CẮT, MẶT CẮT ================= */
-const K10_NAV = [['#/hcvg', 'Bài 9. Hình chiếu vuông góc'], ['#/hcat', 'Bài 10. Hình cắt và mặt cắt'], ['#/hctd', 'Bài 11. Hình chiếu trục đo'], ['#/hcpc', 'Bài 12. Hình chiếu phối cảnh']];
-const k10nav = cur => `<div class="k10nav">${K10_NAV.map(([h, t]) => `<a href="${h}" class="${h === cur ? 'on' : ''}">📁 ${t}</a>`).join('')}</div>`;
+const K10_NAV = [['#/hcvg', 'Bài 9', 'Hình chiếu vuông góc'], ['#/hcat', 'Bài 10', 'Hình cắt, mặt cắt'], ['#/hctd', 'Bài 11', 'Hình chiếu trục đo'], ['#/hcpc', 'Bài 12', 'Phối cảnh']];
+const k10nav = cur => `<div class="k10nav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a>${K10_NAV.map(([h, b, t]) => `<a href="${h}" class="${h === cur ? 'on' : ''}"><b>${b}</b> ${t}</a>`).join('')}</div>`;
 const HCC = (() => {
   const { extrude, prep, circ, arcPts, xz } = HC.G;
   const R4 = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
@@ -4031,8 +4039,7 @@ route(/^\/hcat$/, params => {
   const O = HCC.O, G = HCC.get;
   let tab = (params && params.get('tab')) || 'tb', oid = 'giado1010', hid = 'goido', step = 'obj', sc = null, qi = 0, qs = [], score = 0, ans = null, lt = null;
   const TABS = [['tb', '① Hình cắt toàn bộ'], ['mn', '② Hình cắt một nửa'], ['mc', '③ Mặt cắt'], ['lt', '④ Luyện tập']];
-  const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hcat')}<h1>✂️ Hình cắt và mặt cắt</h1>
-    <p class="sub">Dùng mặt phẳng cắt tưởng tượng để “nhìn” vào bên trong vật thể: hình cắt cho thấy cấu tạo bên trong rõ ràng, không phải vẽ nhiều nét đứt.</p>
+  const head = () => `${k10nav('#/hcat')}
     <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const kill = () => { if (sc) { sc.destroy(); sc = null; } };
   const bindTop = () => $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 'obj'; if (tab === 'lt') startLT(); else draw(); });
@@ -4073,7 +4080,7 @@ route(/^\/hcat$/, params => {
       : step === 'res' ? (half ? `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.half, '<b>Hình cắt một nửa</b>')}</div>`
         : `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.sec, '<b>Hình cắt A – A</b>')}${fig(V.top, 'Hình chiếu bằng – vị trí mặt phẳng cắt A', 28)}</div>`) : '';
     setView(`${head()}
-      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${(half ? ['goido', 'ongvai'] : ['giado1010', 'khay', 'td16', 'tamlo', 'lco', 'ongvai']).map((k, i) => `<button class="${k === (half ? hid : oid) ? 'on' : ''}" data-o="${k}">Hình ${i + 1}. ${O[k].ten}${/SGK/.test(O[k].ten) ? '' : ' – luyện thêm'}</button>`).join('')}</div></div>
+      <div class="gcpick compact">${(half ? ['goido', 'ongvai'] : ['giado1010', 'khay', 'td16', 'tamlo', 'lco', 'ongvai']).map((k, i) => hcBtn(k === (half ? hid : oid), `data-o="${k}"`, i, O[k].ten)).join('')}</div>
       <div class="card">${stepBar(S)}<canvas id="hc3d" class="hc3d"></canvas>${ctrl()}
         <div class="expl" style="margin-top:10px"><b class="t">${S.find(s => s[0] === step)[1]}</b>${TXT[step]}</div>${extraFig}
         ${step !== 'res' ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[S.findIndex(s => s[0] === step) + 1][1].replace(/^\d\. /, '')} →</button>`
@@ -4150,7 +4157,7 @@ route(/^\/hcat$/, params => {
     { id: 'truc', kind: 'mc', lv: 2, ds: ['sX1', 'sX2', 'sX3'] }, { id: 'tamlo', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] },
     { id: 'lco', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] }, { id: 'ongvai', kind: 'full', lv: 2, ds: ['x1', 'x2', 'x3'] }, { id: 'ongvai', kind: 'half', lv: 2, ds: ['hx1', 'sec', 'hx3'] }
   ];
-  const ltName = t => (t.kind === 'half' ? 'Hình cắt một nửa – ' : t.kind === 'mc' ? 'Mặt cắt – ' : '') + O[t.id].ten;
+  const ltName = t => hcShort(O[t.id].ten) + (t.kind === 'half' ? ' (cắt một nửa)' : t.kind === 'mc' ? ' (mặt cắt)' : '');
   const ltDone = () => store.get('hcat_lt_' + uid(), {});
   const startLT = () => { lt = { i: lt ? lt.i : 0, phase: 'pre', ans: null, opts: null }; drawLT(); };
   const drawLT = () => {
@@ -4161,9 +4168,8 @@ route(/^\/hcat$/, params => {
     const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
     const STEM = { full: 'Bấm <b>✂️ Cắt vật thể</b> để cắt bằng mặt phẳng cắt A (đi qua chính giữa vật thể) và bỏ phần phía trước. Sau đó chọn <b>hình cắt A – A</b> đúng.', half: 'Bấm <b>✂️ Cắt vật thể</b> để cắt bỏ 1/4 vật thể phía trước, bên phải. Sau đó chọn <b>hình cắt một nửa</b> đúng.', mc: 'Bấm <b>✂️ Cắt vật thể</b> để cắt trục bằng mặt phẳng vuông góc với trục tại A. Sau đó chọn <b>mặt cắt</b> đúng.' }[t.kind];
     setView(`${head()}
-      <div class="card"><div class="row" style="align-items:center"><b class="grow">Chọn hình để luyện tập</b><span class="pill">Đúng ${nOk}/${LT.length} hình</span></div>
-        <div class="gcpick">${LT.map((x, i) => `<button class="${i === lt.i ? 'on' : ''}" data-lt="${i}">${done[i] ? '✔ ' : ''}Hình ${i + 1}. ${esc(ltName(x))} <span style="color:#d97706">${stars(x.lv)}</span></button>`).join('')}
-          <button data-lt="txt">📝 Câu hỏi lý thuyết</button></div></div>
+      <div class="gcpick compact">${LT.map((x, i) => `<button class="${i === lt.i ? 'on' : ''}" data-lt="${i}" title="${esc(O[x.id].ten)}">${done[i] ? '✔ ' : ''}Hình ${i + 1}. ${esc(ltName(x))}</button>`).join('')}
+          <button data-lt="txt">📝 Lý thuyết</button><span class="pill">Đúng ${nOk}/${LT.length}</span></div>
       <div class="qcard"><div class="stem"><b>Hình ${lt.i + 1}. ${esc(ltName(t))}</b> <span style="color:#d97706">${stars(t.lv)}</span><br>${STEM}</div>
         <canvas id="hc3d" class="hc3d" style="height:300px"></canvas>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${ph === 'pre' ? '<button class="btn" id="cut">✂️ Cắt vật thể</button>' : '<button class="btn ghost sm" id="again">↺ Xem lại vật thể</button><button class="btn ghost sm" id="fr">Nhìn thẳng từ trước</button>'}</div>
@@ -4235,8 +4241,7 @@ route(/^\/hctd$/, params => {
   const TD = HCC.TD;
   let tab = (params && params.get('tab')) || 'vgd', ti = 0, step = 1, raf = 0, qs = [], qi = 0, score = 0, ans = null;
   const TABS = [['vgd', '① Vuông góc đều'], ['xgc', '② Xiên góc cân'], ['ss', '③ So sánh'], ['lt', '④ Luyện tập']];
-  const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hctd')}<h1>🧊 Hình chiếu trục đo</h1>
-    <p class="sub">Hình chiếu trục đo là hình biểu diễn <b>ba chiều</b> của vật thể trên một mặt phẳng, giúp hình dung nhanh hình dạng vật thể từ bản vẽ ba hình chiếu.</p>
+  const head = () => `${k10nav('#/hctd')}
     <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const kill = () => cancelAnimationFrame(raf);
   const bindTop = () => $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 1; if (tab === 'lt') startLT(); else draw(); });
@@ -4255,7 +4260,7 @@ route(/^\/hctd$/, params => {
       4: 'Xóa các nét dựng hình và các nét bị che khuất, <b>tô đậm các cạnh thấy</b>. Hình chiếu trục đo thường <b>không vẽ nét đứt</b>.'
     };
     setView(`${head()}
-      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${TD.map((t, i) => `<button class="${i === ti ? 'on' : ''}" data-t="${i}">Hình ${i + 1}. ${esc(t.ten.replace(/ \(hình mẫu của cô\)/, ''))}</button>`).join('')}</div></div>
+      <div class="gcpick compact">${TD.map((t, i) => hcBtn(i === ti, `data-t="${i}"`, i, t.ten)).join('')}</div>
       <div class="hcpractice">
         <div class="card"><b>Bản vẽ ba hình chiếu</b>${hcLayoutHtml(T, 1, { cell: 22 })}</div>
         <div class="card"><div class="hcsteps">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
@@ -4275,7 +4280,7 @@ route(/^\/hctd$/, params => {
   };
   const drawSS = () => {
     const T = TD[ti];
-    setView(`${head()}<div class="card"><b>Chọn vật thể</b><div class="gcpick">${TD.map((t, i) => `<button class="${i === ti ? 'on' : ''}" data-t="${i}">Hình ${i + 1}</button>`).join('')}</div></div>
+    setView(`${head()}<div class="gcpick compact">${TD.map((t, i) => hcBtn(i === ti, `data-t="${i}"`, i, t.ten)).join('')}</div>
       <div class="hccompare"><div class="card"><h3 style="margin-top:0;color:#0f766e">Vuông góc đều</h3><canvas id="c1" class="hc3d" style="height:280px;cursor:default"></canvas></div>
         <div class="card"><h3 style="margin-top:0;color:#7c3aed">Xiên góc cân</h3><canvas id="c2" class="hc3d" style="height:280px;cursor:default"></canvas></div></div>
       <div class="card"><div class="tablewrap"><table><thead><tr><th></th><th>Vuông góc đều</th><th>Xiên góc cân</th></tr></thead><tbody>
@@ -4410,8 +4415,7 @@ route(/^\/hcpc$/, params => {
   let tab = (params && params.get('tab')) || 'kn', oi = 0, step = 1, raf = 0, qs = [], qi = 0, score = 0, ans = null;
   let ex1 = null, ez = null, th = 38 * Math.PI / 180;
   const TABS = [['kn', '① Khái niệm & điểm tụ'], ['p1', '② Phối cảnh 1 điểm tụ'], ['p2', '③ Phối cảnh 2 điểm tụ'], ['lt', '④ Luyện tập']];
-  const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hcpc')}<h1>🛤️ Hình chiếu phối cảnh</h1>
-    <p class="sub">Hình chiếu phối cảnh biểu diễn vật thể giống như mắt ta nhìn thấy: vật ở xa trông nhỏ hơn, các đường song song chạy ra xa như gặp nhau tại <b>điểm tụ</b>.</p>
+  const head = () => `${k10nav('#/hcpc')}
     <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const kill = () => cancelAnimationFrame(raf);
   const bindTop = () => $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 1; ex1 = ez = null; if (tab === 'lt') startLT(); else draw(); });
@@ -4495,7 +4499,7 @@ route(/^\/hcpc$/, params => {
       5: 'Vẽ các chi tiết theo các đường chạy về F1, F2, xóa nét thừa, <b>tô đậm</b>. Đổi góc xoay để thấy điểm tụ dịch chuyển.'
     };
     setView(`${head()}
-      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${PC_OBJ.map((t, i) => `<button class="${i === oi ? 'on' : ''}" data-o="${i}">Hình ${i + 1}. ${t.ten}</button>`).join('')}</div></div>
+      <div class="gcpick compact">${PC_OBJ.map((t, i) => hcBtn(i === oi, `data-o="${i}"`, i, t.ten)).join('')}</div>
       <div class="card"><div class="hcsteps" style="grid-template-columns:repeat(5,minmax(0,1fr))">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
         <canvas id="pc" class="hc3d" style="height:400px;cursor:default;touch-action:none"></canvas>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">

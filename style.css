@@ -468,3 +468,30 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 .pcdefs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pcdefs>div{background:var(--bg,#f8fafc);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.5}
 @media (max-width:720px){.pcdefs{grid-template-columns:1fr}}
+/* gọn cho thư mục Khối 10 */
+.k10nav{display:flex;flex-wrap:nowrap;gap:6px;margin:0 0 8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.k10nav::-webkit-scrollbar{display:none}
+.k10nav a{flex:none;font-size:13px;font-weight:600;padding:5px 11px;white-space:nowrap}
+.k10nav a b{font-weight:800}
+.k10nav a.k10back{font-size:16px;padding:3px 11px;color:var(--brand2)}
+.gcpick.compact{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gcpick.compact button{padding:5px 11px;font-size:13px;border-radius:999px}
+.gcpick.compact .pill{align-self:center;margin-left:auto}
+.gvhello{display:flex;flex-direction:column;gap:2px;margin:2px 2px 12px}
+.gvhello b{font-size:19px}.gvhello span{color:var(--muted);font-size:13.5px}
+.gvsec{border:1px solid var(--line);background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.gvsech{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;padding:14px 16px;cursor:pointer;text-align:left;color:var(--text)}
+.gvsech .ic{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--info-soft)}
+.gvsech .tx{display:flex;flex-direction:column;flex:1;min-width:0}
+.gvsech .tx b{font-size:17px}.gvsech .tx span{font-size:13px;color:var(--muted)}
+.gvsech .chev{font-size:18px;color:var(--muted)}
+.gvsec.open .gvsech{border-bottom:1px solid var(--line)}
+.gvsecb{padding:10px 12px 12px}
+.gvsecb .rows{margin:0}
+.gvkhoi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gvkhoi button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:12px 6px;font-weight:800;font-size:15.5px;cursor:pointer;color:var(--text)}
+.gvkhoi button.on{border-color:var(--brand2);background:var(--info-soft);color:var(--brand2)}
+.gvsecb .appgrp .applist a{padding-top:9px;padding-bottom:9px}
+.gvsecb .appgrp .applist a .tx>span{display:none}
+.gvsecb .appgrp .applist a .ic{width:36px;height:36px;font-size:19px}
+.gvsecb .appgrp h3{margin:12px 2px 6px}
