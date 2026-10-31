@@ -4039,12 +4039,17 @@ route(/^\/hcat$/, params => {
   const stepBar = S => `<div class="hcsteps" style="grid-template-columns:repeat(${S.length},minmax(0,1fr))">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
   const ctrl = () => `<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px"><button class="btn ghost sm" id="iso">Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">Nhìn thẳng từ trước</button><button class="btn ghost sm" id="rp">▶ Xem lại</button></div>`;
   const fig = (v, cap, cell = 36) => `<figure class="hcfig">${HC.svg(v, cell)}<figcaption>${cap}</figcaption></figure>`;
-  const plane = (ob, al = 0.2) => (ctx, P, dp) => {
-    // mặt phẳng cắt đặt chính giữa vật thể, vừa khít từ đáy đến mặt trên
-    const { W, H, c } = ob, C = [[0, c, 0], [W, c, 0], [W, c, H], [0, c, H]];
+  /** mặt phẳng cắt đặt chính giữa vật thể, vừa khít từ đáy đến mặt trên; ps.d (0→1) = độ nâng lên phía trên khi chạy hiệu ứng hạ xuống */
+  const plane = (ob, al = 0.2, ps) => (ctx, P, dp) => {
+    const { W, H, c } = ob, dz = ps ? ps.d * (H + 1.2) : 0, C = [[0, c, dz], [W, c, dz], [W, c, H + dz], [0, c, H + dz]];
+    if (ps && ps.d > 0) { // vệt mờ chỉ hướng chạy xuống
+      ctx.setLineDash([4 * dp, 4 * dp]); [[0, c], [W, c]].forEach(([x, y]) => { const A = P([x, y, H + dz]), B = P([x, y, 0]); ctx.strokeStyle = 'rgba(225,29,72,.45)'; ctx.lineWidth = 1.4 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); }); ctx.setLineDash([]);
+    }
     hcPoly3(ctx, P, C, dp, '#e11d48', al, '#e11d48', 2.2);
-    const T = P([0, c, H]); hcTag(ctx, T[0] + 56 * dp, T[1] - 8 * dp, 'Mặt phẳng cắt A', '#e11d48', dp);
+    const T = P([0, c, H + dz]); hcTag(ctx, T[0] + 56 * dp, T[1] - 8 * dp, 'Mặt phẳng cắt A', '#e11d48', dp);
   };
+  /** cho mặt phẳng cắt chạy từ trên xuống, xong gọi done */
+  const dropPlane = (ps, ms, done) => { ps.d = 1; sc && sc.redraw(); setTimeout(() => sc && sc.anim(e => { ps.d = 1 - e; }, ms, done), 250); };
   const fitOf = (ob, extra = []) => { const { W, D, H } = ob; return [[-0.7, -0.3, -0.6], [W + 0.7, D, H + 0.6], ...extra]; };
   const draw = () => {
     kill();
@@ -4077,10 +4082,10 @@ route(/^\/hcat$/, params => {
     const yaw0 = half ? -0.62 : 0.62, full = G(ob.id, 'full');
     const cutF = half ? G(ob.id, 'half') : G(ob.id, 'cut'), ghost = half ? G(ob.id, 'ghostHalf') : G(ob.id, 'ghost');
     const gdir = half ? [1, -1, 0] : [0, -1, 0];
-    sc = HCView($('#hc3d'), { yaw: yaw0, fit: fitOf(ob, step === 'cut' ? [[ob.W + (half ? 2.5 : 0), -3, 0]] : []), layers: [] });
+    sc = HCView($('#hc3d'), { yaw: yaw0, fit: fitOf(ob, step === 'cut' ? [[ob.W + (half ? 2.5 : 0), -3, 0]] : step === 'plane' ? [[0, ob.c || 0, ob.H * 2 + 1.4]] : []), layers: [] });
     const play = () => {
       if (step === 'obj') sc.set({ layers: [{ F: full }], over: null });
-      else if (step === 'plane') sc.set({ layers: [{ F: full }], over: plane(ob) });
+      else if (step === 'plane') { const ps = { d: 1 }; sc.set({ layers: [{ F: full }], over: plane(ob, 0.2, ps) }); dropPlane(ps, 1600); }
       else if (step === 'cut') {
         sc.set({ layers: [{ F: cutF }, { F: ghost, alpha: 1, off: [0, 0, 0] }], over: half ? null : plane(ob, 0.08) });
         setTimeout(() => sc && sc.anim(e => sc.put({ layers: [{ F: cutF }, { F: ghost, alpha: 1 - e, off: gdir.map(v => v * e * 3) }] }), 1800), 500);
@@ -4178,8 +4183,12 @@ route(/^\/hcat$/, params => {
       else if (ph === 'ask') e = 1;
     } else {
       const half = t.kind === 'half', full = G(ob.id, 'full'), cutF = G(ob.id, half ? 'half' : 'cut'), ghost = G(ob.id, half ? 'ghostHalf' : 'ghost'), gdir = half ? [1, -1, 0] : [0, -1, 0];
-      sc = HCView($('#hc3d'), { yaw: half ? -0.62 : 0.62, fit: [[0, -0.3, 0], [ob.W, ob.D, ob.H], [ob.W + (half ? 2.2 : 0), -2.6, 0]], layers: [{ F: ph === 'pre' ? full : cutF }], over: ph === 'pre' && !half ? plane(ob, 0.2) : null });
-      if (ph === 'cut') { sc.set({ layers: [{ F: cutF }, { F: ghost, alpha: 1 }], over: half ? null : plane(ob, 0.08) }); setTimeout(() => sc && sc.anim(e => sc.put({ layers: [{ F: cutF }, { F: ghost, alpha: 1 - e, off: gdir.map(v => v * e * 2.6) }] }), 1500, () => { lt.phase = 'ask'; sc && sc.set({ over: null }); }), 250); }
+      sc = HCView($('#hc3d'), { yaw: half ? -0.62 : 0.62, fit: [[0, -0.3, 0], [ob.W, ob.D, half ? ob.H : ob.H * 2 + 1.4], [ob.W + (half ? 2.2 : 0), -2.6, 0]], layers: [{ F: ph === 'pre' ? full : cutF }], over: null });
+      if (ph === 'cut') {
+        const remove = () => sc && sc.anim(e => sc.put({ layers: [{ F: cutF }, { F: ghost, alpha: 1 - e, off: gdir.map(v => v * e * 2.6) }] }), 1500, () => { lt.phase = 'ask'; sc && sc.set({ over: null }); });
+        if (half) { sc.set({ layers: [{ F: cutF }, { F: ghost, alpha: 1 }] }); setTimeout(remove, 250); }
+        else { const ps = { d: 1 }; sc.set({ layers: [{ F: full }], over: plane(ob, 0.2, ps) }); dropPlane(ps, 1300, () => { sc && sc.set({ layers: [{ F: cutF }, { F: ghost, alpha: 1 }], over: plane(ob, 0.08) }); setTimeout(remove, 300); }); }
+      }
     }
     if ($('#cut')) $('#cut').onclick = () => { lt.phase = 'cut'; drawLT(); };
     if ($('#again')) $('#again').onclick = () => { lt.phase = 'pre'; lt.ans = null; drawLT(); };
