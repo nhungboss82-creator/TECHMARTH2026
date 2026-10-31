@@ -2851,50 +2851,60 @@ const GC_FIXED = [
   { fig: gcGiaDo, stem: 'Vẽ giá đỡ theo phương pháp chiếu góc thứ ba thì hình 3 (hình chiếu cạnh) phải đặt ở đâu so với hình 2 (hình chiếu đứng)?', opts: ['Bên trái hình 2', 'Bên phải hình 2', 'Phía trên hình 2', 'Phía dưới hình 2'], why: 'Phương pháp chiếu góc thứ ba: hình chiếu bằng đặt trên, hình chiếu cạnh đặt bên trái hình chiếu đứng.' },
   { fig: gcGiaDo, stem: 'Trong hình 3, các nét đứt ở phần đế thể hiện điều gì?', opts: ['Các lỗ ở đế bị che khuất (cạnh khuất)', 'Đường tâm của lỗ', 'Đường gạch gạch của mặt cắt', 'Đường giới hạn của ren'], why: 'Nét đứt dùng để vẽ cạnh khuất: hai lỗ ở đế nằm phía trong, bị che nên không nhìn thấy. Đường tâm vẽ bằng nét gạch chấm mảnh.' }
 ];
-/** ghép 3 hình chiếu thành một bản vẽ: pos = { top: 'above'|'below', side: 'left'|'right' }; o.frame: khung màu, o.label: ghi tên */
+/** ghép 3 hình chiếu thành một bản vẽ: pos = { top: 'above'|'below', side: 'left'|'right' }; o.frame: khung màu, o.label: ghi tên, o.mark: chỉ đánh dấu 1 hình */
 function gcLayoutSvg(V, pos, o = {}) {
-  const lab = o.label || o.mark, c = o.cell || 26, gap = Math.max(c * 1.2, lab ? 34 : 20), pad = lab ? 34 : 12;
+  const lab = o.label || o.mark, c = o.cell || 26, gap = Math.max(c * 1.5, lab ? 44 : 26), pad = lab ? 40 : 16;
   const box = p => ({ w: p.W * c, h: p.H * c });
   const F = box(V.front), T = box(V.top), S = box(V.side);
   const colL = pos.side === 'left' ? S.w + gap : 0, rowT = pos.top === 'above' ? T.h + gap : 0;
-  const fx = pad + colL, fy = pad + rowT + (lab ? 16 : 0);
+  const fx = pad + colL, fy = pad + rowT + (lab ? 14 : 0);
   const place = { front: [fx, fy], top: [fx, pos.top === 'above' ? fy - gap - T.h : fy + F.h + gap], side: [pos.side === 'left' ? fx - gap - S.w : fx + F.w + gap, fy] };
-  const W = pad * 2 + colL + F.w + (pos.side === 'right' ? gap + S.w : 0), H = pad * 2 + rowT + F.h + (pos.top === 'below' ? gap + T.h : 0) + (lab ? 32 : 0);
+  const W = pad * 2 + colL + F.w + (pos.side === 'right' ? gap + S.w : 0), H = pad * 2 + rowT + F.h + (pos.top === 'below' ? gap + T.h : 0) + (lab ? 30 : 0);
+  const NAME = { front: 'Hình chiếu đứng', top: 'Hình chiếu bằng', side: 'Hình chiếu cạnh' };
   const draw = (k, p) => {
-    const [x0, y0] = place[k], b = box(p), X = x => x0 + x * c, Y = y => y0 + (p.H - y) * c;
-    const on = o.frame || (o.mark === k);
-    const fr = on ? `<rect x="${x0 - 7}" y="${y0 - 7}" width="${b.w + 14}" height="${b.h + 14}" fill="none" stroke="${GC_COL[k]}" stroke-width="2.5" rx="3"/>` : '';
-    const lb = (o.label || o.mark === k) ? `<text x="${x0 + b.w / 2}" y="${k === 'top' && pos.top === 'below' ? y0 + b.h + 24 : y0 - 12}" text-anchor="middle" font-size="12" font-weight="700" fill="${on ? GC_COL[k] : '#334'}">${{ front: 'HC đứng', top: 'HC bằng', side: 'HC cạnh' }[k]}</text>` : '';
-    return fr + lb + p.segs.map(s => `<line x1="${X(s.x1)}" y1="${Y(s.y1)}" x2="${X(s.x2)}" y2="${Y(s.y2)}" stroke="#111" stroke-width="${s.an ? 1.6 : 2.8}" ${s.an ? 'stroke-dasharray="6 4"' : ''} stroke-linecap="round"/>`).join('');
+    const [x0, y0] = place[k], b = box(p), X = x => x0 + x * c, Y = y => y0 + (p.H - y) * c, on = o.frame || o.mark === k;
+    const fr = on ? `<rect x="${x0 - 9}" y="${y0 - 9}" width="${b.w + 18}" height="${b.h + 18}" rx="8" fill="${GC_COL[k]}" fill-opacity="0.07" stroke="${GC_COL[k]}" stroke-width="2.6"/>` : '';
+    let lb = '';
+    if (o.label || o.mark === k) {
+      const t = c >= 26 ? NAME[k] : NAME[k].replace('Hình chiếu', 'HC'), tw = t.length * 6.6 + 16, ly = k === 'top' && pos.top === 'below' ? y0 + b.h + 14 : y0 - 32;
+      lb = `<g transform="translate(${x0 + b.w / 2 - tw / 2},${ly})"><rect width="${tw}" height="19" rx="9.5" fill="${on ? GC_COL[k] : '#64748b'}"/><text x="${tw / 2}" y="13.5" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff">${t}</text></g>`;
+    }
+    return fr + lb + p.segs.map(s => `<line x1="${X(s.x1)}" y1="${Y(s.y1)}" x2="${X(s.x2)}" y2="${Y(s.y2)}" stroke="#0f172a" stroke-width="${s.an ? 1.7 : 3}" ${s.an ? 'stroke-dasharray="6 4"' : ''} stroke-linecap="round"/>`).join('');
   };
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;height:auto;background:#fff;border-radius:10px" role="img" aria-label="Bản vẽ ba hình chiếu">${draw('front', V.front) + draw('top', V.top) + draw('side', V.side)}</svg>`;
+  // đường dóng: HCĐ – HCB thẳng cột, HCĐ – HCC thẳng hàng
+  const [x0, y0] = place.front, [tx, ty] = place.top, [sx] = place.side, dash = 'stroke="#94a3b8" stroke-width="1" stroke-dasharray="7 3 1.5 3"';
+  const dong = o.dong === false ? '' : [0, F.w].map(dx => `<line x1="${x0 + dx}" y1="${pos.top === 'above' ? ty + T.h + 9 : y0 + F.h + 9}" x2="${x0 + dx}" y2="${pos.top === 'above' ? y0 - 9 : ty - 9}" ${dash}/>`).join('')
+    + [0, F.h].map(dy => `<line x1="${pos.side === 'left' ? sx + S.w + 9 : x0 + F.w + 9}" y1="${y0 + dy}" x2="${pos.side === 'left' ? x0 - 9 : sx - 9}" y2="${y0 + dy}" ${dash}/>`).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;height:auto;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(15,23,42,.08)" role="img" aria-label="Bản vẽ ba hình chiếu">${dong}${draw('front', V.front) + draw('top', V.top) + draw('side', V.side)}</svg>`;
 }
-/** Hộp chiếu (giống hình SGK): vật thể, ba mặt phẳng chiếu và ba hình chiếu trên đó, vẽ bằng phép chiếu xiên.
+/** Hộp chiếu (giống hình SGK): vật thể, ba mặt phẳng chiếu, ba hình chiếu trên đó và hướng chiếu, vẽ bằng phép chiếu xiên.
  *  m = 1: vật thể nằm giữa người quan sát và các mặt phẳng chiếu (mp đứng phía sau, mp bằng phía dưới, mp cạnh bên phải).
  *  m = 3: các mặt phẳng chiếu nằm giữa người quan sát và vật thể (mp đứng phía trước, mp bằng phía trên, mp cạnh bên trái). */
+let gcBoxN = 0;
 function gcBoxSvg(s, m, o = {}) {
-  const U = o.unit || 20, K = 0.62, CS = Math.cos(Math.PI / 4), SN = Math.sin(Math.PI / 4), g = 1.4, G = 2.2;
+  const U = o.unit || 26, K = 0.62, CS = Math.cos(Math.PI / 4), SN = Math.sin(Math.PI / 4), g = 1.5, G = 2.4, id = 'gb' + (++gcBoxN);
   const X = s.X, Y = s.Y, Z = s.Z;
-  const P = (x, y, z) => [x * U + K * U * (-y) * CS, -z * U + K * U * (-y) * SN];   // y nhỏ = gần người nhìn → lệch xuống phải
+  const P = (x, y, z) => [x * U + K * U * (-y) * CS, -z * U + K * U * (-y) * SN];
   const pts = [], add = p => { pts.push(p); return p; };
-  // mặt phẳng chiếu (chỉ vẽ khung) + hình chiếu trên mặt phẳng
   const V = { front: projView(s, 'front'), top: projView(s, 'top'), side: projView(s, 'side') };
-  let planes, maps;
+  let planes, maps, arrows;
   if (m === 1) {
     const yb = Y + g, zb = -g, xr = X + g;
     planes = { front: [[-g, yb, -g], [X + g, yb, -g], [X + g, yb, Z + g], [-g, yb, Z + g]],
       top: [[-g, -G, zb], [X + g, -G, zb], [X + g, yb, zb], [-g, yb, zb]],
       side: [[xr, -G, -g], [xr, yb, -g], [xr, yb, Z + g], [xr, -G, Z + g]] };
     maps = { front: (u, w) => [u, yb, w], top: (u, w) => [u, w, zb], side: (u, w) => [xr, Y - u, w] };
+    arrows = { front: [[X * 0.5, -G - 1.8, Z * 0.55], [X * 0.5, -0.6, Z * 0.55]], top: [[X * 0.3, Y * 0.5, Z + 2.3], [X * 0.3, Y * 0.5, Z + 0.5]], side: [[-2.8, Y * 0.5, Z * 0.5], [-0.6, Y * 0.5, Z * 0.5]] };
   } else {
     const yf = -g, zt = Z + g, xl = -g;
     planes = { front: [[-g, yf, -g], [X + g, yf, -g], [X + g, yf, Z + g], [-g, yf, Z + g]],
       top: [[-g, yf, zt], [X + g, yf, zt], [X + g, Y + G, zt], [-g, Y + G, zt]],
       side: [[xl, yf, -g], [xl, Y + G, -g], [xl, Y + G, Z + g], [xl, yf, Z + g]] };
     maps = { front: (u, w) => [u, yf, w], top: (u, w) => [u, w, zt], side: (u, w) => [xl, Y - u, w] };
+    arrows = { front: [[X * 0.5, yf - 2.6, Z * 0.2], [X * 0.5, yf - 0.3, Z * 0.2]], top: [[X + g + 1.2, Y * 0.5, zt + 2.3], [X + g + 1.2, Y * 0.5, zt + 0.3]], side: [[xl - 2.6, Y + G * 0.7, Z * 0.5], [xl - 0.3, Y + G * 0.7, Z * 0.5]] };
   }
   Object.values(planes).forEach(q => q.forEach(p => add(P(...p))));
-  // mặt của vật thể (các mặt nhìn thấy: trái, trước, trên), vẽ từ xa đến gần
+  Object.values(arrows).forEach(q => q.forEach(p => add(P(...p))));
   const has = (x, y, z) => s.set.has(x + ',' + y + ',' + z), faces = [];
   const W3 = [-K * CS, -1, K * SN];
   s.v.forEach(([x, y, z]) => [[-1, 0, 0], [0, -1, 0], [0, 0, 1]].forEach(n => {
@@ -2902,27 +2912,35 @@ function gcBoxSvg(s, m, o = {}) {
     const i = n.findIndex(v => v !== 0), [a, b] = [0, 1, 2].filter(k => k !== i), o0 = [x, y, z]; if (n[i] > 0) o0[i] += 1;
     const c = (da, db) => { const p = o0.slice(); p[a] += da; p[b] += db; return p; };
     const q = [c(0, 0), c(1, 0), c(1, 1), c(0, 1)], ctr = q.reduce((A, p) => A.map((v, k) => v + p[k] / 4), [0, 0, 0]);
-    // cạnh đặc trưng: không có mặt đồng phẳng liền kề (bỏ đường ghép giữa các khối)
     const edge = [[0, -1], [1, 0], [0, 1], [-1, 0]].map(([da, db]) => { const r = [x, y, z]; r[a] += da; r[b] += db; const r2 = [r[0] + n[0], r[1] + n[1], r[2] + n[2]]; return !(has(...r) && !has(...r2)); });
     faces.push({ q, n, edge, d: ctr[0] * W3[0] + ctr[1] * W3[1] + ctr[2] * W3[2] });
   }));
   faces.sort((A, B) => A.d - B.d);
   faces.forEach(f => f.q.forEach(p => add(P(...p))));
-  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), pad = 14, x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad;
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), pad = 22, x0 = Math.min(...xs) - pad, y0 = Math.min(...ys) - pad;
   const T = p => [p[0] - x0, p[1] - y0], W = Math.max(...xs) - x0 + pad, H = Math.max(...ys) - y0 + pad;
-  const poly = (q, attr) => `<polygon points="${q.map(p => T(P(...p)).map(v => v.toFixed(1)).join(',')).join(' ')}" ${attr}/>`;
-  const line = (a, b, attr) => { const A = T(P(...a)), B = T(P(...b)); return `<line x1="${A[0].toFixed(1)}" y1="${A[1].toFixed(1)}" x2="${B[0].toFixed(1)}" y2="${B[1].toFixed(1)}" ${attr}/>`; };
-  const viewOn = k => V[k].segs.map(sg => line(maps[k](sg.x1, sg.y1), maps[k](sg.x2, sg.y2), `stroke="#111" stroke-width="${sg.an ? 1.3 : 2.4}" ${sg.an ? 'stroke-dasharray="4 3"' : ''} stroke-linecap="round"`)).join('');
-  const frame = k => poly(planes[k], `fill="${GC_COL[k]}" fill-opacity="0.06" stroke="${GC_COL[k]}" stroke-width="2.4" stroke-linejoin="round"`);
-  // đường dóng (nét chấm) từ các góc của vật thể tới ba mặt phẳng
+  const f1 = v => v.toFixed(1);
+  const poly = (q, attr) => `<polygon points="${q.map(p => T(P(...p)).map(f1).join(',')).join(' ')}" ${attr}/>`;
+  const line = (a, b, attr) => { const A = T(P(...a)), B = T(P(...b)); return `<line x1="${f1(A[0])}" y1="${f1(A[1])}" x2="${f1(B[0])}" y2="${f1(B[1])}" ${attr}/>`; };
+  const viewOn = k => V[k].segs.map(sg => line(maps[k](sg.x1, sg.y1), maps[k](sg.x2, sg.y2), `stroke="#0f172a" stroke-width="${sg.an ? 1.4 : 2.6}" ${sg.an ? 'stroke-dasharray="4 3"' : ''} stroke-linecap="round"`)).join('');
+  const NAME = { front: 'MP chiếu đứng', top: 'MP chiếu bằng', side: 'MP chiếu cạnh' };
+  const frame = k => poly(planes[k], `fill="url(#${id}${k})" stroke="${GC_COL[k]}" stroke-width="2.8" stroke-linejoin="round"`);
+  // chú thích màu dưới hình
+  const LG = [['front', 'MP chiếu đứng'], ['top', 'MP chiếu bằng'], ['side', 'MP chiếu cạnh']], LH = 26;
+  const legend = `<g transform="translate(${f1(W / 2 - 165)},${f1(H + 4)})">${LG.map(([k, t], i) => `<g transform="translate(${i * 112},0)"><rect width="104" height="19" rx="9.5" fill="${GC_COL[k]}"/><text x="52" y="13.5" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${t}</text></g>`).join('')}</g>`
+    + `<text x="${f1(W / 2)}" y="${f1(H + LH + 12)}" text-anchor="middle" font-size="10.5" fill="#475569">Mũi tên: hướng chiếu · Nét chấm: đường chiếu</text>`;
   const cor = [[0, 0, Z], [X, 0, Z], [0, Y, Z], [X, 0, 0], [0, 0, 0]];
   const proj = c => [maps.front(c[0], c[2]), maps.top(c[0], c[1]), maps.side(Y - c[1], c[2])];
-  const rays = cor.map(c => proj(c).map(p => line(c, p, 'stroke="#555" stroke-width="1.2" stroke-dasharray="1.5 4" stroke-linecap="round"')).join('')).join('');
-  const shade = n => n[2] ? '#dfe9ee' : n[0] ? '#b9cdd6' : '#cbdbe2';
-  const obj = faces.map(f => poly(f.q, `fill="${shade(f.n)}" stroke="${shade(f.n)}" stroke-width="0.8"`) + f.edge.map((e, i) => e ? line(f.q[i], f.q[(i + 1) % 4], 'stroke="#16262c" stroke-width="2.2" stroke-linecap="round"') : '').join('')).join('');
+  const rays = cor.map(c => proj(c).map(p => line(c, p, 'stroke="#64748b" stroke-width="1.2" stroke-dasharray="1.5 4" stroke-linecap="round"')).join('')).join('');
+  const shade = n => n[2] ? '#ffe7ad' : n[0] ? '#e0a03a' : '#f6c15a';
+  const obj = faces.map(f => poly(f.q, `fill="${shade(f.n)}" stroke="${shade(f.n)}" stroke-width="1.1" stroke-linejoin="round"`) + f.edge.map((e, i) => e ? line(f.q[i], f.q[(i + 1) % 4], 'stroke="#3b2a0c" stroke-width="2.4" stroke-linecap="round"') : '').join('')).join('');
+  const arrow = k => { const [a, b] = arrows[k]; return line(a, b, `stroke="${GC_COL[k]}" stroke-width="3.2" stroke-linecap="round" marker-end="url(#${id}a${k})"`); };
   const back = m === 1 ? ['front', 'top', 'side'] : ['top', 'side'], fore = m === 1 ? [] : ['front'];
-  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" width="${W.toFixed(0)}" height="${H.toFixed(0)}" style="max-width:100%;height:auto;background:#fff;border-radius:10px" role="img" aria-label="Hộp chiếu">
-    ${back.map(k => frame(k) + viewOn(k)).join('')}${rays}${obj}${fore.map(k => frame(k) + viewOn(k)).join('')}</svg>`;
+  const grad = (k, c) => `<linearGradient id="${id}${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c}" stop-opacity="0.16"/><stop offset="1" stop-color="${c}" stop-opacity="0.04"/></linearGradient>`;
+  const og = (k, c1, c2) => `<linearGradient id="${id}${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`;
+  const defs = `<defs>${grad('front', GC_COL.front)}${grad('top', GC_COL.top)}${grad('side', GC_COL.side)}${og('t', '#fff4d6', '#ffe6a8')}${og('f', '#ffd27a', '#f5b94b')}${og('l', '#e9a93c', '#d38f22')}${Object.keys(GC_COL).map(k => `<marker id="${id}a${k}" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,0 L9,4.5 L0,9 z" fill="${GC_COL[k]}"/></marker>`).join('')}</defs>`;
+  const HH = H + (o.legend === false ? 0 : LH + 22), WW = Math.max(W, 360);
+  return `<svg viewBox="${f1((W - WW) / 2)} 0 ${f1(WW)} ${f1(HH)}" width="${f1(WW)}" height="${f1(HH)}" style="max-width:100%;height:auto;background:linear-gradient(#ffffff,#f8fafc);border-radius:12px;box-shadow:0 1px 4px rgba(15,23,42,.08)" role="img" aria-label="Hộp chiếu">${defs}${back.map(k => frame(k) + viewOn(k)).join('')}${rays}${obj}${fore.map(k => frame(k) + viewOn(k)).join('')}${['front', 'top', 'side'].map(arrow).join('')}${o.legend === false ? '' : legend}</svg>`;
 }
 const gcViews = s => ({ front: projView(s, 'front'), top: projView(s, 'top'), side: projView(s, 'side'), right: projView(s, 'right'), back: projView(s, 'back') });
 /** sơ đồ góc chiếu: vị trí vật thể, mặt phẳng chiếu và người quan sát (nhìn từ cạnh) */
