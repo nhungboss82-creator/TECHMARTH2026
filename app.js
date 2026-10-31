@@ -2785,6 +2785,7 @@ function Viewer3D(canvas, s) {
   const st = { yaw: -0.65, pitch: 0.55, zoom: 1, target: null };
   const cx = s.X / 2, cy = s.Y / 2, cz = s.Z / 2;
   const faces = [];
+  let PF = null;
   const has = (x, y, z) => s.set.has(x + ',' + y + ',' + z);
   const DIRS = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   s.v.forEach(([x, y, z]) => DIRS.forEach(n => {
@@ -2808,19 +2809,10 @@ function Viewer3D(canvas, s) {
     const k = Math.min(W, H) / (R * 1.35) * st.zoom;
     ctx.clearRect(0, 0, W, H);
     const P = p => { const r = rot(p); return [W / 2 + r[0] * k, H / 2 - r[2] * k, r[1]]; };
-    const L = [0.35, -0.55, 0.75], ln = Math.hypot(...L);
-    const list = faces.map(f => { const q = f.pts.map(P); return { f, q, d: q.reduce((a, b) => a + b[2], 0) / 4 }; }).sort((a, b) => b.d - a.d);
-    list.forEach(({ f, q }) => {
-      const nr = rot([f.n[0] + cx, f.n[1] + cy, f.n[2] + cz]);
-      if (nr[1] > 0.001) return;  // mặt quay ra sau
-      const lam = Math.max(0, (f.n[0] * L[0] + f.n[1] * L[1] + f.n[2] * L[2]) / ln);
-      const c = Math.round(150 + 90 * lam);
-      ctx.beginPath(); q.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
-      ctx.fillStyle = `rgb(${c - 40},${c - 10},${c})`; ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.08)'; ctx.lineWidth = 1; ctx.stroke();
-      ctx.strokeStyle = '#1b2a30'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-      f.edge.forEach((e, i) => { if (!e) return; const p1 = q[i], p2 = q[(i + 1) % 4]; ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); });
-    });
+    // vẽ bằng bộ vẽ chung: các khối liền nhau không có đường ghép, cạnh thấy nét liền đậm
+    if (!PF) PF = HC.G.prep(faces.map(f => ({ pts: f.pts.map(p => p.slice()), holes: [], n: f.n.slice() })));
+    const dp0 = window.devicePixelRatio || 1, V = [Math.sin(st.yaw) * Math.cos(st.pitch), Math.cos(st.yaw) * Math.cos(st.pitch), -Math.sin(st.pitch)];
+    hcPaint(ctx, W | 0, H | 0, PF, P, V, dp0, { k });
     // mũi tên hướng chiếu từ trước
     const a1 = P([cx, -1.6, cz]), a2 = P([cx, -0.35, cz]);
     ctx.strokeStyle = '#e89a2c'; ctx.fillStyle = '#c97c12'; ctx.lineWidth = 3 * (window.devicePixelRatio || 1);
@@ -3181,19 +3173,24 @@ const HC = (() => {
   const box = (x0, x1, y0, y1, z0, z1) => extrude('z', [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], [], z0, z1);
   /** chuẩn bị cạnh: bỏ đường ghép giữa các mặt đồng phẳng liền nhau */
   function prep(faces) {
-    const key = f => { const d = f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2]; return f.n.map(v => v.toFixed(3)).join(',') + '|' + d.toFixed(3); };
-    faces.forEach(f => { f.k = key(f); f.loops = [f.pts, ...f.holes]; });
+    const fx = v => (Math.abs(v) < 5e-4 ? 0 : v).toFixed(3);
+    const key = (f, s = 1) => { const d = f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2]; return f.n.map(v => fx(v * s)).join(',') + '|' + fx(d * s); };
+    faces.forEach(f => { f.k = key(f); f.ko = key(f, -1); f.loops = [f.pts, ...f.holes]; });
+    /** điểm m nằm trong mặt g (cùng mặt phẳng) */
+    const inside = (g, m) => { const ax = [0, 1, 2].sort((i, j) => Math.abs(g.n[j]) - Math.abs(g.n[i]))[0], u = (ax + 1) % 3, w = (ax + 2) % 3; let c = false; g.loops.forEach(L => L.forEach((a, i) => { const b = L[(i + 1) % L.length]; if ((a[w] > m[w]) !== (b[w] > m[w]) && m[u] < (b[u] - a[u]) * (m[w] - a[w]) / (b[w] - a[w]) + a[u]) c = !c; })); return c; };
     const onB = (g, m) => g.loops.some(L => L.some((a, i) => { const b = L[(i + 1) % L.length], ab = sub(b, a), am = sub(m, a), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); const d = sub(am, ab.map(v => v * t)); return Math.hypot(...d) < 1e-4; }));
     faces.forEach(f => {
       f.edges = [];
       if (f.smooth) return;
       const mates = faces.filter(g => g !== f && g.k === f.k);
+      // mặt áp sát nhau (cùng mặt phẳng, ngược chiều) là chỗ hai khối liền nhau: cạnh nằm trên đó không phải cạnh thật
+      const opp = faces.filter(g => g !== f && g.k === f.ko);
       f.loops.forEach(L => L.forEach((a, i) => {
         const b = L[(i + 1) % L.length], len = Math.hypot(...sub(b, a)), n = Math.max(1, Math.ceil(len / 0.05));
         let st = null;
         for (let j = 0; j < n; j++) {
           const p0 = a.map((v, k) => v + (b[k] - v) * j / n), p1 = a.map((v, k) => v + (b[k] - v) * (j + 1) / n), m = p0.map((v, k) => (v + p1[k]) / 2);
-          const seam = mates.some(g => onB(g, m));
+          const seam = mates.some(g => onB(g, m)) || opp.some(g => onB(g, m) || inside(g, m));
           if (!seam) { if (!st) st = p0; } else if (st) { f.edges.push([st, p0]); st = null; }
           if (j === n - 1 && st) f.edges.push([st, p1]);
         }
@@ -3201,7 +3198,7 @@ const HC = (() => {
     });
     // đường bao (silhouette) của mặt cong: cạnh chung giữa hai dải mặt cong liền nhau
     const sk = (p, q) => [p, q].map(v => v.map(x => x.toFixed(3)).join(',')).sort().join('|'), mp = {};
-    faces.forEach(f => { if (!f.smooth) return; f.sil = []; const P = f.pts; [[P[1], P[2]], [P[3], P[0]]].forEach(([p, q]) => { const kk = sk(p, q); (mp[kk] = mp[kk] || []).push({ f, p, q }); }); });
+    faces.forEach(f => { if (!f.smooth) return; f.sil = []; const P = f.pts; [[P[0], P[1]], [P[1], P[2]], [P[2], P[3]], [P[3], P[0]]].forEach(([p, q]) => { const kk = sk(p, q); (mp[kk] = mp[kk] || []).push({ f, p, q }); }); });
     Object.values(mp).forEach(v => { if (v.length === 2) v[0].f.sil.push({ a: v[0].p, b: v[0].q, g: v[1].f }); });
     // cạnh giữa mặt phẳng và mặt cong: tiếp tuyến (góc nhỏ) thì không vẽ cạnh, chỉ vẽ khi là đường bao
     const onSeg = (m, p, q) => { const ab = sub(q, p), am = sub(m, p), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); return Math.hypot(...sub(am, ab.map(v => v * t))) < 1e-4; };
