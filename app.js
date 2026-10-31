@@ -351,7 +351,18 @@ function render() {
   location.hash = '#/';
 }
 window.addEventListener('hashchange', render);
-function setView(html) { V.innerHTML = html; math(V); }
+function setView(html) {
+  V.innerHTML = html; math(V);
+  // thư mục Khối 10: đưa danh sách hình sang cột trái cho gọn
+  const pk = V.querySelector('.gcpick.compact');
+  if (pk) {
+    const wrap = document.createElement('div'), side = document.createElement('aside'), main = document.createElement('div');
+    wrap.className = 'k10wrap'; side.className = 'k10side'; main.className = 'k10main';
+    pk.parentNode.insertBefore(wrap, pk);
+    while (wrap.nextSibling) main.appendChild(wrap.nextSibling);
+    side.appendChild(pk); wrap.append(side, main);
+  }
+}
 function errBox(el, e) { if (!el) return; el.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; }
 async function busy(btn, fn) {
   const old = btn.innerHTML; btn.disabled = true; btn.innerHTML = 'Đang xử lý…';
@@ -3866,8 +3877,8 @@ const HCX = (() => {
     { id: 'goivat', ten: 'Gối đỡ có vát', W: 2.6, D: 3.4, H: 3, axes: [{ c: [1.3, 1.3, 0.35], ax: 'z', r: 0.6, a: [0, 0.7] }],
       pcs: [Z([...AP(1.3, 1.3, 1.3, 180, 360, 18), [2.6, 3.4, 0], [0, 3.4, 0]], [C(1.3, 1.3, 0.6)], 0, 0.7),
         Yp([[0, 0.7], [2.6, 0.7], [2.6, 2.4], [1.9, 2.4], [1.9, 1.6], [1.4, 1.6], [0.6, 3], [0, 3]], [], 2.6, 3.4)] },
-    { id: 'khoighep', ten: 'Khối ghép có rãnh', W: 3, D: 2.8, H: 3.6,
-      pcs: [Yp([[0, 0], [3, 0], [3, 3.6], [2, 3.6], [2, 3.0], [1, 3.0], [1, 3.6], [0, 3.6]], [], 2, 2.8), Z(R4(2.2, 0, 3, 2), [], 0, 3.6), Z(R4(0, 0, 1, 1.2), [], 0, 1.4), Z(R4(1, 0, 2.2, 1.2), [], 0, 0.9)] },
+    { id: 'khoighep', ten: 'Khối ghép có rãnh', W: 3, D: 2.4, H: 3,
+      pcs: [Yp([[0, 0], [3, 0], [3, 3], [2, 3], [2, 2.2], [1, 2.2], [1, 3], [0, 3]], [], 1.4, 2.4), Z(R4(0, 0, 1.4, 1.4), [], 0, 1.2)] },
     { id: 'taitreo', ten: 'Tai treo có lỗ', W: 3.8, D: 1.4, H: 3.2, axes: [{ c: [2.2, 0.7, 1.6], ax: 'y', r: 0.8, a: [0, 1.4] }],
       pcs: [Yp([[1, 0], [3.8, 0], [3.8, 1.6, 1], ...AP(2.2, 1.6, 1.6, 0, 90, 14).slice(1), [1, 3.2]], [C(2.2, 1.6, 0.8)], 0, 1.4),
         Yp([[0, 0], [1, 0], [1, 3.2], [0, 3.2], [0, 2.4], [0.6, 2.4], [0.6, 0.8], [0, 0.8]], [], 0, 1.4)] },
