@@ -3723,7 +3723,7 @@ function HCView(canvas, opt) {
 const K10_NAV = [['#/hcvg', 'Bài 9. Hình chiếu vuông góc'], ['#/hcat', 'Bài 10. Hình cắt và mặt cắt'], ['#/hctd', 'Bài 11. Hình chiếu trục đo'], ['#/hcpc', 'Bài 12. Hình chiếu phối cảnh']];
 const k10nav = cur => `<div class="k10nav">${K10_NAV.map(([h, t]) => `<a href="${h}" class="${h === cur ? 'on' : ''}">📁 ${t}</a>`).join('')}</div>`;
 const HCC = (() => {
-  const { extrude, prep, circ, arcPts } = HC.G;
+  const { extrude, prep, circ, arcPts, xz } = HC.G;
   const R4 = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
   const fl = A => A.map((p, i) => [p[0], p[1], i < A.length - 1 ? 1 : 0]);
   const sect = (cx, cy, ri, ro, a0, a1, n = 24) => [...fl(arcPts(cx, cy, ro, a0, a1, n)), ...fl(arcPts(cx, cy, ri, a1, a0, n))];
@@ -3845,7 +3845,7 @@ const HCC = (() => {
     const frontIt = [PG([[0, 0.1], [2.5, 0.1], [2.5, 1.864], [0, 1.864]]), L(0, 1.55, 2.5, 1.55, 'h'), PG(R4(2.5, 0.35, 4, 1.65)), PG(R4(4, 0.45, 5.5, 1.55)), L(4, 0.45, 5.5, 1.55, 'n'), L(4, 1.55, 5.5, 0.45, 'n'), L(-0.35, 1, 5.85, 1, 'c')];
     const sec = (pts, k = 'v') => [{ f: [pts] }, PG(pts, k)];
     const sm = pts => ({ W: 2.4, H: 2.4, u0: -0.2, v0: -0.2, it: [...sec(pts), L(1, -0.15, 1, 2.15, 'c'), L(-0.15, 1, 2.15, 1, 'c')] });
-    O.truc = { id: 'truc', ten: 'Trục có rãnh then', W: 5.5, D: 2, H: 2, cA: 1.25, cB: 4.75, K, SQ: R4(0.45, 0.45, 1.55, 1.55), full: faces,
+    O.truc = { id: 'truc', ten: 'Trục có rãnh then (SGK H.10.9)', W: 5.5, D: 2, H: 2, cA: 1.25, cB: 4.75, K, SQ: R4(0.45, 0.45, 1.55, 1.55), full: faces,
       views: {
         front: { u0: -0.4, W: 6.35, v0: -0.1, H: 2.2, it: frontIt },
         roi: { u0: -0.4, W: 6.35, v0: -2.55, H: 4.95, it: [...frontIt, L(1.25, -2.5, 1.25, 2.3, 'c'), L(4.75, -2.5, 4.75, 2.3, 'c'), ...sec(KA(1.25, -1.45)), ...sec(SQ(4.75, -1.45)), L(0.15, -1.45, 2.35, -1.45, 'c'), L(3.95, -1.45, 5.55, -1.45, 'c')] },
@@ -3855,24 +3855,53 @@ const HCC = (() => {
         sX3: { ...sm(R4(0.45, 0.45, 1.55, 1.55)), why: 'Hình vuông là mặt cắt tại vị trí B (đầu vuông), không phải tại A.' }
       } };
   }
-  /* 5. SGK Hình 10.6 – Khay chữ nhật có lỗ ở đáy (hình cắt toàn bộ) */
+  /* 5. SGK Hình 10.6 – Khay có lỗ bậc ở đáy và lỗ nhỏ ở thành trái (hình cắt toàn bộ) */
   {
-    const c = 1.6, W = 5, D = 3.2, H = 1.6, t = 0.3, f = 0.4, X = 2.5, r = 0.4;
-    const full = () => [...extrude('z', R4(0, 0, W, D), [circ(X, c, r)], 0, f, 'bsh'), ...extrude('z', R4(t, t, W - t, D - t), [circ(X, c, r)], f, f, 't'), ...extrude('z', R4(0, 0, W, D), [R4(t, t, W - t, D - t)], f, H, 'tsh')];
-    const cut = () => mark([...extrude('z', notch(0, W, c, D, [{ cx: X, r }]), [], 0, f, 'bs'), ...extrude('z', notch(t, W - t, c, D - t, [{ cx: X, r }]), [], f, f, 't'),
-      ...extrude('z', [[0, c], [t, c], [t, D - t], [W - t, D - t], [W - t, c], [W, c], [W, D], [0, D]], [], f, H, 'ts')], c);
-    const OL = R4(0, 0, W, H), inner = k => [L(t, f, t, H, k), L(W - t, f, W - t, H, k), L(t, f, X - r, f, k), L(X + r, f, W - t, f, k), L(X - r, 0, X - r, f, k), L(X + r, 0, X + r, f, k)];
-    const HL = [[0, 0], [X - r, 0], [X - r, f], [t, f], [t, H], [0, H]], HR = [[X + r, 0], [W, 0], [W, H], [W - t, H], [W - t, f], [X + r, f]];
-    const cl = L(X, -0.35, X, 1.95, 'c'), AA = { tx: [X, 2.3, 'A – A'] };
-    const topIt = [PG(R4(0, 0, W, D)), PG(R4(t, t, W - t, D - t)), { c: [X, c, r], k: 'v' }, L(X, c - 0.75, X, c + 0.75, 'c'), L(X - 0.75, c, X + 0.75, c, 'c')];
-    O.khay = { id: 'khay', ten: 'Khay có lỗ đáy (SGK H.10.6)', W, D, H, c, full, cut, ghost: () => mirY(cut(), c),
+    const c = 1.6, W = 5, D = 3.2, H = 1.6, t = 0.3, f = 0.4, X = 2.5, r1 = 0.3, r2 = 0.6, zh = 1.0, rh = 0.2;
+    const walls = (y0, cut) => [
+      ...extrude('x', cut ? [[y0, f], [D, f], [D, H], [y0, H], ...fl(arcPts(y0, zh, rh, 90, -90, 10)).map((q, k, A) => [q[0], q[1], k < A.length - 1 ? 1 : 0])] : R4(0, f, D, H), cut ? [] : [circ(c, zh, rh, 16)], 0, t),
+      ...extrude('x', R4(y0, f, D, H), [], W - t, W),
+      ...extrude('y', xz(R4(t, f, W - t, H)), [], D - t, D),
+      ...(cut ? [] : extrude('y', xz(R4(t, f, W - t, H)), [], 0, t))];
+    const full = () => [...extrude('z', R4(0, 0, W, D), [circ(X, c, r1)], 0, 0.2, 'bsh'), ...extrude('z', R4(0, 0, W, D), [circ(X, c, r2)], 0.2, f, 'tsh'), ...extrude('z', circ(X, c, r2), [circ(X, c, r1)], 0.2, 0.2, 't'), ...walls(0, false)];
+    const cut = () => mark([...extrude('z', notch(0, W, c, D, [{ cx: X, r: r1 }]), [], 0, 0.2, 'bs'), ...extrude('z', notch(0, W, c, D, [{ cx: X, r: r2 }]), [], 0.2, f, 'ts'), ...extrude('z', sect(X, c, r1, r2, 0, 180, 14), [], 0.2, 0.2, 't'), ...walls(c, true)], c);
+    const OL = R4(0, 0, W, H);
+    const inner = k => [L(t, f, t, H, k), L(W - t, f, W - t, H, k), L(t, f, X - r2, f, k), L(X + r2, f, W - t, f, k), L(X - r2, 0.2, X - r2, f, k), L(X + r2, 0.2, X + r2, f, k), L(X - r2, 0.2, X - r1, 0.2, k), L(X + r1, 0.2, X + r2, 0.2, k), L(X - r1, 0, X - r1, 0.2, k), L(X + r1, 0, X + r1, 0.2, k), L(0, zh - rh, t, zh - rh, k), L(0, zh + rh, t, zh + rh, k)];
+    const HL = [[0, 0], [X - r1, 0], [X - r1, 0.2], [X - r2, 0.2], [X - r2, f], [t, f], [t, H], [0, H]], HR = [[X + r1, 0], [W, 0], [W, H], [W - t, H], [W - t, f], [X + r2, f], [X + r2, 0.2], [X + r1, 0.2]], GAP = R4(0, zh - rh, t, zh + rh);
+    const cl = [L(X, -0.35, X, 1.95, 'c'), L(-0.35, zh, 0.65, zh, 'c')], AA = { tx: [X, 2.3, 'A – A'] };
+    const topIt = [PG(R4(0, 0, W, D)), PG(R4(t, t, W - t, D - t)), { c: [X, c, r2], k: 'v' }, { c: [X, c, r1], k: 'v' }, L(0, c - rh, t, c - rh, 'h'), L(0, c + rh, t, c + rh, 'h'), L(X, c - 0.95, X, c + 0.95, 'c'), L(X - 0.95, c, X + 0.95, c, 'c')];
+    O.khay = { id: 'khay', ten: 'Khay (SGK H.10.6)', W, D, H, c, full, cut, ghost: () => mirY(cut(), c),
       views: {
-        front: { W, H: 2.6, it: [PG(OL), ...inner('h'), cl] },
-        sec: { W, H: 2.6, it: [{ f: [HL, HR] }, PG(OL), ...inner('v'), cl, AA] },
-        x1: { W, H: 2.6, it: [{ f: [OL] }, PG(OL), ...inner('v'), cl, AA], why: 'Lòng khay và lỗ đáy là khoảng trống (không có vật liệu) nên không được kẻ gạch.' },
-        x2: { W, H: 2.6, it: [PG(OL), ...inner('h'), cl, AA], why: 'Đây vẫn là hình chiếu đứng (nét đứt), chưa có mặt cắt kẻ gạch.' },
-        x3: { W, H: 2.6, it: [{ f: [HL, HR] }, PG(OL), ...inner('h'), cl, AA], why: 'Sau khi cắt, thành trong của khay và lỗ đã thấy được nên phải vẽ nét liền đậm.' },
+        front: { W, H: 2.6, it: [PG(OL), ...inner('h'), ...cl] },
+        sec: { W, H: 2.6, it: [{ f: [HL, GAP, HR] }, PG(OL), ...inner('v'), ...cl, AA] },
+        x1: { W, H: 2.6, it: [{ f: [OL] }, PG(OL), ...inner('v'), ...cl, AA], why: 'Lòng khay và các lỗ là khoảng trống (không có vật liệu) nên không được kẻ gạch.' },
+        x2: { W, H: 2.6, it: [PG(OL), ...inner('h'), ...cl, AA], why: 'Đây vẫn là hình chiếu đứng (nét đứt), chưa có mặt cắt kẻ gạch.' },
+        x3: { W, H: 2.6, it: [{ f: [HL, GAP, HR] }, PG(OL), ...inner('h'), ...cl, AA], why: 'Sau khi cắt, thành trong của khay và các lỗ đã thấy được nên phải vẽ nét liền đậm.' },
+        x4: { W, H: 2.6, it: [{ f: [[[0, 0], [X - r1, 0], [X - r1, f], [t, f], [t, H], [0, H]], [[X + r1, 0], [W, 0], [W, H], [W - t, H], [W - t, f], [X + r1, f]]] }, PG(OL), L(t, f, t, H), L(W - t, f, W - t, H), L(t, f, X - r1, f), L(X + r1, f, W - t, f), L(X - r1, 0, X - r1, f), L(X + r1, 0, X + r1, f), ...cl, AA], why: 'Lỗ ở đáy là lỗ bậc (hai đường kính) và thành trái có lỗ nhỏ – hình này vẽ thiếu.' },
         top: { u0: -1.2, W: W + 2.4, H: D, it: [...topIt, ...trace(W, c)] }
+      } };
+  }
+  /* 5b. SGK Hình 10.10 – Giá đỡ (ví dụ các bước vẽ hình cắt A – A) */
+  {
+    const c = 1.7, W = 5, D = 3.4, H = 2.2, t = 0.5, f = 0.8, X = 2.5, zh = 1.6, rh = 0.3, SQ = R4(2.1, 1.3, 2.9, 2.1);
+    const sideWalls = y0 => [...extrude('x', R4(y0, f, D, H), [], 0, t), ...extrude('x', R4(y0, f, D, H), [], W - t, W)];
+    const back = () => extrude('y', xz(R4(t, f, W - t, H)), [xz(circ(X, zh, rh, 20))], D - t, D);
+    const full = () => [...extrude('z', R4(0, 0, W, D), [SQ], 0, f), ...sideWalls(0), ...back(),
+      ...extrude('y', xz([[t, f], [W - t, f], [W - t, H], [3.1, H], [3.1, 1.6], [1.9, 1.6], [1.9, H], [t, H]]), [], 0, t)];
+    const cut = () => mark([...extrude('z', [[0, c], [2.1, c], [2.1, 2.1], [2.9, 2.1], [2.9, c], [W, c], [W, D], [0, D]], [], 0, f), ...sideWalls(c), ...back()], c);
+    const OL = [[0, 0], [W, 0], [W, H], [3.1, H], [3.1, 1.6], [1.9, 1.6], [1.9, H], [0, H]], cl = L(X, -0.35, X, 2.55, 'c'), AA = { tx: [X, 2.85, 'A – A'] };
+    const inner = k => [L(t, f, t, k === 'h' ? H : H, k), L(W - t, f, W - t, H, k), L(t, f, W - t, f, k), L(2.1, 0, 2.1, f, k), L(2.9, 0, 2.9, f, k)];
+    const HL = [[0, 0], [2.1, 0], [2.1, f], [t, f], [t, H], [0, H]], HR = [[2.9, 0], [W, 0], [W, H], [W - t, H], [W - t, f], [2.9, f]];
+    const circ2 = { c: [X, zh, rh], k: 'v' }, cc = L(X - 0.55, zh, X + 0.55, zh, 'c');
+    O.giado1010 = { id: 'giado1010', ten: 'Giá đỡ (SGK H.10.10)', W, D, H, c, full, cut, ghost: () => mirY(cut(), c),
+      views: {
+        front: { W, H: 3.2, it: [PG(OL), ...inner('h'), { a: [X, zh, rh, 0, 180], k: 'v' }, { a: [X, zh, rh, 180, 360], k: 'h' }, cl, cc] },
+        sec: { W, H: 3.2, it: [{ f: [HL, HR] }, PG(R4(0, 0, W, H)), ...inner('v'), circ2, cl, cc, AA] },
+        x1: { W, H: 3.2, it: [{ f: [R4(0, 0, W, H)] }, PG(R4(0, 0, W, H)), ...inner('v'), circ2, cl, AA], why: 'Lòng giá đỡ và lỗ vuông ở đáy là khoảng trống (không có vật liệu) nên không được kẻ gạch.' },
+        x2: { W, H: 3.2, it: [PG(OL), ...inner('h'), { a: [X, zh, rh, 0, 180], k: 'v' }, { a: [X, zh, rh, 180, 360], k: 'h' }, cl, AA], why: 'Đây vẫn là hình chiếu đứng (nét đứt), chưa có mặt cắt kẻ gạch.' },
+        x3: { W, H: 3.2, it: [{ f: [HL, HR] }, PG(R4(0, 0, W, H)), ...inner('h'), { c: [X, zh, rh], k: 'h' }, cl, AA], why: 'Sau khi cắt, các đường bao bên trong đã thấy được nên phải vẽ nét liền đậm, không vẽ nét đứt.' },
+        x4: { W, H: 3.2, it: [{ f: [HL, HR] }, PG(R4(0, 0, W, H)), ...inner('v'), cl, AA], why: 'Phía sau mặt phẳng cắt, thành sau có lỗ tròn – hình cắt phải vẽ cả đường tròn này (nét liền đậm).' },
+        top: { u0: -1.2, W: W + 2.4, H: D, it: [PG(R4(0, 0, W, D)), PG(R4(t, t, W - t, D - t)), PG(SQ), L(1.9, 0, 1.9, t), L(3.1, 0, 3.1, t), L(X - rh, D - t, X - rh, D, 'h'), L(X + rh, D - t, X + rh, D, 'h'), L(X, 0.9, X, 3.7, 'c'), ...trace(W, c)] }
       } };
   }
   /* 6. SGK Hình 10.16 – Vật thể có rãnh, khối hộp và lỗ suốt (Thực hành 1 – hình cắt toàn bộ A – A) */
@@ -4000,7 +4029,7 @@ function hctdDraw(canvas, T, type, step, frac = 1, o = {}) {
 /* ================= BÀI 10. HÌNH CẮT VÀ MẶT CẮT ================= */
 route(/^\/hcat$/, params => {
   const O = HCC.O, G = HCC.get;
-  let tab = (params && params.get('tab')) || 'tb', oid = 'tamlo', hid = 'ongvai', step = 'obj', sc = null, qi = 0, qs = [], score = 0, ans = null, lt = null;
+  let tab = (params && params.get('tab')) || 'tb', oid = 'giado1010', hid = 'goido', step = 'obj', sc = null, qi = 0, qs = [], score = 0, ans = null, lt = null;
   const TABS = [['tb', '① Hình cắt toàn bộ'], ['mn', '② Hình cắt một nửa'], ['mc', '③ Mặt cắt'], ['lt', '④ Luyện tập']];
   const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hcat')}<h1>✂️ Hình cắt và mặt cắt</h1>
     <p class="sub">Dùng mặt phẳng cắt tưởng tượng để “nhìn” vào bên trong vật thể: hình cắt cho thấy cấu tạo bên trong rõ ràng, không phải vẽ nhiều nét đứt.</p>
@@ -4036,7 +4065,7 @@ route(/^\/hcat$/, params => {
       : step === 'res' ? (half ? `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.half, '<b>Hình cắt một nửa</b>')}</div>`
         : `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.sec, '<b>Hình cắt A – A</b>')}${fig(V.top, 'Hình chiếu bằng – vị trí mặt phẳng cắt A', 28)}</div>`) : '';
     setView(`${head()}
-      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${(half ? ['ongvai', 'goido'] : ['tamlo', 'khay', 'lco', 'ongvai', 'td16']).map((k, i) => `<button class="${k === (half ? hid : oid) ? 'on' : ''}" data-o="${k}">Hình ${i + 1}. ${O[k].ten}</button>`).join('')}</div></div>
+      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${(half ? ['goido', 'ongvai'] : ['giado1010', 'khay', 'td16', 'tamlo', 'lco', 'ongvai']).map((k, i) => `<button class="${k === (half ? hid : oid) ? 'on' : ''}" data-o="${k}">Hình ${i + 1}. ${O[k].ten}${/SGK/.test(O[k].ten) ? '' : ' – luyện thêm'}</button>`).join('')}</div></div>
       <div class="card">${stepBar(S)}<canvas id="hc3d" class="hc3d"></canvas>${ctrl()}
         <div class="expl" style="margin-top:10px"><b class="t">${S.find(s => s[0] === step)[1]}</b>${TXT[step]}</div>${extraFig}
         ${step !== 'res' ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[S.findIndex(s => s[0] === step) + 1][1].replace(/^\d\. /, '')} →</button>`
@@ -4108,10 +4137,10 @@ route(/^\/hcat$/, params => {
   };
   /* ---- Luyện tập: HS chọn hình, bấm Cắt, rồi chọn hình cắt đúng ---- */
   const LT = [
-    { id: 'tamlo', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] }, { id: 'khay', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] },
-    { id: 'lco', kind: 'full', lv: 2, ds: ['x1', 'x2', 'x3'] }, { id: 'ongvai', kind: 'full', lv: 2, ds: ['x1', 'x2', 'x3'] },
-    { id: 'td16', kind: 'full', lv: 3, ds: ['x1', 'x3', 'x4', 'x2'] }, { id: 'ongvai', kind: 'half', lv: 2, ds: ['hx1', 'sec', 'hx3'] },
-    { id: 'goido', kind: 'half', lv: 3, ds: ['hx1', 'hx2', 'hx3'] }, { id: 'truc', kind: 'mc', lv: 2, ds: ['sX1', 'sX2', 'sX3'] }
+    { id: 'giado1010', kind: 'full', lv: 2, ds: ['x1', 'x3', 'x4', 'x2'] }, { id: 'khay', kind: 'full', lv: 3, ds: ['x1', 'x3', 'x4', 'x2'] },
+    { id: 'td16', kind: 'full', lv: 3, ds: ['x1', 'x3', 'x4', 'x2'] }, { id: 'goido', kind: 'half', lv: 3, ds: ['hx1', 'hx2', 'hx3'] },
+    { id: 'truc', kind: 'mc', lv: 2, ds: ['sX1', 'sX2', 'sX3'] }, { id: 'tamlo', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] },
+    { id: 'lco', kind: 'full', lv: 1, ds: ['x1', 'x2', 'x3'] }, { id: 'ongvai', kind: 'full', lv: 2, ds: ['x1', 'x2', 'x3'] }, { id: 'ongvai', kind: 'half', lv: 2, ds: ['hx1', 'sec', 'hx3'] }
   ];
   const ltName = t => (t.kind === 'half' ? 'Hình cắt một nửa – ' : t.kind === 'mc' ? 'Mặt cắt – ' : '') + O[t.id].ten;
   const ltDone = () => store.get('hcat_lt_' + uid(), {});
