@@ -4045,8 +4045,11 @@ route(/^\/hcat$/, params => {
     if (ps && ps.d > 0) { // vệt mờ chỉ hướng chạy xuống
       ctx.setLineDash([4 * dp, 4 * dp]); [[0, c], [W, c]].forEach(([x, y]) => { const A = P([x, y, H + dz]), B = P([x, y, 0]); ctx.strokeStyle = 'rgba(225,29,72,.45)'; ctx.lineWidth = 1.4 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); }); ctx.setLineDash([]);
     }
-    hcPoly3(ctx, P, C, dp, '#e11d48', al, '#e11d48', 2.2);
-    const T = P([0, c, H + dz]); hcTag(ctx, T[0] + 56 * dp, T[1] - 8 * dp, 'Mặt phẳng cắt A', '#e11d48', dp);
+    hcPoly3(ctx, P, C, dp, '#e11d48', al, 'rgba(225,29,72,.75)', 1.6);
+    // mép trên của mặt phẳng cắt nằm ngang đúng mặt trên vật thể: vẽ đậm thành vết cắt trên mặt trên
+    const A = P([-0.25, c, H + dz]), B = P([W + 0.25, c, H + dz]);
+    ctx.strokeStyle = '#e11d48'; ctx.lineWidth = 3.2 * dp; ctx.setLineDash(dz > 0 ? [] : [14 * dp, 4 * dp, 3 * dp, 4 * dp]); ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]);
+    hcTag(ctx, B[0] + 62 * dp, B[1] + 4 * dp, 'Mặt phẳng cắt A', '#e11d48', dp);
   };
   /** cho mặt phẳng cắt chạy từ trên xuống, xong gọi done */
   const dropPlane = (ps, ms, done) => { ps.d = 1; sc && sc.redraw(); setTimeout(() => sc && sc.anim(e => { ps.d = 1 - e; }, ms, done), 250); };
