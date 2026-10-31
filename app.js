@@ -306,7 +306,7 @@ function renderNav(path) {
   document.body.classList.toggle('focus', focus);
   const items = isGV()
     ? [['#/gv', 'grid', 'Tổng quan', /^\/gv$/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|matran|sinhde|dethi|baive|thietke)/], ['#/gv/baigiao', 'task', 'Bài đã giao', /^\/gv\/(baigiao|bai\/|lop|hs)/], ['#/gv/nganhang', 'bank', 'Ngân hàng', /^\/gv\/(nganhang|themcau)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|trochoi)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|trochoi|thitn)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -673,6 +673,7 @@ route(/^\/onluyen$/, () => {
       ${window.STC_SGK ? row('#/sgk', '📘', '', 'Sách giáo khoa', 'Đọc lại lí thuyết từng bài') : ''}
       ${row('#/sotay', '📕', 'red', 'Sổ tay câu sai', 'Làm lại những câu em từng sai')}
       ${row('#/hinhchieu', '🧊', '', 'Hình chiếu 3D', 'Xoay vật thể, tìm hình chiếu đúng')}
+      ${row('#/gocchieu', '📐', 'amber', 'Góc chiếu thứ nhất & thứ ba', 'Tìm hiểu, nhận biết và xếp hình chiếu đúng vị trí')}
       ${row('#/trochoi', '🎮', 'amber', 'Trò chơi', 'Đoán từ, ô chữ, lật ô đoán tranh')}
     </div>`);
   $('#mx').onclick = () => {
@@ -1387,6 +1388,7 @@ route(/^\/gv$/, async params => {
         <a class="qa" href="#/gv/baive${kq}"><span class="ic">📷</span>Bài vẽ AI chấm</a>
         <a class="qa amber" href="#/gv/thietke${kq}"><span class="ic">💡</span>Bài toán thiết kế</a>
         <a class="qa green" href="#/gv/aisoancau${kq}"><span class="ic">🤖</span>AI soạn câu hỏi</a>
+        <a class="qa amber" href="#/gocchieu"><span class="ic">📐</span>Góc chiếu 1 & 3</a>
         <a class="qa" href="#/gv/thitn"><span class="ic">🎓</span>Quản lý đề luyện thi TN</a>
       </div>
       <div class="sechead"><h2>Lớp của tôi</h2><a href="#/gv/taolop">+ Tạo lớp</a></div>
@@ -2816,6 +2818,146 @@ route(/^\/hinhchieu$/, () => {
   };
   cleanup = () => { if (viewer) viewer.destroy(); };
   intro();
+});
+
+/* ================= TRÒ CHƠI: PHƯƠNG PHÁP CHIẾU GÓC THỨ NHẤT & GÓC THỨ BA (CN10 – Bài 9) =================
+ * Theo SGK Công nghệ 10: hình chiếu cạnh là hình nhìn từ trái ở cả hai phương pháp.
+ * Góc thứ nhất: HCB đặt DƯỚI HCĐ, HCC đặt bên PHẢI HCĐ. Góc thứ ba: HCB đặt TRÊN HCĐ, HCC đặt bên TRÁI HCĐ. */
+const GC = {
+  1: { ten: 'phương pháp chiếu góc thứ nhất', top: 'below', side: 'right' },
+  3: { ten: 'phương pháp chiếu góc thứ ba', top: 'above', side: 'left' }
+};
+const GC_COL = { front: '#e53935', top: '#1e63d6', side: '#c026d3' };
+/** ghép 3 hình chiếu thành một bản vẽ: pos = { top: 'above'|'below', side: 'left'|'right' }; o.frame: khung màu, o.label: ghi tên */
+function gcLayoutSvg(V, pos, o = {}) {
+  const lab = o.label || o.mark, c = o.cell || 26, gap = Math.max(c * 1.2, lab ? 34 : 20), pad = lab ? 34 : 12;
+  const box = p => ({ w: p.W * c, h: p.H * c });
+  const F = box(V.front), T = box(V.top), S = box(V.side);
+  const colL = pos.side === 'left' ? S.w + gap : 0, rowT = pos.top === 'above' ? T.h + gap : 0;
+  const fx = pad + colL, fy = pad + rowT + (lab ? 16 : 0);
+  const place = { front: [fx, fy], top: [fx, pos.top === 'above' ? fy - gap - T.h : fy + F.h + gap], side: [pos.side === 'left' ? fx - gap - S.w : fx + F.w + gap, fy] };
+  const W = pad * 2 + colL + F.w + (pos.side === 'right' ? gap + S.w : 0), H = pad * 2 + rowT + F.h + (pos.top === 'below' ? gap + T.h : 0) + (lab ? 32 : 0);
+  const draw = (k, p) => {
+    const [x0, y0] = place[k], b = box(p), X = x => x0 + x * c, Y = y => y0 + (p.H - y) * c;
+    const on = o.frame || (o.mark === k);
+    const fr = on ? `<rect x="${x0 - 7}" y="${y0 - 7}" width="${b.w + 14}" height="${b.h + 14}" fill="none" stroke="${GC_COL[k]}" stroke-width="2.5" rx="3"/>` : '';
+    const lb = (o.label || o.mark === k) ? `<text x="${x0 + b.w / 2}" y="${k === 'top' && pos.top === 'below' ? y0 + b.h + 24 : y0 - 12}" text-anchor="middle" font-size="12" font-weight="700" fill="${on ? GC_COL[k] : '#334'}">${{ front: 'HC đứng', top: 'HC bằng', side: 'HC cạnh' }[k]}</text>` : '';
+    return fr + lb + p.segs.map(s => `<line x1="${X(s.x1)}" y1="${Y(s.y1)}" x2="${X(s.x2)}" y2="${Y(s.y2)}" stroke="#111" stroke-width="${s.an ? 1.6 : 2.8}" ${s.an ? 'stroke-dasharray="6 4"' : ''} stroke-linecap="round"/>`).join('');
+  };
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="max-width:100%;height:auto;background:#fff;border-radius:10px" role="img" aria-label="Bản vẽ ba hình chiếu">${draw('front', V.front) + draw('top', V.top) + draw('side', V.side)}</svg>`;
+}
+const gcViews = s => ({ front: projView(s, 'front'), top: projView(s, 'top'), side: projView(s, 'side'), right: projView(s, 'right'), back: projView(s, 'back') });
+/** sơ đồ góc chiếu: vị trí vật thể, mặt phẳng chiếu và người quan sát (nhìn từ cạnh) */
+function gcSchema(m) {
+  const eye = '<g transform="translate(18,92)"><ellipse cx="0" cy="0" rx="13" ry="8" fill="#fff" stroke="#333" stroke-width="2"/><circle cx="2" cy="0" r="4" fill="#333"/></g>';
+  const obj = x => `<g transform="translate(${x},70)"><polygon points="0,44 34,44 34,18 18,18 18,0 0,0" fill="#f5c26b" stroke="#333" stroke-width="2"/></g>`;
+  const plane = (x, col, t) => `<line x1="${x}" y1="38" x2="${x}" y2="138" stroke="${col}" stroke-width="5"/><text x="${x}" y="28" text-anchor="middle" font-size="11" fill="${col}" font-weight="700">${t}</text>`;
+  const ray = (x1, x2) => `<line x1="${x1}" y1="92" x2="${x2}" y2="92" stroke="#e89a2c" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar${m})"/>`;
+  const body = m === 1 ? `${eye}${ray(34, 238)}${obj(120)}${plane(255, GC_COL.front, 'Mặt phẳng chiếu')}`
+    : `${eye}${ray(34, 176)}${plane(130, GC_COL.front, 'Mặt phẳng chiếu')}${obj(190)}`;
+  return `<svg viewBox="0 0 320 150" width="320" height="150" style="max-width:100%;height:auto;background:#fff;border-radius:10px"><defs><marker id="ar${m}" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#e89a2c"/></marker></defs>${body}
+    <text x="8" y="146" font-size="10.5" fill="#555">Người quan sát</text><text x="${m === 1 ? 122 : 192}" y="132" font-size="10.5" fill="#555">Vật thể</text></svg>`;
+}
+
+route(/^\/gocchieu$/, () => {
+  let mode = 'hoc', m = 1, sh = SHAPES[0], viewer = null, qs = [], qi = 0, score = 0, picked = null, slots = {}, held = null, done = false;
+  const pool = () => shuffle([...SHAPES, ...Array.from({ length: 8 }, randomShape)]);
+  const finish = (ten, n) => {
+    const hk = 'hist_' + uid(), hist = store.get(hk, []);
+    hist.push({ t: Date.now(), title: ten, key: '', loai: 'game', diem: Math.round(score / n * 1000) / 100, dung: score, tong: n, giay: 0 }); store.set(hk, hist.slice(-300));
+    setView(`<div class="hero"><h1>Hoàn thành! 🎉</h1><p class="sub">${esc(ten)}: đúng <b>${score}/${n}</b> câu.</p></div>
+      <div class="row"><button class="btn" id="again">Chơi lại</button><button class="btn ghost" id="menu">Chọn trò khác</button></div>`);
+    $('#again').onclick = () => mode === 'nhanbiet' ? startNB() : startXH(); $('#menu').onclick = () => { mode = 'hoc'; draw(); };
+  };
+  const tabs = () => `<div class="tabs">${[['hoc', '📘 Tìm hiểu'], ['nhanbiet', '🔍 Nhận biết góc chiếu'], ['xephinh', '🧩 Xếp hình chiếu']].map(([k, t]) => `<button data-mode="${k}" class="${mode === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const bind = () => $$('[data-mode]').forEach(b => b.onclick = () => { mode = b.dataset.mode; if (mode === 'nhanbiet') startNB(); else if (mode === 'xephinh') startXH(); else draw(); });
+
+  /* ---- 1. Tìm hiểu: xoay vật thể, đổi góc chiếu, xem cách bố trí ---- */
+  const draw = () => {
+    if (viewer) { viewer.destroy(); viewer = null; }
+    const s = shapeVox(sh.L), V = gcViews(s), g = GC[m];
+    setView(`<h1>📐 Phương pháp chiếu góc thứ nhất & góc thứ ba</h1>
+      <p class="sub">Công nghệ 10 – Bài 9. Hình chiếu vuông góc (HC: hình chiếu). Xoay vật thể, đổi phương pháp chiếu để thấy vị trí các hình chiếu thay đổi thế nào.</p>${tabs()}
+      <div class="gcwrap"><div class="card"><div class="row" style="align-items:center"><b class="grow">🧊 ${esc(sh.ten)}</b><button class="btn ghost sm" id="nx">Vật thể khác ↻</button></div>
+          <canvas id="cv" style="width:100%;height:300px;touch-action:none;background:linear-gradient(#f4f7f7,#e6eeee);border-radius:12px;margin-top:8px;cursor:grab"></canvas>
+          <div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="front">Nhìn từ trước</button><button class="btn ghost sm" data-v="top">Nhìn từ trên</button><button class="btn ghost sm" data-v="side">Nhìn từ trái</button></div></div>
+        <div class="card"><div class="tabs" style="margin-top:0"><button data-m="1" class="${m === 1 ? 'on' : ''}">Góc chiếu thứ nhất</button><button data-m="3" class="${m === 3 ? 'on' : ''}">Góc chiếu thứ ba</button></div>
+          <div style="text-align:center;margin:6px 0">${gcLayoutSvg(V, g, { frame: true, label: true, cell: 30 })}</div>
+          <div class="expl"><b class="t">${m === 1 ? 'Góc chiếu thứ nhất' : 'Góc chiếu thứ ba'}</b>
+            • Vật thể đặt ${m === 1 ? '<b>giữa người quan sát và mặt phẳng chiếu</b>' : 'sau mặt phẳng chiếu, <b>mặt phẳng chiếu nằm giữa người quan sát và vật thể</b>'}.<br>
+            • <b style="color:${GC_COL.front}">Hình chiếu đứng</b> (nhìn từ trước) là hình chính, đặt ở giữa.<br>
+            • <b style="color:${GC_COL.top}">Hình chiếu bằng</b> (nhìn từ trên) đặt <b>${m === 1 ? 'dưới' : 'trên'}</b> hình chiếu đứng.<br>
+            • <b style="color:${GC_COL.side}">Hình chiếu cạnh</b> (nhìn từ trái) đặt bên <b>${m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng.<br>
+            • Các hình chiếu phải <b>dóng thẳng hàng</b> với nhau; cạnh khuất vẽ bằng nét đứt.</div>
+          <div style="text-align:center">${gcSchema(m)}</div>
+          <p class="hint">Việt Nam (TCVN) và nhiều nước châu Âu dùng phương pháp chiếu góc thứ nhất; phương pháp chiếu góc thứ ba được dùng ở Mỹ và một số nước khác. Đọc bản vẽ nước ngoài cần xem kí hiệu phương pháp chiếu trên khung tên.</p></div></div>
+      <div class="card"><b>🎯 Luyện tập</b><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" data-mode="nhanbiet">🔍 Nhận biết góc chiếu (10 câu)</button><button class="btn accent" data-mode="xephinh">🧩 Xếp hình chiếu đúng vị trí (5 câu)</button>${isGV() ? '<button class="btn ghost" id="fs">🖥️ Trình chiếu toàn màn hình</button>' : ''}</div></div>`);
+    bind();
+    viewer = Viewer3D($('#cv'), s);
+    $$('[data-v]').forEach(b => b.onclick = () => viewer[b.dataset.v]());
+    $$('[data-m]').forEach(b => b.onclick = () => { m = +b.dataset.m; draw(); });
+    $('#nx').onclick = () => { sh = pool()[0]; draw(); };
+    if ($('#fs')) $('#fs').onclick = () => { try { (document.querySelector('main') || document.documentElement).requestFullscreen(); } catch (e) {} };
+  };
+
+  /* ---- 2. Nhận biết: bản vẽ dùng góc chiếu nào? ---- */
+  const startNB = () => {
+    if (viewer) { viewer.destroy(); viewer = null; }
+    const P = [[1, GC[1]], [1, GC[1]], [3, GC[3]], [3, GC[3]], [0, { top: 'below', side: 'left' }], [0, { top: 'above', side: 'right' }]];
+    qs = pool().slice(0, 10).map(x => { const [ans, pos] = P[rnd(P.length)]; return { sh: x, V: gcViews(shapeVox(x.L)), ans, pos }; });
+    qi = 0; score = 0; picked = null; drawNB();
+  };
+  const drawNB = () => {
+    if (qi >= qs.length) return finish('Nhận biết góc chiếu', qs.length);
+    const q = qs[qi], lab = { 1: 'Góc chiếu thứ nhất', 3: 'Góc chiếu thứ ba', 0: 'Bố trí sai, không theo phương pháp nào' };
+    const why = q.ans ? `Hình chiếu bằng nằm <b>${q.pos.top === 'below' ? 'dưới' : 'trên'}</b>, hình chiếu cạnh nằm bên <b>${q.pos.side === 'right' ? 'phải' : 'trái'}</b> hình chiếu đứng → <b>${GC[q.ans].ten}</b>.`
+      : `Hình chiếu bằng nằm <b>${q.pos.top === 'below' ? 'dưới' : 'trên'}</b> nhưng hình chiếu cạnh lại nằm bên <b>${q.pos.side === 'right' ? 'phải' : 'trái'}</b>. Góc thứ nhất: dưới – phải; góc thứ ba: trên – trái. Bản vẽ này trộn lẫn hai cách nên sai.`;
+    setView(`<h1>🔍 Nhận biết góc chiếu</h1>${tabs()}
+      <div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard"><div class="stem">Bản vẽ ba hình chiếu dưới đây được bố trí theo phương pháp nào? <span class="hint">(Hình có khung đỏ là hình chiếu đứng)</span></div>
+        <div style="text-align:center;margin:10px 0">${gcLayoutSvg(q.V, q.pos, { cell: 24, frame: picked != null, label: picked != null, mark: 'front' })}</div>
+        ${[1, 3, 0].map(k => `<button class="opt ${picked != null ? (k === q.ans ? 'right' : picked === k ? 'wrong' : '') : ''}" data-k="${k}" ${picked != null ? 'disabled' : ''}><span class="L">${{ 1: 'A', 3: 'B', 0: 'C' }[k]}</span><span class="tx">${lab[k]}</span></button>`).join('')}
+        ${picked != null ? `<div class="expl ${picked === q.ans ? 'ans' : ''}"><b class="t">${picked === q.ans ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${why}</div><button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
+    bind();
+    $$('[data-k]').forEach(b => b.onclick = () => { picked = +b.dataset.k; if (picked === q.ans) score++; drawNB(); });
+    if ($('#nx')) $('#nx').onclick = () => { qi++; picked = null; drawNB(); };
+  };
+
+  /* ---- 3. Xếp hình: đặt hình chiếu bằng, hình chiếu cạnh vào đúng ô quanh hình chiếu đứng ---- */
+  const startXH = () => { qs = pool().slice(0, 5).map(x => ({ sh: x, s: shapeVox(x.L), m: rnd(2) ? 1 : 3 })); qi = 0; score = 0; newXH(); };
+  const newXH = () => {
+    const q = qs[qi]; q.V = gcViews(q.s);
+    const cards = [{ id: 'top', p: q.V.top, ok: 'top' }, { id: 'side', p: q.V.side, ok: 'side' }];
+    const k1 = viewKey(q.V.side), k2 = viewKey(q.V.right);
+    cards.push(k1 !== k2 ? { id: 'right', p: q.V.right, ok: null, why: 'Đây là hình nhìn từ phải, không phải hình chiếu cạnh (nhìn từ trái).' } : { id: 'back', p: q.V.back, ok: null, why: 'Đây là hình nhìn từ phía sau.' });
+    q.cards = shuffle(cards); slots = {}; held = null; done = false; drawXH();
+  };
+  const drawXH = () => {
+    if (viewer) { viewer.destroy(); viewer = null; }
+    if (qi >= qs.length) return finish('Xếp hình chiếu đúng vị trí', qs.length);
+    const q = qs[qi], g = GC[q.m], need = { [g.top]: 'top', [g.side]: 'side' };
+    const cardOf = id => q.cards.find(c => c.id === id);
+    const slot = pos => { const id = slots[pos], c = id && cardOf(id), st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
+      return `<button class="gcslot ${st} ${held ? 'can' : ''}" data-slot="${pos}">${c ? viewSvg(c.p, 110) : `<span class="hint">${{ above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
+    setView(`<h1>🧩 Xếp hình chiếu</h1>${tabs()}
+      <div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length} · ${esc(q.sh.ten)}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard"><div class="stem">Vẽ theo <b>${g.ten}</b>: đặt <b style="color:${GC_COL.top}">hình chiếu bằng</b> và <b style="color:${GC_COL.side}">hình chiếu cạnh</b> vào đúng ô quanh hình chiếu đứng. <span class="hint">Bấm chọn một thẻ bên dưới rồi bấm vào ô; bấm vào ô đã đặt để gỡ thẻ ra. Có một thẻ thừa.</span></div>
+        <canvas id="cv" style="width:100%;height:220px;touch-action:none;background:linear-gradient(#f4f7f7,#e6eeee);border-radius:12px;margin-top:8px;cursor:grab"></canvas>
+        <div class="gcgrid"><div></div>${slot('above')}<div></div>${slot('left')}<div class="gcfront">${viewSvg(q.V.front, 110)}<span>Hình chiếu đứng</span></div>${slot('right')}<div></div>${slot('below')}<div></div></div>
+        <div class="row" style="justify-content:center;gap:10px;flex-wrap:wrap;margin-top:8px">${q.cards.filter(c => !Object.values(slots).includes(c.id)).map(c => `<button class="gccard ${held === c.id ? 'on' : ''}" data-card="${c.id}" ${done ? 'disabled' : ''}>${viewSvg(c.p, 100)}</button>`).join('') || '<span class="hint">Đã đặt hết thẻ</span>'}</div>
+        ${done ? `<div class="expl ${q.ok ? 'ans' : ''}"><b class="t">${q.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${g.ten[0].toUpperCase() + g.ten.slice(1)}: hình chiếu bằng đặt <b>${q.m === 1 ? 'dưới' : 'trên'}</b>, hình chiếu cạnh (nhìn từ trái) đặt bên <b>${q.m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng. ${q.cards.filter(c => !c.ok).map(c => esc(c.why)).join(' ')}</div>
+          <div style="text-align:center;margin-top:8px">${gcLayoutSvg(q.V, g, { frame: true, label: true, cell: 20 })}</div>
+          <button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>`
+        : `<button class="btn block" id="ck" style="margin-top:12px" ${Object.keys(slots).length ? '' : 'disabled'}>Kiểm tra</button>`}</div>`);
+    bind();
+    viewer = Viewer3D($('#cv'), q.s);
+    $$('[data-card]').forEach(b => b.onclick = () => { held = held === b.dataset.card ? null : b.dataset.card; drawXH(); });
+    $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (held) { slots[p] = held; held = null; } else if (slots[p]) delete slots[p]; drawXH(); });
+    if ($('#ck')) $('#ck').onclick = () => { q.ok = ['above', 'below', 'left', 'right'].every(p => (slots[p] || null) === (need[p] || null)); if (q.ok) score++; done = true; drawXH(); };
+    if ($('#nx')) $('#nx').onclick = () => { qi++; if (qi < qs.length) newXH(); else drawXH(); };
+  };
+  cleanup = () => { if (viewer) viewer.destroy(); };
+  draw();
 });
 
 /* ================= TRÒ CHƠI KHỞI ĐỘNG ================= */

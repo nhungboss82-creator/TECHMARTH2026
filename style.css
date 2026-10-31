@@ -387,3 +387,14 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 .stuans .sa{font-size:13px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card)}
 .stuans .sa.ok{border-color:var(--ok);background:var(--ok-soft)}.stuans .sa.bad{border-color:var(--bad);background:var(--bad-soft)}.stuans .sa.skip{opacity:.6}
 .stuans .sa i{font-style:normal;color:var(--muted)}
+/* Trò chơi góc chiếu */
+.gcwrap{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.gcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:520px;margin:12px auto 0;align-items:center}
+.gcslot{min-height:110px;border:2px dashed var(--line2);border-radius:12px;background:var(--card);display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer}
+.gcslot.can{border-color:var(--brand2);background:var(--info-soft)}
+.gcslot.ok{border:3px solid var(--ok);background:var(--ok-soft)}.gcslot.bad{border:3px solid var(--bad);background:var(--bad-soft)}
+.gcfront{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid #e53935;border-radius:12px;padding:6px;background:#fff}
+.gcfront span{font-size:12px;font-weight:700;color:#e53935}
+.gccard{border:2px solid var(--line);border-radius:12px;background:#fff;padding:6px;cursor:pointer}
+.gccard.on{border-color:var(--brand2);box-shadow:0 0 0 3px var(--info-soft)}
+.gcslot svg,.gccard svg,.gcfront svg{max-width:100%;height:auto}
