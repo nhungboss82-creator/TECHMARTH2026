@@ -3520,36 +3520,55 @@ route(/^\/hcvg$/, params => {
     bindTop();
   };
   /* ---- Luyện tập: mỗi hình làm theo 2 phương pháp ---- */
-  const startLT = () => { qs = [{ i: oi, m: 1 }, { i: oi, m: 3 }]; qi = 0; score = 0; newQ(); };
-  const newQ = () => { const q = qs[qi], O = OBJ[q.i]; cards = shuffle(['top', 'side', ...O.dis]); slots = {}; held = null; done = false; drawLT(); };
+  /* ---- Luyện tập: mỗi hình 5 câu – xếp 3 hình chiếu theo góc 1, góc 3; chọn hình chiếu đứng, bằng, cạnh đúng ---- */
+  const startLT = () => {
+    const O = OBJ[oi];
+    qs = ['g1', 'g3', 'pf', 'pt', 'ps'].map(kd => {
+      if (kd === 'g1' || kd === 'g3') return { kd, m: kd === 'g1' ? 1 : 3, slots: {}, held: null, cards: shuffle(['front', 'top', 'side', ...(O.dis || []).slice(0, 2)]) };
+      const k = { pf: 'front', pt: 'top', ps: 'side' }[kd];
+      return { kd, k, opts: shuffle([{ v: O.views[k], ok: true }, ...HCQ.variants(O, k)]) };
+    });
+    qi = 0; score = 0; done = false; ans9 = null; drawLT();
+  };
+  let ans9 = null;
   const drawLT = () => {
     kill();
+    const O = OBJ[oi];
     if (qi >= qs.length) {
-      const hk = 'hist_' + uid(), hist = store.get(hk, []); hist.push({ t: Date.now(), title: 'Hình chiếu vuông góc – luyện tập', key: '', loai: 'game', diem: Math.round(score / qs.length * 1000) / 100, dung: score, tong: qs.length, giay: 0 }); store.set(hk, hist.slice(-300));
-      setView(`${head()}${pickObj()}<div class="hero"><h1>Xong Hình ${oi + 1}! 🎉</h1><p class="sub">Em xếp đúng <b>${score}/${qs.length}</b> bản vẽ (góc chiếu thứ nhất và thứ ba).</p></div><div class="row"><button class="btn ghost" id="again">↺ Làm lại</button><button class="btn" id="nxo">Hình tiếp →</button></div>`);
+      const hk = 'hist_' + uid(), hist = store.get(hk, []); hist.push({ t: Date.now(), title: 'Hình chiếu vuông góc – ' + hcShort(O.ten), key: '', loai: 'game', diem: Math.round(score / qs.length * 1000) / 100, dung: score, tong: qs.length, giay: 0 }); store.set(hk, hist.slice(-300));
+      setView(`${head()}${pickObj()}<div class="hero"><h1>Xong Hình ${oi + 1}! 🎉</h1><p class="sub">Em làm đúng <b>${score}/${qs.length}</b> câu.</p></div><div class="row"><button class="btn ghost" id="again">↺ Làm lại</button><button class="btn" id="nxo">Hình tiếp →</button></div>`);
       bindTop(); $('#again').onclick = startLT; $('#nxo').onclick = () => { oi = (oi + 1) % OBJ.length; startLT(); }; return;
     }
-    const q = qs[qi], O = OBJ[q.i], need = q.m === 1 ? { below: 'top', right: 'side' } : { above: 'top', left: 'side' };
-    const slot = pos => { const id = slots[pos], st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
-      return `<button class="gcslot ${st} ${held ? 'can' : ''}" data-slot="${pos}">${id ? HC.svg(O.views[id], 22) : `<span class="hint">${{ above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
+    const q = qs[qi], nx = `<button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+    const model = `<div><canvas id="hc3d" class="hc3d" style="height:260px"></canvas><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="fr">Từ trước</button><button class="btn ghost sm" data-v="tp">Từ trên</button><button class="btn ghost sm" data-v="lf">Từ trái</button></div>
+      ${O.anh ? `<details style="margin-top:6px"><summary>🖼️ Hình mẫu của thầy cô</summary><img class="gcbig" src="${O.anh}" alt="Hình mẫu"></details>` : ''}</div>`;
+    let body;
+    if (q.kd === 'g1' || q.kd === 'g3') {
+      const need = HCQ.NEED(q.m);
+      const slot = pos => { const id = q.slots[pos], st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
+        return `<button class="gcslot ${st} ${q.held ? 'can' : ''}" data-slot="${pos}">${id ? HC.svg(O.views[id], 18) : `<span class="hint">${{ mid: 'Ô giữa', above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
+      body = `<div class="stem">Tìm vị trí đặt các hình chiếu theo <b style="color:${q.m === 1 ? '#0f766e' : '#7c3aed'}">phương pháp chiếu góc thứ ${q.m === 1 ? 'nhất' : 'ba'}</b>: chọn đúng <b>hình chiếu đứng, hình chiếu bằng, hình chiếu cạnh</b> rồi đặt vào đúng ô. <span class="hint">Bấm thẻ, rồi bấm ô. Có thẻ thừa gây nhiễu.</span></div>
+        <div class="hcpractice">${model}<div><div class="gcgrid"><div></div>${slot('above')}<div></div>${slot('left')}${slot('mid')}${slot('right')}<div></div>${slot('below')}<div></div></div>
+          <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">${q.cards.filter(c => !Object.values(q.slots).includes(c)).map(c => `<button class="gccard ${q.held === c ? 'on' : ''}" data-card="${c}" ${done ? 'disabled' : ''}>${HC.svg(O.views[c], 15)}</button>`).join('') || '<span class="hint">Đã đặt hết thẻ</span>'}</div></div></div>
+        ${done ? `<div class="expl ${q.ok ? 'ans' : ''}"><b class="t">${q.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>Góc chiếu thứ ${q.m === 1 ? 'nhất' : 'ba'}: hình chiếu đứng ở giữa, hình chiếu bằng đặt <b>${q.m === 1 ? 'dưới' : 'trên'}</b>, hình chiếu cạnh đặt bên <b>${q.m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng. ${(O.dis || []).map(d => O.views[d] && O.views[d].why ? '<br><span class="hint">Thẻ thừa: ' + O.views[d].why + '</span>' : '').join('')}</div><div style="margin-top:8px"><b>Đáp án</b>${hcLayoutHtml(O, q.m, { cell: 18 })}</div>${nx}`
+          : `<button class="btn block" id="ck" style="margin-top:12px" ${Object.keys(q.slots).length ? '' : 'disabled'}>Kiểm tra</button>`}`;
+    } else {
+      const ch = ans9 != null ? q.opts[ans9] : null;
+      body = `<div class="stem">Quan sát vật thể (xoay được). Trong 4 hình dưới đây, đâu là <b>${HCQ.VN[q.k]}</b> đúng (${HCQ.VDIR[q.k]})?</div>
+        <div class="hcpractice">${model}<div class="hcopts" style="grid-template-columns:1fr 1fr;margin-top:0">${q.opts.map((o, i) => `<button class="hcopt ${ch ? (o.ok ? 'ok' : i === ans9 ? 'bad' : '') : ''}" data-a="${i}" ${ch ? 'disabled' : ''}><span class="hcoptl">${'ABCD'[i]}</span>${HC.svg(o.v, 22)}</button>`).join('')}</div></div>
+        ${ch ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Đúng ' + HCQ.VN[q.k] + ' – ' + HCQ.VDIR[q.k] + '.' : (ch.why || '') + ' Đáp án đúng là ' + 'ABCD'[q.opts.findIndex(o => o.ok)] + '.'}</div>${nx}` : ''}`;
+    }
     setView(`${head()}${pickObj()}
-      <div class="qbar"><div class="title">Bài ${qi + 1}/${qs.length} · Hình ${q.i + 1}. ${esc(hcShort(O.ten))}</div><span class="timer">✔ ${score}</span></div>
-      <div class="qcard"><div class="stem">Quan sát vật thể rồi vẽ ba hình chiếu theo <b style="color:${q.m === 1 ? '#0f766e' : '#7c3aed'}">phương pháp chiếu góc thứ ${q.m === 1 ? 'nhất' : 'ba'}</b>: chọn đúng <b>hình chiếu bằng</b> và <b>hình chiếu cạnh</b> rồi đặt vào đúng ô quanh hình chiếu đứng. <span class="hint">Bấm chọn thẻ, rồi bấm vào ô. Có thẻ thừa gây nhiễu.</span></div>
-        <div class="hcpractice"><div><canvas id="hc3d" class="hc3d" style="height:260px"></canvas><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="fr">Từ trước</button><button class="btn ghost sm" data-v="tp">Từ trên</button><button class="btn ghost sm" data-v="lf">Từ trái</button></div>
-          ${O.anh ? `<details style="margin-top:6px"><summary>🖼️ Hình mẫu của thầy cô</summary><img class="gcbig" src="${O.anh}" alt="Hình mẫu"></details>` : ''}</div>
-          <div><div class="gcgrid"><div></div>${slot('above')}<div></div>${slot('left')}<div class="gcfront">${HC.svg(O.views.front, 22)}<span>Hình chiếu đứng</span></div>${slot('right')}<div></div>${slot('below')}<div></div></div>
-          <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">${cards.filter(c => !Object.values(slots).includes(c)).map(c => `<button class="gccard ${held === c ? 'on' : ''}" data-card="${c}" ${done ? 'disabled' : ''}>${HC.svg(O.views[c], 18)}</button>`).join('') || '<span class="hint">Đã đặt hết thẻ</span>'}</div></div></div>
-        ${done ? `<div class="expl ${q.ok ? 'ans' : ''}"><b class="t">${q.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>Góc chiếu thứ ${q.m === 1 ? 'nhất' : 'ba'}: hình chiếu bằng đặt <b>${q.m === 1 ? 'dưới' : 'trên'}</b>, hình chiếu cạnh đặt bên <b>${q.m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng. <br><span class="hint">Thẻ thừa: ${O.dis.map(d => O.views[d].why).join(' ')}</span></div>
-          <div style="margin-top:8px"><b>Đáp án</b>${hcLayoutHtml(O, q.m, { cell: 22 })}</div>
-          <button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Bài tiếp →' : 'Xem kết quả'}</button>`
-        : `<button class="btn block" id="ck" style="margin-top:12px" ${Object.keys(slots).length ? '' : 'disabled'}>Kiểm tra</button>`}</div>`);
+      <div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length} · ${{ g1: 'Xếp hình chiếu – góc thứ nhất', g3: 'Xếp hình chiếu – góc thứ ba', pf: 'Chọn hình chiếu đứng', pt: 'Chọn hình chiếu bằng', ps: 'Chọn hình chiếu cạnh' }[q.kd]}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard">${body}</div>`);
     bindTop();
-    sc = HCScene($('#hc3d'), { obj: O, m: q.m, show: 'object' });
+    sc = HCScene($('#hc3d'), { obj: O, m: q.m || 1, show: 'object' });
     $$('[data-v]').forEach(b => b.onclick = () => ({ iso: () => sc.iso(), fr: () => sc.view(0, 0), tp: () => sc.view(0, 1.5707), lf: () => sc.view(Math.PI / 2, 0) })[b.dataset.v]());
-    $$('[data-card]').forEach(b => b.onclick = () => { held = held === b.dataset.card ? null : b.dataset.card; drawLT(); });
-    $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (held) { slots[p] = held; held = null; } else if (slots[p]) delete slots[p]; drawLT(); });
-    if ($('#ck')) $('#ck').onclick = () => { q.ok = ['above', 'below', 'left', 'right'].every(p => (slots[p] || null) === (need[p] || null)); if (q.ok) score++; done = true; drawLT(); };
-    if ($('#nx')) $('#nx').onclick = () => { qi++; if (qi < qs.length) newQ(); else drawLT(); };
+    $$('[data-card]').forEach(b => b.onclick = () => { q.held = q.held === b.dataset.card ? null : b.dataset.card; drawLT(); });
+    $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (q.held) { q.slots[p] = q.held; q.held = null; } else if (q.slots[p]) delete q.slots[p]; drawLT(); });
+    if ($('#ck')) $('#ck').onclick = () => { const need = HCQ.NEED(q.m); q.ok = ['mid', 'above', 'below', 'left', 'right'].every(p => (q.slots[p] || null) === (need[p] || null)); if (q.ok) score++; done = true; drawLT(); };
+    $$('[data-a]').forEach(b => b.onclick = () => { ans9 = +b.dataset.a; if (q.opts[ans9].ok) score++; drawLT(); });
+    if ($('#nx')) $('#nx').onclick = () => { qi++; done = false; ans9 = null; drawLT(); };
   };
   cleanup = kill;
   if (tab === 'lt') startLT(); else draw();
@@ -3558,7 +3577,7 @@ route(/^\/hcvg$/, params => {
 /** tên ngắn gọn của vật thể trên nút chọn (tên đầy đủ, số hình SGK hiện khi rê chuột) */
 const HC_SHORT = { 'Khối bậc có vát (hình mẫu của cô)': 'Khối bậc vát', 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)': 'Gối đỡ', 'Khối chữ L có hai lỗ (SGK H.9.1)': 'Chữ L hai lỗ', 'Giá đỡ (SGK H.9.10)': 'Giá đỡ',
   'Gối đỡ chữ U': 'Chữ U', 'Khối chữ L có lỗ': 'Chữ L có lỗ', 'Khối hộp vát góc có lỗ (SGK H.11.14)': 'Khối vát có lỗ', 'Tấm có lỗ bậc': 'Tấm lỗ bậc', 'Ống lót có vai': 'Ống lót', 'Vật thể có rãnh và lỗ (SGK H.10.16)': 'Khối có rãnh',
-  'Giá đỡ (SGK H.10.10)': 'Giá đỡ', 'Khay (SGK H.10.6)': 'Khay', 'Gối đỡ (SGK H.10.17)': 'Gối đỡ', 'Trục có rãnh then (SGK H.10.9)': 'Trục', 'Giá chữ L (SGK H.12.5)': 'Giá chữ L', 'Ngôi nhà (SGK H.12.7a)': 'Ngôi nhà', 'Khối chữ T ngược': 'Chữ T ngược', 'Khối chữ L': 'Chữ L', 'Khối bậc thang': 'Bậc thang' };
+  'Giá đỡ (SGK H.10.10)': 'Giá đỡ', 'Khay (SGK H.10.6)': 'Khay', 'Gối đỡ (SGK H.10.17)': 'Gối đỡ', 'Trục có rãnh then (SGK H.10.9)': 'Trục', 'Giá chữ L (SGK H.12.5)': 'Giá chữ L', 'Ngôi nhà (SGK H.12.7a)': 'Ngôi nhà', 'Khối chữ T ngược': 'Chữ T ngược', 'Gối đỡ có vát': 'Gối vát', 'Khối ghép có rãnh': 'Khối ghép', 'Tai treo có lỗ': 'Tai treo', 'Khối chữ L': 'Chữ L', 'Khối bậc thang': 'Bậc thang' };
 const hcShort = t => HC_SHORT[t] || String(t).replace(/\s*\(.*\)\s*$/, '');
 const hcBtn = (on, attr, i, ten, extra = '') => `<button class="${on ? 'on' : ''}" ${attr} title="${esc(ten)}">${extra}Hình ${i + 1}. ${esc(hcShort(ten))}</button>`;
 
@@ -3842,7 +3861,16 @@ const HCX = (() => {
   }
   const sig = it => it.filter(x => x.p).map(x => x.k + x.p.map(q => q.map(v => v.toFixed(2)).join(',')).sort().join(';')).sort().join('|');
   /* ---- danh sách vật thể (theo hình thầy cô gửi) ---- */
+  const AP = (cx, cy, r, a0, a1, n) => { const P = HC.G.arcPts(cx, cy, r, a0, a1, n); P[P.length - 1][2] = 0; return P; };
   const DEF = [
+    { id: 'goivat', ten: 'Gối đỡ có vát', W: 2.6, D: 3.4, H: 3, axes: [{ c: [1.3, 1.3, 0.35], ax: 'z', r: 0.6, a: [0, 0.7] }],
+      pcs: [Z([...AP(1.3, 1.3, 1.3, 180, 360, 18), [2.6, 3.4, 0], [0, 3.4, 0]], [C(1.3, 1.3, 0.6)], 0, 0.7),
+        Yp([[0, 0.7], [2.6, 0.7], [2.6, 2.4], [1.9, 2.4], [1.9, 1.6], [1.4, 1.6], [0.6, 3], [0, 3]], [], 2.6, 3.4)] },
+    { id: 'khoighep', ten: 'Khối ghép có rãnh', W: 3, D: 2.8, H: 3.6,
+      pcs: [Yp([[0, 0], [3, 0], [3, 3.6], [2, 3.6], [2, 3.0], [1, 3.0], [1, 3.6], [0, 3.6]], [], 2, 2.8), Z(R4(2.2, 0, 3, 2), [], 0, 3.6), Z(R4(0, 0, 1, 1.2), [], 0, 1.4), Z(R4(1, 0, 2.2, 1.2), [], 0, 0.9)] },
+    { id: 'taitreo', ten: 'Tai treo có lỗ', W: 3.8, D: 1.4, H: 3.2, axes: [{ c: [2.2, 0.7, 1.6], ax: 'y', r: 0.8, a: [0, 1.4] }],
+      pcs: [Yp([[1, 0], [3.8, 0], [3.8, 1.6, 1], ...AP(2.2, 1.6, 1.6, 0, 90, 14).slice(1), [1, 3.2]], [C(2.2, 1.6, 0.8)], 0, 1.4),
+        Yp([[0, 0], [1, 0], [1, 3.2], [0, 3.2], [0, 2.4], [0.6, 2.4], [0.6, 0.8], [0, 0.8]], [], 0, 1.4)] },
     { id: 'khoilo', ten: 'Khối có lỗ tròn', W: 3.2, D: 1.6, H: 3.4, axes: [{ c: [1.2, 0.8, 1.4], ax: 'y', r: 0.75, a: [0, 1.6] }],
       pcs: [Yp([[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]], [C(1.2, 1.4, 0.75)], 0, 1.6)] },
     { id: 'ranhhop', ten: 'Khối có rãnh hộp', W: 4, D: 3.2, H: 2.6,
@@ -3915,8 +3943,35 @@ const HCX = (() => {
   const OBJ10 = DEF.filter(d => SEC.includes(d.id)).map(mk10);
   return { OBJ9, OBJ10, SEC };
 })();
-HC.OBJ.push(...HCX.OBJ9);
+HC.OBJ.splice(2, 0, ...HCX.OBJ9.slice(0, 3));
+HC.OBJ.push(...HCX.OBJ9.slice(3));
 
+/* ---- dùng chung cho luyện tập hình chiếu: sinh phương án nhiễu ---- */
+const HCQ = (() => {
+  const flipIt = (it, W, H, fu, fv) => it.map(x => {
+    const U = u => fu ? W - u : u, Vv = v => fv ? H - v : v;
+    if (x.p) return { ...x, p: x.p.map(q => [U(q[0]), Vv(q[1])]) };
+    if (x.c) return { ...x, c: [U(x.c[0]), Vv(x.c[1]), x.c[2]] };
+    if (x.a) { let [cx, cy, r, a0, a1] = x.a; if (fu) [a0, a1] = [180 - a1, 180 - a0]; if (fv) [a0, a1] = [-a1, -a0]; return { ...x, a: [U(cx), Vv(cy), r, a0, a1] }; }
+    return x;
+  });
+  const vsig = v => JSON.stringify(v.it.map(x => x.k + JSON.stringify(x.p ? x.p.map(q => q.map(n => n.toFixed(2))).sort() : x.c || x.a || '')).sort());
+  const variants = (T, k) => {
+    const v = T.views[k], C = [];
+    const add = (it, why) => C.push({ v: { W: v.W, H: v.H, it }, why });
+    add(flipIt(v.it, v.W, v.H, true, false), 'Hình này bị lật trái – phải.');
+    add(flipIt(v.it, v.W, v.H, false, true), 'Hình này bị lật ngược trên – dưới.');
+    if (v.it.some(x => x.k === 'h')) { add(v.it.map(x => x.k === 'h' ? { ...x, k: 'v' } : x), 'Cạnh bị che khuất phải vẽ bằng nét đứt, không vẽ nét liền.'); add(v.it.filter(x => x.k !== 'h'), 'Hình này thiếu các cạnh khuất (nét đứt).'); }
+    Object.keys(T.views).filter(n => !['front', 'top', 'side', k].includes(n)).forEach(n => C.push({ v: T.views[n], why: T.views[n].why || 'Đây không phải hình chiếu cần tìm.' }));
+    ['front', 'top', 'side'].filter(n => n !== k).forEach(n => C.push({ v: T.views[n], why: n === 'front' ? 'Đây là hình chiếu đứng (nhìn từ trước).' : n === 'top' ? 'Đây là hình chiếu bằng (nhìn từ trên).' : 'Đây là hình chiếu cạnh (nhìn từ trái).' }));
+    const seen = new Set([vsig(v)]), out = [];
+    shuffle(C.slice(0, 4)).concat(C.slice(4)).forEach(c => { const s = vsig(c.v); if (out.length < 3 && !seen.has(s)) { seen.add(s); out.push(c); } });
+    return out;
+  };
+  const VN = { front: 'hình chiếu đứng', top: 'hình chiếu bằng', side: 'hình chiếu cạnh' }, VDIR = { front: 'nhìn từ trước', top: 'nhìn từ trên xuống', side: 'nhìn từ trái sang' };
+  const NEED = m => m === 1 ? { mid: 'front', below: 'top', right: 'side' } : { mid: 'front', above: 'top', left: 'side' };
+  return { variants, VN, VDIR, NEED };
+})();
 const K10_NAV = [['#/hcvg', 'Bài 9', 'Hình chiếu vuông góc'], ['#/hcat', 'Bài 10', 'Hình cắt, mặt cắt'], ['#/hctd', 'Bài 11', 'Hình chiếu trục đo'], ['#/hcpc', 'Bài 12', 'Phối cảnh']];
 const k10nav = cur => `<div class="k10nav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a>${K10_NAV.map(([h, b, t]) => `<a href="${h}" class="${h === cur ? 'on' : ''}"><b>${b}</b> ${t}</a>`).join('')}</div>`;
 const HCC = (() => {
@@ -4443,14 +4498,43 @@ route(/^\/hctd$/, params => {
     $$('[data-t]').forEach(b => b.onclick = () => { ti = +b.dataset.t; drawSS(); });
     setTimeout(() => { [['#c1', 'vgd'], ['#c2', 'xien']].forEach(([s, ty]) => { const cv = $(s); sizeCv(cv); hctdDraw(cv, T, ty, 4); }); }, 0);
   };
+  /* ---- Luyện tập: (1) xếp ba hình chiếu theo PPCG thứ nhất / thứ ba; (2) chọn hình chiếu đứng / bằng / cạnh đúng; (3) chọn hình trục đo ---- */
+  const flipIt = (it, W, H, fu, fv) => it.map(x => {
+    const U = u => fu ? W - u : u, Vv = v => fv ? H - v : v;
+    if (x.p) return { ...x, p: x.p.map(q => [U(q[0]), Vv(q[1])]) };
+    if (x.c) return { ...x, c: [U(x.c[0]), Vv(x.c[1]), x.c[2]] };
+    if (x.a) { let [cx, cy, r, a0, a1] = x.a; if (fu) [a0, a1] = [180 - a1, 180 - a0]; if (fv) [a0, a1] = [-a1, -a0]; return { ...x, a: [U(cx), Vv(cy), r, a0, a1] }; }
+    return x;
+  });
+  const vsig = v => JSON.stringify(v.it.map(x => x.k + JSON.stringify(x.p ? x.p.map(q => q.map(n => n.toFixed(2))).sort() : x.c || x.a || '')).sort());
+  const variants = (T, k) => {
+    const v = T.views[k], C = [];
+    const add = (it, why) => C.push({ v: { W: v.W, H: v.H, it }, why });
+    add(flipIt(v.it, v.W, v.H, true, false), 'Hình này bị lật trái – phải.');
+    add(flipIt(v.it, v.W, v.H, false, true), 'Hình này bị lật ngược trên – dưới.');
+    if (v.it.some(x => x.k === 'h')) { add(v.it.map(x => x.k === 'h' ? { ...x, k: 'v' } : x), 'Cạnh bị che khuất phải vẽ bằng nét đứt, không vẽ nét liền.'); add(v.it.filter(x => x.k !== 'h'), 'Hình này thiếu các cạnh khuất (nét đứt).'); }
+    Object.keys(T.views).filter(n => !['front', 'top', 'side', k].includes(n)).forEach(n => C.push({ v: T.views[n], why: T.views[n].why || 'Đây không phải hình chiếu cần tìm.' }));
+    ['front', 'top', 'side'].filter(n => n !== k).forEach(n => C.push({ v: T.views[n], why: n === 'front' ? 'Đây là hình chiếu đứng (nhìn từ trước).' : n === 'top' ? 'Đây là hình chiếu bằng (nhìn từ trên).' : 'Đây là hình chiếu cạnh (nhìn từ trái).' }));
+    const seen = new Set([vsig(v)]), out = [];
+    shuffle(C.slice(0, 4)).concat(C.slice(4)).forEach(c => { const s = vsig(c.v); if (out.length < 3 && !seen.has(s)) { seen.add(s); out.push(c); } });
+    return out;
+  };
+  const VN = { front: 'hình chiếu đứng', top: 'hình chiếu bằng', side: 'hình chiếu cạnh' }, VDIR = { front: 'nhìn từ trước', top: 'nhìn từ trên xuống', side: 'nhìn từ trái sang' };
+  const NEED = m => m === 1 ? { mid: 'front', below: 'top', right: 'side' } : { mid: 'front', above: 'top', left: 'side' };
   const startLT = () => {
-    const asym = Object.fromEntries(TD.filter(t => !t.sym).map(t => [t.id, 1]));
-    qs = shuffle(TD.map((t, i) => i)).slice(0, 8).map(i => { const t = TD[i];
-      const others = shuffle(TD.filter((u, j) => j !== i));
-      const opts = [{ T: t, ok: true }];
-      if (asym[t.id]) opts.push({ T: t, F: HCC.mirror(t), why: 'Hình này bị lật trái – phải so với bản vẽ ba hình chiếu.' });
-      while (opts.length < 3) { const u = others.shift(); opts.push({ T: u, why: 'Hình dạng vật thể này không khớp với ba hình chiếu.' }); }
-      return { t, type: Math.random() < 0.5 ? 'vgd' : 'xien', opts: shuffle(opts) };
+    const kinds = ['g1', 'g3', 'pf', 'pt', 'ps', 'g1', 'g3', 'axo', 'pf', 'ps'];
+    const objs = shuffle(TD.map((t, i) => i));
+    qs = kinds.map((kd, n) => {
+      const t = TD[objs[n % objs.length]];
+      if (kd === 'g1' || kd === 'g3') return { kd, t, m: kd === 'g1' ? 1 : 3, slots: {}, held: null, cards: shuffle(['front', 'top', 'side', ...(t.dis || []).slice(0, 1)]) };
+      if (kd === 'axo') {
+        const others = shuffle(TD.filter(u => u !== t)), opts = [{ T: t, ok: true }];
+        if (!t.sym) opts.push({ T: t, F: HCC.mirror(t), why: 'Hình này bị lật trái – phải so với bản vẽ ba hình chiếu.' });
+        while (opts.length < 3) opts.push({ T: others.shift(), why: 'Hình dạng vật thể này không khớp với ba hình chiếu.' });
+        return { kd, t, type: Math.random() < 0.5 ? 'vgd' : 'xien', opts: shuffle(opts) };
+      }
+      const k = { pf: 'front', pt: 'top', ps: 'side' }[kd];
+      return { kd, t, k, opts: shuffle([{ v: t.views[k], ok: true }, ...variants(t, k)]) };
     });
     qi = 0; score = 0; ans = null; drawLT();
   };
@@ -4461,14 +4545,38 @@ route(/^\/hctd$/, params => {
       setView(`${head()}<div class="hero"><h1>Hoàn thành! 🎉</h1><p class="sub">Em làm đúng <b>${score}/${qs.length}</b> câu.</p></div><div class="row"><button class="btn" id="again">Làm lại</button></div>`);
       bindTop(); $('#again').onclick = startLT; return;
     }
-    const q = qs[qi], done = ans != null, ch = done ? q.opts[ans] : null;
-    setView(`${head()}<div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length}</div><span class="timer">✔ ${score}</span></div>
-      <div class="qcard"><div class="stem">Quan sát bản vẽ ba hình chiếu (phương pháp chiếu góc thứ nhất). Chọn <b>hình chiếu trục đo ${q.type === 'xien' ? 'xiên góc cân' : 'vuông góc đều'}</b> đúng của vật thể.</div>
-        ${hcLayoutHtml(q.t, 1, { cell: 20 })}
+    const q = qs[qi], T = q.t, done = ans != null, nx = `<button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+    const axoCv = '<canvas id="ax" class="hc3d" style="height:240px;cursor:default"></canvas>';
+    let body = '';
+    if (q.kd === 'g1' || q.kd === 'g3') {
+      const need = NEED(q.m);
+      const slot = pos => { const id = q.slots[pos], st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
+        return `<button class="gcslot ${st} ${q.held ? 'can' : ''}" data-slot="${pos}">${id ? HC.svg(T.views[id], 18) : `<span class="hint">${{ mid: 'Ô giữa', above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
+      body = `<div class="stem">Quan sát hình chiếu trục đo. Chọn thẻ hình chiếu rồi đặt vào đúng vị trí theo <b style="color:${q.m === 1 ? '#0f766e' : '#7c3aed'}">phương pháp chiếu góc thứ ${q.m === 1 ? 'nhất' : 'ba'}</b>. <span class="hint">Bấm thẻ, rồi bấm ô. Có thẻ thừa.</span></div>
+        <div class="hcpractice"><div>${axoCv}</div><div><div class="gcgrid"><div></div>${slot('above')}<div></div>${slot('left')}${slot('mid')}${slot('right')}<div></div>${slot('below')}<div></div></div>
+          <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">${q.cards.filter(c => !Object.values(q.slots).includes(c)).map(c => `<button class="gccard ${q.held === c ? 'on' : ''}" data-card="${c}" ${done ? 'disabled' : ''}>${HC.svg(T.views[c], 15)}</button>`).join('') || '<span class="hint">Đã đặt hết thẻ</span>'}</div></div></div>
+        ${done ? `<div class="expl ${q.ok ? 'ans' : ''}"><b class="t">${q.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>Góc chiếu thứ ${q.m === 1 ? 'nhất' : 'ba'}: hình chiếu đứng ở giữa, hình chiếu bằng đặt <b>${q.m === 1 ? 'dưới' : 'trên'}</b>, hình chiếu cạnh đặt bên <b>${q.m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng.</div><div style="margin-top:8px"><b>Đáp án</b>${hcLayoutHtml(T, q.m, { cell: 18 })}</div>${nx}`
+          : `<button class="btn block" id="ck" style="margin-top:12px" ${Object.keys(q.slots).length ? '' : 'disabled'}>Kiểm tra</button>`}`;
+    } else if (q.kd === 'axo') {
+      const ch = done ? q.opts[ans] : null;
+      body = `<div class="stem">Quan sát bản vẽ ba hình chiếu (phương pháp chiếu góc thứ nhất). Chọn <b>hình chiếu trục đo ${q.type === 'xien' ? 'xiên góc cân' : 'vuông góc đều'}</b> đúng của vật thể.</div>${hcLayoutHtml(T, 1, { cell: 20 })}
         <div class="hcopts td">${q.opts.map((o, i) => `<button class="hcopt ${done ? (o.ok ? 'ok' : i === ans ? 'bad' : '') : ''}" data-a="${i}" ${done ? 'disabled' : ''}><span class="hcoptl">${'ABC'[i]}</span><canvas data-cv="${i}" style="width:100%;height:170px;display:block"></canvas></button>`).join('')}</div>
-        ${done ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Hình chiếu trục đo khớp với cả ba hình chiếu.' : ch.why + ' Đáp án đúng là ' + 'ABC'[q.opts.findIndex(o => o.ok)] + '.'}</div><button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
+        ${done ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Hình chiếu trục đo khớp với cả ba hình chiếu.' : ch.why + ' Đáp án đúng là ' + 'ABC'[q.opts.findIndex(o => o.ok)] + '.'}</div>${nx}` : ''}`;
+    } else {
+      const ch = done ? q.opts[ans] : null;
+      body = `<div class="stem">Quan sát hình chiếu trục đo của vật thể (mặt trước là mặt bên trái hình). Chọn <b>${VN[q.k]}</b> đúng (${VDIR[q.k]}).</div>${axoCv}
+        <div class="hcopts">${q.opts.map((o, i) => `<button class="hcopt ${done ? (o.ok ? 'ok' : i === ans ? 'bad' : '') : ''}" data-a="${i}" ${done ? 'disabled' : ''}><span class="hcoptl">${'ABCD'[i]}</span>${HC.svg(o.v, 24)}</button>`).join('')}</div>
+        ${done ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Đúng ' + VN[q.k] + ' – ' + VDIR[q.k] + '.' : (ch.why || '') + ' Đáp án đúng là ' + 'ABCD'[q.opts.findIndex(o => o.ok)] + '.'}</div>${nx}` : ''}`;
+    }
+    setView(`${head()}<div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length} · ${{ g1: 'Xếp hình chiếu – góc 1', g3: 'Xếp hình chiếu – góc 3', axo: 'Chọn hình trục đo', pf: 'Chọn hình chiếu đứng', pt: 'Chọn hình chiếu bằng', ps: 'Chọn hình chiếu cạnh' }[q.kd]}</div><span class="timer">✔ ${score}</span></div><div class="qcard">${body}</div>`);
     bindTop();
-    setTimeout(() => $$('[data-cv]').forEach(cv => { const o = q.opts[+cv.dataset.cv]; sizeCv(cv); hctdDraw(cv, o.T, q.type, 4, 1, { axes: false, F: o.F, pad: 14, lw: 2 }); }), 0);
+    setTimeout(() => {
+      const ax = $('#ax'); if (ax) { sizeCv(ax); hctdDraw(ax, T, 'vgd', 4, 1, { axes: false, pad: 18, lw: 2.2 }); }
+      $$('[data-cv]').forEach(cv => { const o = q.opts[+cv.dataset.cv]; sizeCv(cv); hctdDraw(cv, o.T, q.type, 4, 1, { axes: false, F: o.F, pad: 14, lw: 2 }); });
+    }, 0);
+    $$('[data-card]').forEach(b => b.onclick = () => { q.held = q.held === b.dataset.card ? null : b.dataset.card; drawLT(); });
+    $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (q.held) { q.slots[p] = q.held; q.held = null; } else if (q.slots[p]) delete q.slots[p]; drawLT(); });
+    if ($('#ck')) $('#ck').onclick = () => { const need = NEED(q.m); q.ok = ['mid', 'above', 'below', 'left', 'right'].every(p => (q.slots[p] || null) === (need[p] || null)); if (q.ok) score++; ans = 1; drawLT(); };
     $$('[data-a]').forEach(b => b.onclick = () => { ans = +b.dataset.a; if (q.opts[ans].ok) score++; drawLT(); });
     if ($('#nx')) $('#nx').onclick = () => { qi++; ans = null; drawLT(); };
   };
