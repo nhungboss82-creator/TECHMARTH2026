@@ -362,6 +362,15 @@ function setView(html) {
     while (wrap.nextSibling) main.appendChild(wrap.nextSibling);
     side.appendChild(pk); wrap.append(side, main);
   }
+  // nút phóng to / thu nhỏ cho các mô hình 3D (gửi sự kiện cuộn chuột cho khung vẽ)
+  V.querySelectorAll('canvas.hc3d, canvas#cv').forEach(cv => {
+    if (cv.id === 'td' || cv.id === 'pc' || cv.id === 'road' || cv.closest('.hczw')) return;
+    const w = document.createElement('div'); w.className = 'hczw'; cv.parentNode.insertBefore(w, cv); w.appendChild(cv);
+    const bar = document.createElement('div'); bar.className = 'hczb';
+    bar.innerHTML = '<button type="button" data-z="-1" title="Phóng to">＋</button><button type="button" data-z="1" title="Thu nhỏ">－</button>';
+    bar.querySelectorAll('button').forEach(b => b.onclick = e => { e.preventDefault(); for (let k = 0; k < 2; k++) cv.dispatchEvent(new WheelEvent('wheel', { deltaY: +b.dataset.z * 100, bubbles: true, cancelable: true })); });
+    w.appendChild(bar);
+  });
 }
 function errBox(el, e) { if (!el) return; el.innerHTML = `<div class="err">${esc(e.message || e)}</div>`; }
 async function busy(btn, fn) {
@@ -3064,9 +3073,6 @@ route(/^\/gocchieu$/, () => {
           <div style="text-align:center;margin-top:6px"><b>Hộp chiếu và cách trải phẳng</b><div style="margin-top:6px">${gcBoxSvg(s, m, { unit: 22 })}</div></div>
           <div style="text-align:center">${gcSchema(m)}</div>
           <p class="hint">Việt Nam (TCVN) và nhiều nước châu Âu dùng phương pháp chiếu góc thứ nhất; phương pháp chiếu góc thứ ba được dùng ở Mỹ và một số nước khác. Đọc bản vẽ nước ngoài cần xem kí hiệu phương pháp chiếu trên khung tên.</p></div></div>
-      <div class="card"><b>🖼️ Hình mẫu của thầy cô</b> <span class="hint">– bấm để mở hình</span>
-        <div class="gcpick">${Object.entries(GC_IMG).map(([k, v]) => `<button class="${fig === k ? 'on' : ''}" data-fig="${k}">${esc(v[1])}</button>`).join('')}</div>
-        ${fig ? `<div style="text-align:center;margin-top:10px">${fig === 'giado3' ? gcGiaDo() : `<img class="gcbig" src="${GC_IMG[fig][0]}" alt="${esc(GC_IMG[fig][1])}">`}</div>` : ''}</div>
       <div class="card"><b>🎯 Luyện tập</b><div class="row" style="margin-top:8px;flex-wrap:wrap"><button class="btn" data-mode="nhanbiet">🔍 Nhận biết góc chiếu (12 câu)</button><button class="btn accent" data-mode="xephinh">🧩 Xếp hình chiếu đúng vị trí (5 câu)</button>${isGV() ? '<button class="btn ghost" id="fs">🖥️ Trình chiếu toàn màn hình</button>' : ''}</div></div>`);
     bind();
     viewer = Viewer3D($('#cv'), s);
@@ -3500,7 +3506,7 @@ route(/^\/hcvg$/, params => {
         ${step !== 'unfold' ? `<button class="btn block" id="next" style="margin-top:8px">${step === 'object' ? 'Tiếp: Đặt vào 3 mặt phẳng →' : step === 'planes' ? 'Tiếp: Chiếu lên các mặt phẳng →' : 'Tiếp: Lật thành một mặt phẳng →'}</button>`
           : `<div style="margin-top:12px"><b>Bản vẽ ba hình chiếu sau khi lật (${m === 1 ? 'góc chiếu thứ nhất' : 'góc chiếu thứ ba'})</b>${hcLayoutHtml(O, m)}</div>
              <div class="row" style="margin-top:8px"><button class="btn" data-tab="${m === 1 ? 'g3' : 'ss'}">${m === 1 ? 'Tiếp: Phương pháp chiếu góc thứ ba →' : 'Tiếp: So sánh hai phương pháp →'}</button></div>`}
-        ${O.anh ? `<details style="margin-top:10px"><summary>🖼️ Hình mẫu của thầy cô</summary><img class="gcbig" src="${O.anh}" alt="Hình mẫu" style="margin-top:8px"></details>` : ''}</div>`);
+        </div>`);
     bindTop();
     sc = HCScene($('#hc3d'), { obj: O, m, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
     if (step === 'unfold') setTimeout(() => sc && sc.unfold(), 350);
@@ -3552,7 +3558,7 @@ route(/^\/hcvg$/, params => {
     }
     const q = qs[qi], nx = `<button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
     const model = `<div><canvas id="hc3d" class="hc3d" style="height:260px"></canvas><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="fr">Từ trước</button><button class="btn ghost sm" data-v="tp">Từ trên</button><button class="btn ghost sm" data-v="lf">Từ trái</button></div>
-      ${O.anh ? `<details style="margin-top:6px"><summary>🖼️ Hình mẫu của thầy cô</summary><img class="gcbig" src="${O.anh}" alt="Hình mẫu"></details>` : ''}</div>`;
+      </div>`;
     let body;
     if (q.kd === 'g1' || q.kd === 'g3') {
       const need = HCQ.NEED(q.m);
