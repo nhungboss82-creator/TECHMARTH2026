@@ -305,7 +305,7 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Tổng quan', /^\/gv$/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|matran|sinhde|dethi|baive|thietke)/], ['#/gv/baigiao', 'task', 'Bài đã giao', /^\/gv\/(baigiao|bai\/|lop|hs)/], ['#/gv/nganhang', 'bank', 'Ngân hàng', /^\/gv\/(nganhang|themcau)/]]
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hinhchieu|gocchieu|trochoi|sgk|thitn)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
     : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
@@ -1369,54 +1369,115 @@ function csv(name, rows) {
 }
 const joinLink = code => location.origin + location.pathname + '#/dangky?lop=' + code;
 
+/* ================= Trang chủ Giáo viên (gọn: Quản lý học sinh + Hỗ trợ dạy học theo khối) ================= */
+const GV_APPS = k => {
+  const A = (href, ic, c, t, d, who) => ({ href, ic, c, t, d, who });
+  const sgk = window.STC_SGK ? [A('#/sgk?k=' + k, '📘', '', 'Sách giáo khoa ' + k, 'Mở đúng bài để trình chiếu', 'GV·HS')] : [];
+  const show = {
+    '10': [A('#/hcvg', '📐', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: góc chiếu 1, góc chiếu 3, lật mặt phẳng', 'GV·HS'),
+      A('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D, mặt cắt rời, mặt cắt chập', 'GV·HS'),
+      A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
+      A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
+    '11': [], '12': []
+  }[k];
+  const hs = [
+    ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
+    A('#/chude?by=bai&k=' + k, '📖', '', 'Ôn theo bài học', 'Câu hỏi từng bài SGK Lớp ' + k + ', chấm ngay', 'HS'),
+    A('#/dinhki?k=' + k, '📑', 'amber', 'Đề kiểm tra định kì', 'Giữa kì, cuối kì theo ma trận', 'HS'),
+    ...(k === '10' ? [A('#/gocchieu', '🎯', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết, xếp hình chiếu nhiều vật thể', 'HS')] : [])
+  ];
+  const gv = [
+    ...(k === '12' ? [A('#/gv/thitn', '📊', 'green', 'Quản lý đề luyện thi TN', 'Kết quả từng đề, câu HS hay sai', 'GV')] : []),
+    A('#/gv/aisoancau?k=' + k, '🤖', 'green', 'AI soạn câu hỏi', 'Soạn câu mới theo bài, mức độ; GV duyệt', 'GV'),
+    A('#/gv/matran?k=' + k, '🧾', 'amber', 'Ma trận & đề kiểm tra', 'Ma trận GK, CK; sinh đề, in đề', 'GV'),
+    A('#/gv/thietke?k=' + k, '💡', 'amber', 'Bài toán thiết kế (AI)', 'Bài toán STEM gắn địa phương', 'GV'),
+    ...(k === '10' ? [A('#/gv/baive?k=10', '📷', '', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : []),
+    A('#/gv/themcau', '✍️', '', 'Thêm câu hỏi', 'Trắc nghiệm, Đúng/Sai, tự luận', 'GV')
+  ];
+  return [['🖥️ Trình chiếu trên lớp', [...show, ...sgk, A('#/trochoi?k=' + k, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh', 'GV·HS')]],
+    ['📚 Học sinh tự ôn luyện', hs], ['🧰 Công cụ cho giáo viên', gv]];
+};
+const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
+const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('my_classes'); return window._gvCls; };
+
 route(/^\/gv$/, async params => {
   if (!needGV()) return;
   const u = session.user;
-  let k = (params && params.get('khoi')) || store.get('gv_active_khoi', 'all');
-  let classes = null, err = '';
+  let k = (params && params.get('khoi')) || store.get('gv_active_khoi', '10');
+  if (!['10', '11', '12'].includes(k)) k = '10';
+  let classes = window._gvCls || null;
   const nameOf = s => esc(String(s || '').trim().split(' ').slice(-2).join(' '));
-  const row = (href, ic, c, t, d) => `<a href="${href}"><span class="ic ${c}">${ic}</span><span class="tx"><b>${t}</b><span>${d}</span></span><span class="chev">›</span></a>`;
   const draw = () => {
-    const kq = k === 'all' ? '' : '?k=' + k;
-    const cls = (classes || []).filter(c => k === 'all' || String(c.Khoi) === k);
-    const hs = cls.reduce((s, c) => s + (+c.siSo || 0), 0);
-    const nq = bank.q.filter(q => k === 'all' || q.k === k).length, nTL = bank.q.filter(q => q.t === 'L' && (k === 'all' || q.k === k)).length;
+    const hs = (classes || []).reduce((s, c) => s + (+c.siSo || 0), 0);
     setView(`<section class="hero">
         <div class="greet"><div><h1>Chào thầy/cô ${nameOf(u.HoTen)} 👋</h1><p class="sub">${esc(u.Truong || '')}${session.role === 'admin' ? ' – Quản trị viên' : ''}</p></div></div>
-        <div class="stats"><div class="stat"><b>${classes ? cls.length : '…'}</b><span>lớp</span></div><div class="stat"><b>${classes ? hs : '…'}</b><span>học sinh</span></div><div class="stat"><b>${nq.toLocaleString('vi-VN')}</b><span>câu hỏi (${nTL} tự luận)</span></div></div>
+        <div class="stats"><div class="stat"><b>${classes ? classes.length : '…'}</b><span>lớp</span></div><div class="stat"><b>${classes ? hs : '…'}</b><span>học sinh</span></div><div class="stat"><b>${bank.q.length.toLocaleString('vi-VN')}</b><span>câu hỏi</span></div></div>
       </section>
-      <div class="tabs">${[['all', 'Tất cả'], ['10', 'Khối 10'], ['11', 'Khối 11'], ['12', 'Khối 12']].map(([v, t]) => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">${t}</button>`).join('')}</div>
-      <div class="quick">
-        <a class="qa" href="#/gv/giaobai${kq}"><span class="ic">📤</span>Giao bài</a>
-        <a class="qa amber" href="#/gv/matran${kq}"><span class="ic">📑</span>Ma trận & đề</a>
-        <a class="qa green" href="#/gv/baigiao"><span class="ic">📊</span>Điểm số</a>
-        <a class="qa" href="#/gv/baive${kq}"><span class="ic">📷</span>Bài vẽ AI chấm</a>
-        <a class="qa amber" href="#/gv/thietke${kq}"><span class="ic">💡</span>Bài toán thiết kế</a>
-        <a class="qa green" href="#/gv/aisoancau${kq}"><span class="ic">🤖</span>AI soạn câu hỏi</a>
-        <a class="qa amber" href="#/hcvg"><span class="ic">📐</span>Hình chiếu vuông góc</a>
-        <a class="qa" href="#/gv/thitn"><span class="ic">🎓</span>Quản lý đề luyện thi TN</a>
-      </div>
-      <div class="sechead"><h2>Lớp của tôi</h2><a href="#/gv/taolop">+ Tạo lớp</a></div>
-      <div id="cl">${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
-        : cls.length ? '<div class="rows">' + cls.map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>Khối ${esc(c.Khoi)} – ${c.siSo} học sinh – mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' – lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('') + '</div>'
-        : `<div class="card empty">Chưa có lớp${k === 'all' ? '' : ' khối ' + k}. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>`}</div>
-      <div class="card" style="margin-top:12px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>
-      <h2>Công cụ trên lớp</h2><div class="rows">
-        ${row('#/gv/aisoancau' + kq, '🤖', 'green', 'AI soạn câu hỏi', 'AI soạn câu mới theo bài, mức độ – thầy cô duyệt rồi thêm vào ngân hàng')}
-        ${row('#/gv/themcau', '✍️', '', 'Thêm câu hỏi', 'Trắc nghiệm, Đúng/Sai hoặc tự luận có đáp án mẫu')}
-        ${row('#/hinhchieu', '🧊', '', 'Hình chiếu 3D', 'Trình chiếu vật thể xoay 360°, tìm hình chiếu đúng')}
-        ${row('#/trochoi' + kq, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh')}
-        ${window.STC_SGK ? row('#/sgk', '📘', '', 'Sách giáo khoa', 'Mở SGK đúng bài để trình chiếu') : ''}
-        ${row('#/?role=hs', '🎓', 'green', 'Xem như học sinh', 'Thử giao diện học sinh đang dùng')}
-        ${session.role === 'admin' ? row('#/admin', '🛡️', 'red', 'Quản trị', 'Duyệt giáo viên, cập nhật ngân hàng') : ''}
-      </div>`);
+      <h2>👥 Quản lý học sinh</h2>
+      <div class="rows applist">${[
+        { href: '#/gv/lop', ic: '🏫', c: 'green', t: 'Các lớp', d: `${classes ? classes.length + ' lớp · ' + hs + ' học sinh · ' : ''}danh sách học sinh, mã đăng ký` },
+        { href: '#/gv/diem', ic: '📊', c: 'green', t: 'Điểm', d: 'Bảng điểm từng lớp, xếp hạng – xuất Excel' },
+        { href: '#/gv/giaobai', ic: '📤', c: '', t: 'Giao bài', d: 'Chọn bài / ma trận, xem trước đề, mã QR cho HS' },
+        { href: '#/gv/baigiao', ic: '📋', c: '', t: 'Bài đã giao', d: 'Theo dõi HS nộp bài, công bố điểm' }].map(appTile).join('')}</div>
+      <h2>🎓 Hỗ trợ dạy học</h2>
+      <div class="tabs">${['10', '11', '12'].map(v => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">Khối ${v}</button>`).join('')}</div>
+      ${GV_APPS(k).map(([t, xs]) => xs.length ? `<div class="appgrp"><h3>${t}</h3><div class="rows applist">${xs.map(appTile).join('')}</div></div>` : '').join('')}
+      <p class="hint" style="margin-top:14px">Nhãn <span class="who">GV·HS</span> dùng được cho cả thầy cô (trình chiếu) và học sinh (tự học) · <span class="who hs">HS</span> học sinh tự ôn · <span class="who gv">GV</span> chỉ giáo viên.</p>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
+  };
+  draw();
+  try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
+  if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
+});
+
+/* ---- Các lớp ---- */
+route(/^\/gv\/lop$/, async () => {
+  if (!needGV()) return;
+  let classes = window._gvCls || null, err = '';
+  const draw = () => {
+    const ks = ['10', '11', '12'].filter(k => (classes || []).some(c => String(c.Khoi) === k));
+    setView(`<a href="#/gv">← Trang chủ</a><div class="sechead"><h1 style="margin:6px 0">🏫 Các lớp</h1><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>
+      ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
+        : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
+        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${classes.filter(c => String(c.Khoi) === k).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('')}
+      <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>`);
     $('#mccp').onclick = async () => { const m = window._maChung || ''; try { await navigator.clipboard.writeText(m); toast('Đã sao chép mã chung: ' + m); } catch (e) { toast('Mã chung: ' + m, 5000); } };
   };
   draw();
   if (!window._maChung) api('get_common').then(r => { window._maChung = r.ma; const v = $('#mcv'); if (v) v.textContent = r.ma; }).catch(() => {});
-  try { classes = await api('my_classes'); } catch (e) { err = e.message; }
-  if (location.hash.startsWith('#/gv') && !/#\/gv\//.test(location.hash)) draw();
+  try { window._gvCls = null; classes = await gvClasses(); } catch (e) { err = e.message; }
+  if (location.hash === '#/gv/lop') draw();
+});
+
+/* ---- Điểm: chọn lớp → bảng điểm, xuất Excel ---- */
+route(/^\/gv\/diem$/, async params => {
+  if (!needGV()) return;
+  let classes = window._gvCls || null, err = '', code = (params && params.get('lop')) || store.get('gv_diem_lop', '');
+  const draw = () => {
+    if (classes && classes.length && !classes.some(c => c.MaLop === code)) code = classes[0].MaLop;
+    const ks = ['10', '11', '12'].filter(k => (classes || []).some(c => String(c.Khoi) === k));
+    setView(`<a href="#/gv">← Trang chủ</a><h1>📊 Điểm</h1><p class="sub">Chọn lớp → tích các bài / đề cần lấy điểm → <b>Xuất Excel</b>.</p>
+      ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải…'}</div>` : !classes.length ? '<div class="card empty">Chưa có lớp.</div>'
+        : `<div class="card">${ks.map(k => `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0"><b style="width:70px">Khối ${k}</b>${classes.filter(c => String(c.Khoi) === k).map(c => `<button class="btn ${c.MaLop === code ? '' : 'ghost'} sm" data-lop="${c.MaLop}">${esc(c.TenLop || c.MaLop)}</button>`).join('')}</div>`).join('')}</div>
+        <div id="bd"><div class="card empty">Đang tải bảng điểm…</div></div>`}`);
+    $$('[data-lop]').forEach(b => b.onclick = () => { code = b.dataset.lop; store.set('gv_diem_lop', code); draw(); load(); });
+  };
+  let seq = 0;
+  const load = async () => {
+    if (!classes || !classes.length) return;
+    const my = ++seq, c = classes.find(x => x.MaLop === code);
+    try {
+      const [students, results, asg] = await Promise.all([api('class_students', { code }), api('class_results', { code }), api('list_assignments')]);
+      if (my !== seq || !$('#bd')) return;
+      students.sort((a, b) => viNameCmp(a.HoTen, b.HoTen));
+      $('#bd').innerHTML = `<div class="row" style="align-items:center"><h2 class="grow">Lớp ${esc(c.TenLop)} · ${students.length} học sinh</h2><a class="btn ghost sm" href="#/gv/lop/${code}">Mở lớp ›</a></div><div id="bds"></div>`;
+      scoreSheet($('#bds'), c, students, results, asg.filter(a => a.DanhSachLop.includes(code)));
+    } catch (e) { if ($('#bd')) errBox($('#bd'), e); }
+  };
+  draw();
+  try { if (!classes) classes = await gvClasses(); } catch (e) { err = e.message; }
+  if (location.hash.startsWith('#/gv/diem')) { draw(); load(); }
 });
 
 route(/^\/gv\/taolop$/, () => {
@@ -1460,7 +1521,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   const maxT = tops.length ? tops[0][1] : 1;
   const hardQ = Object.entries(wrongQ).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const now = Date.now();
-  setView(`<a href="#/gv">← Lớp của tôi</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
+  setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
     <div id="ledit"></div>
     <div class="card"><div class="row"><div class="grow"><div class="hint">Mã lớp</div><div class="code">${esc(code)}</div>
       <div class="hint">Mật khẩu chung: <b>${esc(c.MatKhauLop || '')}</b></div>
