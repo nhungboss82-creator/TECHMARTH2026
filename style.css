@@ -465,3 +465,6 @@ textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-
 @media (max-width:520px){.gvbig a.big b{font-size:17px}}
 .applist a .who{margin-left:6px;flex:none}
 .applist a .ic.red{background:var(--bad-soft)}
+.pcdefs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pcdefs>div{background:var(--bg,#f8fafc);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.5}
+@media (max-width:720px){.pcdefs{grid-template-columns:1fr}}

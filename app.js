@@ -305,7 +305,7 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hinhchieu|gocchieu|trochoi|sgk|thitn)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
     : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
@@ -662,6 +662,7 @@ route(/^\/onluyen$/, () => {
       ${row('#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: chiếu góc thứ nhất, góc thứ ba, so sánh và luyện tập Hình 1, 2, 3, 4')}
       ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D: hình cắt toàn bộ, một nửa, mặt cắt rời, mặt cắt chập')}
       ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Vẽ từng bước: vuông góc đều, xiên góc cân; luyện tập đọc bản vẽ')}
+      ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
     </div>` : ''}
     <h2>Theo nội dung</h2><div class="rows">
       ${row('#/chude?by=bai', '📖', '', 'Theo bài học', 'Chọn bài trong SGK Lớp ' + (is12 ? '10, 11, 12' : g))}
@@ -1377,6 +1378,7 @@ const GV_APPS = k => {
     '10': [A('#/hcvg', '📐', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: góc chiếu 1, góc chiếu 3, lật mặt phẳng', 'GV·HS'),
       A('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D, mặt cắt rời, mặt cắt chập', 'GV·HS'),
       A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
+      A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
     '11': [], '12': []
   }[k];
@@ -3552,7 +3554,7 @@ function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
   const { img, dep, ids } = B, px = img.data; dep.fill(Infinity); px.fill(0); ids.fill(0);
   const Lt = [0.35, -0.6, 0.72], ln = Math.hypot(...Lt), base = o.color || [1, 0.85, 0.52];
   const hs = Math.max(6, Math.round(7 * dp)), hw = Math.max(1, Math.round(1.3 * dp));
-  const front = f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3;
+  const front = o.front || (f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3);
   const vis = [];
   faces.forEach((f, fi) => {
     if (!front(f)) return;
@@ -3586,7 +3588,7 @@ function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
   B.cv.getContext('2d').putImageData(img, 0, 0);
   const al = o.alpha == null ? 1 : o.alpha;
   ctx.globalAlpha = al; ctx.drawImage(B.cv, 0, 0); ctx.globalAlpha = 1;
-  const bias = Math.max(0.15, 5 * dp / (o.k || 40));
+  const bias = o.bias != null ? o.bias : Math.max(0.15, 5 * dp / (o.k || 40));
   let own1 = 0, own2 = 0;
   const seen = (sx, sy, d) => { const x = sx | 0, y = sy | 0; let mn = Infinity; for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) if (xx >= 0 && yy >= 0 && xx < w && yy < h) { const id = yy * w + xx, fid = ids[id]; if (fid && (fid === own1 || fid === own2)) return true; mn = Math.min(mn, dep[id]); } return d <= mn + bias; };
   ctx.globalAlpha = al; ctx.strokeStyle = o.edge || '#3b2a0c'; ctx.lineWidth = (o.lw || 2.3) * dp; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
@@ -3600,7 +3602,7 @@ function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
   };
   const idx = new Map(faces.map((f, i) => [f, i + 1]));
   vis.forEach(f => { own1 = idx.get(f); own2 = 0; f.edges.forEach(([a, b]) => seg(a, b)); });
-  own1 = own2 = 0; faces.forEach(f => { if (Math.abs(f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2]) <= 1e-3) f.edges.forEach(([a, b]) => seg(a, b)); });
+  if (!o.front) { own1 = own2 = 0; faces.forEach(f => { if (Math.abs(f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2]) <= 1e-3) f.edges.forEach(([a, b]) => seg(a, b)); }); }
   faces.forEach(f => f.sil && f.sil.forEach(s => { if (front(f) !== front(s.g)) { own1 = idx.get(f); own2 = idx.get(s.g) || 0; seg(s.a, s.b); } }));
   ctx.stroke(); ctx.globalAlpha = 1;
   return vis;
@@ -3679,7 +3681,7 @@ function HCView(canvas, opt) {
 }
 
 /* ================= KHỐI 10 – VẬT THỂ CHO HÌNH CẮT, MẶT CẮT ================= */
-const K10_NAV = [['#/hcvg', 'Bài 9. Hình chiếu vuông góc'], ['#/hcat', 'Bài 10. Hình cắt và mặt cắt'], ['#/hctd', 'Bài 11. Hình chiếu trục đo']];
+const K10_NAV = [['#/hcvg', 'Bài 9. Hình chiếu vuông góc'], ['#/hcat', 'Bài 10. Hình cắt và mặt cắt'], ['#/hctd', 'Bài 11. Hình chiếu trục đo'], ['#/hcpc', 'Bài 12. Hình chiếu phối cảnh']];
 const k10nav = cur => `<div class="k10nav">${K10_NAV.map(([h, t]) => `<a href="${h}" class="${h === cur ? 'on' : ''}">📁 ${t}</a>`).join('')}</div>`;
 const HCC = (() => {
   const { extrude, prep, circ, arcPts } = HC.G;
@@ -4087,6 +4089,262 @@ route(/^\/hctd$/, params => {
         ${done ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Hình chiếu trục đo khớp với cả ba hình chiếu.' : ch.why + ' Đáp án đúng là ' + 'ABC'[q.opts.findIndex(o => o.ok)] + '.'}</div><button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
     bindTop();
     setTimeout(() => $$('[data-cv]').forEach(cv => { const o = q.opts[+cv.dataset.cv]; sizeCv(cv); hctdDraw(cv, o.T, q.type, 4, 1, { axes: false, F: o.F, pad: 14, lw: 2 }); }), 0);
+    $$('[data-a]').forEach(b => b.onclick = () => { ans = +b.dataset.a; if (q.opts[ans].ok) score++; drawLT(); });
+    if ($('#nx')) $('#nx').onclick = () => { qi++; ans = null; drawLT(); };
+  };
+  cleanup = kill;
+  if (tab === 'lt') startLT(); else draw();
+});
+
+/* ================= BÀI 12. HÌNH CHIẾU PHỐI CẢNH (1 điểm tụ, 2 điểm tụ) ================= */
+const PC_OBJ = [
+  { ten: 'Khối chữ L', W: 4, D: 3, out: [[0, 0], [4, 0], [4, 1.2], [1.4, 1.2], [1.4, 3], [0, 3]] },
+  { ten: 'Khối bậc thang', W: 4.2, D: 3, out: [[0, 0], [4.2, 0], [4.2, 1], [2.8, 1], [2.8, 2], [1.4, 2], [1.4, 3], [0, 3]] },
+  { ten: 'Ngôi nhà', W: 4, D: 4.6, out: [[0, 0], [4, 0], [4, 2.2], [2, 3.6], [0, 2.2]] },
+  { ten: 'Gối đỡ chữ U', W: 4, D: 2.4, out: [[0, 0], [4, 0], [4, 3], [2.8, 3], [2.8, 1.4], [1.2, 1.4], [1.2, 3], [0, 3]] },
+  { ten: 'Khối chữ T ngược', W: 4.4, D: 2.6, out: [[0, 0], [4.4, 0], [4.4, 1], [2.8, 1], [2.8, 3], [1.6, 3], [1.6, 1], [0, 1]] }
+];
+PC_OBJ.forEach(o => { o.H = Math.max(...o.out.map(p => p[1])); });
+const pcFaces = o => o.F || (o.F = HC.G.prep(HC.G.extrude('y', HC.G.xz(o.out), [], 0, o.D)));
+/** máy chiếu phối cảnh: mắt ở (ex, −dist, ez), mặt tranh y = 0; vật thể xoay góc th quanh trục đứng tại gốc rồi dời (ox, oy) */
+function pcCam(c) {
+  const cs = Math.cos(c.th), sn = Math.sin(c.th);
+  const T = p => [p[0] * cs - p[1] * sn + c.ox, p[0] * sn + p[1] * cs + c.oy, p[2]];
+  const Pp = p => { const q = T(p), t = c.dist / (q[1] + c.dist); return [c.ex + (q[0] - c.ex) * t, c.ez + (q[2] - c.ez) * t, -1 / (q[1] + c.dist)]; };
+  const vp = u => Math.abs(u[1]) < 1e-6 ? null : c.ex + c.dist * u[0] / u[1];
+  return { T, Pp, F1: vp([cs, sn]), F2: vp([-sn, cs]), rot: n => [n[0] * cs - n[1] * sn, n[0] * sn + n[1] * cs, n[2]] };
+}
+/** vẽ cảnh phối cảnh lên canvas. o: {obj, mode:1|2, ex, ez, th, step(1-5), g (0-1 tiến độ bước), box, guides} */
+function pcDraw(cv, o) {
+  const ctx = cv.getContext('2d'), Wc = cv.width, Hc = cv.height, dp = window.devicePixelRatio || 1;
+  const O = o.obj, c = { th: o.mode === 2 ? o.th : 0, dist: o.dist || 9, ex: o.ex, ez: o.ez, ox: o.ox || 0, oy: o.oy || 0 }, C = pcCam(c);
+  const B = o.box, k = Math.min(Wc / (B[2] - B[0]), Hc / (B[3] - B[1]));
+  const ox = (Wc - (B[2] - B[0]) * k) / 2, oy = (Hc - (B[3] - B[1]) * k) / 2;
+  const S = (X, Z) => [ox + (X - B[0]) * k, Hc - oy - (Z - B[1]) * k];
+  const P = p => { const q = C.Pp(p), s = S(q[0], q[1]); return [s[0], s[1], q[2]]; };
+  const line = (a, b, col, lw, dash, al = 1, g = 1) => { ctx.globalAlpha = al; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(a[0] + (b[0] - a[0]) * g, a[1] + (b[1] - a[1]) * g); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; };
+  const dot = (p, col, r = 6) => { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], r * dp, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dp; ctx.stroke(); };
+  const txt = (s, x, y, col, sz = 13, al = 'center') => { ctx.font = `700 ${Math.round(sz * dp)}px system-ui,sans-serif`; ctx.fillStyle = col; ctx.textAlign = al; ctx.fillText(s, x, y); ctx.textAlign = 'left'; };
+  ctx.clearRect(0, 0, Wc, Hc);
+  const st = o.step, g = o.g == null ? 1 : o.g, gs = n => st > n ? 1 : st === n ? g : 0;
+  const hz = S(0, c.ez)[1], F1 = C.F1 != null ? S(C.F1, c.ez) : null, F2 = C.F2 != null ? S(C.F2, c.ez) : null;
+  // mặt đất nhẹ phía dưới đường chân trời
+  if (o.ground !== false) { const gr = ctx.createLinearGradient(0, hz, 0, Hc); gr.addColorStop(0, 'rgba(148,163,184,.10)'); gr.addColorStop(1, 'rgba(148,163,184,.0)'); ctx.fillStyle = gr; ctx.fillRect(0, hz, Wc, Hc - hz); }
+  // B1: đường chân trời + điểm tụ
+  if (o.guides !== false) {
+    line([0, hz], [Wc, hz], '#0f766e', 2, null, 1, gs(1));
+    if (gs(1) > 0.6) {
+      // đặt chữ ở phía xa các điểm tụ để không đè lên nhau
+      const vx = [F1, F2].filter(Boolean).map(F => F[0]), dl = Math.min(Infinity, ...vx.map(x => Math.abs(x - 80 * dp))), dr = Math.min(Infinity, ...vx.map(x => Math.abs(x - (Wc - 80 * dp))));
+      const mid = Math.min(Infinity, ...vx.map(x => Math.abs(x - Wc / 2)));
+      if (Math.max(dl, dr) > 110 * dp) dl >= dr ? txt('Đường chân trời tt', 10 * dp, hz - 8 * dp, '#0f766e', 12.5, 'left') : txt('Đường chân trời tt', Wc - 10 * dp, hz - 8 * dp, '#0f766e', 12.5, 'right');
+      else if (mid > 80 * dp) txt('Đường chân trời tt', Wc / 2, hz - 8 * dp, '#0f766e', 12.5);
+      else txt('tt', 10 * dp, hz - 8 * dp, '#0f766e', 13, 'left');
+    }
+  }
+  const VP = o.mode === 2 ? [F1, F2] : [F2];
+  if (o.guides !== false && gs(1) > 0.8) VP.forEach((F, i) => { if (!F) return; dot(F, '#e11d48', 7); txt(o.mode === 2 ? 'F' + (i + 1) : 'F', F[0], F[1] - 12 * dp, '#e11d48', 14); });
+  const out = O.out, D = O.D;
+  const P0 = out.map(([x, z]) => P([x, 0, z])), P1 = out.map(([x, z]) => P([x, D, z]));
+  const poly = (Q, col, lw, g2 = 1, dash) => { const n = Q.length, m = g2 * n; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineJoin = 'round'; ctx.beginPath(); ctx.moveTo(Q[0][0], Q[0][1]); for (let i = 1; i <= Math.floor(m) && i <= n; i++) ctx.lineTo(Q[i % n][0], Q[i % n][1]); if (m < n) { const i = Math.floor(m), f = m - i, a = Q[i % n], b = Q[(i + 1) % n]; ctx.lineTo(a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f); } ctx.stroke(); ctx.setLineDash([]); };
+  const fin = st >= 5, gl = fin ? 0.35 : 1;
+  if (o.guides === false) {} else if (o.mode === 1) {
+    if (gs(2) > 0) poly(P0, '#1d4ed8', 2.6, gs(2));
+    if (gs(3) > 0 && F2) P0.forEach(p => line(p, F2, '#64748b', 1.1, [5, 4], gl, gs(3)));
+    if (gs(4) > 0) { poly(P1, '#1d4ed8', 1.8, gs(4), [6, 4]); if (gs(4) > 0.9) out.forEach((_, i) => line(P0[i], P1[i], '#1d4ed8', 1.8, null, gl)); }
+  } else {
+    const h0 = Math.max(...out.filter(p => p[0] === 0).map(p => p[1])), hW = Math.max(...out.filter(p => Math.abs(p[0] - O.W) < 1e-6).map(p => p[1]));
+    const A = P([0, 0, 0]), Bt = P([0, 0, h0]);
+    if (gs(2) > 0) { line(A, Bt, '#1d4ed8', 3, null, 1, gs(2)); if (gs(2) > 0.9 && !fin) txt('Cạnh đứng gần nhất', A[0] + 6 * dp, A[1] + 18 * dp, '#1d4ed8', 12, 'left'); }
+    if (gs(3) > 0) [A, Bt].forEach(p => { if (F1) line(p, F1, '#64748b', 1.1, [5, 4], gl, gs(3)); if (F2) line(p, F2, '#64748b', 1.1, [5, 4], gl, gs(3)); });
+    if (gs(4) > 0) {
+      const a1 = P([O.W, 0, 0]), b1 = P([O.W, 0, hW]), a2 = P([0, D, 0]), b2 = P([0, D, h0]);
+      line(a1, b1, '#1d4ed8', 2.4, null, 1, gs(4)); line(a2, b2, '#1d4ed8', 2.4, null, 1, gs(4));
+      if (gs(4) > 0.9) { poly(P0, '#1d4ed8', 1.8, 1); if (F2) P0.forEach(p => line(p, F2, '#94a3b8', 0.9, [3, 4], gl)); }
+    }
+  }
+  // B5: vẽ hoàn chỉnh, tô đậm
+  if (gs(5) > 0) {
+    const F = pcFaces(O), eye = [c.ex, -c.dist, c.ez];
+    const front = f => { const n = C.rot(f.n), q = C.T(f.pts[0]); return n[0] * (q[0] - eye[0]) + n[1] * (q[1] - eye[1]) + n[2] * (q[2] - eye[2]) < -1e-6; };
+    hcPaint(ctx, Wc | 0, Hc | 0, F, P, [0, 1, 0], dp, { front, bias: 0.0025, alpha: gs(5), lw: 2.6 });
+  }
+  if (o.guides !== false && gs(1) > 0.8 && o.handles) VP.forEach(F => { if (F) dot(F, '#e11d48', 7); });
+  return { S, hz, F1, F2, k };
+}
+/** khung nhìn cố định cho một vật thể và phương pháp */
+function pcBox(O, mode, ez, th, dist) {
+  if (mode === 1) return [-2.6, -1.4, O.W + 5.2, Math.max(O.H, ez) + 1.6];
+  const cs = Math.cos(th), sn = Math.sin(th), ex = 0.4, F1 = ex + dist * cs / sn, F2 = ex - dist * sn / cs;
+  return [F2 - 1.2, -1.6, F1 + 1.2, Math.max(O.H, ez) + 1.4];
+}
+
+route(/^\/hcpc$/, params => {
+  let tab = (params && params.get('tab')) || 'kn', oi = 0, step = 1, raf = 0, qs = [], qi = 0, score = 0, ans = null;
+  let ex1 = null, ez = null, th = 38 * Math.PI / 180;
+  const TABS = [['kn', '① Khái niệm & điểm tụ'], ['p1', '② Phối cảnh 1 điểm tụ'], ['p2', '③ Phối cảnh 2 điểm tụ'], ['lt', '④ Luyện tập']];
+  const head = () => `<a href="#/onluyen">← Ôn luyện</a>${k10nav('#/hcpc')}<h1>🛤️ Hình chiếu phối cảnh</h1>
+    <p class="sub">Hình chiếu phối cảnh biểu diễn vật thể giống như mắt ta nhìn thấy: vật ở xa trông nhỏ hơn, các đường song song chạy ra xa như gặp nhau tại <b>điểm tụ</b>.</p>
+    <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const kill = () => cancelAnimationFrame(raf);
+  const bindTop = () => $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 1; ex1 = ez = null; if (tab === 'lt') startLT(); else draw(); });
+  const sizeCv = cv => { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = Math.max(200, r.width * d); cv.height = Math.max(160, r.height * d); };
+  const draw = () => { kill(); if (tab === 'kn') return drawKN(); drawPC(tab === 'p2' ? 2 : 1); };
+  /* ---- ① Khái niệm: hiệu ứng con đường, đường ray chạy về điểm tụ ---- */
+  const drawKN = () => {
+    setView(`${head()}<div class="card"><canvas id="road" class="hc3d" style="height:360px;cursor:grab"></canvas>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn ghost sm" id="pp">⏸ Dừng</button><span class="hint">Kéo chuột/vuốt ngang để dời điểm tụ, kéo dọc để nâng hạ tầm mắt.</span></div>
+      <div class="expl" style="margin-top:10px"><b class="t">Quan sát</b>Mép đường, đường ray, hàng cột điện đều song song với nhau, nhưng càng ra xa chúng càng chụm lại và <b>gặp nhau tại một điểm F</b> nằm trên <b>đường chân trời</b> (ngang tầm mắt). Cột ở gần trông cao, cột ở xa trông thấp dần.</div></div>
+      <div class="card"><h3 style="margin-top:0">Các khái niệm</h3><div class="pcdefs">
+        <div><b>Hình chiếu phối cảnh</b> là hình biểu diễn được xây dựng bằng <b>phép chiếu xuyên tâm</b>, tâm chiếu là <b>mắt người quan sát</b> (điểm nhìn).</div>
+        <div><b>Mặt tranh</b>: mặt phẳng thẳng đứng, giữa người quan sát và vật thể, trên đó vẽ hình phối cảnh.</div>
+        <div><b>Mặt phẳng tầm mắt</b>: mặt phẳng nằm ngang đi qua điểm nhìn. Giao tuyến của nó với mặt tranh là <b>đường chân trời tt</b>.</div>
+        <div><b>Mặt phẳng vật thể</b>: mặt phẳng nằm ngang đặt vật thể (mặt đất).</div>
+        <div><b>Điểm tụ F</b>: điểm trên đường chân trời, nơi các đường song song (không song song với mặt tranh) hội tụ.</div>
+        <div><b>Ứng dụng</b>: vẽ kiến trúc, nội thất, quảng cáo, minh họa sản phẩm – thường đặt cạnh các hình chiếu vuông góc để người xem dễ hình dung.</div></div></div>
+      <div class="hccompare"><div class="card"><h3 style="margin-top:0;color:#0f766e">Phối cảnh 1 điểm tụ</h3><canvas id="k1" class="hc3d" style="height:220px;cursor:default"></canvas><p class="hint">Mặt tranh <b>song song</b> với một mặt của vật thể → mặt đó giữ nguyên hình dạng; các cạnh vuông góc mặt tranh chạy về <b>1 điểm tụ</b>. Hay dùng vẽ đường phố, hành lang, nội thất.</p></div>
+        <div class="card"><h3 style="margin-top:0;color:#7c3aed">Phối cảnh 2 điểm tụ</h3><canvas id="k2" class="hc3d" style="height:220px;cursor:default"></canvas><p class="hint">Mặt tranh <b>không song song</b> với mặt nào của vật thể (chỉ song song cạnh thẳng đứng) → hai hướng cạnh nằm ngang chạy về <b>2 điểm tụ</b>. Hình sinh động, hay dùng vẽ ngôi nhà, công trình.</p></div></div>
+      <div class="card"><button class="btn block" data-tab="p1">Tiếp: Vẽ phối cảnh 1 điểm tụ →</button></div>`);
+    bindTop();
+    const cv = $('#road');
+    let fx = 0.5, fy = 0.42, off = 0, run = true, drag = null;
+    cv.onpointerdown = e => { cv.setPointerCapture(e.pointerId); drag = [e.clientX, e.clientY]; };
+    cv.onpointermove = e => { if (!drag) return; const r = cv.getBoundingClientRect(); fx = Math.max(0.15, Math.min(0.85, fx + (e.clientX - drag[0]) / r.width)); fy = Math.max(0.2, Math.min(0.7, fy + (e.clientY - drag[1]) / r.height)); drag = [e.clientX, e.clientY]; if (!run) paint(); };
+    cv.onpointerup = cv.onpointercancel = () => { drag = null; };
+    const paint = () => {
+      const ctx = cv.getContext('2d'), W = cv.width, H = cv.height, dp = window.devicePixelRatio || 1, F = [W * fx, H * fy];
+      const sky = ctx.createLinearGradient(0, 0, 0, F[1]); sky.addColorStop(0, '#bfdbfe'); sky.addColorStop(1, '#eff6ff'); ctx.fillStyle = sky; ctx.fillRect(0, 0, W, F[1]);
+      const gr = ctx.createLinearGradient(0, F[1], 0, H); gr.addColorStop(0, '#d9f99d'); gr.addColorStop(1, '#86efac'); ctx.fillStyle = gr; ctx.fillRect(0, F[1], W, H - F[1]);
+      // mặt đường
+      const bl = [W * 0.08, H], br = [W * 0.92, H];
+      ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(F[0], F[1]); ctx.lineTo(br[0], br[1]); ctx.lineTo(bl[0], bl[1]); ctx.closePath(); ctx.fill();
+      // vị trí theo độ sâu: s ∈ (0,1] (1 = sát người xem), phối cảnh y = F + (bottom − F)·s
+      const at = (bx, s) => [F[0] + (bx - F[0]) * s, F[1] + (H - F[1]) * s];
+      // vạch giữa đường chạy về phía người xem
+      ctx.fillStyle = '#fff';
+      for (let i = 0; i < 14; i++) { const z = ((i + off) % 14) / 14, s0 = Math.pow(z, 2.2), s1 = Math.pow(Math.min(1, z + 0.035), 2.2); const a = at(W * 0.5 - 6 * dp, s0), b = at(W * 0.5 + 6 * dp, s0), c2 = at(W * 0.5 + 6 * dp, s1), d2 = at(W * 0.5 - 6 * dp, s1); ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(d2[0], d2[1]); ctx.fill(); }
+      // cột điện hai bên
+      for (let i = 0; i < 10; i++) {
+        const z = ((i + off * 0.7) % 10) / 10, s = Math.pow(z, 2.2); if (s < 0.01) continue;
+        [W * -0.05, W * 1.05].forEach(bx => { const p = at(bx, s), h = (H - F[1]) * 1.6 * s; ctx.strokeStyle = '#78350f'; ctx.lineWidth = Math.max(1, 9 * s * dp); ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(p[0], p[1] - h); ctx.stroke(); ctx.lineWidth = Math.max(1, 5 * s * dp); ctx.beginPath(); ctx.moveTo(p[0] - h * 0.18, p[1] - h * 0.92); ctx.lineTo(p[0] + h * 0.18, p[1] - h * 0.92); ctx.stroke(); });
+      }
+      // đường dóng về điểm tụ
+      ctx.setLineDash([6 * dp, 5 * dp]); ctx.strokeStyle = '#e11d48'; ctx.lineWidth = 1.6 * dp;
+      [bl, br, [W * -0.05, H], [W * 1.05, H], [W * -0.05, H - (H - F[1]) * 1.6], [W * 1.05, H - (H - F[1]) * 1.6]].forEach(p => { ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(F[0], F[1]); ctx.stroke(); });
+      ctx.setLineDash([]);
+      ctx.strokeStyle = '#0f766e'; ctx.lineWidth = 2 * dp; ctx.beginPath(); ctx.moveTo(0, F[1]); ctx.lineTo(W, F[1]); ctx.stroke();
+      ctx.font = `700 ${Math.round(13 * dp)}px system-ui,sans-serif`; ctx.fillStyle = '#0f766e'; ctx.fillText('Đường chân trời tt (ngang tầm mắt)', 10 * dp, F[1] - 8 * dp);
+      ctx.fillStyle = '#e11d48'; ctx.beginPath(); ctx.arc(F[0], F[1], 7 * dp, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dp; ctx.stroke();
+      ctx.fillStyle = '#e11d48'; ctx.textAlign = 'center'; ctx.fillText('Điểm tụ F', F[0], F[1] - 14 * dp); ctx.textAlign = 'left';
+    };
+    const loop = () => { if (run) off = (off + 0.03) % 140; paint(); raf = requestAnimationFrame(loop); };
+    setTimeout(() => {
+      sizeCv(cv); loop();
+      const O = PC_OBJ[2];
+      [['#k1', 1], ['#k2', 2]].forEach(([s, m]) => { const c = $(s); sizeCv(c); const e = O.H + 1.6, ex = m === 1 ? O.W + 1.8 : 0.4; pcDraw(c, { obj: O, mode: m, ex, ez: e, th, dist: m === 1 ? 9 : 8, step: 5, box: pcBox(O, m, e, th, 8) }); });
+    }, 0);
+    $('#pp').onclick = () => { run = !run; $('#pp').textContent = run ? '⏸ Dừng' : '▶ Chạy'; };
+  };
+  /* ---- ② ③ Vẽ phối cảnh từng bước ---- */
+  const drawPC = mode => {
+    const O = PC_OBJ[oi], dist = mode === 1 ? 9 : 8;
+    if (ez == null) ez = O.H + 1.4;
+    if (ex1 == null) ex1 = O.W + 1.8;
+    const S1 = [[1, 'B1. Đường chân trời, điểm tụ'], [2, 'B2. Vẽ mặt trước'], [3, 'B3. Nối các đỉnh với F'], [4, 'B4. Xác định chiều sâu'], [5, 'B5. Tô đậm, hoàn thiện']];
+    const S2 = [[1, 'B1. Đường chân trời, 2 điểm tụ'], [2, 'B2. Cạnh đứng gần nhất'], [3, 'B3. Nối với F1, F2'], [4, 'B4. Chiều dài, chiều rộng'], [5, 'B5. Tô đậm, hoàn thiện']];
+    const S = mode === 1 ? S1 : S2;
+    const T1 = {
+      1: 'Vẽ <b>đường chân trời tt</b> (ngang tầm mắt) và chọn <b>điểm tụ F</b> trên đó. <i>Kéo điểm F đỏ</i> trên hình để đổi vị trí nhìn.',
+      2: 'Vẽ <b>mặt trước</b> của vật thể đúng hình dạng thật (giống hình chiếu đứng), vì mặt này song song với mặt tranh.',
+      3: 'Nối các đỉnh của mặt trước với điểm tụ <b>F</b> bằng nét mảnh – đó là phương của các cạnh chạy ra xa.',
+      4: 'Trên các đường nối, xác định <b>chiều sâu</b> của vật thể (ước lượng bằng mắt) rồi vẽ <b>mặt sau</b> song song với mặt trước.',
+      5: 'Xóa nét thừa, <b>tô đậm các cạnh thấy</b>. Thử kéo F lên cao hoặc xuống thấp để thấy vật thể được nhìn <b>từ trên</b>, <b>ngang tầm</b> hay <b>từ dưới</b>.'
+    };
+    const T2 = {
+      1: 'Vẽ <b>đường chân trời tt</b> và chọn <b>hai điểm tụ F1, F2</b> trên đó. Vật thể được xoay xiên so với mặt tranh.',
+      2: 'Vẽ <b>cạnh thẳng đứng gần người quan sát nhất</b> với chiều cao thật – đây là cạnh duy nhất không bị thu nhỏ.',
+      3: 'Nối hai đầu của cạnh đứng với <b>F1</b> và <b>F2</b> bằng nét mảnh.',
+      4: 'Trên các đường nối, xác định <b>chiều dài</b> (về phía F1) và <b>chiều rộng</b> (về phía F2), vẽ các cạnh thẳng đứng còn lại.',
+      5: 'Vẽ các chi tiết theo các đường chạy về F1, F2, xóa nét thừa, <b>tô đậm</b>. Đổi góc xoay để thấy điểm tụ dịch chuyển.'
+    };
+    setView(`${head()}
+      <div class="card"><b>Chọn vật thể</b><div class="gcpick">${PC_OBJ.map((t, i) => `<button class="${i === oi ? 'on' : ''}" data-o="${i}">Hình ${i + 1}. ${t.ten}</button>`).join('')}</div></div>
+      <div class="card"><div class="hcsteps" style="grid-template-columns:repeat(5,minmax(0,1fr))">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+        <canvas id="pc" class="hc3d" style="height:400px;cursor:default;touch-action:none"></canvas>
+        <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center">
+          <button class="btn ghost sm" data-eye="hi">⬆ Nhìn từ trên</button><button class="btn ghost sm" data-eye="mid">↔ Ngang tầm</button><button class="btn ghost sm" data-eye="lo">⬇ Nhìn từ dưới</button>
+          ${mode === 2 ? '<label style="display:flex;align-items:center;gap:6px;margin:0">Góc xoay <input id="th" type="range" min="20" max="70" value="' + Math.round(th * 180 / Math.PI) + '"></label>' : ''}
+          <span class="grow"></span><button class="btn sm" id="play">▶ Dựng tự động</button></div>
+        <div class="expl" style="margin-top:10px"><b class="t">${S[step - 1][1]}</b>${(mode === 1 ? T1 : T2)[step]}</div>
+        ${step < 5 ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[step][1]} →</button>` : `<button class="btn block" data-tab="${mode === 1 ? 'p2' : 'lt'}" style="margin-top:8px">Tiếp: ${mode === 1 ? 'Phối cảnh 2 điểm tụ' : 'Luyện tập'} →</button>`}</div>`);
+    bindTop();
+    $$('[data-o]').forEach(b => b.onclick = () => { oi = +b.dataset.o; ex1 = ez = null; step = 1; draw(); });
+    $$('[data-step]').forEach(b => b.onclick = () => { step = +b.dataset.step; draw(); });
+    if ($('#next')) $('#next').onclick = () => { step++; draw(); };
+    const cv = $('#pc');
+    let box = null, info = null;
+    const opts = (g = 1) => ({ obj: O, mode, ex: mode === 1 ? ex1 : 0.4, ez, th, dist, step, g, box, handles: true });
+    const render = g => { info = pcDraw(cv, opts(g)); };
+    const anim = (ms = 1100) => { kill(); const t0 = performance.now(); const go = now => { const g = Math.min(1, (now - t0) / ms); render(g); if (g < 1) raf = requestAnimationFrame(go); }; raf = requestAnimationFrame(go); };
+    const reBox = () => { box = pcBox(O, mode, Math.max(ez, O.H + 2.4), th, dist); };
+    // kéo điểm tụ / đường chân trời
+    let drag = null;
+    cv.onpointerdown = e => {
+      if (!info) return; const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1, x = (e.clientX - r.left) * d, y = (e.clientY - r.top) * d;
+      const near = [info.F1, info.F2].filter(Boolean).some(F => Math.hypot(F[0] - x, F[1] - y) < 26 * d) || Math.abs(y - info.hz) < 14 * d;
+      if (near) { drag = { x, y }; cv.setPointerCapture(e.pointerId); }
+    };
+    cv.onpointermove = e => {
+      const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1, x = (e.clientX - r.left) * d, y = (e.clientY - r.top) * d;
+      if (!drag) { if (info) cv.style.cursor = ([info.F1, info.F2].filter(Boolean).some(F => Math.hypot(F[0] - x, F[1] - y) < 26 * d) || Math.abs(y - info.hz) < 14 * d) ? 'grab' : 'default'; return; }
+      const k = info.k;
+      ez = Math.max(-0.8, Math.min(box[3] - 0.4, ez - (y - drag.y) / k));
+      if (mode === 1) ex1 = Math.max(box[0] + 0.4, Math.min(box[2] - 0.4, ex1 + (x - drag.x) / k));
+      drag = { x, y }; kill(); render(1);
+    };
+    cv.onpointerup = cv.onpointercancel = () => { drag = null; };
+    $$('[data-eye]').forEach(b => b.onclick = () => { const to = { hi: O.H + 1.6, mid: O.H * 0.5, lo: -0.6 }[b.dataset.eye], from = ez, t0 = performance.now(); kill(); const go = now => { const g = Math.min(1, (now - t0) / 600); ez = from + (to - from) * (g * (2 - g)); render(1); if (g < 1) raf = requestAnimationFrame(go); }; raf = requestAnimationFrame(go); });
+    if ($('#th')) $('#th').oninput = e => { th = +e.target.value * Math.PI / 180; reBox(); kill(); render(1); };
+    $('#play').onclick = () => { kill(); let s = 1; const t0 = performance.now(), per = 1300; const go = now => { const t = (now - t0) / per; s = Math.min(5, 1 + Math.floor(t)); step = s; const g = Math.min(1, t - (s - 1)); render(s === 5 && t >= 5 ? 1 : g); $$('[data-step]').forEach(b => b.classList.toggle('on', +b.dataset.step === s)); if (t < 5) raf = requestAnimationFrame(go); else draw(); }; raf = requestAnimationFrame(go); };
+    setTimeout(() => { sizeCv(cv); reBox(); anim(); }, 0);
+  };
+  /* ---- ④ Luyện tập ---- */
+  const startLT = () => {
+    const types = shuffle(['p1', 'p2', 'td', 'p1', 'p2', 'td']).slice(0, 4);
+    const eyes = shuffle(['hi', 'mid', 'lo']).slice(0, 2);
+    qs = [
+      ...types.map(t => ({ kind: 'type', t, obj: PC_OBJ[rnd(PC_OBJ.length)], opts: shuffle([{ k: 'p1', t: 'Phối cảnh 1 điểm tụ' }, { k: 'p2', t: 'Phối cảnh 2 điểm tụ' }, { k: 'td', t: 'Hình chiếu trục đo' }]).map(o => ({ ...o, ok: o.k === t })),
+        why: { p1: 'Mặt trước giữ nguyên hình dạng, các cạnh chạy ra xa hội tụ về một điểm → phối cảnh 1 điểm tụ.', p2: 'Chỉ các cạnh thẳng đứng còn song song; hai hướng cạnh nằm ngang chụm về hai phía → phối cảnh 2 điểm tụ.', td: 'Các cạnh song song trên vật thể vẫn song song trên hình (không chụm lại) → hình chiếu trục đo.' }[t] })),
+      ...eyes.map(e => ({ kind: 'eye', e, obj: PC_OBJ[rnd(PC_OBJ.length)], m: 1 + rnd(2), opts: shuffle([{ k: 'hi', t: 'Từ trên xuống (tầm mắt cao hơn vật thể)' }, { k: 'mid', t: 'Ngang tầm vật thể' }, { k: 'lo', t: 'Từ dưới lên (tầm mắt thấp hơn mặt đất)' }]).map(o => ({ ...o, ok: o.k === e })),
+        why: { hi: 'Thấy được mặt trên của vật thể → đường chân trời (tầm mắt) cao hơn vật thể: nhìn từ trên xuống.', mid: 'Không thấy mặt trên lẫn mặt dưới, đường chân trời cắt ngang vật thể → nhìn ngang tầm.', lo: 'Thấy được mặt đáy của vật thể → tầm mắt thấp hơn mặt đất: nhìn từ dưới lên.' }[e] })),
+      { kind: 'txt', stem: 'Hình chiếu phối cảnh được xây dựng bằng phép chiếu nào?', opts: shuffle([{ t: 'Phép chiếu xuyên tâm', ok: true }, { t: 'Phép chiếu vuông góc', why: 'Phép chiếu vuông góc dùng cho hình chiếu vuông góc, hình chiếu trục đo vuông góc đều.' }, { t: 'Phép chiếu song song xiên', why: 'Phép chiếu song song xiên dùng cho hình chiếu trục đo xiên góc cân.' }]) },
+      { kind: 'txt', stem: 'Đường chân trời là giao tuyến của', opts: shuffle([{ t: 'mặt phẳng tầm mắt với mặt tranh', ok: true }, { t: 'mặt phẳng vật thể với mặt tranh', why: 'Giao tuyến này là đường nền (đường đáy tranh), không phải đường chân trời.' }, { t: 'mặt phẳng tầm mắt với mặt phẳng vật thể', why: 'Hai mặt phẳng này song song nên không cắt nhau.' }]) },
+      { kind: 'txt', stem: 'Phối cảnh một điểm tụ nhận được khi mặt tranh', opts: shuffle([{ t: 'song song với một mặt của vật thể', ok: true }, { t: 'không song song với mặt nào của vật thể', why: 'Khi đó ta được phối cảnh hai điểm tụ.' }, { t: 'nằm ngang, song song với mặt đất', why: 'Mặt tranh luôn thẳng đứng.' }]) },
+      { kind: 'txt', stem: 'Các điểm tụ của hình phối cảnh luôn nằm trên', opts: shuffle([{ t: 'đường chân trời', ok: true }, { t: 'cạnh đứng gần nhất của vật thể', why: 'Cạnh đứng gần nhất là cạnh không bị thu nhỏ, không chứa điểm tụ.' }, { t: 'mép dưới của mặt tranh', why: 'Điểm tụ của các đường nằm ngang luôn ở ngang tầm mắt.' }]) }
+    ];
+    qi = 0; score = 0; ans = null; drawLT();
+  };
+  const drawLT = () => {
+    kill();
+    if (qi >= qs.length) {
+      const hk = 'hist_' + uid(), hist = store.get(hk, []); hist.push({ t: Date.now(), title: 'Hình chiếu phối cảnh – luyện tập', key: '', loai: 'game', diem: Math.round(score / qs.length * 1000) / 100, dung: score, tong: qs.length, giay: 0 }); store.set(hk, hist.slice(-300));
+      setView(`${head()}<div class="hero"><h1>Hoàn thành! 🎉</h1><p class="sub">Em làm đúng <b>${score}/${qs.length}</b> câu.</p></div><div class="row"><button class="btn" id="again">Làm lại</button></div>`);
+      bindTop(); $('#again').onclick = startLT; return;
+    }
+    const q = qs[qi], done = ans != null, ch = done ? q.opts[ans] : null;
+    const stem = q.kind === 'type' ? 'Hình dưới đây là loại hình biểu diễn nào?' : q.kind === 'eye' ? 'Quan sát hình phối cảnh. Người quan sát đang nhìn vật thể <b>từ đâu</b>?' : q.stem;
+    setView(`${head()}<div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard"><div class="stem">${stem}</div>
+        ${q.kind !== 'txt' ? '<canvas id="qc" class="hc3d" style="height:280px;cursor:default"></canvas>' : ''}
+        <div class="hcopts txt" style="grid-template-columns:1fr">${q.opts.map((o, i) => `<button class="hcopt ${done ? (o.ok ? 'ok' : i === ans ? 'bad' : '') : ''}" data-a="${i}" ${done ? 'disabled' : ''}><span class="hcoptl">${'ABC'[i]}</span><span>${o.t}</span></button>`).join('')}</div>
+        ${done ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${q.why || (ch.ok ? '' : ch.why || '')}</div><button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>` : ''}</div>`);
+    bindTop();
+    if (q.kind !== 'txt') setTimeout(() => {
+      const cv = $('#qc'); sizeCv(cv); const O = q.obj;
+      if (q.kind === 'type' && q.t === 'td') { hctdDraw(cv, { W: O.W, D: O.D, H: O.H }, 'vgd', 4, 1, { axes: false, F: pcFaces(O), pad: 30 }); return; }
+      const m = q.kind === 'type' ? (q.t === 'p1' ? 1 : 2) : q.m, e = q.kind === 'eye' ? { hi: O.H + 1.8, mid: O.H * 0.5, lo: -0.7 }[q.e] : O.H + 1.6, dist = m === 1 ? 9 : 8;
+      pcDraw(cv, { obj: O, mode: m, ex: m === 1 ? O.W + 1.6 : 0.4, ez: e, th, dist, step: 5, guides: false, ground: false, box: pcBox(O, m, Math.max(e, O.H + 2.4), th, dist) });
+    }, 0);
     $$('[data-a]').forEach(b => b.onclick = () => { ans = +b.dataset.a; if (q.opts[ans].ok) score++; drawLT(); });
     if ($('#nx')) $('#nx').onclick = () => { qi++; ans = null; drawLT(); };
   };
