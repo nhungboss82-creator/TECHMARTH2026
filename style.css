@@ -537,3 +537,5 @@ tr.duprow td{background:#fff7ed}
 .bdngrid label{display:flex;flex-direction:column;gap:2px;margin:0}
 .bdngrid .hint{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 a.bdcell{font-weight:600;text-decoration:none;border-bottom:1px dashed var(--brand2)}
+.hsstat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 4px;font-size:13.5px;color:rgba(255,255,255,.9)}
+.hsstat b{color:#fff;font-size:15px}

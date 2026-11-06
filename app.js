@@ -630,6 +630,7 @@ route(/^\/$/, params => {
     <section class="hero">
       <div class="greet"><div><h1>Chào ${first} 👋</h1><p class="sub">${session ? esc([u.TenLop, u.Truong].filter(Boolean).join(' – ')) : 'AI hỗ trợ dạy học, kiểm tra, đánh giá môn Công nghệ công nghiệp'}</p></div>
         ${st ? `<span class="streak" title="Số ngày học liên tiếp">🔥 ${st} ngày</span>` : ''}</div>
+      <div class="hsstat"><span title="Số lượt truy cập ứng dụng">👁 <b id="hsvs">${hsVisit() ? hsVisit().total.toLocaleString('vi-VN') : '…'}</b> lượt truy cập</span><span title="Số lượt em đã làm bài">✍️ Em đã làm <b>${hist.length.toLocaleString('vi-VN')}</b> lượt</span></div>
       <div class="dim" aria-label="Tiến độ hôm nay"><div class="lbl"><span>Mục tiêu hôm nay: ${GOAL} lượt ôn</span><b>${Math.min(todayN, GOAL)}/${GOAL}${todayN >= GOAL ? ' ✓' : ''}</b></div>
         <div class="line"><i class="fill" style="width:${Math.min(100, todayN / GOAL * 100)}%"></i></div></div>
     </section>
@@ -1468,6 +1469,7 @@ route(/^\/gv$/, async params => {
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
   if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
 });
+const hsVisit = () => { try { return JSON.parse(sessionStorage.getItem('stc_vs') || 'null'); } catch (e) { return null; } };
 const visitHtml = r => `👁 <b>${(r.total || 0).toLocaleString('vi-VN')}</b> lượt truy cập<small>Hôm nay: ${(r.today || 0).toLocaleString('vi-VN')}${r.since ? ' · từ ' + r.since : ''}</small>`;
 /** hộp thông báo GV mới chờ duyệt (chỉ Quản trị viên) */
 function pendingModal(list) {
@@ -5480,7 +5482,7 @@ route(/^\/sgk\/doc$/, async params => {
   await loadBank();
   render();
   flush();
-  try { if (!sessionStorage.getItem('stc_hit')) { sessionStorage.setItem('stc_hit', '1'); setTimeout(() => api('hit').catch(() => {}), 1500); } } catch (e) {}
+  try { if (!sessionStorage.getItem('stc_hit') || !sessionStorage.getItem('stc_vs')) { sessionStorage.setItem('stc_hit', '1'); setTimeout(() => api('hit').then(r => { if (r && r.total) { try { sessionStorage.setItem('stc_vs', JSON.stringify(r)); } catch (e) {} const el = $('#hsvs'); if (el) el.textContent = r.total.toLocaleString('vi-VN'); } }).catch(() => {}), 1500); } } catch (e) {}
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 })();
