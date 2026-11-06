@@ -3291,15 +3291,15 @@ const HC = (() => {
   OBJ.forEach(o => { o.F = prep(o.faces()); });
   /* ---------- vẽ hình chiếu (SVG) ---------- */
   let hpN = 0;
-  const ST = { n: 'stroke="#0f172a" stroke-width="1.2"', m: 'stroke="#0f172a" stroke-width="4.2"', v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"' };
+  const ST = { g: 'stroke="#0f766e" stroke-width="1.6"', n: 'stroke="#0f172a" stroke-width="1.2"', m: 'stroke="#0f172a" stroke-width="4.2"', v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"' };
   function svg(v, cell = 34, o = {}) {
     const u0 = v.u0 || 0, v0 = v.v0 || 0, pad = cell * 0.55, W = v.W * cell + pad * 2, H = v.H * cell + pad * 2, X = u => pad + (u - u0) * cell, Y = w => pad + (v0 + v.H - w) * cell;
     const hp = 'hp' + (++hpN);
     const el = it => {
       if (it.f) return `<path d="${it.f.map(L => 'M' + L.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L') + 'Z').join(' ')}" fill="url(#${hp})" fill-rule="evenodd" stroke="none"/>`;
-      if (it.tx) return `<text x="${X(it.tx[0]).toFixed(1)}" y="${Y(it.tx[1]).toFixed(1)}" font-size="${(it.fs || 0.42) * cell}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="#0f172a" font-family="system-ui,sans-serif">${it.tx[2]}</text>`;
+      if (it.tx) return `<text x="${X(it.tx[0]).toFixed(1)}" y="${Y(it.tx[1]).toFixed(1)}" font-size="${(it.fs || 0.42) * cell}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="${it.col || '#0f172a'}" font-family="system-ui,sans-serif">${it.tx[2]}</text>`;
       if (it.ar) { const [x, y, dx, dy] = it.ar, x1 = X(x), y1 = Y(y), x2 = X(x + dx), y2 = Y(y + dy), an = Math.atan2(y2 - y1, x2 - x1), h = cell * 0.28;
-        return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#0f172a" stroke-width="1.4"/><path d="M${x2} ${y2} L${x2 - h * Math.cos(an - 0.4)} ${y2 - h * Math.sin(an - 0.4)} L${x2 - h * Math.cos(an + 0.4)} ${y2 - h * Math.sin(an + 0.4)}Z" fill="#0f172a"/>`; }
+        return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${it.col || '#0f172a'}" stroke-width="1.4"/><path d="M${x2} ${y2} L${x2 - h * Math.cos(an - 0.4)} ${y2 - h * Math.sin(an - 0.4)} L${x2 - h * Math.cos(an + 0.4)} ${y2 - h * Math.sin(an + 0.4)}Z" fill="${it.col || '#0f172a'}"/>`; }
       const st = ST[it.k] + ' fill="none" stroke-linecap="round" stroke-linejoin="round"';
       if (it.p) return `<path d="M${it.p.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L')}${it.z ? 'Z' : ''}" ${st}/>`;
       if (it.c) return `<circle cx="${X(it.c[0])}" cy="${Y(it.c[1])}" r="${it.c[2] * cell}" ${st}/>`;
@@ -3788,9 +3788,11 @@ const HCX = (() => {
     }
     return O;
   };
-  const cutSolid = (pcs, c, ge, noHoles) => pcs.flatMap(p => {
-    if (p.ax === 'y') { const c0 = ge ? Math.max(p.c0, c) : p.c0, c1 = ge ? p.c1 : Math.min(p.c1, c); return c1 > c0 + 1e-9 ? extrude('y', p.out, noHoles ? [] : p.holes, c0, c1) : []; }
-    const i = p.ax === 'z' ? 1 : 0, inside = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9;
+  /** cắt các mảnh bằng mặt phẳng (trục axis = c), giữ phía ≥ c (ge) hoặc ≤ c; trả về danh sách mảnh mới */
+  const IDX = { z: { x: 0, y: 1 }, x: { y: 0, z: 1 }, y: { z: 0, x: 1 } };
+  const clipPieces = (pcs, axis, c, ge, noHoles) => pcs.flatMap(p => {
+    if (p.ax === axis) { const c0 = ge ? Math.max(p.c0, c) : p.c0, c1 = ge ? p.c1 : Math.min(p.c1, c); return c1 > c0 + 1e-9 ? [{ ...p, holes: noHoles ? [] : p.holes, c0, c1 }] : []; }
+    const i = IDX[p.ax][axis], inside = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9;
     let O = clip(p.out.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (!O) return [];
     const keep = [];
     (noHoles ? [] : p.holes).forEach(h => {
@@ -3798,8 +3800,10 @@ const HCX = (() => {
       if (ins === h.length && !h.some(v => onL(v, i, c))) keep.push(h);
       else if (strict > 0) { const Hc = clip(h.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (Hc) O = splice(O, Hc, i, c); }
     });
-    return extrude(p.ax, O, keep, p.c0, p.c1);
+    return [{ ...p, out: O, holes: keep }];
   });
+  const cutSolid = (pcs, c, ge, noHoles) => solid(clipPieces(pcs, 'y', c, ge, noHoles));
+  const markAx = (F, k, v, s) => { F.forEach(f => { if (Math.abs(f.n[k] - s) < 1e-6 && f.pts.every(p => Math.abs(p[k] - v) < 1e-6)) f.cut = 1; }); return F; };
   const mark = (F, c, s = -1) => { F.forEach(f => { if (Math.abs(f.n[1] - s) < 1e-6 && f.pts.every(p => Math.abs(p[1] - c) < 1e-6)) f.cut = 1; }); return F; };
   /* ---- tự sinh hình chiếu: chiếu các cạnh, xét thấy / khuất bằng tia chiếu ---- */
   const VIEW = {
@@ -3956,9 +3960,41 @@ const HCX = (() => {
     } });
     return o;
   };
+  /* hình cắt một nửa: bỏ 1/4 vật thể phía trước bên phải (x ≥ X, y ≤ c) */
+  const mkHalf = d => {
+    const c = d.c, X = d.X, P = d.pcs;
+    const halfP = nh => { const back = clipPieces(P, 'y', c, true, nh), front = clipPieces(P, 'y', c, false, nh);
+      const A1 = clipPieces(back, 'x', X, false), A2 = clipPieces(back, 'x', X, true), B = clipPieces(front, 'x', X, false);
+      return [...solid(A1), ...markAx(solid(A2), 1, c, -1), ...markAx(solid(B), 0, X, 1)]; };
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, c, cx: X, axes: d.axes,
+      full: () => solid(P), half: () => halfP(false), ghostHalf: () => solid(clipPieces(clipPieces(P, 'y', c, false), 'x', X, true)) };
+    let V = null;
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const uv = p => [p[0], p[2]], H2 = d.H + 0.5;
+      const fillOf = F => ({ f: F.filter(f => f.cut && Math.abs(f.n[1] + 1) < 1e-6).flatMap(f => f.loops.map(L => L.map(uv))) });
+      const Fh = prep(halfP(false)), Fn = prep(halfP(true)), Ff = prep(solid(P)), Fc = prep(mark(solid(clipPieces(P, 'y', c, true)), c));
+      const onAxis = s => Math.abs(s.p[0][0] - X) < 1e-4 && Math.abs(s.p[1][0] - X) < 1e-4;
+      const hl = lines(Fh, o, 'front', false).it.filter(s => !onAxis(s));
+      const ax = [...axesIt(o, 'front'), { p: [[X, -0.35], [X, d.H + 0.35]], k: 'c' }];
+      const fr = lines(Ff, o, 'front', true).it;
+      V = {
+        front: { W: d.W, H: H2, it: [...fr, ...ax] },
+        half: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...ax] },
+        hx1: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...fr.filter(s => s.k === 'h' && s.p[0][0] < X - 1e-4 && s.p[1][0] < X - 1e-4), ...ax], why: 'Ở nửa hình chiếu không vẽ nét đứt, vì cấu tạo bên trong đã thể hiện ở nửa hình cắt.' },
+        hx2: { W: d.W, H: H2, it: [{ f: Fc.filter(f => f.cut).flatMap(f => f.loops.map(L => L.map(uv))) }, ...lines(Fc, o, 'front', false).it, ...ax], why: 'Đây là hình cắt toàn bộ (cả hai nửa đều cắt), không phải hình cắt một nửa.' },
+        hx3: { W: d.W, H: H2, it: [fillOf(Fn), ...hl, ...ax], why: 'Lỗ là khoảng trống (không có vật liệu) nên không được kẻ gạch.' }
+      };
+      return V;
+    } });
+    return o;
+  };
+  const HALF = [mkHalf({ id: 'bp107', ten: 'Đế có ống trụ (SGK H.10.7)', W: 4.4, D: 3.2, H: 2.8, c: 1.6, X: 2.2,
+    axes: [{ c: [2.2, 1.6, 1.4], ax: 'z', r: 0.6, a: [0, 2.8] }, { c: [0.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }, { c: [3.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }],
+    pcs: [Z(R4(0, 0, 4.4, 3.2), [C(2.2, 1.6, 0.6), C(0.7, 1.6, 0.3, 20), C(3.7, 1.6, 0.3, 20)], 0, 0.8), Z(C(2.2, 1.6, 1.15, 32), [C(2.2, 1.6, 0.6)], 0.8, 2.8)] })];
   const SEC = ['loranh2', 'hocvuong', 'trurong', 'tru2go', 'loranh1'];
   const OBJ10 = DEF.filter(d => SEC.includes(d.id)).map(mk10);
-  return { OBJ9, OBJ10, SEC, K: { Yp, R4, solid, cutSolid, mark, lines, prep } };
+  return { OBJ9, OBJ10, SEC, HALF, K: { Yp, R4, solid, cutSolid, mark, lines, prep } };
 })();
 HC.OBJ.splice(2, 0, ...HCX.OBJ9.slice(0, 3));
 HC.OBJ.push(...HCX.OBJ9.slice(3));
@@ -4185,7 +4221,7 @@ const HCC = (() => {
   }
   /* các vật thể dùng cho hình chiếu trục đo */
   const TD = HC.OBJ;
-  HCX.OBJ10.forEach(o => { O[o.id] = o; });
+  HCX.OBJ10.forEach(o => { O[o.id] = o; }); HCX.HALF.forEach(o => { O[o.id] = o; });
   const cache = {};
   const get = (id, kind) => { const kk = id + ':' + kind; if (!cache[kk]) { const ob = O[id] || TD.find(t => t.id === id); const src = kind === 'full' ? (ob.raw || ob.full) : ob[kind]; cache[kk] = prep(src()); } return cache[kk]; };
   const tdF = t => t.F || get(t.id, 'full');
@@ -4194,6 +4230,19 @@ const HCC = (() => {
 })();
 
 /** vẽ hình chiếu trục đo theo từng bước (1: trục, 2: hộp bao, 3: từng phần, 4: hoàn thiện) */
+/** chọn hình chiếu vẽ trước: HC bằng nếu vật thể có lỗ thẳng đứng, ngược lại HC đứng */
+const hctdFace = T => T.tdFace || ((T.axes || []).some(a => a.ax === 'z') ? 'top' : 'front');
+/** bản vẽ ba hình chiếu có gắn trục toạ độ O, x, y, z (bước 1) */
+function hctdAxesLayout(T) {
+  const { W, D, H } = T, V = T.views, g = 'g', E = 0.8;
+  const ax = (x0, y0, x1, y1, lb, tx, ty) => [{ p: [[x0, y0], [x1, y1]], k: g }, { ar: [x0 + (x1 - x0) * 0.85, y0 + (y1 - y0) * 0.85, (x1 - x0) * 0.15, (y1 - y0) * 0.15], col: '#0f766e' }, { tx: [tx, ty, lb], col: '#0f766e', fs: 0.62 }];
+  const wrap = (v, extra) => ({ u0: -0.7, v0: -0.7, W: v.W + 1.9, H: v.H + 1.9, it: [...v.it, ...extra] });
+  return { views: {
+    front: wrap(V.front, [...ax(0, 0, W + E, 0, 'x', W + E + 0.3, 0.05), ...ax(0, 0, 0, H + E, 'z', -0.3, H + E + 0.2), { tx: [-0.3, -0.35, 'O'], col: '#0f766e', fs: 0.62 }]),
+    top: wrap(V.top, [...ax(0, D, W + E, D, 'x', W + E + 0.3, D + 0.05), ...ax(0, D, 0, -E, 'y', -0.3, -E - 0.1), { tx: [-0.3, D + 0.3, 'O'], col: '#0f766e', fs: 0.62 }]),
+    side: wrap(V.side, [...ax(0, 0, D + E, 0, 'y', D + E + 0.3, 0.05), ...ax(0, 0, 0, H + E, 'z', -0.3, H + E + 0.2), { tx: [-0.3, -0.35, 'O'], col: '#0f766e', fs: 0.62 }])
+  } };
+}
 function hctdDraw(canvas, T, type, step, frac = 1, o = {}) {
   const ctx = canvas.getContext('2d'), Wc = canvas.width, Hc = canvas.height, dp = window.devicePixelRatio || 1;
   const q = 0.5, c45 = Math.SQRT1_2, c30 = Math.cos(Math.PI / 6), { W, D, H } = T;
@@ -4215,7 +4264,7 @@ function hctdDraw(canvas, T, type, step, frac = 1, o = {}) {
   const F = o.F || HCC.tdF(T);
   // 1. trục đo
   if (o.axes !== false) {
-    const al = step >= 4 ? 0.35 : 1, Og = P(M.org);
+    const al = step >= 5 ? 0.35 : 1, Og = P(M.org);
     M.ax.forEach((a, i) => {
       line(M.org, axEnd[i], '#0f766e', 1.8, null, al);
       const E = P(axEnd[i]), an = Math.atan2(E[1] - Og[1], E[0] - Og[0]), hh = 10 * dp;
@@ -4233,26 +4282,31 @@ function hctdDraw(canvas, T, type, step, frac = 1, o = {}) {
       });
     }
   }
-  // 2. hộp bao
-  if (step >= 2 && step <= 3) {
-    const E = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]];
-    E.forEach(([a, b]) => line(corners[a], corners[b], '#2563eb', 1.3, [5, 4], step === 3 ? 0.55 : 1));
-    if (step === 2) {
-      const lab = [`${W * 10}`, type === 'xien' ? `${D * 10} × 0,5` : `${D * 10}`, `${H * 10}`];
-      M.ax.forEach((a, i) => { const m = M.org.map((v, j) => v + a[j] * dims[i] / 2), Pm = P(m), C = P([W / 2, D / 2, H / 2]); const dx = Pm[0] - C[0], dy = Pm[1] - C[1], l = Math.hypot(dx, dy) || 1; txt(lab[i], Pm[0] + dx / l * 30 * dp, Pm[1] + dy / l * 30 * dp, '#1d4ed8', 13); });
-    }
+  // các bước dựng theo SGK: B2 vẽ HC đứng (hoặc HC bằng) trên mặt phẳng trục đo; B3 kẻ song song trục còn lại; B4 lấy kích thước, nối điểm; B5 tô đậm
+  if (o.final) step = 5;
+  const face = hctdFace(T), N = face === 'top' ? [0, 0, 1] : [0, -1, 0];
+  const sel = F.filter(f => Math.abs(f.n[0] - N[0]) + Math.abs(f.n[1] - N[1]) + Math.abs(f.n[2] - N[2]) < 1e-3);
+  const selE = []; sel.forEach(f => f.edges.forEach(e => selE.push(e)));
+  const segs = (E, col, lw, dash, g = 1) => { ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineCap = 'round'; ctx.beginPath(); E.slice(0, Math.round(E.length * g)).forEach(([a, b]) => { const A = P(a), B = P(b); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); }); ctx.stroke(); ctx.setLineDash([]); };
+  if (step >= 2 && step <= 4) segs(selE, '#1d4ed8', step === 2 ? 2.6 : 1.8, null, step === 2 ? frac : 1);
+  if (step >= 3 && step <= 4) {
+    // chỉ lấy các điểm góc (bỏ các điểm trên đường cong)
+    const dirs = new Map(), pt = new Map();
+    selE.forEach(([u, v]) => { const d = [v[0] - u[0], v[1] - u[1], v[2] - u[2]], l = Math.hypot(...d) || 1; [[u, d.map(x => x / l)], [v, d.map(x => -x / l)]].forEach(([q, dd]) => { const kk = q.map(x => x.toFixed(3)).join(','); pt.set(kk, q); (dirs.get(kk) || dirs.set(kk, []).get(kk)).push(dd); }); });
+    const pts = [...pt.keys()].filter(kk => { const D2 = dirs.get(kk); return !(D2.length === 2 && D2[0][0] * D2[1][0] + D2[0][1] * D2[1][1] + D2[0][2] * D2[1][2] < -0.9); }).map(kk => pt.get(kk));
+    const rays = pts.map(p => [p, face === 'top' ? [p[0], p[1], 0] : [p[0], D, p[2]]]);
+    segs(rays, '#94a3b8', 1, [4, 4], step === 3 ? frac : 1);
   }
-  // 3. từng phần bằng nét mảnh
-  if (step === 3) {
+  if (step === 4) {
     const all = []; F.forEach(f => f.edges.forEach(e => all.push(e)));
-    const n = Math.round(all.length * frac);
-    ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.3 * dp; ctx.beginPath();
-    all.slice(0, n).forEach(([a, b]) => { const A = P(a), B = P(b); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); });
-    F.forEach(f => f.sil && f.sil.forEach(s => { if ((f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < 0) !== (s.g.n[0] * V[0] + s.g.n[1] * V[1] + s.g.n[2] * V[2] < 0) && frac > 0.95) { const A = P(s.a), B = P(s.b); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); } }));
-    ctx.stroke();
+    segs(all, '#334155', 1.3, null, frac);
+    if (frac > 0.95) { ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.3 * dp; ctx.beginPath(); F.forEach(f => f.sil && f.sil.forEach(s => { if ((f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < 0) !== (s.g.n[0] * V[0] + s.g.n[1] * V[1] + s.g.n[2] * V[2] < 0)) { const A = P(s.a), B = P(s.b); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); } })); ctx.stroke(); }
   }
-  // 4. hoàn thiện
-  if (step >= 4) hcPaint(ctx, Wc | 0, Hc | 0, F, P, V, dp, { k, lw: o.lw || 2.4 });
+  if (step === 2 && o.axes !== false) {
+    const lab = face === 'top' ? 'Hình chiếu bằng trên mặt phẳng X′O′Y′' : 'Hình chiếu đứng trên mặt phẳng X′O′Z′';
+    ctx.font = `700 ${Math.round(12.5 * dp)}px system-ui,sans-serif`; ctx.fillStyle = '#1d4ed8'; ctx.fillText(lab, 10 * dp, Hc - 10 * dp);
+  }
+  if (step >= 5) hcPaint(ctx, Wc | 0, Hc | 0, F, P, V, dp, { k, lw: o.lw || 2.4 });
 }
 
 /* ================= BÀI 10. HÌNH CẮT VÀ MẶT CẮT ================= */
@@ -4283,7 +4337,7 @@ route(/^\/hcat$/, params => {
   const dropPlane = (ps, ms, done) => { ps.d = 1; sc && sc.redraw(); setTimeout(() => sc && sc.anim(e => { ps.d = 1 - e; }, ms, done), 250); };
   /* ---- ⓪ Khái niệm hình cắt, mặt cắt; kí hiệu; kí hiệu vật liệu (theo SGK Công nghệ 10 – Bài 10) ---- */
   const KN = (() => {
-    const X = HCX.K, c = 1.0;
+    const X = HCX.K, c = 1.2;
     const ob = { id: 'kn102', W: 4, D: 3.2, H: 4, c };
     const pcs = [X.Yp(X.R4(0, 0, 4, 4), [], 2.4, 3.2), X.Yp([[0.8, 0.4], [3.2, 0.4], [3.2, 2.8], [2.4, 2.8], [2.4, 2.0], [1.6, 2.0], [1.6, 2.8], [0.8, 2.8]], [], 0, 2.4)];
     let F = null;
@@ -4323,25 +4377,17 @@ route(/^\/hcat$/, params => {
       hc: '<b>Hình cắt</b>: hình biểu diễn gồm <b>mặt cắt</b> và <b>hình chiếu của phần vật thể còn lại</b> phía sau mặt phẳng cắt (chiếu vuông góc lên mặt phẳng hình chiếu song song với mặt phẳng cắt).'
     };
     setView(`${head()}
-      <div class="card"><h3 style="margin-top:0">1. Khái niệm chung</h3>
-        <p style="margin:4px 0 8px">Hình cắt, mặt cắt dùng để thể hiện các cấu tạo bên trong của vật thể. Mặt cắt và hình cắt được hình thành như sau:</p>
-        <ol class="knlist"><li>Quan sát vật thể.</li><li>Tưởng tượng dùng một <b>mặt phẳng cắt</b> vật thể đó ra làm hai phần.</li><li>Bỏ đi phần vật thể giữa người quan sát và mặt phẳng cắt.</li>
-          <li>Chiếu vuông góc phần vật thể còn lại lên mặt phẳng hình chiếu song song với mặt phẳng cắt.</li></ol>
-        <div class="kndef"><div><b>Mặt cắt</b> là hình biểu diễn phần vật thể nằm trên mặt phẳng cắt.</div><div><b>Hình cắt</b> là hình biểu diễn bao gồm mặt cắt và hình chiếu của phần vật thể còn lại.</div></div></div>
       <div class="card"><div class="hcsteps" style="grid-template-columns:repeat(5,minmax(0,1fr))">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
         <canvas id="hc3d" class="hc3d"></canvas>
         <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px"><button class="btn ghost sm" id="iso">Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">Nhìn thẳng từ trước</button><button class="btn ghost sm" id="rp">▶ Xem lại</button></div>
         <div class="expl" style="margin-top:10px"><b class="t">${S.find(s => s[0] === step)[1]}</b>${TXT[step]}</div>
         ${step === 'mc' || step === 'hc' ? `<div class="hcfigs">${step === 'mc' ? `<figure class="hcfig">${HC.svg(D.matcat, 40)}<figcaption><b>Mặt cắt</b> – chỉ vẽ phần nằm trên mặt phẳng cắt</figcaption></figure>` : ''}<figure class="hcfig">${HC.svg(D.hinhcat, 36)}<figcaption><b>Hình cắt</b> – mặt cắt + phần vật thể còn lại phía sau</figcaption></figure></div>` : ''}
         ${step !== 'hc' ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[S.findIndex(s => s[0] === step) + 1][1].replace(/^\d\. /, '')} →</button>` : ''}</div>
-      <div class="card"><h3 style="margin-top:0">2. Kí hiệu mặt cắt, hình cắt</h3>
-        <ul class="knlist"><li>Vị trí mặt phẳng cắt vẽ bằng <b>nét gạch dài chấm đậm</b> (<i>nét cắt</i>).</li><li>Hướng chiếu là hai <b>mũi tên</b> vẽ vuông góc với nét cắt.</li>
-          <li>Tên hình cắt, mặt cắt viết bằng <b>chữ hoa</b> ở bên cạnh nét cắt và ở phía trên hình cắt, mặt cắt (ví dụ <b>A – A</b>).</li></ul>
+      <div class="card"><h3 style="margin-top:0">Kí hiệu mặt cắt, hình cắt</h3>
         <div class="hcfigs"><figure class="hcfig">${HC.svg(D.hcb, 30)}<figcaption>Vị trí mặt phẳng cắt A trên hình chiếu bằng</figcaption></figure><figure class="hcfig">${HC.svg(D.hinhcat, 30)}<figcaption>a) Hình cắt</figcaption></figure><figure class="hcfig">${HC.svg(D.matcat, 30)}<figcaption>b) Mặt cắt</figcaption></figure></div></div>
-      <div class="card"><h3 style="margin-top:0">3. Kí hiệu vật liệu trên mặt cắt</h3>
-        <p style="margin:4px 0">Kí hiệu vật liệu trên mặt cắt được vẽ theo quy định trong tiêu chuẩn <b>TCVN 7:1993</b>:</p>
+      <div class="card"><h3 style="margin-top:0">Kí hiệu vật liệu (TCVN 7:1993)</h3>
         <div class="hcfigs">${swatch('kl', 'a) Kim loại')}${swatch('bt', 'b) Bê tông')}${swatch('cd', 'c) Chất dẻo, vật liệu cách điện, …')}</div>
-        <p class="hint" style="margin:8px 0 0">Đường gạch gạch là nét liền mảnh, thường nghiêng 45° so với đường bao. Phần rỗng (lỗ, rãnh) không kẻ gạch.</p></div>
+</div>
       <div class="card"><button class="btn block" data-tab="tb">Tiếp: Hình cắt toàn bộ →</button></div>`);
     bindTop();
     $$('[data-step]').forEach(b => b.onclick = () => { step = b.dataset.step; draw(); });
@@ -4379,7 +4425,7 @@ route(/^\/hcat$/, params => {
       : step === 'res' ? (half ? `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.half, '<b>Hình cắt một nửa</b>')}</div>`
         : `<div class="hcfigs">${fig(V.front, 'Hình chiếu đứng (nét đứt)')}${fig(V.sec, '<b>Hình cắt A – A</b>')}${fig(V.top, 'Hình chiếu bằng – vị trí mặt phẳng cắt A', 28)}</div>`) : '';
     setView(`${head()}
-      <div class="gcpick compact">${(half ? ['goido', 'ongvai'] : ['giado1010', 'khay', 'td16', ...HCX.SEC]).map((k, i) => hcBtn(k === (half ? hid : oid), `data-o="${k}"`, i, O[k].ten)).join('')}</div>
+      <div class="gcpick compact">${(half ? ['goido', 'bp107'] : ['giado1010', 'khay', 'td16']).map((k, i) => hcBtn(k === (half ? hid : oid), `data-o="${k}"`, i, O[k].ten)).join('')}</div>
       <div class="card">${stepBar(S)}<canvas id="hc3d" class="hc3d"></canvas>${ctrl()}
         <div class="expl" style="margin-top:10px"><b class="t">${S.find(s => s[0] === step)[1]}</b>${TXT[step]}</div>${extraFig}
         ${step !== 'res' ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[S.findIndex(s => s[0] === step) + 1][1].replace(/^\d\. /, '')} →</button>`
@@ -4453,8 +4499,8 @@ route(/^\/hcat$/, params => {
   const LT = [
     { id: 'giado1010', kind: 'full', lv: 2, ds: ['x1', 'x3', 'x4', 'x2'] }, { id: 'khay', kind: 'full', lv: 3, ds: ['x1', 'x3', 'x4', 'x2'] },
     { id: 'td16', kind: 'full', lv: 3, ds: ['x1', 'x3', 'x4', 'x2'] }, { id: 'goido', kind: 'half', lv: 3, ds: ['hx1', 'hx2', 'hx3'] },
-    { id: 'truc', kind: 'mc', lv: 2, ds: ['sX1', 'sX2', 'sX3'] }, { id: 'ongvai', kind: 'half', lv: 2, ds: ['hx1', 'sec', 'hx3'] },
-    ...HCX.SEC.map((id, k) => ({ id, kind: 'full', lv: k < 2 ? 2 : 3, ds: ['x1', 'x3', 'x4', 'x2'] }))
+    { id: 'bp107', kind: 'half', lv: 2, ds: ['hx1', 'hx2', 'hx3'] }, { id: 'truc', kind: 'mc', lv: 2, ds: ['sX1', 'sX2', 'sX3'] },
+    ...HCX.SEC.map(id => ({ id, kind: 'full', lv: 3, nc: 1, ds: ['x1', 'x3', 'x4', 'x2'] })), { id: 'ongvai', kind: 'half', lv: 3, nc: 1, ds: ['hx1', 'sec', 'hx3'] }
   ];
   const ltName = t => hcShort(O[t.id].ten) + (t.kind === 'half' ? ' (cắt một nửa)' : t.kind === 'mc' ? ' (mặt cắt)' : '');
   const ltDone = () => store.get('hcat_lt_' + uid(), {});
@@ -4467,8 +4513,8 @@ route(/^\/hcat$/, params => {
     const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
     const STEM = { full: 'Bấm <b>✂️ Cắt vật thể</b> để cắt bằng mặt phẳng cắt A (đi qua chính giữa vật thể) và bỏ phần phía trước. Sau đó chọn <b>hình cắt A – A</b> đúng.', half: 'Bấm <b>✂️ Cắt vật thể</b> để cắt bỏ 1/4 vật thể phía trước, bên phải. Sau đó chọn <b>hình cắt một nửa</b> đúng.', mc: 'Bấm <b>✂️ Cắt vật thể</b> để cắt trục bằng mặt phẳng vuông góc với trục tại A. Sau đó chọn <b>mặt cắt</b> đúng.' }[t.kind];
     setView(`${head()}
-      <div class="gcpick compact">${LT.map((x, i) => `<button class="${i === lt.i ? 'on' : ''}" data-lt="${i}" title="${esc(O[x.id].ten)}">${done[i] ? '✔ ' : ''}Hình ${i + 1}. ${esc(ltName(x))}</button>`).join('')}
-          <button data-lt="txt">📝 Lý thuyết</button><span class="pill">Đúng ${nOk}/${LT.length}</span></div>
+      <div class="gcpick compact"><span class="pkh">Theo SGK</span>${LT.map((x, i) => `${x.nc && !(LT[i - 1] || {}).nc ? '<span class="pkh">Nâng cao</span>' : ''}<button class="${i === lt.i ? 'on' : ''}" data-lt="${i}" title="${esc(O[x.id].ten)}">${done[i] ? '✔ ' : ''}Hình ${i + 1}. ${esc(ltName(x))}</button>`).join('')}
+          <span class="pill">Đúng ${nOk}/${LT.length}</span></div>
       <div class="qcard"><div class="stem"><b>Hình ${lt.i + 1}. ${esc(ltName(t))}</b> <span style="color:#d97706">${stars(t.lv)}</span><br>${STEM}</div>
         <canvas id="hc3d" class="hc3d" style="height:300px"></canvas>
         <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${ph === 'pre' ? '<button class="btn" id="cut">✂️ Cắt vật thể</button>' : '<button class="btn ghost sm" id="again">↺ Xem lại vật thể</button><button class="btn ghost sm" id="fr">Nhìn thẳng từ trước</button>'}</div>
@@ -4537,7 +4583,9 @@ route(/^\/hcat$/, params => {
 
 /* ================= BÀI 11. HÌNH CHIẾU TRỤC ĐO ================= */
 route(/^\/hctd$/, params => {
-  const TD = HCC.TD;
+  // thứ tự: hình SGK của bài (H.11.14) trước, hình đơn giản trước, hình phức tạp sau
+  const ORD = ['vat1114', 'hopchong', 'khoilo', 'bacvat', 'chuL91', 'khoighep', 'giado910', 'ranhhop', 'hocvuong', 'bacranh', 'giaU', 'loranh1', 'loranh2', 'goivat', 'taitreo', 'trurong', 'tru2go', 'giado'];
+  const TD = [...ORD.map(id => HCC.TD.find(t => t.id === id)).filter(Boolean), ...HCC.TD.filter(t => !ORD.includes(t.id))];
   let tab = (params && params.get('tab')) || 'vgd', ti = 0, step = 1, raf = 0, qs = [], qi = 0, score = 0, ans = null;
   const TABS = [['vgd', '① Vuông góc đều'], ['xgc', '② Xiên góc cân'], ['ss', '③ So sánh'], ['lt', '④ Luyện tập']];
   const head = () => `${k10nav('#/hctd')}
@@ -4549,23 +4597,24 @@ route(/^\/hctd$/, params => {
     kill();
     if (tab === 'ss') return drawSS();
     const type = tab === 'xgc' ? 'xien' : 'vgd', T = TD[ti];
-    const S = [[1, 'B1. Vẽ trục đo'], [2, 'B2. Vẽ hình hộp bao'], [3, 'B3. Vẽ từng phần'], [4, 'B4. Tô đậm, hoàn thiện']];
-    const P1 = type === 'xien' ? 'Góc trục đo: <b>X′O′Z′ = 90°</b>, <b>X′O′Y′ = Y′O′Z′ = 135°</b>. Hệ số biến dạng: <b>p = r = 1</b>, <b>q = 0,5</b>. Mặt phẳng X′O′Z′ song song với mặt phẳng hình chiếu nên mặt trước của vật thể <b>giữ nguyên hình dạng thật</b>.'
-      : 'Góc trục đo: <b>X′O′Y′ = Y′O′Z′ = X′O′Z′ = 120°</b>, trục O′Z′ thẳng đứng. Hệ số biến dạng (quy ước): <b>p = q = r = 1</b>.';
+    const face = hctdFace(T), fN = face === 'top' ? 'hình chiếu bằng' : 'hình chiếu đứng', fP = face === 'top' ? 'X′O′Y′' : 'X′O′Z′', other = face === 'top' ? 'O′Z′' : 'O′Y′';
+    const dim = face === 'top' ? `chiều cao <b>${T.H * 10}</b>` : (type === 'xien' ? `chiều rộng <b>${T.D * 10} × 0,5 = ${T.D * 5}</b> (hệ số q = 0,5)` : `chiều rộng <b>${T.D * 10}</b>`);
+    const S = [[1, 'B1. Gắn trục'], [2, 'B2. Vẽ ' + (face === 'top' ? 'HC bằng' : 'HC đứng')], [3, 'B3. Kẻ song song'], [4, 'B4. Đặt kích thước, nối'], [5, 'B5. Tô đậm']];
     const TXT = {
-      1: 'Vẽ hệ trục đo O′X′Y′Z′. ' + P1,
-      2: `Đọc kích thước <b>dài × rộng × cao = ${T.W * 10} × ${T.D * 10} × ${T.H * 10}</b> (mm) trên bản vẽ ba hình chiếu. Đặt các kích thước theo các trục (nhân với hệ số biến dạng${type === 'xien' ? `: chiều rộng chỉ vẽ ${T.D * 10} × 0,5 = ${T.D * 5}` : ''}) rồi vẽ <b>hình hộp bao ngoài</b> vật thể bằng nét mảnh.`,
-      3: 'Dựa vào ba hình chiếu, xác định và vẽ <b>từng phần</b> của vật thể (bậc, vát, rãnh, lỗ…) bằng nét mảnh trong hình hộp. Các cạnh song song với trục nào thì vẽ song song với trục đo đó. <b>Đường tròn</b> nằm trên các mặt nghiêng thành <b>hình elip</b>.',
-      4: 'Xóa các nét dựng hình và các nét bị che khuất, <b>tô đậm các cạnh thấy</b>. Hình chiếu trục đo thường <b>không vẽ nét đứt</b>.'
+      1: `Gắn các trục toạ độ Ox, Oy, Oz lên các hình chiếu vuông góc (bên trái) và vẽ hệ trục đo O′X′Y′Z′. ${type === 'xien' ? 'Xiên góc cân: X′O′Z′ = 90°, X′O′Y′ = Y′O′Z′ = 135°; p = r = 1, q = 0,5.' : 'Vuông góc đều: các góc trục đo bằng 120°; p = q = r = 1.'}`,
+      2: `Chọn hình chiếu vuông góc thích hợp – ở đây là <b>${fN}</b> – và vẽ nó trên mặt phẳng ${fP} của hệ trục đo trước.${type === 'xien' && face === 'front' ? ' Mặt phẳng X′O′Z′ không bị biến dạng nên hình chiếu đứng (cả đường tròn) giữ nguyên hình dạng thật.' : ''}`,
+      3: `Từ các điểm của hình vừa vẽ, kẻ các đường song song với trục còn lại (${other}).`,
+      4: `Trên các đường vừa kẻ, lấy đúng kích thước (${dim}), xác định các điểm rồi nối chúng lại với nhau.`,
+      5: 'Xoá các nét dựng hình và nét khuất, <b>tô đậm</b> các cạnh thấy.'
     };
     setView(`${head()}
       <div class="gcpick compact">${TD.map((t, i) => hcBtn(i === ti, `data-t="${i}"`, i, t.ten)).join('')}</div>
-      <div class="hcpractice">
-        <div class="card"><b>Bản vẽ ba hình chiếu</b>${hcLayoutHtml(T, 1, { cell: 22 })}</div>
-        <div class="card"><div class="hcsteps">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
+      <div class="hcpractice tdgrid">
+        <div class="card"><b>Bản vẽ ba hình chiếu</b>${hcLayoutHtml(hctdAxesLayout(T), 1, { cell: 25 })}</div>
+        <div class="card"><div class="hcsteps" style="grid-template-columns:repeat(5,minmax(0,1fr))">${S.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
           <canvas id="td" class="hc3d" style="height:340px;cursor:default"></canvas>
           <div class="expl" style="margin-top:10px"><b class="t">${S[step - 1][1]}</b>${TXT[step]}</div>
-          ${step < 4 ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[step][1]} →</button>` : `<button class="btn block" data-tab="${type === 'xien' ? 'ss' : 'xgc'}" style="margin-top:10px">Tiếp: ${type === 'xien' ? 'So sánh hai loại' : 'Hình chiếu trục đo xiên góc cân'} →</button>`}</div></div>`);
+          ${step < 5 ? `<button class="btn block" id="next" style="margin-top:8px">Tiếp: ${S[step][1]} →</button>` : `<button class="btn block" data-tab="${type === 'xien' ? 'ss' : 'xgc'}" style="margin-top:10px">Tiếp: ${type === 'xien' ? 'So sánh hai loại' : 'Hình chiếu trục đo xiên góc cân'} →</button>`}</div></div>`);
     bindTop();
     $$('[data-t]').forEach(b => b.onclick = () => { ti = +b.dataset.t; step = 1; draw(); });
     $$('[data-step]').forEach(b => b.onclick = () => { step = +b.dataset.step; draw(); });
@@ -4573,7 +4622,7 @@ route(/^\/hctd$/, params => {
     const cv = $('#td');
     setTimeout(() => {
       sizeCv(cv);
-      if (step === 3) { const t0 = performance.now(); const go = now => { const f = Math.min(1, (now - t0) / 1800); hctdDraw(cv, T, type, 3, f); if (f < 1) raf = requestAnimationFrame(go); }; raf = requestAnimationFrame(go); }
+      if (step >= 2 && step <= 4) { const t0 = performance.now(); const go = now => { const f = Math.min(1, (now - t0) / 1600); hctdDraw(cv, T, type, step, f); if (f < 1) raf = requestAnimationFrame(go); }; raf = requestAnimationFrame(go); }
       else hctdDraw(cv, T, type, step);
     }, 0);
   };
@@ -4591,7 +4640,7 @@ route(/^\/hctd$/, params => {
       <div class="card"><button class="btn block" data-tab="lt">Tiếp: Luyện tập →</button></div>`);
     bindTop();
     $$('[data-t]').forEach(b => b.onclick = () => { ti = +b.dataset.t; drawSS(); });
-    setTimeout(() => { [['#c1', 'vgd'], ['#c2', 'xien']].forEach(([s, ty]) => { const cv = $(s); sizeCv(cv); hctdDraw(cv, T, ty, 4); }); }, 0);
+    setTimeout(() => { [['#c1', 'vgd'], ['#c2', 'xien']].forEach(([s, ty]) => { const cv = $(s); sizeCv(cv); hctdDraw(cv, T, ty, 5); }); }, 0);
   };
   /* ---- Luyện tập: (1) xếp ba hình chiếu theo PPCG thứ nhất / thứ ba; (2) chọn hình chiếu đứng / bằng / cạnh đúng; (3) chọn hình trục đo ---- */
   const flipIt = (it, W, H, fu, fv) => it.map(x => {
@@ -4666,8 +4715,8 @@ route(/^\/hctd$/, params => {
     setView(`${head()}<div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length} · ${{ g1: 'Xếp hình chiếu – góc 1', g3: 'Xếp hình chiếu – góc 3', axo: 'Chọn hình trục đo', pf: 'Chọn hình chiếu đứng', pt: 'Chọn hình chiếu bằng', ps: 'Chọn hình chiếu cạnh' }[q.kd]}</div><span class="timer">✔ ${score}</span></div><div class="qcard">${body}</div>`);
     bindTop();
     setTimeout(() => {
-      const ax = $('#ax'); if (ax) { sizeCv(ax); hctdDraw(ax, T, 'vgd', 4, 1, { axes: false, pad: 18, lw: 2.2 }); }
-      $$('[data-cv]').forEach(cv => { const o = q.opts[+cv.dataset.cv]; sizeCv(cv); hctdDraw(cv, o.T, q.type, 4, 1, { axes: false, F: o.F, pad: 14, lw: 2 }); });
+      const ax = $('#ax'); if (ax) { sizeCv(ax); hctdDraw(ax, T, 'vgd', 5, 1, { axes: false, pad: 18, lw: 2.2 }); }
+      $$('[data-cv]').forEach(cv => { const o = q.opts[+cv.dataset.cv]; sizeCv(cv); hctdDraw(cv, o.T, q.type, 5, 1, { axes: false, F: o.F, pad: 14, lw: 2 }); });
     }, 0);
     $$('[data-card]').forEach(b => b.onclick = () => { q.held = q.held === b.dataset.card ? null : b.dataset.card; drawLT(); });
     $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (q.held) { q.slots[p] = q.held; q.held = null; } else if (q.slots[p]) delete q.slots[p]; drawLT(); });
@@ -4924,7 +4973,7 @@ route(/^\/hcpc$/, params => {
     bindTop();
     if (q.kind !== 'txt') setTimeout(() => {
       const cv = $('#qc'); sizeCv(cv); const O = q.obj;
-      if (q.kind === 'type' && q.t === 'td') { hctdDraw(cv, { W: O.W, D: O.D, H: O.H }, 'vgd', 4, 1, { axes: false, F: pcFaces(O), pad: 30 }); return; }
+      if (q.kind === 'type' && q.t === 'td') { hctdDraw(cv, { W: O.W, D: O.D, H: O.H, tdFace: 'front' }, 'vgd', 5, 1, { axes: false, F: pcFaces(O), pad: 30 }); return; }
       const m = q.kind === 'type' ? (q.t === 'p1' ? 1 : 2) : q.m, e = q.kind === 'eye' ? { hi: O.H + 1.8, mid: O.H * 0.5, lo: -0.7 }[q.e] : O.H + 1.6, dist = m === 1 ? 9 : 8;
       pcDraw(cv, { obj: O, mode: m, ex: m === 1 ? O.W + 1.6 : 0.4, ez: e, th, dist, step: 5, guides: false, ground: false, box: pcBox(O, m, Math.max(e, O.H + 2.4), th, dist) });
     }, 0);
