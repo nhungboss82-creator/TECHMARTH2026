@@ -425,7 +425,7 @@ route(/^\/quenmk$/, params => {
       <form class="card" id="f">
         <label for="u">${gv ? 'Email giáo viên' : 'Tên đăng nhập hoặc email'}</label><input id="u" type="${gv ? 'email' : 'text'}" autocapitalize="none" required value="${esc(id)}">
         <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Gửi mã về email</button></div>
-        ${gv ? '' : '<p class="hint" style="margin-top:10px">Chưa khai email? Em hãy nhờ thầy/cô chủ nhiệm bấm <b>Đặt lại MK</b> trong trang lớp học.</p>'}
+        ${gv ? '' : '<p class="hint" style="margin-top:10px">Chưa khai email? Em hãy nhờ thầy/cô chủ nhiệm bấm <b>🔑 Cấp lại MK</b> trong trang lớp học, mật khẩu mới là <b>PD2026</b>.</p>'}
       </form><p class="sub" style="text-align:center"><a href="#/dangnhap${gv ? '?gv=1' : ''}">← Quay lại đăng nhập</a></p></div>`);
     $('#f').onsubmit = async e => {
       e.preventDefault();
@@ -1595,7 +1595,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
     <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
       ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
-        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Đặt lại mật khẩu">🔑 MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="6"></td></tr>`; }).join('')}
+        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 Cấp lại MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="6"></td></tr>`; }).join('')}
       </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
     <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
     <h2>Chủ đề lớp hay sai nhất</h2>
@@ -1606,8 +1606,8 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   qrInto($('#qr'), joinLink(code));
   $('#cp').onclick = async () => { try { await navigator.clipboard.writeText(joinLink(code)); toast('Đã sao chép link đăng ký'); } catch (e) { prompt('Link đăng ký:', joinLink(code)); } };
   $$('[data-r]').forEach(b => b.onclick = async () => {
-    if (!confirm('Đặt lại mật khẩu của ' + b.dataset.n + ' về mật khẩu chung của lớp?')) return;
-    try { const r = await api('reset_pw_hs', { maHS: b.dataset.r }); alert('Đã đặt lại. Mật khẩu tạm: ' + r.matKhau + '\nHS sẽ phải đổi mật khẩu khi đăng nhập.'); } catch (e) { toast(e.message); }
+    if (!confirm('Cấp lại mật khẩu cho ' + b.dataset.n + '?\nMật khẩu mới sẽ là: PD2026')) return;
+    try { const r = await api('reset_pw_hs', { maHS: b.dataset.r }); alert('Đã cấp lại mật khẩu cho ' + b.dataset.n + '.\nMật khẩu mới: ' + (r.matKhau || 'PD2026') + '\nEm đăng nhập rồi đổi sang mật khẩu riêng.'); } catch (e) { toast(e.message); }
   });
   const reload = () => window.dispatchEvent(new HashChangeEvent('hashchange'));
   if ($('#merge')) $('#merge').onclick = async () => {
