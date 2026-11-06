@@ -1468,7 +1468,7 @@ route(/^\/gv$/, async params => {
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
   if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
 });
-const visitHtml = r => `👁 <b>${(r.total || 0).toLocaleString('vi-VN')}</b> lượt truy cập<small>Hôm nay: ${(r.today || 0).toLocaleString('vi-VN')}</small>`;
+const visitHtml = r => `👁 <b>${(r.total || 0).toLocaleString('vi-VN')}</b> lượt truy cập<small>Hôm nay: ${(r.today || 0).toLocaleString('vi-VN')}${r.since ? ' · từ ' + r.since : ''}</small>`;
 /** hộp thông báo GV mới chờ duyệt (chỉ Quản trị viên) */
 function pendingModal(list) {
   window._pendShown = 1;
