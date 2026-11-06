@@ -387,7 +387,7 @@ route(/^\/dangnhap$/, params => {
       <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub herosub">Trợ lý dạy học và kiểm tra, đánh giá môn CNCN cấp THPT</p></div>
       <div class="tabs"><button data-t="hs" class="${tab === 'hs' ? 'on' : ''}">Học sinh</button><button data-t="gv" class="${tab === 'gv' ? 'on' : ''}">Giáo viên</button></div>
       <form class="card" id="f">
-        ${tab === 'hs' ? `<label for="u">Tên đăng nhập</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="Tên tài khoản cá nhân (vd: an12pd)"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
+        ${tab === 'hs' ? `<label for="u">Tên đăng nhập hoặc email</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="vd: an12pd hoặc an12pd@gmail.com"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
           : `<label for="u">Email</label><input id="u" type="email" autocomplete="username" required>`}
         <label for="p">Mật khẩu</label><input id="p" type="password" autocomplete="current-password" required>
         <div id="msg"></div>
@@ -406,8 +406,8 @@ route(/^\/dangnhap$/, params => {
             : await api('login_gv', { email: $('#u').value, password: $('#p').value });
           setSession(s); flush(); const nx = store.get('next', ''); store.del('next'); location.hash = nx || '#/';
         } catch (err) {
-          const msg = (tab === 'hs' && (err.message || '').includes('Sai tên đăng nhập hoặc mật khẩu'))
-            ? 'Sai tên đăng nhập hoặc mật khẩu. Lưu ý: Tên đăng nhập là tài khoản cá nhân của em (không phải mã lớp). Nếu em chưa có tài khoản, hãy bấm “Đăng ký tài khoản mới” bên dưới.'
+          const msg = (tab === 'hs' && /Sai tên đăng nhập/.test(err.message || ''))
+            ? 'Sai tên đăng nhập/email hoặc mật khẩu. Lưu ý: không nhập mã lớp vào đây. Quên mật khẩu? Bấm “Quên mật khẩu” và nhập email em đã khai để tự lấy lại.'
             : err;
           errBox($('#msg'), msg);
         }
@@ -423,7 +423,7 @@ route(/^\/quenmk$/, params => {
   const step1 = () => {
     setView(`<div class="auth"><h1>Quên mật khẩu</h1><p class="sub">${gv ? 'Nhập email đã đăng kí, hệ thống sẽ gửi <b>mã 6 số</b> về email đó.' : 'Nhập <b>tên đăng nhập</b> của em. Mã 6 số sẽ được gửi về email em đã khai trong Hồ sơ.'}</p>
       <form class="card" id="f">
-        <label for="u">${gv ? 'Email giáo viên' : 'Tên đăng nhập'}</label><input id="u" type="${gv ? 'email' : 'text'}" autocapitalize="none" required value="${esc(id)}">
+        <label for="u">${gv ? 'Email giáo viên' : 'Tên đăng nhập hoặc email'}</label><input id="u" type="${gv ? 'email' : 'text'}" autocapitalize="none" required value="${esc(id)}">
         <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Gửi mã về email</button></div>
         ${gv ? '' : '<p class="hint" style="margin-top:10px">Chưa khai email? Em hãy nhờ thầy/cô chủ nhiệm bấm <b>Đặt lại MK</b> trong trang lớp học.</p>'}
       </form><p class="sub" style="text-align:center"><a href="#/dangnhap${gv ? '?gv=1' : ''}">← Quay lại đăng nhập</a></p></div>`);
@@ -475,7 +475,7 @@ route(/^\/dangky$/, params => {
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
       <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.10a1" maxlength="30">
       <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
-      <label for="em">Email <span class="hint">(không bắt buộc – dùng để lấy lại mật khẩu khi quên)</span></label><input id="em" type="email" autocomplete="email" placeholder="vd: an123@gmail.com">
+      <label for="em">Email <span class="hint">(nên khai – em đăng nhập bằng email và <b>tự lấy lại mật khẩu</b> khi quên)</span></label><input id="em" type="email" autocomplete="email" placeholder="vd: an123@gmail.com">
       <label for="p1">Mật khẩu</label><input id="p1" type="password" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 kí tự">
       <label for="p2">Nhập lại mật khẩu</label><input id="p2" type="password" required minlength="6" autocomplete="new-password">
       <div id="msg"></div>
@@ -530,6 +530,7 @@ function registerByClassCode(params) {
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
       <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.12a3" maxlength="30">
       <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
+      <label for="em2">Email <span class="hint">(nên khai – đăng nhập bằng email và tự lấy lại mật khẩu khi quên)</span></label><input id="em2" type="email" autocomplete="email" maxlength="80" placeholder="vd: an12a3@gmail.com">
       <div id="msg"></div>
       <div style="margin-top:14px"><button class="btn block">Đăng ký</button></div>
     </form><p class="sub" style="text-align:center"><a href="#/dangky?cach=machung">Đăng ký bằng mã chung</a> · <a href="#/dangnhap">Đã có tài khoản? Đăng nhập</a></p></div>`);
@@ -544,7 +545,7 @@ function registerByClassCode(params) {
     e.preventDefault();
     await busy($('#f .btn'), async () => {
       try {
-        const s = await api('register_hs', { code: $('#c').value.trim().toUpperCase(), classPw: $('#cp').value, name: $('#n').value, username: $('#u').value });
+        const s = await api('register_hs', { code: $('#c').value.trim().toUpperCase(), classPw: $('#cp').value, name: $('#n').value, username: $('#u').value, email: ($('#em2') || {}).value || '' });
         setSession(s); toast('Đăng ký thành công! Hãy đặt mật khẩu riêng.'); location.hash = '#/doimk';
       } catch (err) { errBox($('#msg'), err); }
     });
@@ -552,7 +553,7 @@ function registerByClassCode(params) {
 }
 
 route(/^\/dangkygv$/, () => {
-  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Đăng ký xong là dùng được ngay.</p>
+  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Sau khi gửi, tài khoản cần <b>Quản trị viên duyệt</b> mới dùng được.</p>
     <form class="card" id="f">
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60">
       <label for="s">Trường</label><input id="s" type="text" required maxlength="80" value="${esc(CFG.SCHOOL_DEFAULT || '')}">
@@ -567,7 +568,7 @@ route(/^\/dangkygv$/, () => {
       try {
         const s = await api('register_gv', { name: $('#n').value, school: $('#s').value, email: $('#e').value, password: $('#p').value });
         if (s && s.token) { setSession(s); toast('Đăng ký thành công!'); location.hash = '#/'; }
-        else ($('#f') || {}).innerHTML = '<div class="okmsg">Đã đăng ký. Thầy/cô hãy đăng nhập bằng email và mật khẩu vừa tạo.</div>';
+        else ($('#f') || {}).innerHTML = '<div class="okmsg">✅ Đã gửi đăng ký. Tài khoản sẽ dùng được sau khi <b>Quản trị viên duyệt</b>. Khi được duyệt, thầy/cô đăng nhập bằng email và mật khẩu vừa tạo.</div>';
       } catch (err) { errBox($('#msg'), err); }
     });
   };
@@ -1420,6 +1421,16 @@ const GV_APPS = k => {
     ['📚 Học sinh tự ôn luyện', hs], ['🧰 Công cụ cho giáo viên', gv]];
 };
 const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
+/* lọc lớp theo trường (Quản trị viên thấy nhiều trường; chọn trường nào chỉ hiện lớp trường đó) */
+const schKey = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').replace(/^trường\s+/, '').replace(/^(thpt|thcs|ptdtnt|th)\s+/, '').trim();
+function gvSchool(cls) {
+  const m = {}; (cls || []).forEach(c => { const k = schKey(c.Truong); if (!k) return; (m[k] = m[k] || { k, names: {} }).names[String(c.Truong).trim()] = 1; });
+  const ss = Object.values(m).map(x => ({ k: x.k, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
+  let k = store.get('gv_school', schKey(session.user.Truong));
+  if (!ss.some(s => s.k === k)) k = ss.some(s => s.k === schKey(session.user.Truong)) ? schKey(session.user.Truong) : (ss[0] || {}).k || '';
+  const html = ss.length > 1 ? `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>Trường</b></label><select id="schsel" class="grow">${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}</select></div>` : '';
+  return { list: ss.length > 1 ? (cls || []).filter(c => schKey(c.Truong) === k) : (cls || []), html, bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { store.set('gv_school', el.value); redraw(); }; } };
+}
 const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('my_classes'); return window._gvCls; };
 
 route(/^\/gv$/, async params => {
@@ -1443,7 +1454,8 @@ route(/^\/gv$/, async params => {
       ${k ? GV_APPS(k).map(([t, xs]) => xs.length ? `<div class="appgrp"><h3>${t}</h3><div class="rows applist">${xs.map(appTile).join('')}</div></div>` : '').join('')
           + '<p class="hint" style="margin-top:10px"><span class="who">GV·HS</span> trình chiếu và HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>'
         : '<p class="hint" style="margin:8px 2px 0">Chọn khối để xem nội dung dạy học.</p>'}`;
-    setView(`<div class="gvhello"><b>Chào thầy/cô ${nameOf(u.HoTen)} 👋</b><span>${esc(u.Truong || '')}${session.role === 'admin' ? ' · Quản trị viên' : ''}</span></div>
+    setView(`<div class="gvtop"><div class="gvhello"><b>Chào thầy/cô ${nameOf(u.HoTen)} 👋</b><span>${esc(u.Truong || '')}${session.role === 'admin' ? ' · Quản trị viên' : ''}</span></div>
+      <div class="gvvisit" id="vs" title="Số lượt truy cập ứng dụng">${window._vs ? visitHtml(window._vs) : '👁 …'}</div></div>
       ${sec('ql', '👥', 'Quản lý học sinh', classes ? `${classes.length} lớp · ${hs} học sinh` : 'Các lớp, điểm, giao bài', ql)}
       ${sec('ht', '🎓', 'Hỗ trợ dạy học', k && open.ht ? 'Khối ' + k : 'Chọn khối → chọn nội dung', ht)}
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
@@ -1451,22 +1463,44 @@ route(/^\/gv$/, async params => {
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = k === b.dataset.khoi ? null : b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
   };
   draw();
+  api('visit_stats').then(r => { window._vs = r; const v = $('#vs'); if (v) v.innerHTML = visitHtml(r); }).catch(() => {});
+  if (session.role === 'admin' && !window._pendShown) api('list_gv').then(l => { const p = l.filter(g => g.TrangThai === 'cho_duyet'); if (p.length && location.hash.replace(/\?.*/, '') === '#/gv') pendingModal(p); }).catch(() => {});
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
   if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
 });
+const visitHtml = r => `👁 <b>${(r.total || 0).toLocaleString('vi-VN')}</b> lượt truy cập<small>Hôm nay: ${(r.today || 0).toLocaleString('vi-VN')}</small>`;
+/** hộp thông báo GV mới chờ duyệt (chỉ Quản trị viên) */
+function pendingModal(list) {
+  window._pendShown = 1;
+  const ov = document.createElement('div'); ov.className = 'modal-ov';
+  const draw = () => {
+    ov.innerHTML = `<div class="modal-box"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">🔔 Giáo viên chờ duyệt (${list.length})</h2><button class="btn ghost sm" data-x>Để sau</button></div>
+      <div class="list" style="margin-top:10px">${list.map((g, i) => `<div class="item"><div class="grow"><b>${esc(g.HoTen)}</b><div class="meta">${esc(g.Email)} · ${esc(g.Truong)}</div></div>
+        <button class="btn sm" data-i="${i}" data-s="hoat_dong">✔ Duyệt</button><button class="btn ghost sm" data-i="${i}" data-s="tu_choi">✘ Từ chối</button></div>`).join('') || '<div class="empty">Đã xử lý xong.</div>'}</div></div>`;
+    ov.querySelector('[data-x]').onclick = () => ov.remove();
+    ov.querySelectorAll('[data-i]').forEach(b => b.onclick = async () => {
+      const g = list[+b.dataset.i];
+      try { await api('approve_gv', { maGV: g.MaGV, status: b.dataset.s, approve: b.dataset.s === 'hoat_dong' }); toast((b.dataset.s === 'hoat_dong' ? 'Đã duyệt ' : 'Đã từ chối ') + g.HoTen); list.splice(+b.dataset.i, 1); if (list.length) draw(); else ov.remove(); }
+      catch (e) { toast(e.message); }
+    });
+  };
+  draw(); document.body.appendChild(ov);
+}
 
 /* ---- Các lớp ---- */
 route(/^\/gv\/lop$/, async () => {
   if (!needGV()) return;
   let classes = window._gvCls || null, err = '';
   const draw = () => {
-    const ks = ['10', '11', '12'].filter(k => (classes || []).some(c => String(c.Khoi) === k));
-    setView(`<a href="#/gv">← Trang chủ</a><div class="sechead"><h1 style="margin:6px 0">🏫 Các lớp</h1><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>
+    const sc = gvSchool(classes), shown = sc.list;
+    const ks = ['10', '11', '12'].filter(k => shown.some(c => String(c.Khoi) === k));
+    setView(`<a href="#/gv">← Trang chủ</a><div class="sechead"><h1 style="margin:6px 0">🏫 Các lớp</h1><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>${sc.html}
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
         : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
-        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${classes.filter(c => String(c.Khoi) === k).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('')}
+        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('')}
       <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>`);
     $('#mccp').onclick = async () => { const m = window._maChung || ''; try { await navigator.clipboard.writeText(m); toast('Đã sao chép mã chung: ' + m); } catch (e) { toast('Mã chung: ' + m, 5000); } };
+    sc.bind(draw);
   };
   draw();
   if (!window._maChung) api('get_common').then(r => { window._maChung = r.ma; const v = $('#mcv'); if (v) v.textContent = r.ma; }).catch(() => {});
@@ -1479,13 +1513,15 @@ route(/^\/gv\/diem$/, async params => {
   if (!needGV()) return;
   let classes = window._gvCls || null, err = '', code = (params && params.get('lop')) || store.get('gv_diem_lop', '');
   const draw = () => {
-    if (classes && classes.length && !classes.some(c => c.MaLop === code)) code = classes[0].MaLop;
-    const ks = ['10', '11', '12'].filter(k => (classes || []).some(c => String(c.Khoi) === k));
-    setView(`<a href="#/gv">← Trang chủ</a><h1>📊 Điểm</h1><p class="sub">Chọn lớp → tích các bài / đề cần lấy điểm → <b>Xuất Excel</b>.</p>
+    const sc = gvSchool(classes), shown = sc.list;
+    if (shown.length && !shown.some(c => c.MaLop === code)) code = shown[0].MaLop;
+    const ks = ['10', '11', '12'].filter(k => shown.some(c => String(c.Khoi) === k));
+    setView(`<a href="#/gv">← Trang chủ</a><h1>📊 Điểm</h1><p class="sub">Chọn lớp → tích các cột điểm cần lấy (đặt tên cột như Bài 1, KT thường xuyên, Giữa kì…) → <b>Xuất Excel</b>. Bấm vào điểm hoặc tên HS để xem chi tiết.</p>${sc.html}
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải…'}</div>` : !classes.length ? '<div class="card empty">Chưa có lớp.</div>'
-        : `<div class="card">${ks.map(k => `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0"><b style="width:70px">Khối ${k}</b>${classes.filter(c => String(c.Khoi) === k).map(c => `<button class="btn ${c.MaLop === code ? '' : 'ghost'} sm" data-lop="${c.MaLop}">${esc(c.TenLop || c.MaLop)}</button>`).join('')}</div>`).join('')}</div>
+        : `<div class="card">${ks.map(k => `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0"><b style="width:70px">Khối ${k}</b>${shown.filter(c => String(c.Khoi) === k).map(c => `<button class="btn ${c.MaLop === code ? '' : 'ghost'} sm" data-lop="${c.MaLop}">${esc(c.TenLop || c.MaLop)}</button>`).join('')}</div>`).join('')}</div>
         <div id="bd"><div class="card empty">Đang tải bảng điểm…</div></div>`}`);
     $$('[data-lop]').forEach(b => b.onclick = () => { code = b.dataset.lop; store.set('gv_diem_lop', code); draw(); load(); });
+    sc.bind(() => { draw(); load(); });
   };
   let seq = 0;
   const load = async () => {
@@ -1537,6 +1573,9 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   } catch (e) { errBox(V, e); return; }
   const c = cls.find(x => x.MaLop === code) || { TenLop: code, Khoi: '', MaLop: code };
   students.sort((a, b) => viNameCmp(a.HoTen, b.HoTen));
+  const nk = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(), dupK = {};
+  students.forEach(s => { dupK[nk(s.HoTen)] = (dupK[nk(s.HoTen)] || 0) + 1; });
+  const dupN = Object.values(dupK).filter(n => n > 1).reduce((x, n) => x + n - 1, 0);
   const myAsg = asg.filter(a => a.DanhSachLop.includes(code));
   // thống kê chủ đề hay sai
   const wrongTopic = {}, wrongQ = {};
@@ -1550,9 +1589,10 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <div class="card"><div class="row"><div class="grow"><div class="hint">Mã lớp</div><div class="code">${esc(code)}</div>
       <div class="hint">Mật khẩu chung: <b>${esc(c.MatKhauLop || '')}</b></div>
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" id="cp">📋 Sao chép link đăng ký</button></div></div><div id="qr" style="width:132px"></div></div></div>
-    <div class="row"><h2 class="grow">Học sinh</h2><a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
-    <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Tên ĐN</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
-      ${students.map(s => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}</td><td>${esc(s.TenDN)}</td>
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
+    ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
+    <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
+      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
         <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Đặt lại mật khẩu">🔑 MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="6"></td></tr>`; }).join('')}
       </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
     <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
@@ -1568,6 +1608,10 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     try { const r = await api('reset_pw_hs', { maHS: b.dataset.r }); alert('Đã đặt lại. Mật khẩu tạm: ' + r.matKhau + '\nHS sẽ phải đổi mật khẩu khi đăng nhập.'); } catch (e) { toast(e.message); }
   });
   const reload = () => window.dispatchEvent(new HashChangeEvent('hashchange'));
+  if ($('#merge')) $('#merge').onclick = async () => {
+    if (!confirm('Gộp các học sinh trùng họ tên trong lớp ' + c.TenLop + '?\nKết quả làm bài sẽ dồn về tài khoản có nhiều bài nhất; các tài khoản thừa bị xoá.')) return;
+    await busy($('#merge'), async () => { try { const r = await api('merge_students', { code }); toast('Đã gộp ' + r.merged + ' tài khoản trùng'); reload(); } catch (e) { toast(e.message); } });
+  };
   const others = cls.filter(x => x.MaLop !== code);
   const lopOpts = (sel) => cls.map(x => `<option value="${esc(x.MaLop)}" ${x.MaLop === sel ? 'selected' : ''}>${esc(x.TenLop)} (khối ${esc(x.Khoi)})</option>`).join('');
   $('#lsua').onclick = () => {
@@ -1696,10 +1740,28 @@ function scoreSheet(box, cls, students, results, myAsg) {
     }
     return { chosen, rows };
   };
+  const nameKey = 'bdn_' + cls.MaLop, names = store.get(nameKey, {});
+  const colName = x => names[x.id] || x.name;
+  const SUG = ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Kiểm tra TX 1', 'Kiểm tra TX 2', 'Kiểm tra TX 3', 'Kiểm tra TX 4', 'Kiểm tra đợt 1', 'Kiểm tra đợt 2', 'Kiểm tra giữa kì I', 'Kiểm tra cuối kì I', 'Kiểm tra giữa kì II', 'Kiểm tra cuối kì II', 'Định kì 1', 'Định kì 2'];
+  /** xem toàn bộ thông tin một HS (một cột hoặc mọi bài) */
+  const detail = (s, col) => {
+    const rs = results.filter(r => r.maHS === s.MaHS && (!col || (r.key ? 'K:' + r.key : 'T:' + r.bai) === col.id)).sort((x, y) => new Date(x.t) - new Date(y.t));
+    const byCol = {}; rs.forEach(r => { const id = r.key ? 'K:' + r.key : 'T:' + r.bai; (byCol[id] = byCol[id] || []).push(r); });
+    const ov = document.createElement('div'); ov.className = 'modal-ov';
+    const fmtDay = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+    ov.innerHTML = `<div class="modal-box"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">${esc(s.HoTen)}</h2><button class="btn ghost sm" data-x>Đóng</button></div>
+      <p class="hint" style="margin:4px 0 10px">Lớp ${esc(cls.TenLop)} · Tên đăng nhập: <b>${esc(s.TenDN)}</b>${s.Email ? ' · Email: ' + esc(s.Email) : ''} · ${s.soLuot != null ? s.soLuot + ' lượt làm bài' : ''}</p>
+      ${Object.keys(byCol).length ? Object.entries(byCol).map(([id, L]) => { const cc = list.find(x => x.id === id); return `<h3 style="margin:10px 0 4px">${esc(cc ? colName(cc) : (L[0].bai || ''))} <span class="hint">· ${L.length} lượt làm · cao nhất ${fmt(Math.max(...L.map(r => r.diem)))}</span></h3>
+        <div class="tablewrap"><table><thead><tr><th class="n">Lần</th><th>Ngày giờ nộp</th><th class="n">Điểm</th><th class="n">Đúng</th><th class="n">Thời gian làm</th></tr></thead><tbody>
+        ${L.map((r, i) => `<tr><td class="n">${r.lan || i + 1}</td><td>${fmtDay(r.t)}</td><td class="n"><b>${fmt(r.diem)}</b></td><td class="n">${r.dung != null && r.dung !== '' ? r.dung + '/' + r.tong : '–'}</td><td class="n">${r.giay ? mmss(r.giay) : '–'}</td></tr>`).join('')}</tbody></table></div>`; }).join('') : '<div class="empty">Chưa làm bài này.</div>'}
+      <div class="row" style="margin-top:12px;gap:8px"><a class="btn ghost sm" href="#/gv/hs/${s.MaHS}?lop=${cls.MaLop}">Xem quá trình luyện tập ›</a></div></div>`;
+    ov.onclick = e => { if (e.target === ov || e.target.closest('[data-x]')) ov.remove(); };
+    document.body.appendChild(ov);
+  };
   const draw = () => {
     store.set(ck, { sel: [...sel], mode, zero, hk });
     const { chosen, rows } = build();
-    const shortName = x => x.name.length > 28 ? x.name.slice(0, 26) + '…' : x.name;
+    const shortName = x => { const n = colName(x); return n.length > 28 ? n.slice(0, 26) + '…' : n; };
     box.innerHTML = `<div class="card">
       <div class="row" style="gap:8px;flex-wrap:wrap"><b>Lấy điểm:</b>${[['max', 'Cao nhất'], ['first', 'Lần đầu'], ['last', 'Lần cuối']].map(([k, t]) => `<button class="btn ghost sm${mode === k ? ' on' : ''}" data-mode="${k}">${t}</button>`).join('')}
         <label class="chk" style="padding:5px 10px"><input type="checkbox" id="bdz" ${zero ? 'checked' : ''}>Bài chưa làm tính 0 khi chia TB</label>
@@ -1708,11 +1770,17 @@ function scoreSheet(box, cls, students, results, myAsg) {
       <p class="hint" style="margin:8px 0 4px">Tích vào bài / chủ đề / đề muốn lấy điểm. Mỗi mục được tích là một cột; cuối bảng tự cộng <b>Tổng điểm</b> và <b>Điểm TB</b>.</p>
       ${list.length ? BD_GROUPS.map(([g, title]) => { const xs = list.filter(x => x.g === g); if (!xs.length) return ''; const all = xs.every(x => sel.has(x.id)); return `<div class="bdgrp"><label class="lchk bdhead"><input type="checkbox" data-grp="${g}" ${all ? 'checked' : ''}><b class="grow">${title}</b><span class="n">${xs.length} mục</span></label>
         <div class="lessonlist" style="max-height:220px">${xs.map(x => `<label class="lchk"><input type="checkbox" data-col="${esc(x.id)}" ${sel.has(x.id) ? 'checked' : ''}><span class="grow">${esc(x.name)}</span><span class="n">${x.hs.size}/${students.length} HS</span></label>`).join('')}</div></div>`; }).join('') : '<div class="empty">Lớp chưa có bài làm nào.</div>'}
-      <div class="row" style="margin-top:12px"><span class="grow hint">Đã chọn <b>${chosen.length}</b> cột · ${students.length} học sinh (xếp theo vần A–B)</span><button class="btn sm" id="bdx">⬇ Xuất Excel</button></div></div>
+      ${chosen.length ? `<details class="bdnames" ${store.get('bdn_open', 0) ? 'open' : ''}><summary><b>✏️ Đặt tên cột điểm</b> <span class="hint">(vd: Bài 1, Kiểm tra TX 1, Kiểm tra đợt 1, Định kì…)</span></summary>
+        <datalist id="bdsug">${SUG.map(x => `<option value="${x}">`).join('')}</datalist>
+        <div class="bdngrid">${chosen.map(x => `<label><span class="hint">${esc(x.name)}</span><input list="bdsug" data-nm="${esc(x.id)}" value="${esc(names[x.id] || '')}" placeholder="${esc(x.name)}" maxlength="40"></label>`).join('')}</div></details>` : ''}
+      <div class="row" style="margin-top:12px"><span class="grow hint">Đã chọn <b>${chosen.length}</b> cột · ${students.length} học sinh (xếp theo vần A–B) · bấm vào điểm hoặc tên HS để xem chi tiết</span><button class="btn sm" id="bdx">⬇ Xuất Excel</button></div></div>
       ${chosen.length && students.length ? `<div class="card"><div class="tablewrap"><table class="bdtable"><thead><tr><th>STT</th><th>Họ tên</th>${chosen.map(x => `<th class="n" title="${esc(x.name)}">${esc(shortName(x))}</th>`).join('')}<th class="n">Tổng điểm</th><th class="n">Điểm TB</th><th class="n">Hạng lớp</th>${gd ? `<th class="n" title="Xếp chung ${rows.nk} HS khối ${esc(cls.Khoi)}">Hạng khối</th>` : ''}</tr></thead><tbody>
-        ${rows.map(r => `<tr><td>${r.i + 1}</td><td>${esc(r.s.HoTen)}</td>${r.v.map(x => `<td class="n">${x == null ? '<span class="hint">–</span>' : fmt(x)}</td>`).join('')}<td class="n"><b>${fmt(r.tong)}</b></td><td class="n"><b>${r.tb == null ? '–' : fmt(r.tb)}</b></td><td class="n">${r.hl}/${students.length}</td>${gd ? `<td class="n"><b>${r.hk}</b>/${rows.nk}</td>` : ''}</tr>`).join('')}</tbody></table></div>
+        ${rows.map(r => `<tr><td>${r.i + 1}</td><td><a href="javascript:void 0" data-hs="${r.i}">${esc(r.s.HoTen)}</a></td>${r.v.map((x, j) => `<td class="n">${x == null ? '<span class="hint">–</span>' : `<a href="javascript:void 0" class="bdcell" data-hs="${r.i}" data-cj="${j}">${fmt(x)}</a>`}</td>`).join('')}<td class="n"><b>${fmt(r.tong)}</b></td><td class="n"><b>${r.tb == null ? '–' : fmt(r.tb)}</b></td><td class="n">${r.hl}/${students.length}</td>${gd ? `<td class="n"><b>${r.hk}</b>/${rows.nk}</td>` : ''}</tr>`).join('')}</tbody></table></div>
         ${gd ? `<p class="hint">Hạng khối: xếp ${rows.nk} học sinh khối ${esc(cls.Khoi)} của trường theo Tổng điểm các cột đang chọn; bằng điểm thì đồng hạng.</p>` : ''}</div>` : ''}`;
     $$('[data-mode]', box).forEach(b => b.onclick = () => { mode = b.dataset.mode; draw(); });
+    $$('[data-hs]', box).forEach(el => el.onclick = () => detail(students[+el.dataset.hs], el.dataset.cj != null ? chosen[+el.dataset.cj] : null));
+    $$('[data-nm]', box).forEach(inp => inp.onchange = () => { const v = inp.value.trim(); if (v) names[inp.dataset.nm] = v; else delete names[inp.dataset.nm]; store.set(nameKey, names); store.set('bdn_open', 1); draw(); });
+    const dn = $('.bdnames', box); if (dn) dn.ontoggle = () => store.set('bdn_open', dn.open ? 1 : 0);
     $('#bdz', box).onchange = e => { zero = e.target.checked; draw(); };
     $('#bdk', box).onchange = e => { hk = e.target.checked; draw(); if (hk && !gd) loadGrade(); };
     $$('[data-col]', box).forEach(i => i.onchange = () => { i.checked ? sel.add(i.dataset.col) : sel.delete(i.dataset.col); draw(); });
@@ -1720,7 +1788,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
     $('#bdx', box).onclick = () => {
       const { chosen, rows } = build();
       if (!chosen.length) { toast('Hãy tích chọn ít nhất 1 cột điểm'); return; }
-      const head = ['STT', 'Họ tên', 'Tên đăng nhập', ...chosen.map(x => x.name), 'Tổng điểm', 'Điểm TB', 'Hạng lớp', ...(gd ? ['Hạng khối'] : []), 'Số bài đã làm'];
+      const head = ['STT', 'Họ tên', 'Tên đăng nhập', ...chosen.map(x => colName(x)), 'Tổng điểm', 'Điểm TB', 'Hạng lớp', ...(gd ? ['Hạng khối'] : []), 'Số bài đã làm'];
       csv('BangDiem_' + String(cls.TenLop).replace(/[\/:*?"<>|]+/g, '-') + '.csv', [head, ...rows.map(r => [r.i + 1, r.s.HoTen, r.s.TenDN, ...r.v.map(x => x == null ? '' : x), r.tong, r.tb == null ? '' : r.tb, r.hl + '/' + students.length, ...(gd ? [r.hk + '/' + rows.nk] : []), r.lam + '/' + chosen.length])]);
     };
   };
@@ -2284,13 +2352,14 @@ route(/^\/admin$/, async () => {
   const load = async () => {
     try {
       const l = await api('list_gv');
-      const st = { cho_duyet: '<span class="pill warn">Chờ duyệt</span>', hoat_dong: '<span class="pill ok">Hoạt động</span>', khoa: '<span class="pill bad">Đã khóa</span>' };
+      const st = { cho_duyet: '<span class="pill warn">Chờ duyệt</span>', hoat_dong: '<span class="pill ok">Hoạt động</span>', khoa: '<span class="pill bad">Đã khóa</span>', tu_choi: '<span class="pill bad">Từ chối</span>' };
+      l.sort((x, y) => (y.TrangThai === 'cho_duyet') - (x.TrangThai === 'cho_duyet'));
       ($('#a') || {}).innerHTML = `<div class="card"><div class="row"><div class="grow"><b>Ngân hàng câu hỏi</b><div class="hint">Phiên bản ${esc(bank.v)} · ${bank.q.length} câu</div></div><button class="btn sm" id="bb">Cập nhật ngân hàng cho HS</button></div></div>
         <div class="card"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint" id="mcc">Đổi mã khi cần; tài khoản đã đăng ký không bị ảnh hưởng.</div></div><input id="mcn" type="text" maxlength="20" style="max-width:160px;text-transform:uppercase" placeholder="Mã mới"><button class="btn sm" id="mcs">Lưu mã</button></div></div>
         <h2>Giáo viên (${l.length})</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Email</th><th>Trường</th><th>Trạng thái</th><th></th></tr></thead><tbody>
         ${l.map(g => `<tr><td>${esc(g.HoTen)}${g.VaiTro === 'admin' ? ' <span class="pill">Admin</span>' : ''}</td><td>${esc(g.Email)}</td><td>${esc(g.Truong)}</td><td>${st[g.TrangThai] || esc(g.TrangThai)}</td>
-          <td>${g.VaiTro === 'admin' ? '' : g.TrangThai === 'hoat_dong' ? `<button class="btn ghost sm" data-g="${g.MaGV}" data-a="0">Khóa</button>` : `<button class="btn sm" data-g="${g.MaGV}" data-a="1">Duyệt</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
-      $$('[data-g]').forEach(b => b.onclick = async () => { try { await api('approve_gv', { maGV: b.dataset.g, approve: b.dataset.a === '1' }); load(); } catch (e) { toast(e.message); } });
+          <td style="white-space:nowrap">${g.VaiTro === 'admin' ? '' : g.TrangThai === 'hoat_dong' ? `<button class="btn ghost sm" data-g="${g.MaGV}" data-s="khoa">Khóa</button>` : g.TrangThai === 'cho_duyet' ? `<button class="btn sm" data-g="${g.MaGV}" data-s="hoat_dong">✔ Duyệt</button> <button class="btn ghost sm" data-g="${g.MaGV}" data-s="tu_choi">✘ Từ chối</button>` : `<button class="btn sm" data-g="${g.MaGV}" data-s="hoat_dong">Mở lại</button>`}</td></tr>`).join('')}</tbody></table></div></div>`;
+      $$('[data-g]').forEach(b => b.onclick = async () => { try { await api('approve_gv', { maGV: b.dataset.g, status: b.dataset.s, approve: b.dataset.s === 'hoat_dong' }); load(); } catch (e) { toast(e.message); } });
       api('get_common').then(r => { $('#mcn').value = r.ma; $('#mcc').textContent = 'Mã hiện tại: ' + r.ma + ' · Đổi mã khi cần; tài khoản đã đăng ký không bị ảnh hưởng.'; }).catch(() => {});
       $('#mcs').onclick = async () => { try { const r = await api('set_common', { ma: $('#mcn').value }); window._maChung = r.ma; $('#mcc').textContent = 'Mã hiện tại: ' + r.ma; toast('Đã lưu mã chung: ' + r.ma); } catch (e) { toast(e.message); } };
       $('#bb').onclick = async () => { try { await api('bump_bank'); await syncBank(true); toast('Đã cập nhật: ' + bank.q.length + ' câu'); load(); } catch (e) { toast(e.message); } };
@@ -2425,8 +2494,8 @@ route(/^\/gv\/baive\/moi$/, async params => {
             diemToiDa: +$('#mx').value, attempts: +$('#at').value, deadline: $('#dl').value ? new Date($('#dl').value).toISOString() : '', anhMau: anh } });
           toast('Đã giao bài vẽ'); location.hash = '#/gv/baive/' + t.MaBV;
         } catch (err) {
-          const msg = (tab === 'hs' && (err.message || '').includes('Sai tên đăng nhập hoặc mật khẩu'))
-            ? 'Sai tên đăng nhập hoặc mật khẩu. Lưu ý: Tên đăng nhập là tài khoản cá nhân của em (không phải mã lớp). Nếu em chưa có tài khoản, hãy bấm “Đăng ký tài khoản mới” bên dưới.'
+          const msg = (tab === 'hs' && /Sai tên đăng nhập/.test(err.message || ''))
+            ? 'Sai tên đăng nhập/email hoặc mật khẩu. Lưu ý: không nhập mã lớp vào đây. Quên mật khẩu? Bấm “Quên mật khẩu” và nhập email em đã khai để tự lấy lại.'
             : err;
           errBox($('#msg'), msg);
         }
@@ -5411,6 +5480,7 @@ route(/^\/sgk\/doc$/, async params => {
   await loadBank();
   render();
   flush();
+  try { if (!sessionStorage.getItem('stc_hit')) { sessionStorage.setItem('stc_hit', '1'); setTimeout(() => api('hit').catch(() => {}), 1500); } } catch (e) {}
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 })();
