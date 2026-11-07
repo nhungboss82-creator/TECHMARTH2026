@@ -5542,6 +5542,15 @@ route(/^\/sgk\/doc$/, async params => {
   render();
   flush();
   try { if (!sessionStorage.getItem('stc_hit') || !sessionStorage.getItem('stc_vs')) { sessionStorage.setItem('stc_hit', '1'); setTimeout(() => api('hit').then(r => { if (r && r.total) { try { sessionStorage.setItem('stc_vs', JSON.stringify(r)); } catch (e) {} const el = $('#hsvs'); if (el) el.textContent = r.total.toLocaleString('vi-VN'); } }).catch(() => {}), 1500); } } catch (e) {}
-  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    // có bản mới trên máy chủ: tự tải lại một lần để thầy cô, học sinh luôn thấy nội dung mới nhất (không cần Ctrl+F5)
+    const hadSW = !!navigator.serviceWorker.controller;
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadSW || reloaded || /^#\/lambai/.test(location.hash)) return;
+      reloaded = true; location.reload();
+    });
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
+  }
 })();
 })();
