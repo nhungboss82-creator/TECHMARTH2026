@@ -305,8 +305,8 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|htdien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|htdien)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -700,6 +700,21 @@ route(/^\/dientuso$/, params => {
   cleanup = () => { removeEventListener('resize', fit); V.classList.remove('wide'); };
 });
 
+/* ================= Khối 12 · Chủ đề Hệ thống điện gia đình (file htdien.html, giữ nguyên bản) ================= */
+route(/^\/htdien$/, () => {
+  V.classList.add('wide');
+  setView(`<div class="k10nav dtsnav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a><a class="on" href="#/htdien"><b>Chủ đề</b> Hệ thống điện gia đình</a></div>
+    <iframe class="dtsframe" id="htdframe" src="htdien.html" title="Chủ đề Hệ thống điện gia đình" allow="autoplay; fullscreen"></iframe>`);
+  const fr = $('#htdframe');
+  const fit = () => {
+    const tb = $('#tabbar'), r = tb && !tb.hidden ? tb.getBoundingClientRect() : null;
+    const below = r && r.height && r.top > innerHeight / 2 ? r.height : 0;
+    fr.style.height = Math.max(420, innerHeight - fr.getBoundingClientRect().top - below - 6) + 'px';
+  };
+  fit(); addEventListener('resize', fit);
+  cleanup = () => { removeEventListener('resize', fit); V.classList.remove('wide'); };
+});
+
 /* ================= Trang Ôn luyện (gom mọi cách tự ôn) ================= */
 route(/^\/onluyen$/, () => {
   const g = getStudentGrade(), is12 = g === '12' || isGV();
@@ -712,6 +727,7 @@ route(/^\/onluyen$/, () => {
       ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
     </div>` : ''}
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
+      ${row('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Sơ đồ hệ thống điện, thiết bị điện, lắp mạch điện trong nhà')}
       ${row('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21 cổng logic, Bài 22 mạch xử lí tín hiệu số, Bài 23 thực hành mạch báo cháy (mô hình 3D)')}
     </div>` : ''}
     <h2>Theo nội dung</h2><div class="rows">
@@ -1430,7 +1446,8 @@ const GV_APPS = k => {
       A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
       A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
-    '11': [], '12': [A('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21, 22, 23: cổng logic, mạch xử lí tín hiệu, mạch báo cháy 3D', 'GV·HS')]
+    '11': [], '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
+      A('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21, 22, 23: cổng logic, mạch xử lí tín hiệu, mạch báo cháy 3D', 'GV·HS')]
   }[k];
   const hs = [
     ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
