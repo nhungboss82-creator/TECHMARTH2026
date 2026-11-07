@@ -545,3 +545,14 @@ a.bdcell{font-weight:600;text-decoration:none;border-bottom:1px dashed var(--bra
 @media (min-width:980px){body:not(.focus) .view.wide{margin-left:112px;margin-right:12px}}
 .dtsnav{margin:0 0 8px}
 .dtsframe{display:block;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+
+/* Hỗ trợ dạy học: các nhóm con thu gọn được */
+.gvsecb .appgrp.fold{border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden;background:var(--card)}
+.appgrph{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:11px 14px;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.appgrph .t{flex:1;min-width:0;font-weight:800;font-size:15px}
+.appgrph .n{flex:none;font-size:12px;font-weight:800;min-width:24px;padding:2px 8px;border-radius:999px;background:var(--info-soft);color:var(--brand2);text-align:center}
+.appgrph .chev{flex:none;font-size:16px;color:var(--muted);width:14px;text-align:center}
+.appgrph:hover{background:var(--info-soft)}
+.appgrph:focus-visible{outline:2px solid var(--brand2);outline-offset:-2px}
+.appgrp.fold.open .appgrph{border-bottom:1px solid var(--line)}
+.gvsecb .appgrp.fold .rows{margin:0;border:0;border-radius:0;box-shadow:none}

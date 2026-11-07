@@ -1469,12 +1469,10 @@ const GV_APPS = k => {
     ...(k === '12' ? [A('#/gv/thitn', '📊', 'green', 'Quản lý đề luyện thi TN', 'Kết quả từng đề, câu HS hay sai', 'GV')] : []),
     A('#/gv/aisoancau?k=' + k, '🤖', 'green', 'AI soạn câu hỏi', 'Soạn câu mới theo bài, mức độ; GV duyệt', 'GV'),
     A('#/gv/matran?k=' + k, '🧾', 'amber', 'Ma trận & đề kiểm tra', 'Ma trận GK, CK; sinh đề, in đề', 'GV'),
-    A('#/gv/thietke?k=' + k, '💡', 'amber', 'Bài toán thiết kế (AI)', 'Bài toán STEM gắn địa phương', 'GV'),
-    ...(k === '10' ? [A('#/gv/baive?k=10', '📷', '', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : []),
-    A('#/gv/themcau', '✍️', '', 'Thêm câu hỏi', 'Trắc nghiệm, Đúng/Sai, tự luận', 'GV')
+    ...(k === '10' ? [A('#/gv/baive?k=10', '📷', '', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : [])
   ];
   const game = A('#/trochoi?k=' + k, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh', 'GV·HS');
-  return [['🖥️ Trình chiếu trên lớp', k === '12' ? [game, ...show, ...sgk] : [...show, ...sgk, game]],
+  return [['🖥️ Trình chiếu trên lớp', k === '12' ? [game, ...show] : [...show, ...sgk, game]],
     ['📚 Học sinh tự ôn luyện', hs], ['🧰 Công cụ cho giáo viên', gv]];
 };
 const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
@@ -1508,7 +1506,11 @@ route(/^\/gv$/, async params => {
       { href: '#/gv/giaobai', ic: '📤', c: '', t: 'Giao bài', d: 'Chọn bài / ma trận, xem trước đề, mã QR' },
       { href: '#/gv/baigiao', ic: '📋', c: '', t: 'Bài đã giao', d: 'Theo dõi nộp bài, công bố điểm' }].map(appTile).join('')}</div>`;
     const ht = `<div class="gvkhoi">${['10', '11', '12'].map(v => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">Khối ${v}</button>`).join('')}</div>
-      ${k ? GV_APPS(k).map(([t, xs]) => xs.length ? `<div class="appgrp"><h3>${t}</h3><div class="rows applist">${xs.map(appTile).join('')}</div></div>` : '').join('')
+      ${k ? GV_APPS(k).map(([t, xs], i) => {
+          if (!xs.length) return '';
+          const id = 'g' + k + '_' + i, on = open[id] === undefined ? i === 0 : !!open[id];
+          return `<div class="appgrp fold ${on ? 'open' : ''}"><button class="appgrph" data-grp="${id}" aria-expanded="${on}"><span class="t">${t}</span><span class="n">${xs.length}</span><span class="chev">${on ? '▾' : '▸'}</span></button>${on ? `<div class="rows applist">${xs.map(appTile).join('')}</div>` : ''}</div>`;
+        }).join('')
           + '<p class="hint" style="margin-top:10px"><span class="who">GV·HS</span> trình chiếu và HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>'
         : '<p class="hint" style="margin:8px 2px 0">Chọn khối để xem nội dung dạy học.</p>'}`;
     setView(`<div class="gvtop"><div class="gvhello"><b>Chào thầy/cô ${nameOf(u.HoTen)} 👋</b><span>${esc(u.Truong || '')}${session.role === 'admin' ? ' · Quản trị viên' : ''}</span></div>
@@ -1517,6 +1519,7 @@ route(/^\/gv$/, async params => {
       ${sec('ht', '🎓', 'Hỗ trợ dạy học', k && open.ht ? 'Khối ' + k : 'Chọn khối → chọn nội dung', ht)}
       <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
     $$('[data-sec]').forEach(b => b.onclick = () => { const id = b.dataset.sec; open[id] = open[id] ? 0 : 1; store.set('gv_open', open); draw(); });
+    $$('[data-grp]').forEach(b => b.onclick = () => { const id = b.dataset.grp, cur = open[id] === undefined ? id.endsWith('_0') : !!open[id]; open[id] = cur ? 0 : 1; store.set('gv_open', open); draw(); });
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = k === b.dataset.khoi ? null : b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
   };
   draw();
