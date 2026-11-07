@@ -1,6 +1,6 @@
 /* SmarttechCN 2026 – Service Worker: chạy offline, tải nhanh */
-const VER = 'stc-2026.11.07-1';
-const SHELL = ['./', 'index.html', 'app.js', 'style.css', 'config.js', 'matran.js', 'manifest.webmanifest', 'bank.json', 'dientuso.html', 'icons/icon-192.png', 'icons/icon-512.png'];
+const VER = 'stc-2026.11.07-2';
+const SHELL = ['./', 'index.html', 'app.js', 'style.css', 'config.js', 'matran.js', 'manifest.webmanifest', 'bank.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VER).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -39,6 +39,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url);
   if (url.hostname.endsWith('script.google.com') || url.hostname.endsWith('googleusercontent.com') && url.pathname.includes('macros')) return;
   const sameOrigin = url.origin === self.location.origin;
+  // trang bài học nhúng (vd. dientuso.html): để trình duyệt tự tải, vì Cloudflare chuyển hướng .html → không đuôi
+  if (sameOrigin && req.mode === 'navigate' && !/\/(index\.html)?$/.test(url.pathname)) return;
   if (sameOrigin && url.pathname.includes('/sgk/')) return;   // file SGK lớn: tải từng phần, không lưu cả file
   const isCdn = /fonts\.(googleapis|gstatic)\.com|cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|lh3\.googleusercontent\.com/.test(url.hostname);
   if (!sameOrigin && !isCdn) return;
@@ -56,7 +58,7 @@ self.addEventListener('fetch', e => {
   // khung app: dùng bản đã lưu, đồng thời cập nhật bản mới ở nền
   e.respondWith(caches.open(VER).then(async c => {
     const hit = await c.match(req, { ignoreSearch: true });
-    const net = fetch(req).then(r => { if (r.ok) c.put(req, r.clone()); return r; }).catch(() => null);
+    const net = fetch(req).then(r => { if (r.ok && !r.redirected) c.put(req, r.clone()); return r; }).catch(() => null);
     if (hit) { e.waitUntil(net); return hit; }
     const r = await net;
     return r || (req.mode === 'navigate' ? c.match('index.html') : Response.error());
