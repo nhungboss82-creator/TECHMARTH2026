@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bài 11 – Hình chiếu trục đo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e9eff9; --card:#ffffff; --ink:#0f172a; --muted:#5b6b82; --line:#dbe3f0;
+  --navy:#0b1d4a; --navy2:#1e3a8a; --gold:#fbbf24;
+  --ax:#e11d48; --base:#2563eb; --feat:#ea580c; --dim:#d97706; --ok:#059669; --bad:#dc2626; --vio:#7c3aed;
+  --r:18px; --hd:64px;
+  --font:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+body{background:radial-gradient(1200px 600px at 85% -10%,#dbe7ff 0,transparent 60%),radial-gradient(900px 500px at -10% 110%,#fde7c7 0,transparent 55%),var(--bg)}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* ---- thanh trên ---- */
+.hd{position:sticky;top:0;z-index:10;height:var(--hd);display:flex;align-items:center;gap:16px;padding:0 18px;color:#fff;
+  background:linear-gradient(120deg,#0b1d4a 0%,#1e3a8a 55%,#2b4fc7 100%);box-shadow:0 8px 24px -12px rgba(11,29,74,.6);overflow:hidden}
+.hd::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:24px 24px}
+.hd::after{content:"";position:absolute;width:260px;height:260px;right:120px;top:-170px;border-radius:50%;background:radial-gradient(circle,rgba(251,191,36,.45),transparent 70%);filter:blur(6px);animation:glow 6s ease-in-out infinite alternate;pointer-events:none}
+@keyframes glow{to{transform:translateX(-260px)}}
+.brand{position:relative;display:flex;align-items:center;gap:12px;min-width:0}
+.logo{flex:none;width:42px;height:42px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;color:#0b1d4a;
+  background:linear-gradient(140deg,#fde68a,#fbbf24);box-shadow:0 0 0 3px rgba(255,255,255,.2),0 6px 16px -6px #fbbf24}
+.brand b{display:block;font-size:18px;letter-spacing:-.2px}.brand small{display:block;font-size:12px;opacity:.78;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{position:relative;margin-left:auto;display:flex;gap:4px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);padding:4px;border-radius:14px}
+.tabs button{border:0;background:transparent;color:#e2e8f0;font-weight:700;padding:8px 14px;border-radius:10px;white-space:nowrap}
+.tabs button.on{background:#fff;color:var(--navy);box-shadow:0 4px 12px -4px rgba(0,0,0,.35)}
+.fs{position:relative;flex:none;width:42px;height:42px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:20px}
+.fs:hover{background:rgba(255,255,255,.22)}
+
+/* ---- khung chính: vừa một màn hình ---- */
+.main{height:calc(100vh - var(--hd));padding:14px;overflow:hidden}
+.ve,.lt{height:100%;display:grid;grid-template-columns:200px minmax(280px,.8fr) minmax(440px,1.45fr);gap:14px}
+.nho{height:100%;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 1px 2px rgba(15,23,42,.05),0 12px 30px -18px rgba(30,58,138,.35);padding:14px;min-height:0;display:flex;flex-direction:column}
+.ph{display:flex;align-items:center;gap:10px;margin-bottom:8px}.ph b{font-size:16px}
+.chipmini{margin-left:auto;font-size:12px;font-weight:600;color:var(--muted);background:#f1f5fb;border:1px solid var(--line);padding:3px 9px;border-radius:999px;white-space:nowrap}
+
+/* ---- danh sách vật thể ---- */
+.side{min-height:0;min-width:0;overflow:auto;padding-right:2px}
+.ve>*,.lt>*{min-width:0}
+.side h3{margin:4px 4px 8px;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.side h3:not(:first-child){margin-top:16px}
+.olist{display:flex;flex-direction:column;gap:6px}
+.olist button{display:flex;align-items:center;gap:10px;text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:8px 10px;font-weight:600;font-size:13.5px;line-height:1.3;transition:.15s}
+.olist button:hover{border-color:#93b4f5;transform:translateX(2px)}
+.olist button .n{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#eef3fd;color:var(--navy2);font-weight:800;font-size:13px}
+.olist button small{display:block;font-weight:500;color:var(--muted);font-size:11.5px}
+.olist button.on{border-color:var(--base);background:linear-gradient(120deg,#eff5ff,#fff);box-shadow:0 6px 16px -10px var(--base)}
+.olist button.on .n{background:linear-gradient(140deg,#3b82f6,#1d4ed8);color:#fff}
+.stars{color:#d97706!important;letter-spacing:1px}
+.tip{font-size:13px;color:var(--muted);background:#fff7e6;border:1px dashed #f5c26b;border-radius:12px;padding:10px;margin-top:14px}
+
+/* ---- bản vẽ ---- */
+.drwbox{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;border-radius:14px;padding:8px;
+  background-color:#fbfdff;background-image:linear-gradient(#eef4fd 1px,transparent 1px),linear-gradient(90deg,#eef4fd 1px,transparent 1px);background-size:16px 16px;border:1px solid #e3eaf6}
+svg.drw{width:100%;height:100%;max-height:100%}
+.axl{font:italic 800 21px Georgia,serif;fill:var(--ax)}
+.axes{animation:fadeIn .6s ease}
+.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{stroke-opacity:.45}}
+@keyframes fadeIn{from{opacity:0}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:12.5px;color:var(--muted)}
+.lg{display:inline-block;width:24px;height:0;border-top:3px solid var(--ink);vertical-align:middle;margin-right:6px}
+.lg.h{border-top:2px dashed var(--ink)}.lg.c{border-top:1.5px dashed #475569}.lg.a{border-top-color:var(--ax)}
+.hint{font-size:13px;color:var(--muted);margin:8px 2px 0}
+.gridtg{margin-left:auto;font-size:13px;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:6px;cursor:pointer}
+.gridtg input{width:17px;height:17px;accent-color:var(--base)}
+
+/* ---- sân khấu vẽ ---- */
+.stagehd{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.oname{margin-left:auto;font-weight:700;color:var(--navy2);font-size:14px}
+.seg{display:flex;background:#eef2f9;border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:700;color:var(--muted);font-size:14px}
+.seg button.on{background:linear-gradient(140deg,#7c3aed,#5b21b6);color:#fff;box-shadow:0 6px 14px -6px #7c3aed}
+.steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.steps button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:8px 4px;font-weight:700;font-size:12.5px;line-height:1.2;color:var(--muted);transition:.15s}
+.steps button:hover{border-color:#93b4f5}
+.steps .num{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;background:#eef2f9;color:var(--muted)}
+.steps button.done{color:var(--ink);border-color:#bfe3d3;background:#f2fbf7}
+.steps button.done .num{background:var(--ok);color:#fff}
+.steps button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,#f59e0b,#e11d48);box-shadow:0 10px 22px -10px #e11d48}
+.steps button.on .num{background:#fff;color:#e11d48}
+.cvbox{position:relative;flex:1;min-height:220px;border-radius:16px;overflow:hidden;border:1px solid #e3eaf6;
+  background-color:#fff;background-image:linear-gradient(#f1f5fc 1px,transparent 1px),linear-gradient(90deg,#f1f5fc 1px,transparent 1px);background-size:22px 22px}
+.cvbox canvas{position:absolute;inset:0;width:100%;height:100%}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--muted)}
+.go{border:0;border-radius:999px;padding:14px 28px;font-size:18px;font-weight:800;color:#fff;background:linear-gradient(135deg,#f59e0b,#e11d48);box-shadow:0 14px 30px -12px #e11d48;animation:bob 2.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.explain{margin-top:10px;border-radius:14px;padding:11px 14px;background:#f6f8fd;border-left:6px solid #94a3b8;min-height:86px}
+.explain.s1{border-color:var(--ax);background:#fff1f3}.explain.s2,.explain.s3{border-color:var(--base);background:#eff5ff}
+.explain.s4{border-color:var(--dim);background:#fff8eb}.explain.s5{border-color:var(--feat);background:#fff3ea}.explain.s6{border-color:var(--ok);background:#ecfaf3}
+.et{font-weight:800;font-size:16.5px;margin-bottom:3px}.ex{font-size:14.5px}
+.cr{color:var(--ax)}.cb{color:var(--base)}.cd{color:var(--dim)}.cf{color:var(--feat)}
+.note{display:block;margin-top:6px;padding:6px 10px;border-radius:10px;background:#f3e8ff;color:#5b21b6;font-size:13.5px}
+.ctrl{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.ctrl .btn:last-child{margin-left:auto}
+.btn{border:0;border-radius:12px;padding:10px 18px;font-weight:700;color:#fff;background:linear-gradient(140deg,#2563eb,#1e3a8a);box-shadow:0 8px 18px -10px #1e3a8a;min-height:44px}
+.btn:hover{filter:brightness(1.08)}.btn:disabled{opacity:.4;cursor:not-allowed;filter:none}
+.btn.ghost{background:#fff;color:var(--navy2);border:1.5px solid var(--line);box-shadow:none}
+
+/* ---- ghi nhớ ---- */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cmpcv{width:100%;height:340px;border-radius:14px;background:#fbfdff;border:1px solid #e3eaf6}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f1f5fb;font-size:13px;color:var(--muted)}th:nth-child(2){color:#0f766e}th:nth-child(3){color:var(--vio)}
+.six{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.six li{display:flex;gap:10px;background:#f8faff;border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.six .num{flex:none;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;background:linear-gradient(135deg,#f59e0b,#e11d48)}
+.six p{margin:2px 0 0;font-size:13.5px;color:var(--muted)}
+
+/* ---- luyện tập ---- */
+.qstem{font-size:15.5px;margin-bottom:10px}
+.optgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.opt{position:relative;border:2px solid var(--line);background:#fbfdff;border-radius:16px;padding:0;min-height:170px;overflow:hidden;transition:.15s}
+.opt:hover:not([disabled]){border-color:var(--base);transform:translateY(-2px);box-shadow:0 12px 24px -16px var(--base)}
+.opt canvas{position:absolute;inset:0;width:100%;height:100%}
+.ol{position:absolute;z-index:1;top:8px;left:8px;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;background:var(--navy2);color:#fff}
+.opt.ok{border:3px solid var(--ok);background:#ecfdf5}.opt.bad{border:3px solid var(--bad);background:#fef2f2}
+.fb{margin-top:10px;padding:10px 14px;border-radius:12px;font-size:14.5px}.fb.ok{background:#ecfdf5;color:#065f46}.fb.bad{background:#fef2f2;color:#991b1b}
+
+
+.steps button.s3d .num{background:#ede9fe;color:#6d28d9}
+.steps button.s3d.on{background:linear-gradient(135deg,#7c3aed,#2563eb);box-shadow:0 10px 22px -10px #7c3aed}
+.steps button.s3d.on .num{background:#fff;color:#6d28d9}
+.explain.s7{border-color:var(--vio);background:#f5f0ff}
+.cvbox canvas.v3{touch-action:none;cursor:grab}
+.cvbox canvas.half{width:50%}.cvbox canvas.half.r{left:50%;border-left:2px dashed #dbe3f0}
+.v3tag{position:absolute;z-index:2;top:10px;left:10px;font-weight:800;font-size:14px;color:#fff;background:linear-gradient(140deg,#0f766e,#115e59);border-radius:10px;padding:5px 11px;pointer-events:none}
+.v3tag.r{left:calc(50% + 10px);background:linear-gradient(140deg,#7c3aed,#5b21b6)}.v3tag small{display:block;font-size:11.5px;font-weight:600;opacity:.9}.cvbox canvas.v3:active{cursor:grabbing}
+.v3bar{position:absolute;z-index:2;bottom:10px;right:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:calc(100% - 20px)}
+.v3bar button{border:1.5px solid var(--line);background:rgba(255,255,255,.94);border-radius:10px;padding:6px 11px;font-weight:700;font-size:13px;color:var(--navy2);box-shadow:0 4px 12px -8px rgba(15,23,42,.4)}
+.v3bar button.on{background:linear-gradient(140deg,#7c3aed,#5b21b6);color:#fff;border-color:transparent}
+.v3hint{position:absolute;z-index:2;left:10px;bottom:10px;font-size:12.5px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:4px 11px;pointer-events:none}
+.v3leg{position:absolute;z-index:2;left:10px;bottom:46px;display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:6px 9px;pointer-events:none}
+.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(15,23,42,.25)}
+/* ---- so sánh 3D ---- */
+.ss{height:100%;display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px}.ss>*{min-width:0}
+.sscol{min-height:0;display:flex;flex-direction:column;gap:12px}
+.sstool{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:10px 14px}.sstool .gridtg{margin-left:0}.sstool b{font-size:15.5px;color:var(--navy2);margin-right:auto}
+.cmp2{flex:1;min-height:240px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cv3{position:relative;flex:1;min-height:0;border-radius:14px;background:#fbfdff;border:1px solid #e3eaf6;overflow:hidden}
+.cv3 canvas{position:absolute;inset:0;width:100%;height:100%}
+.cv3 .v3hint{font-size:11.5px}
+.sstab{flex:none;max-height:38%;overflow:auto;padding:4px 8px}
+.sstab td:first-child{font-weight:600;white-space:nowrap}
+.sstab td,.sstab th{padding:7px 10px;font-size:13.5px}
+@media (max-width:1180px){.ss{grid-template-columns:190px 1fr}.cmp2{flex:none;height:420px}.sstab{max-height:none}}
+@media (max-width:760px){.ss{grid-template-columns:1fr}.cmp2{grid-template-columns:1fr;height:auto}.cmp2 .panel{height:340px}.steps button.s3d{grid-column:span 3}.sstab td:first-child{white-space:normal}}
+@media (max-height:800px) and (min-width:1181px){.steps button{padding:5px 3px;font-size:11.5px}.steps .num{width:24px;height:24px;font-size:12.5px}.explain{padding:8px 12px;min-height:0}.et{font-size:15px}.ex{font-size:13.5px}.note{font-size:12.5px;padding:4px 8px}.btn{min-height:38px;padding:7px 14px}.stagehd{margin-bottom:6px}.panel{padding:12px}}
+/* ---- màn hình nhỏ ---- */
+@media (max-width:1180px){.ve,.lt{grid-template-columns:190px 1fr}.ve .stage,.lt .stage{grid-column:1/-1}.main{height:auto;overflow:visible}.ve .pv,.lt .pv{height:440px}.cvbox{min-height:440px}.optgrid{min-height:220px}.steps .tt{font-size:11.5px}}
+@media (max-width:760px){
+  .hd{height:auto;flex-wrap:wrap;padding:10px 12px;gap:8px}.tabs{margin-left:0;order:3;width:100%}.tabs button{flex:1;padding:8px 6px;font-size:13px}.fs{margin-left:auto}
+  .main{padding:10px}.ve,.lt{grid-template-columns:1fr}.side{overflow:visible}.olist{flex-direction:row;overflow-x:auto;padding-bottom:4px}.olist button{flex:none}.side h3:not(:first-child){margin-top:8px}
+  .ve .pv,.lt .pv{height:360px}.steps{grid-template-columns:repeat(3,minmax(0,1fr))}.cvbox{min-height:360px}.cmp{grid-template-columns:1fr}.six{grid-template-columns:1fr}.optgrid{grid-template-columns:1fr}.opt{min-height:220px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const HC = (() => {
+  const area = L => { let a = 0; L.forEach((p, i) => { const q = L[(i + 1) % L.length]; a += p[0] * q[1] - q[0] * p[1]; }); return a / 2; };
+  const circ = (cx, cy, r, n = 28) => Array.from({ length: n }, (_, i) => { const t = i / n * Math.PI * 2; return [cx + r * Math.cos(t), cy + r * Math.sin(t), 1]; });
+  const arcPts = (cx, cy, r, a0, a1, n) => Array.from({ length: n + 1 }, (_, i) => { const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [cx + r * Math.cos(t), cy + r * Math.sin(t), 1]; });
+  const AX = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+  const to3 = (ax, p, q, c) => ax === 'z' ? [p, q, c] : ax === 'x' ? [c, p, q] : [q, c, p];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const orient = (L, ccw) => { if ((area(L) > 0) === ccw) return L; const n = L.length; return L.map((_, j) => { const v = L[n - 1 - j]; return [v[0], v[1], L[(n - 2 - j + n) % n][2] || 0]; }); };
+  /** đùn đa giác (p,q) dọc trục ax từ c0 đến c1; mỗi điểm [p,q,s], s=1: cạnh tới điểm sau thuộc mặt cong */
+  function extrude(ax, outer, holes, c0, c1, keep = 'tbsh') {
+    const O = orient(outer.map(v => [v[0], v[1], v[2] || 0]), true), H = (holes || []).map(h => orient(h.map(v => [v[0], v[1], v[2] || 0]), false));
+    const A = AX[ax], F = [];
+    F.push({ pts: O.map(v => to3(ax, v[0], v[1], c1)), holes: H.map(h => h.map(v => to3(ax, v[0], v[1], c1))), n: A, t: 't' });
+    F.push({ pts: O.map(v => to3(ax, v[0], v[1], c0)).reverse(), holes: H.map(h => h.map(v => to3(ax, v[0], v[1], c0)).reverse()), n: A.map(x => -x), t: 'b' });
+    [O, ...H].forEach((L, li) => L.forEach((a, i) => {
+      const b = L[(i + 1) % L.length], a0 = to3(ax, a[0], a[1], c0), b0 = to3(ax, b[0], b[1], c0);
+      F.push({ pts: [a0, b0, to3(ax, b[0], b[1], c1), to3(ax, a[0], a[1], c1)], holes: [], n: norm(cross(sub(b0, a0), A)), smooth: !!a[2], t: li ? 'h' : 's' });
+    }));
+    return F.filter(f => keep.indexOf(f.t) >= 0 && (f.t === 't' || f.t === 'b' || c1 !== c0));
+  }
+  const xz = L => L.map(v => [v[1], v[0], v[2] || 0]);       // đùn theo y: đổi (x,z) → (z,x)
+  const box = (x0, x1, y0, y1, z0, z1) => extrude('z', [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], [], z0, z1);
+  /** chuẩn bị cạnh: bỏ đường ghép giữa các mặt đồng phẳng liền nhau */
+  function prep(faces) {
+    const fx = v => (Math.abs(v) < 5e-4 ? 0 : v).toFixed(3);
+    const key = (f, s = 1) => { const d = f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2]; return f.n.map(v => fx(v * s)).join(',') + '|' + fx(d * s); };
+    faces.forEach(f => { f.k = key(f); f.ko = key(f, -1); f.loops = [f.pts, ...f.holes]; });
+    /** điểm m nằm trong mặt g (cùng mặt phẳng) */
+    const inside = (g, m) => { const ax = [0, 1, 2].sort((i, j) => Math.abs(g.n[j]) - Math.abs(g.n[i]))[0], u = (ax + 1) % 3, w = (ax + 2) % 3; let c = false; g.loops.forEach(L => L.forEach((a, i) => { const b = L[(i + 1) % L.length]; if ((a[w] > m[w]) !== (b[w] > m[w]) && m[u] < (b[u] - a[u]) * (m[w] - a[w]) / (b[w] - a[w]) + a[u]) c = !c; })); return c; };
+    const onB = (g, m) => g.loops.some(L => L.some((a, i) => { const b = L[(i + 1) % L.length], ab = sub(b, a), am = sub(m, a), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); const d = sub(am, ab.map(v => v * t)); return Math.hypot(...d) < 1e-4; }));
+    faces.forEach(f => {
+      f.edges = [];
+      if (f.smooth) return;
+      const mates = faces.filter(g => g !== f && g.k === f.k);
+      // mặt áp sát nhau (cùng mặt phẳng, ngược chiều) là chỗ hai khối liền nhau: cạnh nằm trên đó không phải cạnh thật
+      const opp = faces.filter(g => g !== f && g.k === f.ko);
+      f.loops.forEach(L => L.forEach((a, i) => {
+        const b = L[(i + 1) % L.length], len = Math.hypot(...sub(b, a)), n = Math.max(1, Math.ceil(len / 0.05));
+        let st = null;
+        for (let j = 0; j < n; j++) {
+          const p0 = a.map((v, k) => v + (b[k] - v) * j / n), p1 = a.map((v, k) => v + (b[k] - v) * (j + 1) / n), m = p0.map((v, k) => (v + p1[k]) / 2);
+          const seam = mates.some(g => onB(g, m)) || opp.some(g => onB(g, m) || inside(g, m));
+          if (!seam) { if (!st) st = p0; } else if (st) { f.edges.push([st, p0]); st = null; }
+          if (j === n - 1 && st) f.edges.push([st, p1]);
+        }
+      }));
+    });
+    // đường bao (silhouette) của mặt cong: cạnh chung giữa hai dải mặt cong liền nhau
+    const sk = (p, q) => [p, q].map(v => v.map(x => x.toFixed(3)).join(',')).sort().join('|'), mp = {};
+    faces.forEach(f => { if (!f.smooth) return; f.sil = []; const P = f.pts; [[P[0], P[1]], [P[1], P[2]], [P[2], P[3]], [P[3], P[0]]].forEach(([p, q]) => { const kk = sk(p, q); (mp[kk] = mp[kk] || []).push({ f, p, q }); }); });
+    Object.values(mp).forEach(v => { if (v.length === 2) v[0].f.sil.push({ a: v[0].p, b: v[0].q, g: v[1].f }); });
+    // cạnh giữa mặt phẳng và mặt cong: tiếp tuyến (góc nhỏ) thì không vẽ cạnh, chỉ vẽ khi là đường bao
+    const onSeg = (m, p, q) => { const ab = sub(q, p), am = sub(m, p), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); return Math.hypot(...sub(am, ab.map(v => v * t))) < 1e-4; };
+    faces.forEach(f => {
+      if (f.smooth) return;
+      f.loops.forEach(Lp => Lp.forEach((p, i) => {
+        const q = Lp[(i + 1) % Lp.length], v = mp[sk(p, q)];
+        if (!v || v.length !== 1) return;
+        const g = v[0].f;
+        if (f.n[0] * g.n[0] + f.n[1] * g.n[1] + f.n[2] * g.n[2] > 0.9) f.edges = f.edges.filter(([s, e]) => !onSeg(s.map((x, j) => (x + e[j]) / 2), p, q));
+        g.sil.push({ a: p, b: q, g: f });
+      }));
+    });
+    return faces;
+  }
+  /* ---------- các vật thể: mô hình 3D + 3 hình chiếu vẽ theo quy ước (đơn vị lưới) ----------
+   * item: {p:[[u,v]...], k:'v'|'h'|'c', z:đóng} đường gấp khúc · {c:[u,v,r],k} đường tròn · {a:[u,v,r,a0,a1],k} cung (độ) · k: v=nét thấy, h=nét khuất, c=đường tâm */
+  const L = (x1, y1, x2, y2, k = 'v') => ({ p: [[x1, y1], [x2, y2]], k });
+  const OBJ = [
+    { id: 'bacvat', ten: 'Khối bậc có vát (hình mẫu của cô)', anh: 'img/GC_hop_goc1.webp', W: 4, D: 3, H: 3,
+      faces: () => [...extrude('x', [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), ...box(2.4, 4, 0, 3, 0, 1)],
+      views: {
+        front: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 1], [2.4, 1], [2.4, 3], [0, 3]], z: 1, k: 'v' }, L(0, 2.2, 2.4, 2.2)] },
+        top: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [0, 3]], z: 1, k: 'v' }, L(2.4, 0, 2.4, 3), L(0, 0.8, 2.4, 0.8)] },
+        side: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 2.2], [2.2, 3], [0, 3]], z: 1, k: 'v' }, L(0, 1, 3, 1, 'h')] },
+        right: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], z: 1, k: 'v' }, L(0, 1, 3, 1)], why: 'Đây là hình nhìn từ phải (bậc thấp ở gần nên thấy rõ, phần vát ở bên trái).' },
+        back: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [1.6, 3], [1.6, 1], [0, 1]], z: 1, k: 'v' }, L(1.6, 2.2, 4, 2.2, 'h')], why: 'Đây là hình nhìn từ phía sau.' }
+      }, dis: ['right', 'back'] },
+    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)', anh: 'img/GC_giado_3d.webp', W: 4, D: 3, H: 4.2,
+      faces: () => [
+        ...extrude('z', [[1, 0], [3.3, 0], [3.3, 3], [1, 3], ...arcPts(1, 2, 1, 90, 180, 8).slice(1, 8), [0, 2, 0], [0, 1, 1], ...arcPts(1, 1, 1, 180, 270, 8).slice(1, 8)], [circ(0.8, 0.85, 0.3, 20), circ(0.8, 2.15, 0.3, 20)], 0, 0.8),
+        ...extrude('x', [[0, 0], [3, 0], [3, 2.7, 1], ...arcPts(1.5, 2.7, 1.5, 0, 180, 16).slice(1, 16), [0, 2.7]], [circ(1.5, 2.75, 0.65, 24)], 3.3, 4),
+        ...extrude('y', xz([[1.6, 0.8], [3.3, 0.8], [3.3, 2.0]]), [], 1.25, 1.75)],
+      views: {
+        front: { W: 4, H: 4.2, it: [{ p: [[0, 0], [4, 0], [4, 4.2], [3.3, 4.2], [3.3, 0.8], [0, 0.8]], z: 1, k: 'v' }, L(1.6, 0.8, 3.3, 2.0), L(0.5, 0, 0.5, 0.8, 'h'), L(1.1, 0, 1.1, 0.8, 'h'), L(3.3, 2.1, 4, 2.1, 'h'), L(3.3, 3.4, 4, 3.4, 'h'), L(0.8, -0.35, 0.8, 1.15, 'c'), L(2.95, 2.75, 4.35, 2.75, 'c')] },
+        top: { W: 4, H: 3, it: [{ p: [[1, 0], [4, 0], [4, 3], [1, 3]], k: 'v' }, { a: [1, 2, 1, 90, 180], k: 'v' }, L(0, 2, 0, 1), { a: [1, 1, 1, 180, 270], k: 'v' }, L(3.3, 0, 3.3, 3), L(1.6, 1.25, 3.3, 1.25), L(1.6, 1.75, 3.3, 1.75), L(1.6, 1.25, 1.6, 1.75), { c: [0.8, 0.85, 0.3], k: 'v' }, { c: [0.8, 2.15, 0.3], k: 'v' }, L(0.8, 0.3, 0.8, 2.7, 'c'), L(0.3, 0.85, 1.3, 0.85, 'c'), L(0.3, 2.15, 1.3, 2.15, 'c')] },
+        side: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'v' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c'), L(0.85, -0.35, 0.85, 1.15, 'c'), L(2.15, -0.35, 2.15, 1.15, 'c')] },
+        right: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8, 'h'), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'h' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che mất gân và đế nên gân, đế vẽ nét đứt.' },
+        top2: { W: 4, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0, 3]], k: 'v' }, { a: [3, 2, 1, 0, 90], k: 'v' }, L(4, 2, 4, 1), { a: [3, 1, 1, 270, 360], k: 'v' }, L(0.7, 0, 0.7, 3), L(0.7, 1.25, 2.4, 1.25), L(0.7, 1.75, 2.4, 1.75), L(2.4, 1.25, 2.4, 1.75), { c: [3.2, 0.85, 0.3], k: 'v' }, { c: [3.2, 2.15, 0.3], k: 'v' }, L(3.2, 0.3, 3.2, 2.7, 'c')], why: 'Hình này bị lật ngược trái – phải so với hình chiếu bằng.' }
+      }, dis: ['right', 'top2'] },
+    { id: 'chuL91', ten: 'Khối chữ L có hai lỗ (SGK H.9.1)', W: 5, D: 4, H: 6,
+      faces: () => [...extrude('x', [[0, 0], [4, 0], [4, 6], [0, 6]], [circ(2, 4, 0.75, 24)], 0, 1.5), ...extrude('z', [[1.5, 0], [5, 0], [5, 4], [1.5, 4]], [circ(3.25, 2, 1, 28)], 0, 2)],
+      views: {
+        front: { W: 5, H: 6, it: [{ p: [[0, 0], [5, 0], [5, 2], [1.5, 2], [1.5, 6], [0, 6]], z: 1, k: 'v' }, L(2.25, 0, 2.25, 2, 'h'), L(4.25, 0, 4.25, 2, 'h'), L(0, 3.25, 1.5, 3.25, 'h'), L(0, 4.75, 1.5, 4.75, 'h'), L(3.25, -0.35, 3.25, 2.35, 'c'), L(-0.35, 4, 1.85, 4, 'c')] },
+        top: { W: 5, H: 4, it: [{ p: [[0, 0], [5, 0], [5, 4], [0, 4]], z: 1, k: 'v' }, L(1.5, 0, 1.5, 4), { c: [3.25, 2, 1], k: 'v' }, L(0, 1.25, 1.5, 1.25, 'h'), L(0, 2.75, 1.5, 2.75, 'h'), L(3.25, 0.65, 3.25, 3.35, 'c'), L(-0.35, 2, 4.6, 2, 'c')] },
+        side: { W: 4, H: 6, it: [{ p: [[0, 0], [4, 0], [4, 6], [0, 6]], z: 1, k: 'v' }, { c: [2, 4, 0.75], k: 'v' }, L(0, 2, 4, 2, 'h'), L(1, 0, 1, 2, 'h'), L(3, 0, 3, 2, 'h'), L(2, -0.35, 2, 5.1, 'c'), L(0.9, 4, 3.1, 4, 'c')] },
+        right: { W: 4, H: 6, it: [{ p: [[0, 0], [4, 0], [4, 6], [0, 6]], z: 1, k: 'v' }, L(0, 2, 4, 2), { c: [2, 4, 0.75], k: 'v' }, L(1, 0, 1, 2, 'h'), L(3, 0, 3, 2, 'h'), L(2, -0.35, 2, 5.1, 'c')], why: 'Đây là hình nhìn từ phải: mặt trên của đế ở gần nên thấy rõ (nét liền).' },
+        topX: { W: 5, H: 4, it: [{ p: [[0, 0], [5, 0], [5, 4], [0, 4]], z: 1, k: 'v' }, L(1.5, 0, 1.5, 4), { c: [3.25, 2, 1], k: 'v' }, L(0, 1.25, 1.5, 1.25), L(0, 2.75, 1.5, 2.75), L(3.25, 0.65, 3.25, 3.35, 'c')], why: 'Lỗ trên tấm đứng bị che khi nhìn từ trên nên phải vẽ nét đứt.' }
+      }, dis: ['right', 'topX'] },
+    { id: 'giado910', ten: 'Giá đỡ (SGK H.9.10)', W: 6, D: 3.6, H: 6.6,
+      faces: () => [...extrude('z', [[0, 0], [4.2, 0], [4.2, 3.6], [0, 3.6], [0, 2.4], [1.8, 2.4], [1.8, 1.2], [0, 1.2]], [], 0, 2.4), ...extrude('x', [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], [circ(1.8, 4.5, 1.2, 28)], 4.2, 6)],
+      views: {
+        front: { W: 6, H: 6.6, it: [{ p: [[0, 0], [6, 0], [6, 6.6], [4.2, 6.6], [4.2, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.8, 0, 1.8, 2.4, 'h'), L(4.2, 3.3, 6, 3.3, 'h'), L(4.2, 5.7, 6, 5.7, 'h'), L(3.8, 4.5, 6.4, 4.5, 'c')] },
+        top: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6]], z: 1, k: 'v' }, { p: [[0, 1.2], [1.8, 1.2], [1.8, 2.4], [0, 2.4]], k: 'v' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h'), L(3.8, 1.8, 6.4, 1.8, 'c')] },
+        side: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4), L(1.2, 0, 1.2, 2.4), L(2.4, 0, 2.4, 2.4), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c'), L(0.25, 4.5, 3.35, 4.5, 'c')] },
+        right: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4, 'h'), L(1.2, 0, 1.2, 2.4, 'h'), L(2.4, 0, 2.4, 2.4, 'h'), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che hết phần đế nên đế và rãnh phải vẽ nét đứt.' },
+        topX: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6]], z: 1, k: 'v' }, { p: [[0, 1.2], [1.8, 1.2], [1.8, 2.4], [0, 2.4]], k: 'h' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h')], why: 'Nhìn từ trên thấy rõ rãnh ở đầu đế nên phải vẽ nét liền.' }
+      }, dis: ['right', 'topX'] },
+    { id: 'vat1114', ten: 'Khối hộp vát góc có lỗ (SGK H.11.14)', W: 5, D: 2.4, H: 3.2,
+      faces: () => extrude('y', xz([[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]]), [xz(circ(2.9, 1.6, 0.8, 28))], 0, 2.4),
+      views: {
+        front: { W: 5, H: 3.2, it: [{ p: [[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]], z: 1, k: 'v' }, { c: [2.9, 1.6, 0.8], k: 'v' }, L(2.9, 0.45, 2.9, 2.75, 'c'), L(1.75, 1.6, 4.05, 1.6, 'c')] },
+        top: { W: 5, H: 2.4, it: [{ p: [[0, 0], [5, 0], [5, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.4, 0, 1.4, 2.4), L(2.1, 0, 2.1, 2.4, 'h'), L(3.7, 0, 3.7, 2.4, 'h'), L(2.9, -0.35, 2.9, 2.75, 'c')] },
+        side: { W: 2.4, H: 3.2, it: [{ p: [[0, 0], [2.4, 0], [2.4, 3.2], [0, 3.2]], z: 1, k: 'v' }, L(0, 2, 2.4, 2), L(0, 0.8, 2.4, 0.8, 'h'), L(0, 2.4, 2.4, 2.4, 'h'), L(-0.35, 1.6, 2.75, 1.6, 'c')] },
+        right: { W: 2.4, H: 3.2, it: [{ p: [[0, 0], [2.4, 0], [2.4, 3.2], [0, 3.2]], z: 1, k: 'v' }, L(0, 0.8, 2.4, 0.8, 'h'), L(0, 2.4, 2.4, 2.4, 'h'), L(-0.35, 1.6, 2.75, 1.6, 'c')], why: 'Đây là hình nhìn từ phải: mặt vát ở phía trái nên không thấy cạnh vát.' },
+        topX: { W: 5, H: 2.4, it: [{ p: [[0, 0], [5, 0], [5, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.4, 0, 1.4, 2.4), L(2.1, 0, 2.1, 2.4), L(3.7, 0, 3.7, 2.4)], why: 'Lỗ trụ nằm bên trong, nhìn từ trên bị che nên phải vẽ nét đứt.' }
+      }, dis: ['right', 'topX'] }
+  ];
+  OBJ.forEach(o => { o.F = prep(o.faces()); });
+  /* ---------- vẽ hình chiếu (SVG) ---------- */
+  let hpN = 0;
+  const ST = { g: 'stroke="#0f766e" stroke-width="1.6"', n: 'stroke="#0f172a" stroke-width="1.2"', m: 'stroke="#0f172a" stroke-width="4.2"', v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"' };
+  function svg(v, cell = 34, o = {}) {
+    const u0 = v.u0 || 0, v0 = v.v0 || 0, pad = cell * 0.55, W = v.W * cell + pad * 2, H = v.H * cell + pad * 2, X = u => pad + (u - u0) * cell, Y = w => pad + (v0 + v.H - w) * cell;
+    const hp = 'hp' + (++hpN);
+    const el = it => {
+      if (it.f) return `<path d="${it.f.map(L => 'M' + L.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L') + 'Z').join(' ')}" fill="url(#${hp})" fill-rule="evenodd" stroke="none"/>`;
+      if (it.tx) return `<text x="${X(it.tx[0]).toFixed(1)}" y="${Y(it.tx[1]).toFixed(1)}" font-size="${(it.fs || 0.42) * cell}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="${it.col || '#0f172a'}" font-family="system-ui,sans-serif">${it.tx[2]}</text>`;
+      if (it.ar) { const [x, y, dx, dy] = it.ar, x1 = X(x), y1 = Y(y), x2 = X(x + dx), y2 = Y(y + dy), an = Math.atan2(y2 - y1, x2 - x1), h = cell * 0.28;
+        return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${it.col || '#0f172a'}" stroke-width="1.4"/><path d="M${x2} ${y2} L${x2 - h * Math.cos(an - 0.4)} ${y2 - h * Math.sin(an - 0.4)} L${x2 - h * Math.cos(an + 0.4)} ${y2 - h * Math.sin(an + 0.4)}Z" fill="${it.col || '#0f172a'}"/>`; }
+      const st = ST[it.k] + ' fill="none" stroke-linecap="round" stroke-linejoin="round"';
+      if (it.p) return `<path d="M${it.p.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L')}${it.z ? 'Z' : ''}" ${st}/>`;
+      if (it.c) return `<circle cx="${X(it.c[0])}" cy="${Y(it.c[1])}" r="${it.c[2] * cell}" ${st}/>`;
+      const [cx, cy, r, a0, a1] = it.a, P = a => [X(cx + r * Math.cos(a * Math.PI / 180)), Y(cy + r * Math.sin(a * Math.PI / 180))], [x0, y0] = P(a0), [x1, y1] = P(a1);
+      return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r * cell} ${r * cell} 0 ${a1 - a0 > 180 ? 1 : 0} 0 ${x1.toFixed(1)} ${y1.toFixed(1)}" ${st}/>`;
+    };
+    return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" width="${W.toFixed(0)}" height="${H.toFixed(0)}" style="max-width:100%;height:auto;background:#fff;border-radius:8px" role="img" aria-label="Hình chiếu"><defs><pattern id="${hp}" patternUnits="userSpaceOnUse" width="${(cell * 0.22).toFixed(1)}" height="${(cell * 0.22).toFixed(1)}" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${(cell * 0.22).toFixed(1)}" stroke="#334155" stroke-width="1.1"/></pattern></defs>${v.it.filter(i => i.f).map(el).join('')}${v.it.filter(i => !i.f).map(el).join('')}</svg>`;
+  }
+  /** đổi item hình chiếu thành các đoạn thẳng (để vẽ lên mặt phẳng 3D) */
+  function segs(v) {
+    const out = [];
+    v.it.forEach(it => {
+      if (it.f || it.tx || it.ar) return;
+      let P = it.p ? it.p.slice() : it.c ? Array.from({ length: 33 }, (_, i) => [it.c[0] + it.c[2] * Math.cos(i / 32 * 2 * Math.PI), it.c[1] + it.c[2] * Math.sin(i / 32 * 2 * Math.PI)])
+        : Array.from({ length: 17 }, (_, i) => { const a = (it.a[3] + (it.a[4] - it.a[3]) * i / 16) * Math.PI / 180; return [it.a[0] + it.a[2] * Math.cos(a), it.a[1] + it.a[2] * Math.sin(a)]; });
+      if (it.z) P.push(P[0]);
+      for (let i = 0; i < P.length - 1; i++) out.push({ a: P[i], b: P[i + 1], k: it.k });
+    });
+    return out;
+  }
+  return { OBJ, svg, segs, G: { extrude, box, prep, circ, arcPts, xz } };
+})();
+
+
+function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
+  let B = hcPaint.buf;
+  if (!B || B.w !== w || B.h !== h) B = hcPaint.buf = { w, h, img: ctx.createImageData(w, h), dep: new Float32Array(w * h), ids: new Int32Array(w * h), cv: Object.assign(document.createElement('canvas'), { width: w, height: h }) };
+  const { img, dep, ids } = B, px = img.data; dep.fill(Infinity); px.fill(0); ids.fill(0);
+  const Lt = [0.35, -0.6, 0.72], ln = Math.hypot(...Lt), base = o.color || [1, 0.85, 0.52];
+  const hs = Math.max(6, Math.round(7 * dp)), hw = Math.max(1, Math.round(1.3 * dp));
+  const front = o.front || (f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3);
+  const vis = [];
+  faces.forEach((f, fi) => {
+    if (!front(f)) return;
+    const loops = f.loops.map(L => L.map(P)), Q = loops[0];
+    let best = 0, i1 = 1, i2 = 2;
+    for (let i = 1; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) { const ar = Math.abs((Q[i][0] - Q[0][0]) * (Q[j][1] - Q[0][1]) - (Q[j][0] - Q[0][0]) * (Q[i][1] - Q[0][1])); if (ar > best) { best = ar; i1 = i; i2 = j; } }
+    if (best < 1e-6) return;
+    const A = Q[0], Bq = Q[i1], C = Q[i2], bx = Bq[0] - A[0], by = Bq[1] - A[1], cx = C[0] - A[0], cy = C[1] - A[1], det = bx * cy - cx * by;
+    const ga = ((Bq[2] - A[2]) * cy - (C[2] - A[2]) * by) / det, gb = (bx * (C[2] - A[2]) - cx * (Bq[2] - A[2])) / det;
+    const dAt = (x, y) => A[2] + ga * (x - A[0]) + gb * (y - A[1]);
+    const lam = Math.max(0, (f.n[0] * Lt[0] + f.n[1] * Lt[1] + f.n[2] * Lt[2]) / ln), cc = 178 + 70 * lam, fb = o.faceColor ? o.faceColor(f) : base;
+    const R = o.draft ? 255 : f.cut ? 252 : cc * fb[0], G = o.draft ? 255 : f.cut ? 214 : cc * fb[1], Bc = o.draft ? 255 : f.cut ? 200 : cc * fb[2], HC0 = o.draft ? 30 : 150, HC1 = o.draft ? 41 : 36, HC2 = o.draft ? 59 : 36;
+    let y0 = Infinity, y1 = -Infinity; Q.forEach(q => { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+    y0 = Math.max(0, Math.floor(y0)); y1 = Math.min(h - 1, Math.ceil(y1));
+    for (let y = y0; y <= y1; y++) {
+      const yc = y + 0.5, xs = [];
+      loops.forEach(Lp => { for (let q = 0; q < Lp.length; q++) { const a = Lp[q], b = Lp[(q + 1) % Lp.length]; if ((a[1] <= yc) !== (b[1] <= yc)) xs.push(a[0] + (yc - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); } });
+      xs.sort((u, v) => u - v);
+      for (let s = 0; s + 1 < xs.length; s += 2) {
+        const xa = Math.max(0, Math.round(xs[s])), xb = Math.min(w, Math.round(xs[s + 1]));
+        if (xb <= xa) continue;
+        let d = dAt(xa + 0.5, yc);
+        for (let x = xa; x < xb; x++, d += ga) {
+          const id = y * w + x;
+          if (d < dep[id]) { dep[id] = d; ids[id] = fi + 1; const p4 = id * 4; if (f.cut && (x + y) % hs < hw) { px[p4] = HC0; px[p4 + 1] = HC1; px[p4 + 2] = HC2; } else { px[p4] = R; px[p4 + 1] = G; px[p4 + 2] = Bc; } px[p4 + 3] = 255; }
+        }
+      }
+    }
+    vis.push(f);
+  });
+  B.cv.getContext('2d').putImageData(img, 0, 0);
+  const al = o.alpha == null ? 1 : o.alpha;
+  ctx.globalAlpha = al; ctx.drawImage(B.cv, 0, 0); ctx.globalAlpha = 1;
+  const bias = o.bias != null ? o.bias : Math.max(0.15, 5 * dp / (o.k || 40));
+  let own1 = 0, own2 = 0;
+  const seen = (sx, sy, d) => { const x = sx | 0, y = sy | 0; let mn = Infinity; for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) if (xx >= 0 && yy >= 0 && xx < w && yy < h) { const id = yy * w + xx, fid = ids[id]; if (fid && (fid === own1 || fid === own2)) return true; mn = Math.min(mn, dep[id]); } return d <= mn + bias; };
+  ctx.globalAlpha = al; ctx.strokeStyle = o.edge || '#3b2a0c'; ctx.lineWidth = (o.lw || 2.3) * dp; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+  const HID = [];
+  const seg = (a, b, onlyHid) => {
+    const A = P(a), Bp = P(b), n = Math.max(2, Math.ceil(Math.hypot(Bp[0] - A[0], Bp[1] - A[1]) / (2 * dp)));
+    let on = false, hs0 = null, last = null;
+    for (let s = 0; s <= n; s++) {
+      const t = s / n, x = A[0] + (Bp[0] - A[0]) * t, y = A[1] + (Bp[1] - A[1]) * t, v = seen(x, y, A[2] + (Bp[2] - A[2]) * t);
+      if (!onlyHid) { if (v && !on) { ctx.moveTo(x, y); on = true; } else if (v) ctx.lineTo(x, y); else on = false; }
+      if (o.hidden) { if (!v) { if (!hs0) hs0 = [x, y]; last = [x, y]; } else if (hs0) { HID.push([hs0, last]); hs0 = null; } }
+    }
+    if (hs0) HID.push([hs0, last]);
+  };
+  const idx = new Map(faces.map((f, i) => [f, i + 1]));
+  vis.forEach(f => { own1 = idx.get(f); own2 = 0; f.edges.forEach(([a, b]) => seg(a, b)); });
+  if (!o.front) { own1 = own2 = 0; faces.forEach(f => { if (Math.abs(f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2]) <= 1e-3) f.edges.forEach(([a, b]) => seg(a, b)); }); }
+  faces.forEach(f => f.sil && f.sil.forEach(s => { if (front(f) !== front(s.g)) { own1 = idx.get(f); own2 = idx.get(s.g) || 0; seg(s.a, s.b); } }));
+  if (o.hidden) { own1 = own2 = 0; faces.forEach(f => { if (!vis.includes(f)) f.edges.forEach(([a, b]) => seg(a, b, true)); }); }
+  ctx.stroke();
+  if (HID.length) {
+    ctx.lineWidth = 1.3 * dp; ctx.setLineDash([5 * dp, 3.5 * dp]); ctx.beginPath();
+    HID.forEach(([p, q]) => { if (Math.hypot(q[0] - p[0], q[1] - p[1]) > 3 * dp) { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } });
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.globalAlpha = 1;
+  return vis;
+}
+
+const HCX = (() => {
+  const { extrude, prep, circ } = HC.G;
+  const R4 = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const xz = L => L.map(v => [v[1], v[0], v[2] || 0]);
+  /* khối = danh sách "mảnh": {ax, out, holes, c0, c1} – đa giác (có lỗ) đùn theo trục ax */
+  const Z = (out, holes, z0, z1) => ({ ax: 'z', out, holes: holes || [], c0: z0, c1: z1 });
+  const Yp = (outXZ, holesXZ, y0, y1) => ({ ax: 'y', out: xz(outXZ), holes: (holesXZ || []).map(xz), c0: y0, c1: y1 });
+  const Xp = (outYZ, holes, x0, x1) => ({ ax: 'x', out: outYZ, holes: holes || [], c0: x0, c1: x1 });
+  const C = (x, y, r, n = 28) => circ(x, y, r, n);
+  const solid = (pcs, noHoles) => pcs.flatMap(p => extrude(p.ax, p.out, noHoles ? [] : p.holes, p.c0, p.c1));
+  /* ---- cắt khối bằng mặt phẳng y = c, giữ phía y ≥ c (ge) hoặc y ≤ c ---- */
+  const clip = (P, i, c, ge) => {
+    const inn = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9, out = [];
+    P.forEach((a, k) => {
+      const b = P[(k + 1) % P.length], ia = inn(a), ib = inn(b), s = a[2] || 0;
+      if (ia) out.push([a[0], a[1], s]);
+      if (ia !== ib) { const t = (c - a[i]) / (b[i] - a[i]), q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; q[i] = c; out.push([q[0], q[1], ia ? 0 : s]); }
+    });
+    const r = [];
+    out.forEach(p => { const l = r[r.length - 1]; if (l && Math.abs(l[0] - p[0]) < 1e-7 && Math.abs(l[1] - p[1]) < 1e-7) l[2] = p[2]; else r.push(p); });
+    while (r.length > 1 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-7 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-7) { r[r.length - 1][2] = r[0][2]; r.shift(); }
+    return r.length >= 3 ? r : null;
+  };
+  const onL = (v, i, c) => Math.abs(v[i] - c) < 1e-6;
+  /** ghép lỗ cắt ngang đường cắt vào đường bao ngoài (lỗ thành rãnh hở) */
+  const splice = (O, H, i, c) => {
+    const j = 1 - i, n = H.length;
+    let hi = -1; for (let k = 0; k < n; k++) if (onL(H[k], i, c) && onL(H[(k + 1) % n], i, c)) { hi = k; break; }
+    if (hi < 0) return O;
+    const path = []; for (let k = 1; k <= n; k++) path.push(H[(hi + k) % n].slice());   // từ H[hi+1] vòng tới H[hi]
+    const lo = Math.min(path[0][j], path[n - 1][j]), hi2 = Math.max(path[0][j], path[n - 1][j]);
+    for (let k = 0; k < O.length; k++) {
+      const a = O[k], b = O[(k + 1) % O.length];
+      if (!(onL(a, i, c) && onL(b, i, c))) continue;
+      if (Math.min(a[j], b[j]) - 1e-6 > lo || Math.max(a[j], b[j]) + 1e-6 < hi2) continue;
+      let pth = path.map(v => [v[0], v[1], v[2] || 0]);
+      if (Math.abs(path[0][j] - a[j]) > Math.abs(path[n - 1][j] - a[j])) { const m = n - 1; pth = path.map((_, k) => [path[m - k][0], path[m - k][1], k < m ? path[m - k - 1][2] || 0 : 0]); }
+      pth[pth.length - 1][2] = 0;
+      return [...O.slice(0, k + 1).map((v, m) => m === k ? [v[0], v[1], 0] : v), ...pth, ...O.slice(k + 1)];
+    }
+    return O;
+  };
+  /** cắt các mảnh bằng mặt phẳng (trục axis = c), giữ phía ≥ c (ge) hoặc ≤ c; trả về danh sách mảnh mới */
+  const IDX = { z: { x: 0, y: 1 }, x: { y: 0, z: 1 }, y: { z: 0, x: 1 } };
+  const clipPieces = (pcs, axis, c, ge, noHoles) => pcs.flatMap(p => {
+    if (p.ax === axis) { const c0 = ge ? Math.max(p.c0, c) : p.c0, c1 = ge ? p.c1 : Math.min(p.c1, c); return c1 > c0 + 1e-9 ? [{ ...p, holes: noHoles ? [] : p.holes, c0, c1 }] : []; }
+    const i = IDX[p.ax][axis], inside = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9;
+    let O = clip(p.out.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (!O) return [];
+    const keep = [];
+    (noHoles ? [] : p.holes).forEach(h => {
+      const ins = h.filter(inside).length, strict = h.filter(v => ge ? v[i] > c + 1e-6 : v[i] < c - 1e-6).length;
+      if (ins === h.length && !h.some(v => onL(v, i, c))) keep.push(h);
+      else if (strict > 0) { const Hc = clip(h.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (Hc) O = splice(O, Hc, i, c); }
+    });
+    return [{ ...p, out: O, holes: keep }];
+  });
+  const cutSolid = (pcs, c, ge, noHoles) => solid(clipPieces(pcs, 'y', c, ge, noHoles));
+  const markAx = (F, k, v, s) => { F.forEach(f => { if (Math.abs(f.n[k] - s) < 1e-6 && f.pts.every(p => Math.abs(p[k] - v) < 1e-6)) f.cut = 1; }); return F; };
+  const mark = (F, c, s = -1) => { F.forEach(f => { if (Math.abs(f.n[1] - s) < 1e-6 && f.pts.every(p => Math.abs(p[1] - c) < 1e-6)) f.cut = 1; }); return F; };
+  /* ---- tự sinh hình chiếu: chiếu các cạnh, xét thấy / khuất bằng tia chiếu ---- */
+  const VIEW = {
+    front: (O) => ({ d: [0, 1, 0], uv: p => [p[0], p[2]], W: O.W, H: O.H }),
+    top: (O) => ({ d: [0, 0, -1], uv: p => [p[0], p[1]], W: O.W, H: O.D }),
+    side: (O) => ({ d: [1, 0, 0], uv: p => [O.D - p[1], p[2]], W: O.D, H: O.H }),
+    right: (O) => ({ d: [-1, 0, 0], uv: p => [p[1], p[2]], W: O.D, H: O.H }),
+    back: (O) => ({ d: [0, -1, 0], uv: p => [O.W - p[0], p[2]], W: O.W, H: O.H }),
+    bottom: (O) => ({ d: [0, 0, 1], uv: p => [p[0], O.D - p[1]], W: O.W, H: O.D })
+  };
+  const prepOcc = F => F.map(f => {
+    const ax = [0, 1, 2].sort((a, b) => Math.abs(f.n[b]) - Math.abs(f.n[a]))[0], u = (ax + 1) % 3, w = (ax + 2) % 3;
+    const all = f.loops.flat(), mn = [0, 1, 2].map(k => Math.min(...all.map(p => p[k]))), mx = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])));
+    return { n: f.n, d0: f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2], u, w, loops: f.loops, mn, mx };
+  });
+  const occluded = (G, p, V) => {
+    const ai = V.d[0] ? 0 : V.d[1] ? 1 : 2, sg = V.d[ai], o1 = (ai + 1) % 3, o2 = (ai + 2) % 3;
+    for (const g of G) {
+      if (Math.abs(g.n[ai]) < 1e-9) continue;
+      if (p[o1] < g.mn[o1] - 1e-6 || p[o1] > g.mx[o1] + 1e-6 || p[o2] < g.mn[o2] - 1e-6 || p[o2] > g.mx[o2] + 1e-6) continue;
+      const s = (g.d0 - g.n[o1] * p[o1] - g.n[o2] * p[o2]) / g.n[ai], t = (s - p[ai]) * -sg;
+      if (t <= 1e-4) continue;
+      const h = p.slice(); h[ai] = s;
+      let inn = false;
+      g.loops.forEach(L => L.forEach((a, k) => { const b = L[(k + 1) % L.length]; if ((a[g.w] > h[g.w]) !== (b[g.w] > h[g.w]) && h[g.u] < (b[g.u] - a[g.u]) * (h[g.w] - a[g.w]) / (b[g.w] - a[g.w]) + a[g.u]) inn = !inn; }));
+      if (inn) return true;
+    }
+    return false;
+  };
+  const front = (f, d) => f.n[0] * d[0] + f.n[1] * d[1] + f.n[2] * d[2] < 0;
+  /** các đoạn thẳng của hình chiếu: [{p:[[u,v],[u,v]], k:'v'|'h'}] */
+  function lines(F, O, kind, hidden = true) {
+    const V = VIEW[kind](O), G = prepOcc(F), segs = [];
+    F.forEach(f => { (f.edges || []).forEach(e => segs.push(e)); (f.sil || []).forEach(s => { if (front(f, V.d) !== front(s.g, V.d)) segs.push([s.a, s.b]); }); });
+    const vis = [], hid = [];
+    segs.forEach(([a, b]) => {
+      const A = V.uv(a), B = V.uv(b); if (Math.hypot(B[0] - A[0], B[1] - A[1]) < 1e-6) return;
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / 0.06));
+      let run = null;
+      for (let k = 0; k < n; k++) {
+        const t0 = k / n, t1 = (k + 1) / n, m = a.map((v, j) => v + (b[j] - v) * (t0 + t1) / 2), v = !occluded(G, m, V);
+        const P0 = [A[0] + (B[0] - A[0]) * t0, A[1] + (B[1] - A[1]) * t0], P1 = [A[0] + (B[0] - A[0]) * t1, A[1] + (B[1] - A[1]) * t1];
+        if (run && run.v === v) run.b = P1; else { if (run) (run.v ? vis : hid).push([run.a, run.b]); run = { v, a: P0, b: P1 }; }
+      }
+      if (run) (run.v ? vis : hid).push([run.a, run.b]);
+    });
+    const near = (q, s) => { const [a, b] = s, ab = [b[0] - a[0], b[1] - a[1]], l2 = ab[0] ** 2 + ab[1] ** 2, t = Math.max(0, Math.min(1, ((q[0] - a[0]) * ab[0] + (q[1] - a[1]) * ab[1]) / l2)); return Math.hypot(q[0] - a[0] - ab[0] * t, q[1] - a[1] - ab[1] * t) < 2e-3; };
+    const out = vis.map(s => ({ p: s, k: 'v' }));
+    if (hidden) hid.forEach(([a, b]) => {
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.06)); let run = null;
+      for (let k = 0; k < n; k++) {
+        const P0 = [a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n], P1 = [a[0] + (b[0] - a[0]) * (k + 1) / n, a[1] + (b[1] - a[1]) * (k + 1) / n], m = [(P0[0] + P1[0]) / 2, (P0[1] + P1[1]) / 2];
+        const cov = vis.some(s => near(m, s));
+        if (!cov) { if (run) run[1] = P1; else run = [P0, P1]; } else if (run) { out.push({ p: run, k: 'h' }); run = null; }
+      }
+      if (run) out.push({ p: run, k: 'h' });
+    });
+    // bỏ đoạn trùng nhau (hai đoạn nét đứt chồng lệch pha sẽ trông như nét liền); nét khuất nằm trong nét khuất khác cũng bỏ
+    const seen = new Set(), uniq = [];
+    out.forEach(s => { const P = s.p.map(q => q.map(v => (Math.round(v * 1000) / 1000).toFixed(3))).map(q => q.join(',')).sort(), key = s.k + P.join(';'); if (!seen.has(key)) { seen.add(key); uniq.push(s); } });
+    const H = uniq.filter(s => s.k === 'h'), Vv = uniq.filter(s => s.k === 'v');
+    const inside = (s, t) => near(s.p[0], t.p) && near(s.p[1], t.p);
+    const keepH = H.filter((s, i) => !H.some((t, j) => j !== i && inside(s, t) && !(inside(t, s) && j > i)));
+    return { it: [...Vv, ...keepH], W: V.W, H: V.H, V };
+  }
+  /** đường tâm của các lỗ / trụ */
+  function axesIt(O, kind) {
+    const V = VIEW[kind](O), it = [];
+    (O.axes || []).forEach(a => {
+      const dir = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[a.ax], along = Math.abs(dir[0] * V.d[0] + dir[1] * V.d[1] + dir[2] * V.d[2]) > 0.5;
+      const P = V.uv(a.c);
+      if (along) { const e = a.r + 0.3; it.push({ p: [[P[0] - e, P[1]], [P[0] + e, P[1]]], k: 'c' }, { p: [[P[0], P[1] - e], [P[0], P[1] + e]], k: 'c' }); }
+      else { const q0 = a.c.slice(), q1 = a.c.slice(); const k2 = dir.indexOf(1); q0[k2] = a.a[0] - 0.3; q1[k2] = a.a[1] + 0.3; it.push({ p: [V.uv(q0), V.uv(q1)], k: 'c' }); }
+    });
+    return it;
+  }
+  const sig = it => it.filter(x => x.p).map(x => x.k + x.p.map(q => q.map(v => v.toFixed(2)).join(',')).sort().join(';')).sort().join('|');
+  /* ---- danh sách vật thể (theo hình thầy cô gửi) ---- */
+  const AP = (cx, cy, r, a0, a1, n) => { const P = HC.G.arcPts(cx, cy, r, a0, a1, n); P[P.length - 1][2] = 0; return P; };
+  const DEF = [
+    { id: 'goivat', ten: 'Gối đỡ có vát', W: 3.4, D: 2.6, H: 3, axes: [{ c: [1.3, 1.3, 0.35], ax: 'z', r: 0.6, a: [0, 0.7] }],
+      pcs: [Z([...AP(1.3, 1.3, 1.3, 90, 270, 18), [3.4, 0, 0], [3.4, 2.6, 0]], [C(1.3, 1.3, 0.6)], 0, 0.7),
+        Xp([[0, 0.7], [2.6, 0.7], [2.6, 3], [2.0, 3], [1.3, 1.7], [0.6, 3], [0, 3]], [], 2.6, 3.4)] },
+    { id: 'khoighep', ten: 'Khối ghép có rãnh', W: 3, D: 2.4, H: 3,
+      pcs: [Yp([[0, 0], [3, 0], [3, 3], [2, 3], [2, 2.2], [1, 2.2], [1, 3], [0, 3]], [], 1.4, 2.4), Z(R4(0, 0, 1, 1.4), [], 0, 1.4), Z(R4(2, 0, 3, 1.4), [], 0, 1.4)] },
+    { id: 'taitreo', ten: 'Tai treo có lỗ', W: 3.8, D: 1.4, H: 3.2, axes: [{ c: [2.2, 0.7, 1.6], ax: 'y', r: 0.8, a: [0, 1.4] }],
+      pcs: [Yp([[1, 0], [2.2, 0, 1], ...AP(2.2, 1.6, 1.6, -90, 90, 24).slice(1), [1, 3.2]], [C(2.2, 1.6, 0.8)], 0, 1.4),
+        Yp([[0, 0], [1, 0], [1, 3.2], [0, 3.2], [0, 2.4], [0.6, 2.4], [0.6, 0.8], [0, 0.8]], [], 0, 1.4)] },
+    { id: 'khoilo', ten: 'Khối có lỗ tròn', W: 3.2, D: 1.6, H: 3.4, axes: [{ c: [1.2, 0.8, 1.4], ax: 'y', r: 0.75, a: [0, 1.6] }],
+      pcs: [Yp([[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]], [C(1.2, 1.4, 0.75)], 0, 1.6)] },
+    { id: 'ranhhop', ten: 'Khối có rãnh hộp', W: 4, D: 3.2, H: 2.6,
+      pcs: [Z(R4(0, 0, 4, 3.2), [], 0, 0.8), Z(R4(0, 1.6, 2.4, 3.2), [R4(0.5, 2.0, 1.9, 2.8)], 0.8, 2.6)] },
+    { id: 'hopchong', ten: 'Khối hộp chồng', W: 4, D: 3, H: 2.6,
+      pcs: [Z(R4(0, 0, 4, 3), [], 0, 1), Z(R4(1, 1.2, 2.6, 3), [], 1, 2.6)] },
+    { id: 'hocvuong', ten: 'Khối có hốc vuông', W: 4.4, D: 3, H: 1.5, c: 1.5,
+      pcs: [Z(R4(0, 0, 4.4, 3), [], 0, 0.7), Z([[0.6, 0.6], [4.4, 0.6], [4.4, 2.2], [3.6, 2.2], [3.6, 3], [0.6, 3]], [R4(1.7, 1.0, 2.9, 2.0)], 0.7, 1.5)] },
+    { id: 'loranh2', ten: 'Khối có lỗ và hai rãnh', W: 4.4, D: 3, H: 1.5, c: 1.5, sym: 1, axes: [{ c: [2.2, 1.5, 0.75], ax: 'z', r: 0.5, a: [0, 1.5] }],
+      pcs: [Z([[0, 0], [4.4, 0], [4.4, 1], [3.8, 1], [3.8, 2], [4.4, 2], [4.4, 3], [0, 3], [0, 2], [0.6, 2], [0.6, 1], [0, 1]], [C(2.2, 1.5, 0.5)], 0, 0.6), Z(R4(1, 0, 3.4, 3), [C(2.2, 1.5, 0.5)], 0.6, 1.5)] },
+    { id: 'loranh1', ten: 'Khối có lỗ và một rãnh', W: 4.4, D: 3, H: 1.5, c: 1.5, axes: [{ c: [2.6, 1.5, 0.75], ax: 'z', r: 0.5, a: [0, 1.5] }],
+      pcs: [Z([[0, 0], [4.4, 0], [4.4, 3], [0, 3], [0, 2], [0.6, 2], [0.6, 1], [0, 1]], [C(2.6, 1.5, 0.5)], 0, 0.6), Z([[1, 0], [4.4, 0], [4.4, 3], [1, 3]], [C(2.6, 1.5, 0.5)], 0.6, 1.5)] },
+    { id: 'giaU', ten: 'Giá có rãnh chữ U', W: 4, D: 3.6, H: 3, c: 1.0,
+      pcs: [Z(R4(0, 0, 4, 3.6), [R4(1.6, 0.6, 3.2, 1.4)], 0, 0.8), Yp([[0, 0.8], [4, 0.8], [4, 3], [2.9, 3], [2.9, 2.1], [1.6, 2.1], [1.6, 3], [0, 3]], [], 2.8, 3.6), Z(R4(0, 0, 0.8, 2.8), [], 0.8, 2.2)] },
+    { id: 'trurong', ten: 'Đế có trụ rỗng', W: 3.6, D: 3.2, H: 2.2, c: 1.6, axes: [{ c: [1.8, 1.6, 1.1], ax: 'z', r: 0.6, a: [0, 2.2] }],
+      pcs: [Z([[0, 0], [1.4, 0], [1.4, 0.4], [2.2, 0.4], [2.2, 0], [3.6, 0], [3.6, 3.2], [0, 3.2], [0, 1.4], [0.4, 1.4], [0.4, 0.9], [0, 0.9]], [C(1.8, 1.6, 0.6)], 0, 0.8), Z(C(1.8, 1.6, 1.15, 32), [C(1.8, 1.6, 0.6)], 0.8, 2.2)] },
+    { id: 'tru2go', ten: 'Đế có trụ và hai gờ', W: 5, D: 3, H: 1.9, c: 1.5, axes: [{ c: [2.6, 1.5, 0.95], ax: 'z', r: 0.5, a: [0, 1.9] }],
+      pcs: [Z(R4(0, 0, 5, 3), [C(2.6, 1.5, 0.5)], 0, 0.5), Z(C(2.6, 1.5, 1.15, 32), [C(2.6, 1.5, 0.5)], 0.5, 1.9), Z(R4(0.3, 2.1, 1.7, 2.6), [], 0.5, 0.85), Z(R4(3.5, 0.4, 4.9, 0.9), [], 0.5, 0.85)] },
+    { id: 'bacranh', ten: 'Khối bậc có rãnh', W: 5, D: 2.2, H: 2.8,
+      pcs: [Z([[0, 0], [5, 0], [5, 0.8], [4.3, 0.8], [4.3, 1.4], [5, 1.4], [5, 2.2], [0, 2.2]], [], 0, 1.2), Xp([[0, 1.2], [2.2, 1.2], [2.2, 2.8], [1.5, 2.8], [1.5, 2.3], [0.8, 2.3], [0.8, 2.8], [0, 2.8]], [], 0, 1.8)] }
+  ];
+  const WHY = { right: 'Đây là hình nhìn từ phải (hình chiếu cạnh là hình nhìn từ trái).', back: 'Đây là hình nhìn từ phía sau.', bottom: 'Đây là hình nhìn từ dưới lên, không phải hình chiếu bằng (nhìn từ trên xuống).' };
+  /* vật thể cho Bài 9, 11 (cùng dạng với HC.OBJ) */
+  const mk9 = d => {
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, sym: d.sym, axes: d.axes, faces: () => solid(d.pcs), _dis: [] };
+    let F = null, V = null;
+    Object.defineProperty(o, 'F', { get: () => F || (F = prep(solid(d.pcs))) });
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const mkv = k => { const r = lines(o.F, o, k); return { W: r.W, H: r.H, it: [...r.it, ...axesIt(o, k)] }; };
+      V = { front: mkv('front'), top: mkv('top'), side: mkv('side') };
+      const used = [sig(V.front.it), sig(V.top.it), sig(V.side.it)];
+      ['right', 'bottom', 'back'].forEach(k => { if (o._dis.length >= 2) return; const v = mkv(k), s = sig(v.it); if (used.includes(s)) return; used.push(s); v.why = WHY[k]; V[k] = v; o._dis.push(k); });
+      return V;
+    } });
+    Object.defineProperty(o, 'dis', { get: () => (o.views, o._dis) });
+    return o;
+  };
+  const OBJ9 = DEF.map(mk9);
+  /* vật thể cho Bài 10 – hình cắt toàn bộ (mặt phẳng cắt y = c) */
+  const trace = (W, c) => [{ p: [[-0.75, c], [-0.15, c]], k: 'm' }, { p: [[W + 0.15, c], [W + 0.75, c]], k: 'm' }, { ar: [-0.45, c, 0, 0.7] }, { ar: [W + 0.45, c, 0, 0.7] }, { tx: [-0.82, c + 0.55, 'A'] }, { tx: [W + 0.82, c + 0.55, 'A'] }];
+  const mk10 = d => {
+    const c = d.c != null ? d.c : d.D / 2, o9 = OBJ9.find(x => x.id === d.id);
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, c, axes: d.axes,
+      full: () => solid(d.pcs), cut: () => mark(cutSolid(d.pcs, c, true), c), ghost: () => cutSolid(d.pcs, c, false) };
+    let V = null;
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const Fc = prep(mark(cutSolid(d.pcs, c, true), c)), Ff = prep(mark(cutSolid(d.pcs, c, true, true), c));
+      const uv = p => [p[0], p[2]], fills = F => F.filter(f => f.cut).map(f => f.loops.map(L => L.map(uv)));
+      const fillIt = F => ({ f: fills(F).flat() });
+      const ax = axesIt(o, 'front'), H2 = d.H + 0.9, AA = { tx: [d.W / 2, d.H + 0.55, 'A – A'] };
+      const secL = lines(Fc, o, 'front', false).it, fullL = o9.views.front.it.filter(x => x.k !== 'c');
+      const outline = Fc.filter(f => f.cut).flatMap(f => f.loops.flatMap(L => L.map((p, k) => ({ p: [uv(p), uv(L[(k + 1) % L.length])], k: 'v' }))));
+      V = {
+        front: o9.views.front,
+        sec: { W: d.W, H: H2, it: [fillIt(Fc), ...secL, ...ax, AA] },
+        x1: { W: d.W, H: H2, it: [fillIt(Ff), ...secL, ...ax, AA], why: 'Lỗ, rãnh là khoảng trống (không có vật liệu) nên không được kẻ gạch.' },
+        x2: { W: d.W, H: H2, it: [...o9.views.front.it, AA], why: 'Đây vẫn là hình chiếu đứng (có nét đứt), chưa có mặt cắt kẻ gạch.' },
+        x3: { W: d.W, H: H2, it: [fillIt(Fc), ...fullL, ...ax, AA], why: 'Sau khi cắt, các đường bao bên trong đã thấy được nên phải vẽ nét liền đậm, không vẽ nét đứt.' },
+        x4: { W: d.W, H: H2, it: [fillIt(Fc), ...outline, ...ax, AA], why: 'Phần vật thể phía sau mặt phẳng cắt vẫn còn các cạnh thấy được – hình cắt phải vẽ cả các cạnh đó.' },
+        top: { u0: -1.2, W: d.W + 2.4, H: d.D, it: [...o9.views.top.it, ...trace(d.W, c)] }
+      };
+      if (sig(V.x4.it) === sig(V.sec.it)) delete V.x4;
+      return V;
+    } });
+    return o;
+  };
+  /* hình cắt một nửa: bỏ 1/4 vật thể phía trước bên phải (x ≥ X, y ≤ c) */
+  const mkHalf = d => {
+    const c = d.c, X = d.X, P = d.pcs;
+    const halfP = nh => { const back = clipPieces(P, 'y', c, true, nh), front = clipPieces(P, 'y', c, false, nh);
+      const A1 = clipPieces(back, 'x', X, false), A2 = clipPieces(back, 'x', X, true), B = clipPieces(front, 'x', X, false);
+      return [...solid(A1), ...markAx(solid(A2), 1, c, -1), ...markAx(solid(B), 0, X, 1)]; };
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, c, cx: X, axes: d.axes,
+      full: () => solid(P), half: () => halfP(false), ghostHalf: () => solid(clipPieces(clipPieces(P, 'y', c, false), 'x', X, true)) };
+    let V = null;
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const uv = p => [p[0], p[2]], H2 = d.H + 0.5;
+      const fillOf = F => ({ f: F.filter(f => f.cut && Math.abs(f.n[1] + 1) < 1e-6).flatMap(f => f.loops.map(L => L.map(uv))) });
+      const Fh = prep(halfP(false)), Fn = prep(halfP(true)), Ff = prep(solid(P)), Fc = prep(mark(solid(clipPieces(P, 'y', c, true)), c));
+      const onAxis = s => Math.abs(s.p[0][0] - X) < 1e-4 && Math.abs(s.p[1][0] - X) < 1e-4;
+      const hl = lines(Fh, o, 'front', false).it.filter(s => !onAxis(s));
+      const ax = [...axesIt(o, 'front'), { p: [[X, -0.35], [X, d.H + 0.35]], k: 'c' }];
+      const fr = lines(Ff, o, 'front', true).it;
+      V = {
+        front: { W: d.W, H: H2, it: [...fr, ...ax] },
+        half: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...ax] },
+        hx1: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...fr.filter(s => s.k === 'h' && s.p[0][0] < X - 1e-4 && s.p[1][0] < X - 1e-4), ...ax], why: 'Ở nửa hình chiếu không vẽ nét đứt, vì cấu tạo bên trong đã thể hiện ở nửa hình cắt.' },
+        hx2: { W: d.W, H: H2, it: [{ f: Fc.filter(f => f.cut).flatMap(f => f.loops.map(L => L.map(uv))) }, ...lines(Fc, o, 'front', false).it, ...ax], why: 'Đây là hình cắt toàn bộ (cả hai nửa đều cắt), không phải hình cắt một nửa.' },
+        hx3: { W: d.W, H: H2, it: [fillOf(Fn), ...hl, ...ax], why: 'Lỗ là khoảng trống (không có vật liệu) nên không được kẻ gạch.' }
+      };
+      return V;
+    } });
+    return o;
+  };
+  const HALF = [mkHalf({ id: 'bp107', ten: 'Đế có ống trụ (SGK H.10.7)', W: 4.4, D: 3.2, H: 2.8, c: 1.6, X: 2.2,
+    axes: [{ c: [2.2, 1.6, 1.4], ax: 'z', r: 0.6, a: [0, 2.8] }, { c: [0.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }, { c: [3.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }],
+    pcs: [Z(R4(0, 0, 4.4, 3.2), [C(2.2, 1.6, 0.6), C(0.7, 1.6, 0.3, 20), C(3.7, 1.6, 0.3, 20)], 0, 0.8), Z(C(2.2, 1.6, 1.15, 32), [C(2.2, 1.6, 0.6)], 0.8, 2.8)] })];
+  const SEC = ['loranh2', 'hocvuong', 'trurong', 'tru2go', 'loranh1'];
+  const OBJ10 = DEF.filter(d => SEC.includes(d.id)).map(mk10);
+  return { OBJ9, OBJ10, SEC, HALF, K: { Yp, R4, solid, cutSolid, mark, lines, prep } };
+})();
+</script>
+<script>
+/* ================= BÀI 11 · HÌNH CHIẾU TRỤC ĐO – quy trình 6 bước ================= */
+(() => {
+'use strict';
+const $ = (s, e = document) => e.querySelector(s), $$ = (s, e = document) => [...e.querySelectorAll(s)];
+const { extrude, prep, circ } = HC.G, { lines } = HCX.K;
+const store = { get(k, d) { try { const v = localStorage.getItem('b11_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem('b11_' + k, JSON.stringify(v)); } catch (e) {} } };
+
+/* ---------- dựng vật thể: các khối đùn theo trục ---------- */
+const R = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+const sw = L => L.map(v => [v[1], v[0], v[2] || 0]);
+const Yp = (o, h, y0, y1) => ({ ax: 'y', out: sw(o), holes: (h || []).map(sw), c0: y0, c1: y1 });   // mặt cắt (x,z), đùn theo chiều sâu
+const Zp = (o, h, z0, z1) => ({ ax: 'z', out: o, holes: h || [], c0: z0, c1: z1 });            // mặt cắt (x,y), đùn theo chiều cao
+const Xp = (o, h, x0, x1) => ({ ax: 'x', out: o, holes: h || [], c0: x0, c1: x1 });            // mặt cắt (y,z), đùn theo chiều dài
+const C = (x, y, r, n = 32) => circ(x, y, r, n);
+const raw = pcs => pcs.flatMap(p => extrude(p.ax, p.out, p.holes, p.c0, p.c1));
+const mirRaw = (fs, W) => fs.map(f => ({ ...f, pts: f.pts.map(p => [W - p[0], p[1], p[2]]).reverse(), holes: f.holes.map(h => h.map(p => [W - p[0], p[1], p[2]]).reverse()), n: [-f.n[0], f.n[1], f.n[2]] }));
+
+/* Toạ độ: x – dài (sang phải), y – rộng (y = 0 là mặt trước), z – cao. Gốc O đặt ở góc sau – trái – dưới. */
+const DEMO = [
+  { id: 'd1', ten: 'Khối hộp vát góc có lỗ', sgk: 'SGK H.11.14', W: 5, D: 2.4, H: 3.2, base: 'front',
+    cont: [[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]],
+    body: [Yp([[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]], [], 0, 2.4)],
+    full: [Yp([[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]], [C(2.9, 1.6, 0.8)], 0, 2.4)],
+    axes: [{ c: [2.9, 0, 1.6], ax: 'y', r: 0.8, a: [0, 2.4] }] },
+  { id: 'd2', ten: 'Khối bậc có lỗ tròn', W: 3.2, D: 1.6, H: 3.4, base: 'front',
+    cont: [[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]],
+    body: [Yp([[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]], [], 0, 1.6)],
+    full: [Yp([[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]], [C(1.2, 1.4, 0.75)], 0, 1.6)],
+    axes: [{ c: [1.2, 0, 1.4], ax: 'y', r: 0.75, a: [0, 1.6] }] },
+  { id: 'd3', ten: 'Khối bậc có vát', W: 4, D: 3, H: 3, base: 'front',
+    cont: [[0, 0], [4, 0], [4, 1], [2.4, 1], [2.4, 3], [0, 3]],
+    body: [Xp([[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), Zp(R(2.4, 0, 4, 3), [], 0, 1)],
+    full: [Xp([[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), Zp(R(2.4, 0, 4, 3), [], 0, 1)], axes: [] },
+  { id: 'd4', ten: 'Khối chữ L có hai lỗ', sgk: 'SGK H.9.1', W: 5, D: 4, H: 6, base: 'front',
+    cont: [[0, 0], [5, 0], [5, 2], [1.5, 2], [1.5, 6], [0, 6]],
+    body: [Xp(R(0, 0, 4, 6), [], 0, 1.5), Zp(R(1.5, 0, 5, 4), [], 0, 2)],
+    full: [Xp(R(0, 0, 4, 6), [C(2, 4, 0.75)], 0, 1.5), Zp(R(1.5, 0, 5, 4), [C(3.25, 2, 1)], 0, 2)],
+    axes: [{ c: [0, 2, 4], ax: 'x', r: 0.75, a: [0, 1.5] }, { c: [3.25, 2, 0], ax: 'z', r: 1, a: [0, 2] }] },
+  { id: 'd5', ten: 'Khối hộp chồng', W: 4, D: 3, H: 2.6, base: 'front',
+    cont: [[0, 0], [4, 0], [4, 1], [2.6, 1], [2.6, 2.6], [1, 2.6], [1, 1], [0, 1]],
+    body: [Zp(R(0, 0, 4, 3), [], 0, 1), Zp(R(1, 1.2, 2.6, 3), [], 1, 2.6)],
+    full: [Zp(R(0, 0, 4, 3), [], 0, 1), Zp(R(1, 1.2, 2.6, 3), [], 1, 2.6)], axes: [] },
+  { id: 'd6', ten: 'Gối đỡ có rãnh và hai lỗ', W: 4.4, D: 2.6, H: 2.4, base: 'front',
+    cont: R(0, 0, 4.4, 2.4),
+    body: [Zp(R(0, 0, 4.4, 2.6), [], 0, 2.4)],
+    full: [Zp(R(0, 0, 4.4, 2.6), [C(0.75, 1.3, 0.35, 24), C(3.65, 1.3, 0.35, 24)], 0, 1.4), Zp(R(0, 0, 1.5, 2.6), [C(0.75, 1.3, 0.35, 24)], 1.4, 2.4), Zp(R(2.9, 0, 4.4, 2.6), [C(3.65, 1.3, 0.35, 24)], 1.4, 2.4)],
+    axes: [{ c: [0.75, 1.3, 0], ax: 'z', r: 0.35, a: [0, 2.4] }, { c: [3.65, 1.3, 0], ax: 'z', r: 0.35, a: [0, 2.4] }] },
+  { id: 'd7', ten: 'Tấm chữ L có hai lỗ', W: 5, D: 3.6, H: 1.2, base: 'top',
+    cont: [[0, 0], [5, 0], [5, 1.6], [1.8, 1.6], [1.8, 3.6], [0, 3.6]],
+    body: [Zp([[0, 0], [5, 0], [5, 1.6], [1.8, 1.6], [1.8, 3.6], [0, 3.6]], [], 0, 1.2)],
+    full: [Zp([[0, 0], [5, 0], [5, 1.6], [1.8, 1.6], [1.8, 3.6], [0, 3.6]], [C(3.6, 0.8, 0.45, 28), C(0.9, 2.6, 0.45, 28)], 0, 1.2)],
+    axes: [{ c: [3.6, 0.8, 0], ax: 'z', r: 0.45, a: [0, 1.2] }, { c: [0.9, 2.6, 0], ax: 'z', r: 0.45, a: [0, 1.2] }] }
+];
+const LP = [[0, 0], [4, 0], [4, 1.2], [1.4, 1.2], [1.4, 3], [0, 3]], ST = [[0, 0], [4.2, 0], [4.2, 1], [2.8, 1], [2.8, 2], [1.4, 2], [1.4, 3], [0, 3]];
+const UP = [[0, 0], [4, 0], [4, 2.4], [2.7, 2.4], [2.7, 1.2], [1.3, 1.2], [1.3, 2.4], [0, 2.4]];
+const h4 = C(2.2, 0.95, 0.5, 28), h5a = C(0.8, 1.5, 0.4, 24), h5b = C(4.2, 1.5, 0.4, 24);
+const PRACT = [
+  { id: 'p1', ten: 'Khối chữ L', lv: 1, W: 4, D: 2.4, H: 3, base: 'front', cont: LP, body: [Yp(LP, [], 0, 2.4)], full: [Yp(LP, [], 0, 2.4)], axes: [], mir: 1,
+    alts: [{ pcs: [Zp(R(0, 0, 4, 2.4), [], 0, 1.2), Zp(R(0, 1.2, 1.4, 2.4), [], 1.2, 3)], why: 'Phần đứng của hình này chỉ nằm ở nửa sau – không khớp với hình chiếu bằng và hình chiếu cạnh.' }] },
+  { id: 'p2', ten: 'Khối bậc thang', lv: 1, W: 4.2, D: 2.6, H: 3, base: 'front', cont: ST, body: [Yp(ST, [], 0, 2.6)], full: [Yp(ST, [], 0, 2.6)], axes: [], mir: 1,
+    alts: [{ pcs: [Zp(R(0, 0, 4.2, 2.6), [], 0, 1), Zp(R(0, 0.9, 2.8, 2.6), [], 1, 2), Zp(R(0, 1.8, 1.4, 2.6), [], 2, 3)], why: 'Các bậc của hình này lùi dần về phía sau – không khớp với hình chiếu bằng.' }] },
+  { id: 'p3', ten: 'Khối có rãnh chữ U', lv: 2, W: 4, D: 2.4, H: 2.4, base: 'front', cont: R(0, 0, 4, 2.4), body: [Yp(R(0, 0, 4, 2.4), [], 0, 2.4)], full: [Yp(UP, [], 0, 2.4)], axes: [],
+    alts: [{ pcs: [Xp([[0, 0], [2.4, 0], [2.4, 2.4], [1.6, 2.4], [1.6, 1.2], [0.8, 1.2], [0.8, 2.4], [0, 2.4]], [], 0, 4)], why: 'Rãnh của hình này chạy theo chiều dài – không khớp với hình chiếu đứng.' },
+      { pcs: [Yp(R(0, 0, 4, 2.4), [R(1.3, 1.0, 2.7, 1.8)], 0, 2.4)], why: 'Đây là lỗ vuông kín, còn bản vẽ là rãnh hở phía trên.' }] },
+  { id: 'p4', ten: 'Giá chữ L có lỗ', lv: 3, W: 4.4, D: 3, H: 3.4, base: 'front', cont: R(0, 0, 4.4, 3.4),
+    body: [Zp(R(0, 0, 4.4, 3), [], 0, 1), Yp(R(0, 1, 4.4, 3.4), [], 2, 3)],
+    full: [Zp(R(0, 0, 4.4, 3), [h4], 0, 1), Yp(R(0, 1, 4.4, 3.4), [C(2.2, 2.3, 0.6)], 2, 3)],
+    axes: [{ c: [2.2, 0.95, 0], ax: 'z', r: 0.5, a: [0, 1] }, { c: [2.2, 0, 2.3], ax: 'y', r: 0.6, a: [2, 3] }],
+    alts: [{ pcs: [Zp(R(0, 0, 4.4, 3), [C(2.2, 2.05, 0.5, 28)], 0, 1), Yp(R(0, 1, 4.4, 3.4), [C(2.2, 2.3, 0.6)], 0, 1)], why: 'Tấm đứng của hình này nằm phía trước – bản vẽ cho thấy tấm đứng ở phía sau.' },
+      { pcs: [Zp(R(0, 0, 4.4, 3), [], 0, 1), Yp(R(0, 1, 4.4, 3.4), [C(2.2, 2.3, 0.6)], 2, 3)], why: 'Hình này thiếu lỗ tròn trên tấm đế.' }] },
+  { id: 'p5', ten: 'Gối đỡ có rãnh và ba lỗ', lv: 3, W: 5, D: 3, H: 3.6, base: 'front', cont: [[0, 0], [5, 0], [5, 1], [3.8, 1], [3.8, 3.6], [1.2, 3.6], [1.2, 1], [0, 1]],
+    body: [Zp(R(0, 0, 5, 3), [], 0, 1), Yp(R(1.2, 1, 3.8, 3.6), [], 2, 3)],
+    full: [Zp(R(0, 0, 2, 3), [h5a], 0, 0.4), Zp(R(3, 0, 5, 3), [h5b], 0, 0.4), Zp(R(0, 0, 5, 3), [h5a, h5b], 0.4, 1), Yp(R(1.2, 1, 3.8, 3.6), [C(2.5, 2.4, 0.6)], 2, 3)],
+    axes: [{ c: [0.8, 1.5, 0], ax: 'z', r: 0.4, a: [0, 1] }, { c: [4.2, 1.5, 0], ax: 'z', r: 0.4, a: [0, 1] }, { c: [2.5, 0, 2.4], ax: 'y', r: 0.6, a: [2, 3] }],
+    alts: [{ pcs: [Zp(R(0, 0, 2, 3), [h5a], 0, 0.4), Zp(R(3, 0, 5, 3), [h5b], 0, 0.4), Zp(R(0, 0, 5, 3), [h5a, h5b], 0.4, 1), Yp(R(1.2, 1, 3.8, 3.6), [C(2.5, 2.4, 0.6)], 0, 1)], why: 'Tấm đứng của hình này nằm phía trước – không khớp với hình chiếu bằng.' },
+      { pcs: [Zp(R(0, 0, 5, 3), [h5a, h5b], 0, 1), Yp(R(1.2, 1, 3.8, 3.6), [C(2.5, 2.4, 0.6)], 2, 3)], why: 'Hình này thiếu rãnh ở mặt dưới của đế.' }] }
+];
+const ALL = [...DEMO, ...PRACT];
+
+/* ---------- bộ nhớ đệm hình học ---------- */
+const cache = {};
+const getF = (o, k) => cache[o.id + k] || (cache[o.id + k] = prep(k === 'body' ? raw(o.body) : k === 'mir' ? mirRaw(raw(o.full), o.W) : k.startsWith('alt') ? raw(o.alts[+k.slice(3)].pcs) : raw(o.full)));
+const VD = { front: [0, 1, 0], top: [0, 0, -1], side: [1, 0, 0] };
+const UV = (o, kind) => kind === 'front' ? p => [p[0], p[2]] : kind === 'top' ? p => [p[0], p[1]] : p => [o.D - p[1], p[2]];
+function centerLines(o, kind) {
+  const uv = UV(o, kind), d = VD[kind], it = [];
+  (o.axes || []).forEach(a => {
+    const dir = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[a.ax];
+    if (Math.abs(dir[0] * d[0] + dir[1] * d[1] + dir[2] * d[2]) > 0.5) { const P = uv(a.c), e = a.r + 0.32; it.push({ p: [[P[0] - e, P[1]], [P[0] + e, P[1]]], k: 'c' }, { p: [[P[0], P[1] - e], [P[0], P[1] + e]], k: 'c' }); }
+    else { const i = dir.indexOf(1), q0 = a.c.slice(), q1 = a.c.slice(); q0[i] = a.a[0] - 0.32; q1[i] = a.a[1] + 0.32; it.push({ p: [uv(q0), uv(q1)], k: 'c' }); }
+  });
+  return it;
+}
+function views(o) {
+  if (o._v) return o._v;
+  const F = getF(o, 'full'), mk = k => lines(F, o, k, true).it.concat(centerLines(o, k));
+  return (o._v = { front: mk('front'), top: mk('top'), side: mk('side') });
+}
+
+/* ---------- bản vẽ ba hình chiếu (phương pháp chiếu góc thứ nhất) ---------- */
+const COL = { ax: '#e11d48', base: '#2563eb', feat: '#ea580c', dim: '#d97706', ink: '#0f172a' };
+function drawingSvg(o, opt = {}) {
+  const V = views(o), { W, D, H } = o, G = 2.1, M = 1.25, c = 46;
+  const tf = { front: (u, v) => [u, H - v], side: (u, v) => [W + G + u, H - v], top: (u, v) => [u, H + G + D - v] };
+  const X = x => ((x + M) * c).toFixed(1), Y = y => ((y + M) * c).toFixed(1);
+  const TW = W + G + D + 2 * M, TH = H + G + D + 2 * M;
+  const seg = (k, a, b, st) => { const A = tf[k](...a), B = tf[k](...b); return `<line x1="${X(A[0])}" y1="${Y(A[1])}" x2="${X(B[0])}" y2="${Y(B[1])}" ${st}/>`; };
+  const S = { v: 'stroke="#0f172a" stroke-width="3" stroke-linecap="round"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="7 4.5"', c: 'stroke="#475569" stroke-width="1.1" stroke-dasharray="15 3.5 2.5 3.5"' };
+  let g = '';
+  if (opt.grid) {
+    const boxes = [['front', W, H], ['top', W, D], ['side', D, H]];
+    boxes.forEach(([k, w, h]) => { for (let i = 0; i <= Math.ceil(w); i++) g += seg(k, [Math.min(i, w), 0], [Math.min(i, w), h], 'stroke="#93c5fd" stroke-width="1" opacity=".55"'); for (let j = 0; j <= Math.ceil(h); j++) g += seg(k, [0, Math.min(j, h)], [w, Math.min(j, h)], 'stroke="#93c5fd" stroke-width="1" opacity=".55"'); });
+  }
+  // đường dóng mờ giữa các hình chiếu
+  [0, W].forEach(u => { g += `<line x1="${X(u)}" y1="${Y(H + 0.25)}" x2="${X(u)}" y2="${Y(H + G - 0.25)}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 5"/>`; });
+  [0, H].forEach(v => { g += `<line x1="${X(W + 0.25)}" y1="${Y(H - v)}" x2="${X(W + G - 0.25)}" y2="${Y(H - v)}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 5"/>`; });
+  ['front', 'top', 'side'].forEach(k => V[k].forEach(it => { g += seg(k, it.p[0], it.p[1], S[it.k]); }));
+  if (opt.base) {
+    const k = o.base, P = o.cont.map(p => tf[k](...p));
+    g += `<polygon points="${P.map(p => X(p[0]) + ',' + Y(p[1])).join(' ')}" fill="${COL.base}" fill-opacity=".10" stroke="${COL.base}" stroke-width="5" stroke-linejoin="round" class="pulse"/>`;
+  }
+  if (opt.dim) {
+    const dm = (k, a, b, t, side) => {
+      const A = tf[k](...a), B = tf[k](...b), mx = (+X(A[0]) + +X(B[0])) / 2, my = (+Y(A[1]) + +Y(B[1])) / 2;
+      return `<g stroke="${COL.dim}" stroke-width="2"><line x1="${X(A[0])}" y1="${Y(A[1])}" x2="${X(B[0])}" y2="${Y(B[1])}" marker-start="url(#da)" marker-end="url(#da)"/></g><rect x="${mx - 22 + side}" y="${my - 12}" width="44" height="24" rx="12" fill="${COL.dim}"/><text x="${mx + side}" y="${my + 5.5}" text-anchor="middle" font-size="15" font-weight="800" fill="#fff">${t}</text>`;
+    };
+    if (o.base === 'front') g += dm('top', [W + 0.55, 0], [W + 0.55, D], Math.round(D * 10), 26) + dm('side', [0, -0.55], [D, -0.55], Math.round(D * 10), 0);
+    else g += dm('front', [W + 0.55, 0], [W + 0.55, H], Math.round(H * 10), 26) + dm('side', [D + 0.55, 0], [D + 0.55, H], Math.round(H * 10), 26);
+  }
+  if (opt.axes) {
+    const ar = (k, a, b, lb, lo) => { const A = tf[k](...a), B = tf[k](...b); return `<line x1="${X(A[0])}" y1="${Y(A[1])}" x2="${X(B[0])}" y2="${Y(B[1])}" stroke="${COL.ax}" stroke-width="3" marker-end="url(#ra)"/><text x="${(+X(B[0]) + lo[0]).toFixed(1)}" y="${(+Y(B[1]) + lo[1]).toFixed(1)}" class="axl">${lb}</text>`; };
+    const O = (k, p, lo) => { const A = tf[k](...p); return `<circle cx="${X(A[0])}" cy="${Y(A[1])}" r="5" fill="${COL.ax}"/><text x="${(+X(A[0]) + lo[0]).toFixed(1)}" y="${(+Y(A[1]) + lo[1]).toFixed(1)}" class="axl">O</text>`; };
+    const e = 0.8;
+    g += `<g class="axes">${ar('front', [0, 0], [W + e, 0], 'x', [6, 6]) + ar('front', [0, 0], [0, H + e], 'z', [-6, -8]) + O('front', [0, 0], [-22, 20])
+      + ar('top', [0, D], [W + e, D], 'x', [6, 6]) + ar('top', [0, D], [0, -e], 'y', [-20, 14]) + O('top', [0, D], [-22, -6])
+      + ar('side', [0, 0], [D + e, 0], 'y', [6, 6]) + ar('side', [0, 0], [0, H + e], 'z', [-6, -8]) + O('side', [0, 0], [6, 22])}</g>`;
+  }
+  return `<svg viewBox="0 0 ${(TW * c).toFixed(0)} ${(TH * c).toFixed(0)}" class="drw" role="img" aria-label="Bản vẽ ba hình chiếu vuông góc">
+    <defs><marker id="ra" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" markerUnits="userSpaceOnUse"><path d="M0,1 L11,6 L0,11 z" fill="${COL.ax}"/></marker>
+    <marker id="da" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto-start-reverse" markerUnits="userSpaceOnUse"><path d="M0,1 L11,6 L0,11 z" fill="${COL.dim}"/></marker></defs>${g}</svg>`;
+}
+
+/* ---------- phép chiếu trục đo ---------- */
+const Q = 0.5, C30 = Math.cos(Math.PI / 6), C45 = Math.SQRT1_2;
+function proj(o, type, Wc, Hc, dp, withAxes, pad = 30) {
+  const S = type === 'xien' ? A => [A[0] - Q * C45 * A[1], A[2] - Q * C45 * A[1]] : A => [(A[0] - A[1]) * C30, A[2] - (A[0] + A[1]) / 2];
+  const toA = p => [p[0], o.D - p[1], p[2]];
+  let V = type === 'xien' ? [-Q * C45, 1, -Q * C45] : [-1, 1, -1]; const vl = Math.hypot(...V); V = V.map(v => v / vl);
+  const ax = [[o.W + 1.5, 0, 0], [0, o.D + (type === 'xien' ? 2.8 : 1.5), 0], [0, 0, o.H + 1.4]];
+  const pts = [0, 1].flatMap(i => [0, 1].flatMap(j => [0, 1].map(l => [i * o.W, j * o.D, l * o.H]))).concat(withAxes ? [...ax, [-0.6, -0.6, -0.6]] : []);
+  const ss = pts.map(S), x0 = Math.min(...ss.map(s => s[0])), x1 = Math.max(...ss.map(s => s[0])), y0 = Math.min(...ss.map(s => s[1])), y1 = Math.max(...ss.map(s => s[1]));
+  const k = Math.min((Wc - 2 * pad * dp) / (x1 - x0), (Hc - 2 * pad * dp) / (y1 - y0)), ox = Wc / 2 - (x0 + x1) / 2 * k, oy = Hc / 2 + (y0 + y1) / 2 * k;
+  const PA = A => { const s = S(A); return [ox + s[0] * k, oy - s[1] * k]; };
+  const P = p => { const s = PA(toA(p)); return [s[0], s[1], V[0] * p[0] + V[1] * p[1] + V[2] * p[2]]; };
+  return { PA, P, V, k, toA, ax, dp };
+}
+function sizeCv(cv) { const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1; cv.width = Math.max(240, Math.round(r.width * d)); cv.height = Math.max(200, Math.round(r.height * d)); return d; }
+
+/* ---------- các cạnh để dựng hình ---------- */
+const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+function dSeg(m, a, b) { const ab = sub(b, a), am = sub(m, a), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return Math.hypot(...am); const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); return Math.hypot(am[0] - ab[0] * t, am[1] - ab[1] * t, am[2] - ab[2] * t); }
+const bodyEdges = o => o._be || (o._be = getF(o, 'body').flatMap(f => f.edges));
+function featEdges(o, V, type) {
+  const key = '_fe' + type; if (o[key]) return o[key];
+  const body = bodyEdges(o), F = getF(o, 'full'), fr = f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3, segs = [], out = [];
+  F.forEach(f => { f.edges.forEach(e => segs.push(e)); (f.sil || []).forEach(s => { if (fr(f) !== fr(s.g)) segs.push([s.a, s.b]); }); });
+  segs.forEach(([a, b]) => {
+    const n = Math.max(1, Math.ceil(Math.hypot(...sub(b, a)) / 0.08)); let run = null;
+    for (let i = 0; i < n; i++) {
+      const p0 = a.map((v, j) => v + (b[j] - v) * i / n), p1 = a.map((v, j) => v + (b[j] - v) * (i + 1) / n), m = p0.map((v, j) => (v + p1[j]) / 2);
+      if (!body.some(s => dSeg(m, s[0], s[1]) < 2e-3)) { if (run) run[1] = p1; else run = [p0, p1]; } else if (run) { out.push(run); run = null; }
+    }
+    if (run) out.push(run);
+  });
+  return (o[key] = out);
+}
+const hasFeat = o => featEdges(o, [-0.577, 0.577, -0.577], 'vgd').length > 0;
+function measuredDots(o) {
+  const seen = new Set(), out = [], eq = (a, b) => Math.abs(a - b) < 1e-6;
+  bodyEdges(o).forEach(e => e.forEach(v => {
+    const kk = v.map(x => x.toFixed(4)).join(','); if (seen.has(kk)) return; seen.add(kk);
+    const on = o.base === 'front' ? o.cont.some(c => eq(c[0], v[0]) && eq(c[1], v[2])) && !eq(v[1], o.D) : o.cont.some(c => eq(c[0], v[0]) && eq(c[1], v[1])) && v[2] > 1e-6;
+    if (on) out.push(v);
+  }));
+  return out;
+}
+const cont3 = o => o.base === 'front' ? o.cont.map(([x, z]) => [x, 0, z]) : o.cont.map(([x, y]) => [x, o.D - y, 0]);
+
+/* ---------- vẽ một khung theo bước ---------- */
+function line(ctx, A, B, col, lw, dash, al = 1, dp = 1) { ctx.globalAlpha = al; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; }
+function pill(ctx, x, y, t, bg, dp, fg = '#fff', sz = 13) { ctx.font = `800 ${Math.round(sz * dp)}px "Be Vietnam Pro",system-ui,sans-serif`; const w = ctx.measureText(t).width + 16 * dp, h = (sz + 9) * dp; x = Math.max(w / 2 + 3, Math.min(ctx.canvas.width - w / 2 - 3, x)); ctx.fillStyle = bg; ctx.beginPath(); (ctx.roundRect ? ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 2) : ctx.rect(x - w / 2, y - h / 2, w, h)); ctx.fill(); ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, x, y + 0.5 * dp); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; }
+function dot(ctx, p, col, dp, r = 5) { ctx.fillStyle = col; ctx.beginPath(); ctx.arc(p[0], p[1], r * dp, 0, 7); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 * dp; ctx.stroke(); }
+function drawAxes(ctx, pr, type, al, angles, g = 1) {
+  const dp = pr.dp, O = pr.PA([0, 0, 0]), names = ['X′', 'Y′', 'Z′'], ends = pr.ax.map(pr.PA);
+  ends.forEach((E, i) => {
+    const F = [O[0] + (E[0] - O[0]) * g, O[1] + (E[1] - O[1]) * g];
+    line(ctx, O, F, COL.ax, 2.6, null, al, dp);
+    const an = Math.atan2(E[1] - O[1], E[0] - O[0]), h = 12 * dp; ctx.globalAlpha = al; ctx.fillStyle = COL.ax;
+    if (g > 0.98) { ctx.beginPath(); ctx.moveTo(E[0], E[1]); ctx.lineTo(E[0] - h * Math.cos(an - 0.38), E[1] - h * Math.sin(an - 0.38)); ctx.lineTo(E[0] - h * Math.cos(an + 0.38), E[1] - h * Math.sin(an + 0.38)); ctx.fill();
+      ctx.font = `italic 800 ${Math.round(18 * dp)}px Georgia,serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(names[i], E[0] + 18 * dp * Math.cos(an), E[1] + 18 * dp * Math.sin(an)); }
+    ctx.globalAlpha = 1;
+  });
+  ctx.globalAlpha = al; ctx.fillStyle = COL.ax; ctx.font = `italic 800 ${Math.round(17 * dp)}px Georgia,serif`; ctx.textAlign = 'center'; ctx.fillText('O′', O[0] - 16 * dp, O[1] + 16 * dp); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
+  if (angles && g > 0.5) {
+    const dirs = ends.map(E => Math.atan2(E[1] - O[1], E[0] - O[0]));
+    const lab = type === 'xien' ? [[0, 2, '90°'], [0, 1, '135°'], [1, 2, '135°']] : [[0, 2, '120°'], [0, 1, '120°'], [1, 2, '120°']];
+    ctx.globalAlpha = Math.min(1, (g - 0.5) * 2);
+    lab.forEach(([i, j, s], n) => {
+      let d = dirs[j] - dirs[i]; d = Math.atan2(Math.sin(d), Math.cos(d));
+      const r = (40 + n * 9) * dp; ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 2 * dp; ctx.beginPath(); ctx.arc(O[0], O[1], r, dirs[i], dirs[i] + d, d < 0); ctx.stroke();
+      const m = dirs[i] + d / 2; pill(ctx, O[0] + (r + 18 * dp) * Math.cos(m), O[1] + (r + 18 * dp) * Math.sin(m), s, '#7c3aed', dp);
+    });
+    const co = type === 'xien' ? ['p = 1', 'q = 0,5', 'r = 1'] : ['p = 1', 'q = 1', 'r = 1'];
+    ends.forEach((E, i) => { const M = [O[0] + (E[0] - O[0]) * 0.72, O[1] + (E[1] - O[1]) * 0.72], an = Math.atan2(E[1] - O[1], E[0] - O[0]) + Math.PI / 2; pill(ctx, M[0] + 22 * dp * Math.cos(an), M[1] + 22 * dp * Math.sin(an), co[i], '#0f766e', dp); });
+    ctx.globalAlpha = 1;
+  }
+}
+function polyPart(ctx, pts, g, col, lw, dp, close = true, dash) {
+  const P = close ? [...pts, pts[0]] : pts, L = []; let tot = 0;
+  for (let i = 0; i < P.length - 1; i++) { const l = Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); L.push(l); tot += l; }
+  let rem = tot * g; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]);
+  for (let i = 0; i < L.length && rem > 0; i++) { const f = Math.min(1, rem / (L[i] || 1)); ctx.lineTo(P[i][0] + (P[i + 1][0] - P[i][0]) * f, P[i][1] + (P[i + 1][1] - P[i][1]) * f); rem -= L[i]; }
+  ctx.stroke(); ctx.setLineDash([]);
+}
+/** step: 0 – chưa vẽ; 1..6 các bước; g: tiến độ của bước hiện tại (0..1) */
+function renderStep(cv, o, type, step, g = 1) {
+  const dp = window.devicePixelRatio || 1, ctx = cv.getContext('2d'), Wc = cv.width, Hc = cv.height;
+  ctx.clearRect(0, 0, Wc, Hc);
+  const pr = proj(o, type, Wc, Hc, dp, true, 40), gs = n => step > n ? 1 : step === n ? g : 0;
+  if (step === 0) return;
+  drawAxes(ctx, pr, type, step >= 6 ? 0.35 : 1, step === 1, gs(1));
+  if (step < 2) return;
+  const base = cont3(o).map(pr.PA), front = o.base === 'front';
+  const ext = front ? [0, o.D + 0.7, 0] : [0, 0, o.H + 0.7], far = A => [A[0] + ext[0], A[1] + ext[1], A[2] + ext[2]];
+  const fade = step >= 6 ? 1 - g : 1;
+  // bước 3: đường song song với trục còn lại
+  if (step >= 3 && fade > 0.01) cont3(o).forEach(A => {
+    const a = pr.PA(A), b = pr.PA(far(A)), gg = gs(3);
+    line(ctx, a, [a[0] + (b[0] - a[0]) * gg, a[1] + (b[1] - a[1]) * gg], '#64748b', 1.3, [6, 5], (step > 3 ? 0.55 : 0.95) * fade, dp);
+  });
+  // bước 2: đường bao của hình chiếu cơ sở
+  if (fade > 0.01) { ctx.globalAlpha = fade; polyPart(ctx, base, gs(2), COL.base, step === 2 ? 3.6 : 2.4, dp); ctx.globalAlpha = 1; }
+  if (step === 2) { const O = pr.PA([0, 0, 0]); dot(ctx, O, COL.ax, dp, 6); }
+  // bước 3: điểm gấp khúc
+  if (step >= 3 && step <= 5) base.forEach((p, i) => { if (gs(3) * base.length > i) dot(ctx, p, COL.base, dp, 5); });
+  // bước 4: đặt độ dài, nối
+  if (step >= 4 && fade > 0.01) {
+    const E = bodyEdges(o), n = E.length, show = Math.ceil(n * gs(4));
+    E.slice(0, show).forEach(([a, b]) => line(ctx, pr.P(a), pr.P(b), '#334155', 1.7, null, (step > 4 ? 0.75 : 1) * fade, dp));
+    if (step <= 5 && gs(4) > 0.3) measuredDots(o).forEach(v => dot(ctx, pr.P(v), COL.dim, dp, 5));
+    if (step === 4 && g > 0.6) {
+      const A0 = cont3(o)[0], A1 = front ? [A0[0], o.D, A0[2]] : [A0[0], A0[1], o.H], a = pr.PA(A0), b = pr.PA(A1);
+      line(ctx, a, b, COL.dim, 4.5, null, 0.9, dp);
+      const t = front ? (type === 'xien' ? `${Math.round(o.D * 10)} × 0,5 = ${Math.round(o.D * 5)}` : `${Math.round(o.D * 10)}`) : `${Math.round(o.H * 10)}`;
+      const an = Math.atan2(b[1] - a[1], b[0] - a[0]) + Math.PI / 2;
+      pill(ctx, (a[0] + b[0]) / 2 + 30 * dp * Math.cos(an), (a[1] + b[1]) / 2 + 30 * dp * Math.sin(an), t, COL.dim, dp);
+    }
+  }
+  // bước 5: rãnh, lỗ
+  if (step >= 5 && fade > 0.01) {
+    const fe = featEdges(o, pr.V, type), show = Math.ceil(fe.length * gs(5));
+    fe.slice(0, show).forEach(([a, b]) => line(ctx, pr.P(a), pr.P(b), COL.feat, 2.4, null, fade, dp));
+  }
+  // bước 6: kiểm tra, tô đậm
+  if (step >= 6) hcPaint(ctx, Wc, Hc, getF(o, 'full'), pr.P, pr.V, dp, { k: pr.k, lw: 3, alpha: g, color: [0.9, 0.95, 1], edge: '#0f172a' });
+}
+function axisIcon(ctx, type, cx, cy, L, dp) {
+  const D = type === 'xien' ? [[1, 0], [-C45, C45], [0, -1]] : [[C30, 0.5], [-C30, 0.5], [0, -1]], lab = type === 'xien' ? ['90°', '135°', '135°'] : ['120°', '120°', '120°'];
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = '#e3eaf6'; ctx.lineWidth = dp; ctx.beginPath(); (ctx.roundRect ? ctx.roundRect(cx - L - 26 * dp, cy - L - 14 * dp, 2 * L + 52 * dp, 2 * L + 34 * dp, 14 * dp) : ctx.rect(cx - L, cy - L, 2 * L, 2 * L)); ctx.fill(); ctx.stroke();
+  const ln = [1, type === 'xien' ? 0.55 : 1, 1];
+  D.forEach((d, i) => { const E = [cx + d[0] * L * ln[i], cy + d[1] * L * ln[i]]; line(ctx, [cx, cy], E, COL.ax, 2.4, null, 1, dp); ctx.fillStyle = COL.ax; ctx.font = `italic 800 ${Math.round(14 * dp)}px Georgia,serif`; ctx.textAlign = 'center'; ctx.fillText(['X′', 'Y′', 'Z′'][i], E[0] + d[0] * 12 * dp, E[1] + d[1] * 12 * dp + 5 * dp); });
+  const an = D.map(d => Math.atan2(d[1], d[0])), pr = [[0, 2], [0, 1], [1, 2]];
+  pr.forEach(([i, j], n) => { let d = an[j] - an[i]; d = Math.atan2(Math.sin(d), Math.cos(d)); const r = 18 * dp; ctx.strokeStyle = '#7c3aed'; ctx.lineWidth = 1.6 * dp; ctx.beginPath(); ctx.arc(cx, cy, r, an[i], an[i] + d, d < 0); ctx.stroke(); const m = an[i] + d / 2; ctx.fillStyle = '#7c3aed'; ctx.font = `800 ${Math.round(11 * dp)}px system-ui,sans-serif`; ctx.fillText(lab[n], cx + 34 * dp * Math.cos(m), cy + 34 * dp * Math.sin(m) + 4 * dp); });
+  ctx.textAlign = 'left';
+}
+function renderFinal(cv, F, o, type, axes) {
+  const dp = sizeCv(cv), ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+  const pr = proj(o, type, cv.width, cv.height, dp, axes, axes ? 36 : 16);
+  if (axes) { drawAxes(ctx, pr, type, 0.9, false, 1); axisIcon(ctx, type, 92 * dp, 92 * dp, 62 * dp, dp); }
+  hcPaint(ctx, cv.width, cv.height, F, pr.P, pr.V, dp, { k: pr.k, lw: 2.6, color: [0.9, 0.95, 1], edge: '#0f172a' });
+}
+
+
+/* ================= KHỐI 3D (trắng hoặc tô màu theo mặt) – phép chiếu song song tổng quát ================= */
+const FCOL = { x: [1, 0.74, 0.48], y: [0.58, 0.74, 1], z: [0.6, 0.9, 0.64] }, PAPER = [0.9, 0.95, 1], WHITE3 = [1, 1, 1];
+function faceCol(f, mode, mix = 1) {
+  let c = WHITE3;
+  if (mode === 'face') { const a = f.n.map(Math.abs), s = a[0] + a[1] + a[2] || 1; c = [0, 1, 2].map(i => (a[0] * FCOL.x[i] + a[1] * FCOL.y[i] + a[2] * FCOL.z[i]) / s); }
+  return mix >= 1 ? c : c.map((v, i) => PAPER[i] + (v - PAPER[i]) * mix);
+}
+const crs = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+/* ma trận chiếu 2×3 (toạ độ vật thể p → màn hình), hàng x: sang phải, hàng y: lên trên */
+const MAT = {
+  vgd: () => ({ x: [C30, C30, 0], y: [-0.5, 0.5, 1] }),
+  xien: () => ({ x: [1, Q * C45, 0], y: [0, Q * C45, 1] }),
+  orbit: (th, ph) => { const s = Math.sqrt(1.5), e = [Math.sin(th) * Math.cos(ph), -Math.cos(th) * Math.cos(ph), Math.sin(ph)], R = [Math.cos(th), Math.sin(th), 0], U = crs(e, R); return { x: R.map(v => v * s), y: U.map(v => v * s) }; }
+};
+const ISO = [Math.PI / 4, Math.asin(1 / Math.sqrt(3))];
+function projMat(o, M, Wc, Hc, dp, k, type, sh = [0, 0]) {
+  const pc = [o.W / 2, o.D / 2, o.H / 2], c = crs(M.x, M.y), l = Math.hypot(...c) || 1, V = c.map(v => -v / l);
+  const dot3 = (a, d) => a[0] * d[0] + a[1] * d[1] + a[2] * d[2];
+  const S = p => { const d = [p[0] - pc[0], p[1] - pc[1], p[2] - pc[2]]; return [Wc / 2 + k * (dot3(M.x, d) - sh[0]), Hc / 2 - k * (dot3(M.y, d) - sh[1])]; };
+  return { S, V, k, dp, P: p => { const s = S(p); return [s[0], s[1], dot3(V, p)]; }, PA: A => S([A[0], o.D - A[1], A[2]]),
+    ax: [[o.W + 1.5, 0, 0], [0, o.D + (type === 'xien' ? 2.8 : 1.5), 0], [0, 0, o.H + 1.4]] };
+}
+function fitK(o, Wc, Hc, dp) {
+  const kv = proj(o, 'vgd', Wc, Hc, dp, false, 44).k, kx = proj(o, 'xien', Wc, Hc, dp, false, 44).k;
+  const kr = (Math.min(Wc, Hc) - 24 * dp) / (Math.sqrt(1.5) * Math.hypot(o.W, o.D, o.H));
+  return Math.min(kv, kx, kr);
+}
+const V3 = { cur: null, th: ISO[0], ph: ISO[1], mode: 'type', auto: false, col: 'white', axes: true, intro: false, kick: () => {} };
+/* vật thể xoay (ma trận Rm), hệ trục O′X′Y′Z′ đứng yên phía sau vật thể */
+const mul3 = (A, B) => A.map(r => [0, 1, 2].map(j => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j]));
+const rotAx = (u, t) => { const [x, y, z] = u, c = Math.cos(t), s = Math.sin(t), C = 1 - c; return [[c + x * x * C, x * y * C - z * s, x * z * C + y * s], [y * x * C + z * s, c + y * y * C, y * z * C - x * s], [z * x * C - y * s, z * y * C + x * s, c + z * z * C]]; };
+const ortho3 = R => { const n = v => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); }; const c0 = n([R[0][0], R[1][0], R[2][0]]); let c1 = [R[0][1], R[1][1], R[2][1]]; const d = c0[0] * c1[0] + c0[1] * c1[1] + c0[2] * c1[2]; c1 = n(c1.map((v, i) => v - d * c0[i])); const c2 = crs(c0, c1); return [0, 1, 2].map(i => [c0[i], c1[i], c2[i]]); };
+const I3 = () => [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+function draw3D(cv, o, Rm, k, dp, mix, type) {
+  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+  const H = MAT[type](), sh = shiftOf(o, type);
+  const rowR = r => [0, 1, 2].map(j => r[0] * Rm[0][j] + r[1] * Rm[1][j] + r[2] * Rm[2][j]);
+  drawAxes(ctx, projMat(o, H, cv.width, cv.height, dp, k, type, sh), type, 1, false, 1);       // trục cố định, vẽ trước → nằm sau vật thể
+  const pr = projMat(o, { x: rowR(H.x), y: rowR(H.y) }, cv.width, cv.height, dp, k, type, sh);
+  hcPaint(ctx, cv.width, cv.height, getF(o, 'full'), pr.P, pr.V, dp, { k, lw: 2.6, edge: '#0f172a', faceColor: f => faceCol(f, 'white', mix) });
+}
+/* độ lệch để khối + trục nằm giữa khung ở vị trí trục đo */
+function shiftOf(o, type) {
+  const M = MAT[type](), pc = [o.W / 2, o.D / 2, o.H / 2], d3 = (a, p) => a[0] * (p[0] - pc[0]) + a[1] * (p[1] - pc[1]) + a[2] * (p[2] - pc[2]);
+  const pts = [[0, 0, 0], [o.W, 0, 0], [0, o.D, 0], [0, 0, o.H], [o.W, o.D, o.H], [o.W + 1.9, o.D, 0], [0, o.D - (type === 'xien' ? 3.2 : 1.9), 0], [0, o.D, o.H + 1.9]];
+  const xs = pts.map(p => d3(M.x, p)), ys = pts.map(p => d3(M.y, p));
+  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
+}
+/* bước so sánh: hai khối 3D cạnh nhau (trái: vuông góc đều, phải: xiên góc cân), xoay cùng nhau */
+function start3D(intro) {
+  const cL = $('#cvL'), cR = $('#cvR'); if (!cL || !cR) return;
+  const dp = sizeCv(cL); sizeCv(cR);
+  const o = objOf(st.obj), k = Math.min(fitK(o, cL.width, cL.height, dp), proj(o, 'vgd', cL.width, cL.height, dp, true, 34).k, proj(o, 'xien', cL.width, cL.height, dp, true, 34).k) * 0.86;
+  if (intro || !V3.R) { V3.R = I3(); V3.home = false; }
+  const t0 = performance.now(); let mix = intro ? 0 : 1;
+  cancelAnimationFrame(raf); raf = 0;
+  const tick = now => {
+    raf = 0; let moving = false;
+    if (V3.home) {
+      const I = I3(); let dmax = 0;
+      V3.R = ortho3(V3.R.map((r, i) => r.map((v, j) => { const d = I[i][j] - v; dmax = Math.max(dmax, Math.abs(d)); return v + d * 0.18; })));
+      if (dmax < 1e-3) { V3.R = I; V3.home = false; } else moving = true;
+    }
+    if (intro) mix = Math.min(1, (now - t0) / 800);
+    draw3D(cL, o, V3.R, k, dp, mix, 'vgd'); draw3D(cR, o, V3.R, k, dp, mix, 'xien');
+    if (moving || (intro && mix < 1)) raf = requestAnimationFrame(tick);
+  };
+  V3.kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+  [cL, cR].forEach(cv => {
+    cv.onpointerdown = e => { V3.drag = [e.clientX, e.clientY]; V3.home = false; try { cv.setPointerCapture(e.pointerId); } catch (_) {} };
+    cv.onpointermove = e => {
+      if (!V3.drag) return;
+      const dx = e.clientX - V3.drag[0], dy = e.clientY - V3.drag[1]; V3.drag = [e.clientX, e.clientY];
+      V3.R = ortho3(mul3(rotAx([1, 0, 0], dy * 0.01), mul3(rotAx([0, 0, 1], dx * 0.01), V3.R))); V3.kick();
+    };
+    cv.onpointerup = cv.onpointercancel = () => { V3.drag = null; };
+    cv.ondblclick = () => { V3.home = true; V3.kick(); };
+  });
+  V3.kick();
+}
+const LEG3 = () => V3.col === 'face' ? `<span><i class="sw" style="background:#9dbdff"></i>Mặt ∥ X′O′Z′ (trước, sau)</span><span><i class="sw" style="background:#9be6a4"></i>Mặt ∥ X′O′Y′ (trên, dưới)</span><span><i class="sw" style="background:#ffbe7d"></i>Mặt ∥ Y′O′Z′ (hai bên)</span>` : '';
+function barHtml() {
+  return `<div class="v3bar"><button data-v3="home" class="${V3.mode === 'type' && !V3.auto ? 'on' : ''}">🎯 Về góc trục đo</button><button data-v3="auto" class="${V3.auto ? 'on' : ''}">⟳ Tự xoay</button><button data-v3="col" class="${V3.col === 'face' ? 'on' : ''}">🎨 Tô màu theo mặt</button><button data-v3="axes" class="${V3.axes ? 'on' : ''}">Trục đo</button></div>`
+    + (V3.col === 'face' ? `<div class="v3leg">${LEG3()}</div>` : '');
+}
+function syncBar() {
+  const box = $('.cvbox'); if (!box) return;
+  $$('.v3bar,.v3leg', box).forEach(e => e.remove()); box.insertAdjacentHTML('beforeend', barHtml());
+  $$('[data-v3]', box).forEach(b => b.onclick = () => {
+    const a = b.dataset.v3;
+    if (a === 'home') { V3.mode = 'type'; V3.auto = false; }
+    if (a === 'auto') { V3.auto = !V3.auto; if (V3.auto && V3.mode !== 'orbit') { V3.th = ISO[0]; V3.ph = ISO[1]; } }
+    if (a === 'col') V3.col = V3.col === 'face' ? 'white' : 'face';
+    if (a === 'axes') V3.axes = !V3.axes;
+    syncBar(); V3.kick();
+  });
+}
+
+/* ---------- so sánh 3D: kích thước bao ---------- */
+function arrowHead(ctx, P, ang, col, dp) { const h = 8 * dp; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(P[0] - h * Math.cos(ang - 0.4), P[1] - h * Math.sin(ang - 0.4)); ctx.lineTo(P[0] - h * Math.cos(ang + 0.4), P[1] - h * Math.sin(ang + 0.4)); ctx.fill(); }
+function drawDims(ctx, pr, o, type, dp) {
+  const { W, D, H } = o, C = pr.P([W / 2, D / 2, H / 2]), r10 = v => String(Math.round(v * 10));
+  [[[0, 0, 0], [W, 0, 0], r10(W)], [[W, 0, 0], [W, D, 0], type === 'xien' ? `${r10(D)} × 0,5` : r10(D)], [[0, 0, 0], [0, 0, H], r10(H)]].forEach(([a, b, t]) => {
+    const A = pr.P(a), B = pr.P(b), L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1; let nx = -(B[1] - A[1]) / L, ny = (B[0] - A[0]) / L;
+    if (((A[0] + B[0]) / 2 - C[0]) * nx + ((A[1] + B[1]) / 2 - C[1]) * ny < 0) { nx = -nx; ny = -ny; }
+    const off = 24 * dp, A2 = [A[0] + nx * off, A[1] + ny * off], B2 = [B[0] + nx * off, B[1] + ny * off];
+    [A, B].forEach(E => line(ctx, [E[0] + nx * 5 * dp, E[1] + ny * 5 * dp], [E[0] + nx * (off + 6 * dp), E[1] + ny * (off + 6 * dp)], COL.dim, 1.2, null, 0.9, dp));
+    line(ctx, A2, B2, COL.dim, 1.8, null, 1, dp);
+    const an = Math.atan2(B2[1] - A2[1], B2[0] - A2[0]); arrowHead(ctx, B2, an, COL.dim, dp); arrowHead(ctx, A2, an + Math.PI, COL.dim, dp);
+    pill(ctx, (A2[0] + B2[0]) / 2, (A2[1] + B2[1]) / 2, t, COL.dim, dp, '#fff', 12);
+  });
+}
+function renderCmp(cv, o, type) {
+  const dp = sizeCv(cv), ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
+  const pr = proj(o, type, cv.width, cv.height, dp, st.ss.axes, st.ss.dim ? 52 : 36);
+  if (st.ss.axes) { drawAxes(ctx, pr, type, 0.55, false, 1); }
+  hcPaint(ctx, cv.width, cv.height, getF(o, 'full'), pr.P, pr.V, dp, { k: pr.k, lw: 2.6, edge: '#0f172a', faceColor: f => faceCol(f, st.ss.col) });
+  if (st.ss.dim) drawDims(ctx, pr, o, type, dp);
+  if (st.ss.axes) axisIcon(ctx, type, 64 * dp, 62 * dp, 40 * dp, dp);
+}
+
+/* ================= GIAO DIỆN ================= */
+const TYPE = { vgd: 'Vuông góc đều', xien: 'Xiên góc cân' };
+const STEPS = ['Gắn trục toạ độ', 'Vẽ hình chiếu cơ sở', 'Kẻ đường song song', 'Đặt độ dài, nối điểm', 'Vẽ rãnh, lỗ', 'Kiểm tra, tô đậm'];
+const st = { tab: 've', obj: DEMO[0].id, type: 'vgd', step: 0, grid: false, pi: 0, ptype: 'vgd', ans: store.get('ans', {}), ss: { col: 'white', axes: true, dim: true } };
+const objOf = id => ALL.find(o => o.id === id);
+let raf = 0;
+
+function stepText(o, type, s) {
+  const front = o.base === 'front', bn = front ? 'hình chiếu đứng' : 'hình chiếu bằng', pl = front ? 'X′O′Z′' : 'X′O′Y′', other = front ? 'O′Y′' : 'O′Z′';
+  const L = Math.round((front ? o.D : o.H) * 10), xi = type === 'xien';
+  const undist = xi && front;
+  switch (s) {
+    case 0: return ['Đọc bản vẽ', 'Quan sát ba hình chiếu vuông góc (vẽ theo phương pháp chiếu góc thứ nhất) để hình dung hình dạng vật thể. Bấm <b>Bước 1</b> để bắt đầu vẽ hình chiếu trục đo.'];
+    case 1: return ['Bước 1. Gắn trục toạ độ', `Đặt các trục <b class="cr">Ox, Oy, Oz</b> lên các hình chiếu vuông góc: gốc <b class="cr">O</b> ở góc sau – trái – dưới của vật thể. Đồng thời vẽ hệ trục đo <b class="cr">O′X′Y′Z′</b>: ${xi ? 'trục O′Z′ thẳng đứng, O′X′ nằm ngang; <b>X′O′Z′ = 90°</b>, X′O′Y′ = Y′O′Z′ = 135°; hệ số biến dạng <b>p = r = 1, q = 0,5</b>.' : 'trục O′Z′ thẳng đứng, ba góc trục đo bằng nhau <b>120°</b>; hệ số biến dạng <b>p = q = r = 1</b>.'}`];
+    case 2: return ['Bước 2. Vẽ hình chiếu cơ sở', `Chọn <b class="cb">${bn}</b> làm cơ sở. Chỉ vẽ <b class="cb">đường bao quanh</b> của nó trên mặt phẳng <b>${pl}</b>, bắt đầu <b>từ gốc O′ đi ra</b>, các đoạn song song với trục nào thì vẽ song song với trục đo đó. ${undist ? '<span class="note">Hình chiếu trục đo xiên góc cân: mặt phẳng X′O′Z′ có góc 90° nên mặt này <b>không bị biến dạng</b> – vẽ đúng hình dạng và kích thước thật.</span>' : xi ? 'Theo phương O′Y′ phải nhân kích thước với q = 0,5.' : 'Kích thước theo các trục giữ nguyên (p = q = r = 1).'}`];
+    case 3: return ['Bước 3. Kẻ đường song song', `Xác định <b class="cb">các điểm tại những chỗ gấp khúc</b> (đỉnh) của đường bao vừa vẽ. Từ mỗi điểm, kẻ các đường thẳng <b>song song với trục ${other}</b> – trục còn lại chưa dùng.`];
+    case 4: return ['Bước 4. Đặt độ dài, nối các điểm', `Lấy kích thước tương ứng trên ${front ? 'hình chiếu bằng / hình chiếu cạnh' : 'hình chiếu đứng / hình chiếu cạnh'} (<b class="cd">${L}</b>${xi && front ? ` × 0,5 = <b class="cd">${L / 2}</b>` : ''}) và đặt lên từng đường song song – có đoạn dài, đoạn ngắn tuỳ từng phần của vật thể. Được các điểm <b class="cd">●</b>, nối chúng lại theo hình chiếu.`];
+    case 5: return ['Bước 5. Vẽ phần rãnh, lỗ', hasFeat(o) ? `Vẽ hình chiếu trục đo của <b class="cf">phần rãnh, lỗ</b>: đặt tâm, kích thước theo các trục rồi vẽ. ${xi ? 'Lỗ tròn trên mặt song song với X′O′Z′ <b>vẫn là đường tròn</b>; lỗ tròn trên các mặt còn lại biến thành elip.' : 'Lỗ tròn trên mọi mặt đều biến thành <b>elip</b>.'}` : 'Vật thể này <b>không có rãnh, lỗ</b> – chuyển sang Bước 6.'];
+    case 6: return ['Bước 6. Kiểm tra, tô đậm', 'Đối chiếu lại với ba hình chiếu vuông góc, <b>xoá các nét dựng hình</b> và <b>tô đậm các cạnh thấy</b>. Hình chiếu trục đo không vẽ nét khuất. Bấm <b>⚖️ So sánh 3D</b> để xem vật thể thành khối theo cả hai kiểu.'];
+    case 7: return ['So sánh khối 3D: vuông góc đều – xiên góc cân', `Cùng một vật thể dựng thành <b>khối 3D màu trắng</b> theo hai kiểu. Bên trái <b>vuông góc đều</b>: ba mặt biến dạng như nhau, lỗ tròn thành elip. Bên phải <b>xiên góc cân</b>: mặt trước giữ <b>đúng hình dạng thật</b>, chiều rộng chỉ vẽ một nửa. <b>Kéo một khối</b> để xoay cả hai cùng lúc; bấm <b>↻ Vẽ lại</b> để trở về đúng vị trí trục đo.`];
+  }
+}
+
+function header() {
+  return `<header class="hd"><div class="brand"><span class="logo">11</span><div><b>Hình chiếu trục đo</b><small>Công nghệ 10 · Bài 11 · SmarttechCN 2026</small></div></div>
+    <nav class="tabs">${[['ve', '✏️ Vẽ từng bước'], ['ss', '🧊 So sánh 3D'], ['nho', '📌 Ghi nhớ'], ['lt', '🎯 Luyện tập']].map(([k, t]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
+    <button class="fs" id="fs" title="Toàn màn hình">⛶</button></header>`;
+}
+const typeSeg = (k, cur) => `<div class="seg" data-seg="${k}">${Object.entries(TYPE).map(([v, t]) => `<button data-v="${v}" class="${cur === v ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+
+function render() {
+  cancelAnimationFrame(raf); raf = 0;
+  const app = $('#app');
+  app.innerHTML = header() + `<main class="main">${st.tab === 've' ? pageVe() : st.tab === 'ss' ? pageSs() : st.tab === 'nho' ? pageNho() : pageLt()}</main>`;
+  $$('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; render(); });
+  $('#fs').onclick = () => { const d = document; if (!d.fullscreenElement) (d.documentElement.requestFullscreen || d.documentElement.webkitRequestFullscreen || (() => {})).call(d.documentElement); else d.exitFullscreen(); };
+  ({ ve: bindVe, ss: bindSs, nho: bindNho, lt: bindLt })[st.tab]();
+}
+
+/* ---------- Trang 1: vẽ từng bước ---------- */
+function pageVe() {
+  const o = objOf(st.obj), [tt, tx] = stepText(o, st.type, st.step);
+  const chip = (x, i, pre) => `<button data-o="${x.id}" class="${x.id === st.obj ? 'on' : ''}"><span class="n">${pre}${i + 1}</span><span>${x.ten}${x.sgk ? `<small>${x.sgk}</small>` : ''}</span></button>`;
+  return `<section class="ve">
+    <aside class="side"><h3>Vật thể mẫu</h3><div class="olist">${DEMO.map((x, i) => chip(x, i, '')).join('')}</div>
+      <h3>Bài luyện tập</h3><div class="olist">${PRACT.map((x, i) => chip(x, i, 'L')).join('')}</div></aside>
+    <div class="panel pv"><div class="ph"><b>Bản vẽ ba hình chiếu</b><span class="chipmini">Góc chiếu thứ nhất · 1 ô = 10 mm</span></div>
+      <div class="drwbox">${drawingSvg(o, { axes: st.step >= 1, base: st.step === 2 || st.step === 3, dim: st.step === 4 })}</div>
+      <div class="legend"><span><i class="lg v"></i>Cạnh thấy</span><span><i class="lg h"></i>Cạnh khuất</span><span><i class="lg c"></i>Đường tâm</span>${st.step >= 1 ? '<span><i class="lg a"></i>Trục toạ độ</span>' : ''}</div></div>
+    <div class="panel stage"><div class="stagehd">${typeSeg('type', st.type)}<span class="oname">${o.ten}</span></div>
+      <div class="steps">${STEPS.map((t, i) => `<button data-step="${i + 1}" class="${st.step === i + 1 ? 'on' : st.step > i + 1 ? 'done' : ''}"><span class="num">${i + 1}</span><span class="tt">${t}</span></button>`).join('')}<button data-step="7" class="s3d ${st.step === 7 ? 'on' : ''}"><span class="num">⚖️</span><span class="tt">So sánh 3D</span></button></div>
+      <div class="cvbox">${st.step === 7 ? `<canvas id="cvL" class="v3 half"></canvas><canvas id="cvR" class="v3 half r"></canvas>` : '<canvas id="cv"></canvas>'}${st.step === 0 ? '<div class="start"><button class="go" data-step="1">▶ Bắt đầu – Bước 1</button><small>Dùng phím ← → hoặc bút trình chiếu để chuyển bước</small></div>' : ''}</div>
+      ${st.step === 7 ? '' : `<div class="explain s${st.step}"><div class="et">${tt}</div><div class="ex">${tx}</div></div>`}
+      <div class="ctrl"><button class="btn ghost" id="pv" ${st.step === 0 ? 'disabled' : ''}>← Bước trước</button><button class="btn ghost" id="rp" ${st.step === 0 ? 'disabled' : ''}>↻ Vẽ lại</button><button class="btn" id="nx" ${st.step === 7 ? 'disabled' : ''}>${st.step === 0 ? 'Bắt đầu →' : st.step === 6 ? '⚖️ So sánh khối 3D →' : 'Bước tiếp →'}</button></div></div></section>`;
+}
+function animStep() {
+  const cv = $('#cv'); if (!cv) return; sizeCv(cv);
+  const o = objOf(st.obj), ms = st.step === 6 ? 900 : st.step === 1 ? 1300 : 1600, t0 = performance.now();
+  cancelAnimationFrame(raf);
+  const go = now => { const g = Math.min(1, (now - t0) / ms), e = g < .5 ? 2 * g * g : 1 - Math.pow(-2 * g + 2, 2) / 2; renderStep(cv, o, st.type, st.step, e); if (g < 1) raf = requestAnimationFrame(go); };
+  raf = requestAnimationFrame(go);
+}
+function setStep(s) { st.step = Math.max(0, Math.min(7, s)); if (st.step === 7) V3.intro = true; render(); }
+function bindVe() {
+  $$('[data-o]').forEach(b => b.onclick = () => { st.obj = b.dataset.o; st.step = 0; render(); });
+  $$('[data-step]').forEach(b => b.onclick = () => setStep(+b.dataset.step));
+  $$('[data-seg="type"] button').forEach(b => b.onclick = () => { st.type = b.dataset.v; if (st.step === 7) { V3.mode = 'type'; V3.auto = false; } render(); });
+  $('#pv').onclick = () => setStep(st.step - 1); $('#nx').onclick = () => setStep(st.step + 1); $('#rp').onclick = () => { if (st.step === 7) { V3.home = true; V3.kick(); } else animStep(); };
+  setTimeout(() => { if (st.step === 7) { const it = V3.intro; V3.intro = false; start3D(it); } else animStep(); }, 0);
+}
+
+
+/* ---------- Trang: so sánh 3D ---------- */
+function pageSs() {
+  const o = objOf(st.obj), r10 = v => Math.round(v * 10), xs = st.ss;
+  const chip = (x, i, pre) => `<button data-o="${x.id}" class="${x.id === st.obj ? 'on' : ''}"><span class="n">${pre}${i + 1}</span><span>${x.ten}${x.sgk ? `<small>${x.sgk}</small>` : ''}</span></button>`;
+  const grp = {}; (o.axes || []).forEach(a => { const d = Math.round(a.r * 20), kk = a.ax + d; (grp[kk] = grp[kk] || { ax: a.ax, d, n: 0 }).n++; });
+  const PL = { y: 'mặt trước (∥ X′O′Z′)', z: 'mặt nằm ngang (∥ X′O′Y′)', x: 'mặt bên (∥ Y′O′Z′)' };
+  const holes = Object.values(grp).map(g => `<tr><td>${g.n > 1 ? g.n + ' lỗ' : 'Lỗ'} Ø${g.d} trên ${PL[g.ax]}</td><td>Thành <b>elip</b></td><td>${g.ax === 'y' ? '<b>Vẫn là đường tròn</b> Ø' + g.d + ' – vẽ bằng compa' : 'Thành <b>elip</b> (dẹt, nghiêng)'}</td></tr>`).join('')
+    || `<tr><td>Lỗ tròn</td><td colspan="2" style="color:var(--muted)">Vật thể này không có lỗ tròn – chọn vật thể có lỗ để so sánh đường tròn và elip.</td></tr>`;
+  const sw = c => `<i class="sw" style="background:${c}"></i>`, colOn = xs.col === 'face';
+  const ck = (k, on, t) => `<label class="gridtg"><input type="checkbox" data-ss="${k}" ${on ? 'checked' : ''}> ${t}</label>`;
+  return `<section class="ss">
+    <aside class="side"><h3>Vật thể mẫu</h3><div class="olist">${DEMO.map((x, i) => chip(x, i, '')).join('')}</div>
+      <h3>Bài luyện tập</h3><div class="olist">${PRACT.map((x, i) => chip(x, i, 'L')).join('')}</div></aside>
+    <div class="sscol">
+      <div class="panel sstool"><b>${o.ten}</b>${ck('col', colOn, 'Tô màu theo mặt')}${ck('axes', xs.axes, 'Trục đo')}${ck('dim', xs.dim, 'Kích thước')}</div>
+      <div class="cmp2">
+        <div class="panel"><div class="ph"><b>Vuông góc đều</b><span class="chipmini">120° · p = q = r = 1</span></div><div class="cv3"><canvas id="s1"></canvas></div></div>
+        <div class="panel"><div class="ph"><b>Xiên góc cân</b><span class="chipmini">90°, 135° · p = r = 1, q = 0,5</span></div><div class="cv3"><canvas id="s2"></canvas></div></div>
+      </div>
+      <div class="panel sstab"><div class="tablewrap"><table><thead><tr><th>So sánh trên vật thể này</th><th>Vuông góc đều</th><th>Xiên góc cân</th></tr></thead><tbody>
+        <tr><td>${colOn ? sw('#9dbdff') : ''}Mặt trước, sau (∥ X′O′Z′)</td><td>Bị biến dạng: hình chữ nhật thành hình bình hành</td><td><b>Không biến dạng</b>: đúng hình dạng và kích thước thật</td></tr>
+        <tr><td>${colOn ? sw('#9be6a4') : ''}Mặt trên, dưới (∥ X′O′Y′)</td><td>Biến dạng như nhau ở cả ba mặt</td><td>Biến dạng; cạnh theo chiều rộng chỉ vẽ <b>một nửa</b></td></tr>
+        <tr><td>${colOn ? sw('#ffbe7d') : ''}Mặt hai bên (∥ Y′O′Z′)</td><td>Biến dạng như nhau ở cả ba mặt</td><td>Biến dạng; cạnh theo chiều rộng chỉ vẽ <b>một nửa</b></td></tr>
+        <tr><td>Kích thước khi vẽ (dài × rộng × cao)</td><td>${r10(o.W)} × <b>${r10(o.D)}</b> × ${r10(o.H)}</td><td>${r10(o.W)} × <b>${Math.round(o.D * 5)}</b> × ${r10(o.H)} (rộng ${r10(o.D)} × 0,5)</td></tr>
+        ${holes}
+        <tr><td>Hình dáng chung</td><td>Cân đối, ba mặt thể hiện đồng đều, trông gần giống vật thật</td><td>Mặt trước nổi bật, chiều sâu trông ngắn lại</td></tr>
+        <tr><td>Nên dùng khi</td><td>Các mặt của vật thể quan trọng như nhau</td><td>Mặt trước có nhiều đường tròn, đường cong – vẽ nhanh, dễ</td></tr>
+      </tbody></table></div></div>
+    </div></section>`;
+}
+function bindSs() {
+  $$('[data-o]').forEach(b => b.onclick = () => { st.obj = b.dataset.o; st.step = 0; render(); });
+  $$('[data-ss]').forEach(b => b.onchange = e => { const k = b.dataset.ss; st.ss[k] = k === 'col' ? (e.target.checked ? 'face' : 'white') : e.target.checked; render(); });
+  const o = objOf(st.obj);
+  setTimeout(() => { renderCmp($('#s1'), o, 'vgd'); renderCmp($('#s2'), o, 'xien'); }, 0);
+}
+
+/* ---------- Trang 2: ghi nhớ ---------- */
+function pageNho() {
+  const o = objOf(st.obj);
+  return `<section class="nho">
+    <div class="cmp"><div class="panel"><div class="ph"><b>Vuông góc đều</b><span class="chipmini">p = q = r = 1</span></div><canvas id="c1" class="cmpcv"></canvas></div>
+      <div class="panel"><div class="ph"><b>Xiên góc cân</b><span class="chipmini">p = r = 1 · q = 0,5</span></div><canvas id="c2" class="cmpcv"></canvas></div></div>
+    <div class="panel"><div class="tablewrap"><table><thead><tr><th></th><th>Vuông góc đều</th><th>Xiên góc cân</th></tr></thead><tbody>
+      <tr><td><b>Phương chiếu</b></td><td>Vuông góc với mặt phẳng hình chiếu</td><td>Xiên góc với mặt phẳng hình chiếu</td></tr>
+      <tr><td><b>Góc trục đo</b></td><td>X′O′Y′ = Y′O′Z′ = X′O′Z′ = 120°</td><td>X′O′Z′ = 90°; X′O′Y′ = Y′O′Z′ = 135°</td></tr>
+      <tr><td><b>Hệ số biến dạng</b></td><td>p = q = r = 1</td><td>p = r = 1; q = 0,5</td></tr>
+      <tr><td><b>Đặc điểm</b></td><td>Ba mặt biến dạng như nhau; đường tròn trên mọi mặt đều thành elip</td><td>Mặt song song với X′O′Z′ (góc 90°) <b>không bị biến dạng</b>: đúng hình dạng, kích thước thật, đường tròn vẫn là đường tròn</td></tr>
+      <tr><td><b>Giống nhau</b></td><td colspan="2">Cùng là hình biểu diễn ba chiều trên một mặt phẳng; cạnh song song trên vật thể vẫn song song trên hình chiếu trục đo; vẽ theo cùng 6 bước.</td></tr></tbody></table></div></div>
+    <div class="panel"><div class="ph"><b>Quy trình 6 bước vẽ hình chiếu trục đo</b></div><ol class="six">${STEPS.map((t, i) => `<li><span class="num">${i + 1}</span><div><b>${t}</b><p>${['Đặt các trục Ox, Oy, Oz lên các hình chiếu vuông góc; vẽ hệ trục đo O′X′Y′Z′.', 'Chọn hình chiếu đứng (hoặc hình chiếu bằng), vẽ đường bao của nó từ gốc O′ đi ra.', 'Xác định các điểm tại chỗ gấp khúc, kẻ các đường song song với trục còn lại.', 'Đặt độ dài từng đoạn tương ứng lên các đường song song, nối các điểm lại.', 'Vẽ hình chiếu trục đo của phần rãnh, lỗ.', 'Kiểm tra, xoá nét dựng hình, tô đậm các cạnh thấy.'][i]}</p></div></li>`).join('')}</ol></div></section>`;
+}
+function bindNho() { const o = objOf(st.obj); setTimeout(() => { renderFinal($('#c1'), getF(o, 'full'), o, 'vgd', true); renderFinal($('#c2'), getF(o, 'full'), o, 'xien', true); }, 0); }
+
+/* ---------- Trang 3: luyện tập ---------- */
+function opts(o) {
+  const key = '_op'; if (o[key]) return o[key];
+  const L = [{ F: 'full', ok: true }];
+  if (o.mir) L.push({ F: 'mir', why: 'Hình này bị lật ngược trái – phải so với bản vẽ.' });
+  o.alts.forEach((a, i) => { if (L.length < 3) L.push({ F: 'alt' + i, why: a.why }); });
+  const s = L.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  return (o[key] = s);
+}
+function pageLt() {
+  const o = PRACT[st.pi], a = st.ans[o.id + st.ptype], O = opts(o), stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
+  const ch = a != null ? O[a] : null;
+  return `<section class="lt">
+    <aside class="side"><h3>5 bài tự luyện</h3><div class="olist">${PRACT.map((x, i) => { const d = ['vgd', 'xien'].filter(t => { const v = st.ans[x.id + t]; return v != null && opts(x)[v].ok; }).length;
+      return `<button data-p="${i}" class="${i === st.pi ? 'on' : ''}"><span class="n">${i + 1}</span><span>${x.ten}<small class="stars">${stars(x.lv)}${d ? ' · ✔ ' + d + '/2' : ''}</small></span></button>`; }).join('')}</div>
+      <p class="tip">💡 Em hãy vẽ ra giấy theo 6 bước trước, rồi mới chọn đáp án để tự kiểm tra.</p></aside>
+    <div class="panel pv"><div class="ph"><b>Bài ${st.pi + 1}. ${o.ten}</b><label class="gridtg"><input type="checkbox" id="grid" ${st.grid ? 'checked' : ''}> Lưới 1 ô = 10 mm</label></div>
+      <div class="drwbox">${drawingSvg(o, { grid: st.grid })}</div>
+      <p class="hint">Kích thước bao: dài <b>${o.W * 10}</b> · rộng <b>${o.D * 10}</b> · cao <b>${o.H * 10}</b> (mm)</p></div>
+    <div class="panel stage"><div class="stagehd">${typeSeg('ptype', st.ptype)}</div>
+      <div class="qstem">Vẽ hình chiếu trục đo <b>${TYPE[st.ptype].toLowerCase()}</b> của vật thể có ba hình chiếu bên cạnh. Hình nào dưới đây đúng?</div>
+      <div class="optgrid">${O.map((x, i) => `<button class="opt ${ch ? (x.ok ? 'ok' : i === a ? 'bad' : '') : ''}" data-a="${i}" ${ch ? 'disabled' : ''}><span class="ol">${'ABC'[i]}</span><canvas data-cv="${i}"></canvas></button>`).join('')}</div>
+      ${ch ? `<div class="fb ${ch.ok ? 'ok' : 'bad'}"><b>${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b> ${ch.ok ? 'Hình chiếu trục đo khớp với cả ba hình chiếu vuông góc.' : ch.why + ' Đáp án đúng là ' + 'ABC'[O.findIndex(x => x.ok)] + '.'}</div>` : ''}
+      <div class="ctrl"><button class="btn ghost" id="sol">✏️ Xem cách vẽ 6 bước</button>${ch ? '<button class="btn ghost" id="redo">↻ Làm lại</button>' : ''}<button class="btn" id="nxp">${st.pi < PRACT.length - 1 ? 'Bài tiếp →' : 'Về bài 1'}</button></div></div></section>`;
+}
+function bindLt() {
+  const o = PRACT[st.pi], O = opts(o);
+  $$('[data-p]').forEach(b => b.onclick = () => { st.pi = +b.dataset.p; render(); });
+  $$('[data-seg="ptype"] button').forEach(b => b.onclick = () => { st.ptype = b.dataset.v; render(); });
+  $('#grid').onchange = e => { st.grid = e.target.checked; render(); };
+  $$('[data-a]').forEach(b => b.onclick = () => { st.ans[o.id + st.ptype] = +b.dataset.a; store.set('ans', st.ans); render(); });
+  if ($('#redo')) $('#redo').onclick = () => { delete st.ans[o.id + st.ptype]; delete o._op; store.set('ans', st.ans); render(); };
+  $('#sol').onclick = () => { st.tab = 've'; st.obj = o.id; st.type = st.ptype; st.step = 0; render(); };
+  $('#nxp').onclick = () => { st.pi = (st.pi + 1) % PRACT.length; render(); };
+  setTimeout(() => $$('[data-cv]').forEach(cv => renderFinal(cv, getF(o, O[+cv.dataset.cv].F), o, st.ptype, false)), 0);
+}
+
+/* ---------- phím tắt, thay đổi kích thước ---------- */
+document.addEventListener('keydown', e => {
+  if (st.tab !== 've' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); if (st.step < 7) setStep(st.step + 1); }
+  if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); if (st.step > 0) setStep(st.step - 1); }
+});
+let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (st.tab === 've') { const cv = $('#cv'); if (st.step === 7) start3D(false); else if (cv) { { sizeCv(cv); renderStep(cv, objOf(st.obj), st.type, st.step, 1); } } } else ({ ss: bindSs, nho: bindNho, lt: bindLt })[st.tab](); }, 120); });
+document.addEventListener('fullscreenchange', () => window.dispatchEvent(new Event('resize')));
+render();
+})();
+
+</script>
+</body>
+</html>

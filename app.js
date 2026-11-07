@@ -675,14 +675,16 @@ async function homeTodo(box) {
   draw(store.get('asg_' + uid(), null), store.get('drw_' + uid(), null), q.status === 'rejected' && !store.get('asg_' + uid(), null) ? (q.reason.network ? 'Đang ngoại tuyến – bài giao sẽ hiện khi có mạng.' : q.reason.message) : '');
 }
 
-/* ================= Khối 12 · Các chủ đề (giữ nguyên bản) – mở toàn màn hình như khi dùng bài riêng ================= */
+/* ================= Bài học, chủ đề giữ nguyên bản (Khối 10: Bài 10, 11 · Khối 12: các chủ đề) – mở toàn màn hình như khi dùng bài riêng ================= */
 const K12_TOPICS = {
+  hcat: { file: 'hinhcat.html', name: 'Bài 10. Hình cắt và mặt cắt' },
+  hctd: { file: 'hctrucdo.html', name: 'Bài 11. Hình chiếu trục đo' },
   htdien: { file: 'htdien.html', name: 'Chủ đề Hệ thống điện gia đình' },
   linhkien: { file: 'linhkien.html', name: 'Chủ đề Linh kiện điện tử' },
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-route(/^\/(htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
+route(/^\/(hcat|hctd|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
   const src = T.file + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
   document.body.classList.add('immersive');
@@ -4410,7 +4412,7 @@ function hctdDraw(canvas, T, type, step, frac = 1, o = {}) {
 }
 
 /* ================= BÀI 10. HÌNH CẮT VÀ MẶT CẮT ================= */
-route(/^\/hcat$/, params => {
+route(/^\/hcat-cu$/, params => { // bản cũ, đã thay bằng hinhcat.html
   const O = HCC.O, G = HCC.get;
   let tab = (params && params.get('tab')) || 'kn', oid = 'giado1010', hid = 'goido', step = 'obj', sc = null, qi = 0, qs = [], score = 0, ans = null, lt = null;
   const TABS = [['kn', '⓪ Khái niệm'], ['tb', '① Hình cắt toàn bộ'], ['mn', '② Hình cắt một nửa'], ['mc', '③ Mặt cắt'], ['lt', '④ Luyện tập']];
@@ -4682,7 +4684,7 @@ route(/^\/hcat$/, params => {
 });
 
 /* ================= BÀI 11. HÌNH CHIẾU TRỤC ĐO ================= */
-route(/^\/hctd$/, params => {
+route(/^\/hctd-cu$/, params => { // bản cũ, đã thay bằng hctrucdo.html
   // thứ tự: hình SGK của bài (H.11.14) trước, hình đơn giản trước, hình phức tạp sau
   const ORD = ['vat1114', 'hopchong', 'khoilo', 'bacvat', 'chuL91', 'khoighep', 'giado910', 'ranhhop', 'hocvuong', 'bacranh', 'giaU', 'loranh1', 'loranh2', 'goivat', 'taitreo', 'trurong', 'tru2go', 'giado'];
   const TD = [...ORD.map(id => HCC.TD.find(t => t.id === id)).filter(Boolean), ...HCC.TD.filter(t => !ORD.includes(t.id))];
