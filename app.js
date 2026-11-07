@@ -675,50 +675,20 @@ async function homeTodo(box) {
   draw(store.get('asg_' + uid(), null), store.get('drw_' + uid(), null), q.status === 'rejected' && !store.get('asg_' + uid(), null) ? (q.reason.network ? 'Đang ngoại tuyến – bài giao sẽ hiện khi có mạng.' : q.reason.message) : '');
 }
 
-/* ================= Khối 12 · Chủ đề nhiều bài: Điện tử tương tự (Bài 19, 20), Điện tử số (Bài 21, 22, 23) ================= */
-const K12_MULTI = {
-  dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: [['19', 'Bài 19', 'Khuếch đại thuật toán'], ['20', 'Bài 20', 'Thực hành mạch khuếch đại đảo']] },
-  dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: [['21', 'Bài 21', 'Tín hiệu số, cổng logic'], ['22', 'Bài 22', 'Mạch xử lí tín hiệu số'], ['23', 'Bài 23', 'Mạch báo cháy']] }
+/* ================= Khối 12 · Các chủ đề (giữ nguyên bản) – mở toàn màn hình như khi dùng bài riêng ================= */
+const K12_TOPICS = {
+  htdien: { file: 'htdien.html', name: 'Chủ đề Hệ thống điện gia đình' },
+  linhkien: { file: 'linhkien.html', name: 'Chủ đề Linh kiện điện tử' },
+  dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
+  dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-route(/^\/(dientuso|dientutuongtu)$/, (params, key) => {
-  const T = K12_MULTI[key];
-  let b = (params && params.get('bai')) || T.bai[0][0];
-  if (!T.bai.some(x => x[0] === b)) b = T.bai[0][0];
-  V.classList.add('wide');
-  setView(`<div class="k10nav dtsnav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a>${T.bai.map(([k, t, d]) => `<a href="#/${key}?bai=${k}" data-dts="${k}" class="${k === b ? 'on' : ''}"><b>${t}</b> ${d}</a>`).join('')}</div>
-    <iframe class="dtsframe" id="dtsframe" src="${T.file}?app=1#bai-${b}" title="${T.name}" allow="autoplay; fullscreen"></iframe>`);
-  const fr = $('#dtsframe');
-  const fit = () => {
-    const tb = $('#tabbar'), r = tb && !tb.hidden ? tb.getBoundingClientRect() : null;
-    const below = r && r.height && r.top > innerHeight / 2 ? r.height : 0;
-    fr.style.height = Math.max(420, innerHeight - fr.getBoundingClientRect().top - below - 6) + 'px';
-  };
-  fit(); addEventListener('resize', fit);
-  // đổi bài ngay trong khung
-  $$('[data-dts]').forEach(a => a.onclick = e => {
-    e.preventDefault(); b = a.dataset.dts;
-    $$('[data-dts]').forEach(x => x.classList.toggle('on', x === a));
-    try { history.replaceState(null, '', '#/' + key + '?bai=' + b); } catch (err) {}
-    try { fr.contentWindow.location.hash = 'bai-' + b; } catch (err) { fr.src = T.file + '?app=1#bai-' + b; }
-  });
-  cleanup = () => { removeEventListener('resize', fit); V.classList.remove('wide'); };
-});
-
-/* ================= Khối 12 · Các chủ đề một file (giữ nguyên bản): Hệ thống điện gia đình, Linh kiện điện tử ================= */
-const K12_TOPICS = { htdien: ['htdien.html', 'Hệ thống điện gia đình'], linhkien: ['linhkien.html', 'Linh kiện điện tử'] };
-route(/^\/(htdien|linhkien)$/, (params, key) => {
-  const [file, name] = K12_TOPICS[key];
-  V.classList.add('wide');
-  setView(`<div class="k10nav dtsnav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a><a class="on" href="#/${key}"><b>Chủ đề</b> ${name}</a></div>
-    <iframe class="dtsframe" id="htdframe" src="${file}" title="Chủ đề ${name}" allow="autoplay; fullscreen"></iframe>`);
-  const fr = $('#htdframe');
-  const fit = () => {
-    const tb = $('#tabbar'), r = tb && !tb.hidden ? tb.getBoundingClientRect() : null;
-    const below = r && r.height && r.top > innerHeight / 2 ? r.height : 0;
-    fr.style.height = Math.max(420, innerHeight - fr.getBoundingClientRect().top - below - 6) + 'px';
-  };
-  fit(); addEventListener('resize', fit);
-  cleanup = () => { removeEventListener('resize', fit); V.classList.remove('wide'); };
+route(/^\/(htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
+  const T = K12_TOPICS[key], b = params && params.get('bai');
+  const src = T.file + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
+  document.body.classList.add('immersive');
+  setView(`<iframe class="lessonfull" src="${src}" title="${T.name}" allow="autoplay; fullscreen"></iframe>
+    <a class="lessonback" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại trang chủ" aria-label="Quay lại trang chủ">←</a>`);
+  cleanup = () => document.body.classList.remove('immersive');
 });
 
 /* ================= Trang Ôn luyện (gom mọi cách tự ôn) ================= */
