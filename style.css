@@ -539,3 +539,9 @@ tr.duprow td{background:#fff7ed}
 a.bdcell{font-weight:600;text-decoration:none;border-bottom:1px dashed var(--brand2)}
 .hsstat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 4px;font-size:13.5px;color:rgba(255,255,255,.9)}
 .hsstat b{color:#fff;font-size:15px}
+
+/* Khối 12 · Chủ đề Điện tử số: trang rộng, bài học chiếm hết phần còn lại */
+.view.wide{max-width:none;padding-bottom:0}
+@media (min-width:980px){body:not(.focus) .view.wide{margin-left:112px;margin-right:12px}}
+.dtsnav{margin:0 0 8px}
+.dtsframe{display:block;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}
