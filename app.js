@@ -305,8 +305,8 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|htdien|linhkien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|htdien|linhkien)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|dientutuongtu|htdien|linhkien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -675,14 +675,18 @@ async function homeTodo(box) {
   draw(store.get('asg_' + uid(), null), store.get('drw_' + uid(), null), q.status === 'rejected' && !store.get('asg_' + uid(), null) ? (q.reason.network ? 'Đang ngoại tuyến – bài giao sẽ hiện khi có mạng.' : q.reason.message) : '');
 }
 
-/* ================= Khối 12 · Chủ đề Điện tử số (Bài 21, 22, 23 – mô hình 3D, file dientuso.html) ================= */
-const K12_DTS = [['21', 'Bài 21', 'Tín hiệu số, cổng logic'], ['22', 'Bài 22', 'Mạch xử lí tín hiệu số'], ['23', 'Bài 23', 'Mạch báo cháy']];
-route(/^\/dientuso$/, params => {
-  let b = (params && params.get('bai')) || '21';
-  if (!K12_DTS.some(x => x[0] === b)) b = '21';
+/* ================= Khối 12 · Chủ đề nhiều bài: Điện tử tương tự (Bài 19, 20), Điện tử số (Bài 21, 22, 23) ================= */
+const K12_MULTI = {
+  dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: [['19', 'Bài 19', 'Khuếch đại thuật toán'], ['20', 'Bài 20', 'Thực hành mạch khuếch đại đảo']] },
+  dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: [['21', 'Bài 21', 'Tín hiệu số, cổng logic'], ['22', 'Bài 22', 'Mạch xử lí tín hiệu số'], ['23', 'Bài 23', 'Mạch báo cháy']] }
+};
+route(/^\/(dientuso|dientutuongtu)$/, (params, key) => {
+  const T = K12_MULTI[key];
+  let b = (params && params.get('bai')) || T.bai[0][0];
+  if (!T.bai.some(x => x[0] === b)) b = T.bai[0][0];
   V.classList.add('wide');
-  setView(`<div class="k10nav dtsnav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a>${K12_DTS.map(([k, t, d]) => `<a href="#/dientuso?bai=${k}" data-dts="${k}" class="${k === b ? 'on' : ''}"><b>${t}</b> ${d}</a>`).join('')}</div>
-    <iframe class="dtsframe" id="dtsframe" src="dientuso.html?app=1#bai-${b}" title="Chủ đề Điện tử số" allow="autoplay; fullscreen"></iframe>`);
+  setView(`<div class="k10nav dtsnav"><a class="k10back" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại">←</a>${T.bai.map(([k, t, d]) => `<a href="#/${key}?bai=${k}" data-dts="${k}" class="${k === b ? 'on' : ''}"><b>${t}</b> ${d}</a>`).join('')}</div>
+    <iframe class="dtsframe" id="dtsframe" src="${T.file}?app=1#bai-${b}" title="${T.name}" allow="autoplay; fullscreen"></iframe>`);
   const fr = $('#dtsframe');
   const fit = () => {
     const tb = $('#tabbar'), r = tb && !tb.hidden ? tb.getBoundingClientRect() : null;
@@ -690,12 +694,12 @@ route(/^\/dientuso$/, params => {
     fr.style.height = Math.max(420, innerHeight - fr.getBoundingClientRect().top - below - 6) + 'px';
   };
   fit(); addEventListener('resize', fit);
-  // đổi bài ngay trong khung, giữ nguyên trạng thái các bài đã mở
+  // đổi bài ngay trong khung
   $$('[data-dts]').forEach(a => a.onclick = e => {
     e.preventDefault(); b = a.dataset.dts;
     $$('[data-dts]').forEach(x => x.classList.toggle('on', x === a));
-    try { history.replaceState(null, '', '#/dientuso?bai=' + b); } catch (err) {}
-    try { fr.contentWindow.location.hash = 'bai-' + b; } catch (err) { fr.src = 'dientuso.html?app=1#bai-' + b; }
+    try { history.replaceState(null, '', '#/' + key + '?bai=' + b); } catch (err) {}
+    try { fr.contentWindow.location.hash = 'bai-' + b; } catch (err) { fr.src = T.file + '?app=1#bai-' + b; }
   });
   cleanup = () => { removeEventListener('resize', fit); V.classList.remove('wide'); };
 });
@@ -731,6 +735,7 @@ route(/^\/onluyen$/, () => {
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
       ${row('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Sơ đồ hệ thống điện, thiết bị điện, lắp mạch điện trong nhà')}
       ${row('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Điện trở, tụ điện, cuộn cảm, diode, transistor và IC')}
+      ${row('#/dientutuongtu', '📈', 'green', 'Chủ đề Điện tử tương tự', 'Bài 19 khuếch đại thuật toán, Bài 20 thực hành mạch khuếch đại đảo LM741')}
       ${row('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21 cổng logic, Bài 22 mạch xử lí tín hiệu số, Bài 23 thực hành mạch báo cháy (mô hình 3D)')}
     </div>` : ''}
     <h2>Theo nội dung</h2><div class="rows">
@@ -1451,6 +1456,7 @@ const GV_APPS = k => {
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
     '11': [], '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
       A('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Bài 15, 16, 17: điện trở, tụ, cuộn cảm, diode, transistor, IC', 'GV·HS'),
+      A('#/dientutuongtu', '📈', 'green', 'Chủ đề Điện tử tương tự', 'Bài 19, 20: khuếch đại thuật toán, thực hành mạch khuếch đại đảo', 'GV·HS'),
       A('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21, 22, 23: cổng logic, mạch xử lí tín hiệu, mạch báo cháy 3D', 'GV·HS')]
   }[k];
   const hs = [
