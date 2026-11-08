@@ -756,7 +756,7 @@ const K12_TOPICS = {
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-const LESSON_V = '20261108';
+const LESSON_V = '20261108b';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
