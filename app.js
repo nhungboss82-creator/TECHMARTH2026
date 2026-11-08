@@ -717,6 +717,7 @@ route(/^\/$/, params => {
       <a class="qa green" href="${is12 ? '#/thitn' : '#/de?tab=bai'}"><span class="ic">${is12 ? '📁' : '🎓'}</span>${is12 ? 'Bộ đề thi TN' : 'Làm nguyên bài'}</a>
       ${window.STC_SGK ? '<a class="qa" href="#/sgk"><span class="ic">📘</span>Sách giáo khoa</a>' : '<a class="qa" href="#/hinhchieu"><span class="ic">🧊</span>Hình chiếu 3D</a>'}
       <a class="qa red" href="#/sotay"><span class="ic">📕</span>Câu sai${wrong ? ` (${wrong})` : ''}</a>
+      ${currentGrade === '10' || isTeacher ? '<a class="qa violet" href="#/tuluyenve"><span class="ic">📷</span>Bài vẽ AI chấm</a>' : ''}
     </div>
     ${hist.length ? `<div class="sechead"><h2>Tiến bộ của em</h2><a href="#/ketqua">Chi tiết</a></div>
       <div class="kpis"><div class="kpi"><b>${hist.length}</b><span>lượt đã làm</span></div><div class="kpi"><b>${avg == null ? '–' : fmt(avg)}</b><span>điểm TB 7 lượt gần nhất</span></div>
@@ -794,6 +795,7 @@ route(/^\/onluyen$/, () => {
   const row = (href, ic, c, t, d, attrs = '') => `<${href ? `a href="${href}"` : `button ${attrs}`}><span class="ic ${c}">${ic}</span><span class="tx"><b>${t}</b><span>${d}</span></span><span class="chev">›</span></${href ? 'a' : 'button'}>`;
   setView(`<h1>Ôn luyện</h1><p class="sub">Chọn cách ôn phù hợp với em. Mọi bài đều chấm ngay và có giải thích.</p>
     ${g === '10' || is12 ? `<h2>Thư mục Khối 10</h2><div class="rows">
+      ${row('#/tuluyenve', '📷', 'amber', 'Bài vẽ – AI chấm', 'Vẽ tay, chụp ảnh gửi lên – AI khoanh chỗ sai và hướng dẫn sửa')}
       ${row('#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: chiếu góc thứ nhất, góc thứ ba, so sánh và luyện tập Hình 1, 2, 3, 4')}
       ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D: hình cắt toàn bộ, một nửa, mặt cắt rời, mặt cắt chập')}
       ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Vẽ từng bước: vuông góc đều, xiên góc cân; luyện tập đọc bản vẽ')}
@@ -1532,13 +1534,14 @@ const GV_APPS = k => {
     ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
     A('#/chude?by=bai&k=' + k, '📖', '', 'Ôn theo bài học', 'Câu hỏi từng bài SGK Lớp ' + k + ', chấm ngay', 'HS'),
     A('#/dinhki?k=' + k, '📑', 'amber', 'Đề kiểm tra định kì', 'Giữa kì, cuối kì theo ma trận', 'HS'),
-    ...(k === '10' ? [A('#/gocchieu', '🎯', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết, xếp hình chiếu nhiều vật thể', 'HS')] : [])
+    ...(k === '10' ? [A('#/tuluyenve', '📷', 'violet', 'Bài vẽ – AI chấm (HS tự luyện)', 'Vẽ tay, chụp ảnh – AI khoanh lỗi, hướng dẫn sửa', 'HS'),
+      A('#/gocchieu', '🎯', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết, xếp hình chiếu nhiều vật thể', 'HS')] : [])
   ];
   const gv = [
     ...(k === '12' ? [A('#/gv/thitn', '📊', 'green', 'Quản lý đề luyện thi TN', 'Kết quả từng đề, câu HS hay sai', 'GV')] : []),
     A('#/gv/aisoancau?k=' + k, '🤖', 'green', 'AI soạn câu hỏi', 'Soạn câu mới theo bài, mức độ; GV duyệt', 'GV'),
     A('#/gv/matran?k=' + k, '🧾', 'amber', 'Ma trận & đề kiểm tra', 'Ma trận GK, CK; sinh đề, in đề', 'GV'),
-    ...(k === '10' ? [A('#/gv/baive?k=10', '📷', '', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : [])
+    ...(k === '10' ? [A('#/gv/baive?k=10', '📷', 'violet', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : [])
   ];
   const game = A('#/trochoi?k=' + k, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh', 'GV·HS');
   return [['🖥️ Trình chiếu trên lớp', k === '12' ? [game, ...show] : [...show, ...sgk, game]],
@@ -1561,42 +1564,50 @@ function gvSchool(cls) {
 }
 const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('my_classes'); return window._gvCls; };
 
+/* ================= Trang chủ Giáo viên (thiết kế lại 08/11/2026) ================= */
+const KHOI_INFO = { '10': { t: 'Khối 10', d: 'Thiết kế & vẽ kĩ thuật', ic: '📐', c: 'k10' }, '11': { t: 'Khối 11', d: 'Công nghệ cơ khí', ic: '⚙️', c: 'k11' }, '12': { t: 'Khối 12', d: 'Điện – điện tử', ic: '⚡', c: 'k12' } };
+const ghApp = a => `<a class="gh-app ${a.c || 'blue'}" href="${a.href}"><span class="gh-ic">${a.ic}</span><span class="gh-tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}</a>`;
 route(/^\/gv$/, async params => {
   if (!needGV()) return;
   const u = session.user;
-  // trạng thái gọn: mục nào đang mở, khối nào đang chọn (null = chưa chọn)
-  let open = store.get('gv_open', {}), k = (params && params.get('khoi')) || store.get('gv_active_khoi', null);
-  if (k && !['10', '11', '12'].includes(k)) k = null;
-  if (params && params.get('khoi')) open.ht = 1;
+  let k = (params && params.get('khoi')) || store.get('gv_active_khoi', null) || '10';
+  if (!['10', '11', '12'].includes(k)) k = '10';
   let classes = window._gvCls || null;
   const nameOf = s => esc(String(s || '').trim().split(' ').slice(-2).join(' '));
+  const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
   const draw = () => {
-    const hs = (classes || []).reduce((s, c) => s + (+c.siSo || 0), 0);
-    const sec = (id, ic, t, d, body) => `<div class="gvsec ${open[id] ? 'open' : ''}"><button class="gvsech" data-sec="${id}"><span class="ic">${ic}</span><span class="tx"><b>${t}</b><span>${d}</span></span><span class="chev">${open[id] ? '▾' : '▸'}</span></button>${open[id] ? `<div class="gvsecb">${body}</div>` : ''}</div>`;
-    const ql = `<div class="rows applist">${[
-      { href: '#/gv/lop', ic: '🏫', c: 'green', t: 'Các lớp', d: `${classes ? classes.length + ' lớp · ' + hs + ' HS · ' : ''}danh sách, mã đăng ký` },
-      { href: '#/gv/diem', ic: '📊', c: 'green', t: 'Điểm', d: 'Bảng điểm, xếp hạng – xuất Excel' },
-      { href: '#/gv/giaobai', ic: '📤', c: '', t: 'Giao bài', d: 'Chọn bài / ma trận, xem trước đề, mã QR' },
-      { href: '#/gv/baigiao', ic: '📋', c: '', t: 'Bài đã giao', d: 'Theo dõi nộp bài, công bố điểm' }].map(appTile).join('')}</div>`;
-    const ht = `<div class="gvkhoi">${['10', '11', '12'].map(v => `<button data-khoi="${v}" class="${k === v ? 'on' : ''}">Khối ${v}</button>`).join('')}</div>
-      ${k ? GV_APPS(k).map(([t, xs], i) => {
-          if (!xs.length) return '';
-          const id = 'g' + k + '_' + i, on = open[id] === undefined ? i === 0 : !!open[id];
-          return `<div class="appgrp fold ${on ? 'open' : ''}"><button class="appgrph" data-grp="${id}" aria-expanded="${on}"><span class="t">${t}</span><span class="n">${xs.length}</span><span class="chev">${on ? '▾' : '▸'}</span></button>${on ? `<div class="rows applist">${xs.map(appTile).join('')}</div>` : ''}</div>`;
-        }).join('')
-          + '<p class="hint" style="margin-top:10px"><span class="who">GV·HS</span> trình chiếu và HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>'
-        : '<p class="hint" style="margin:8px 2px 0">Chọn khối để xem nội dung dạy học.</p>'}`;
-    setView(`<div class="gvtop"><div class="gvhello"><b>Chào thầy/cô ${nameOf(u.HoTen)} 👋</b><span>${esc(u.Truong || '')}${session.role === 'admin' ? ' · Quản trị viên' : ''}</span></div>
-      <div class="gvvisit" id="vs" title="Số lượt truy cập ứng dụng">${window._vs ? visitHtml(window._vs) : '👁 …'}</div></div>
-      ${sec('ql', '👥', 'Quản lý học sinh', classes ? `${classes.length} lớp · ${hs} học sinh` : 'Các lớp, điểm, giao bài', ql)}
-      ${sec('ht', '🎓', 'Hỗ trợ dạy học', k && open.ht ? 'Khối ' + k : 'Chọn khối → chọn nội dung', ht)}
-      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:12px"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
-    $$('[data-sec]').forEach(b => b.onclick = () => { const id = b.dataset.sec; open[id] = open[id] ? 0 : 1; store.set('gv_open', open); draw(); });
-    $$('[data-grp]').forEach(b => b.onclick = () => { const id = b.dataset.grp, cur = open[id] === undefined ? id.endsWith('_0') : !!open[id]; open[id] = cur ? 0 : 1; store.set('gv_open', open); draw(); });
-    $$('[data-khoi]').forEach(b => b.onclick = () => { k = k === b.dataset.khoi ? null : b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
+    const mine = classes ? gvSchool(classes) : null;
+    const cl = session.role === 'admin' ? (classes || []) : (mine ? mine.list : []);
+    const hs = cl.reduce((s, c) => s + (+c.siSo || 0), 0), vs = window._vs;
+    const tiles = [
+      { href: '#/gv/lop', ic: '🏫', c: 'blue', t: 'Các lớp', d: classes ? `${cl.length} lớp · ${hs} HS` : 'Danh sách, mã đăng ký' },
+      { href: '#/gv/diem', ic: '📊', c: 'green', t: 'Điểm', d: 'Bảng điểm, xếp hạng, Excel' },
+      { href: '#/gv/giaobai', ic: '🚀', c: 'violet', t: 'Giao bài', d: 'Chọn bài, ma trận, mã QR' },
+      { href: '#/gv/baigiao', ic: '📋', c: 'amber', t: 'Bài đã giao', d: 'Theo dõi nộp, công bố điểm' }];
+    const groups = GV_APPS(k).filter(([, xs]) => xs.length);
+    const KI = KHOI_INFO[k];
+    setView(`<section class="gh-hero">
+        <div class="gh-hi"><span class="gh-date">${esc(today.charAt(0).toUpperCase() + today.slice(1))}</span>
+          <h1>Chào thầy/cô ${nameOf(u.HoTen)} <span class="wave">👋</span></h1>
+          <p>🏫 ${esc(u.Truong || '')}${session.role === 'admin' ? ' · <b>Quản trị viên</b>' : ''}</p></div>
+        <div class="gh-stats">
+          <div class="gh-stat"><b>${classes ? cl.length : '…'}</b><span>lớp học</span></div>
+          <div class="gh-stat"><b>${classes ? hs.toLocaleString('vi-VN') : '…'}</b><span>học sinh</span></div>
+          <div class="gh-stat" id="vs"><b>${vs ? (vs.total || 0).toLocaleString('vi-VN') : '…'}</b><span>lượt truy cập${vs ? ` · hôm nay ${(vs.today || 0).toLocaleString('vi-VN')}` : ''}</span></div>
+        </div>
+      </section>
+      <div class="gh-head"><h2>Quản lý lớp học</h2></div>
+      <div class="gh-tiles">${tiles.map(x => `<a class="gh-tile ${x.c}" href="${x.href}"><span class="gh-ic">${x.ic}</span><b>${x.t}</b><span>${x.d}</span></a>`).join('')}</div>
+      <div class="gh-head"><h2>Hỗ trợ dạy học</h2><span class="hint">Chọn khối</span></div>
+      <div class="gh-khoi" role="tablist">${['10', '11', '12'].map(v => { const I = KHOI_INFO[v]; return `<button role="tab" aria-selected="${k === v}" data-khoi="${v}" class="${I.c} ${k === v ? 'on' : ''}"><span class="gh-kic">${I.ic}</span><b>${I.t}</b><span>${I.d}</span></button>`; }).join('')}</div>
+      ${k === '10' ? `<a class="gh-feature" href="#/gv/baive"><span class="gh-fic">📷</span><span class="gh-ftx"><b>Bài vẽ – AI chấm</b><span>Giao bài vẽ cho lớp hoặc để HS tự luyện: chụp bài vẽ tay → AI khoanh lỗi, hướng dẫn sửa</span></span><span class="gh-fgo">Mở ›</span></a>` : ''}
+      ${groups.map(([t, xs]) => `<section class="gh-grp ${KI.c}"><div class="gh-grph"><span>${t}</span><small>${xs.length} mục</small></div><div class="gh-apps">${xs.map(ghApp).join('')}</div></section>`).join('') || `<div class="card empty">Nội dung ${KI.t} đang được bổ sung.</div>`}
+      <p class="hint gh-legend"><span class="who">GV·HS</span> trình chiếu, HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>
+      <div class="gh-foot"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
+    $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
   };
   draw();
-  api('visit_stats').then(r => { window._vs = r; const v = $('#vs'); if (v) v.innerHTML = visitHtml(r); }).catch(() => {});
+  api('visit_stats').then(r => { window._vs = r; if (location.hash.replace(/\?.*/, '') === '#/gv') draw(); }).catch(() => {});
   if (session.role === 'admin' && !window._pendShown) api('list_gv').then(l => { const p = l.filter(g => g.TrangThai === 'cho_duyet'); if (p.length && location.hash.replace(/\?.*/, '') === '#/gv') pendingModal(p); }).catch(() => {});
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
   if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
@@ -2661,8 +2672,9 @@ async function mountReview(el, t, s, opts = {}) {
       $$('[data-mkx]', el).forEach(b => b.onclick = () => { marks.splice(+b.dataset.mkx, 1); draw(deSrc, baiSrc); });
     }
   };
-  let de = null, bai = null;
+  let de = opts.deSrc || null, bai = opts.baiSrc || null;
   draw(de, bai);
+  if (opts.baiSrc) return marks;
   const jobs = [drwImg('n_' + s.MaNop, { maNop: s.MaNop }).then(x => { bai = x; }).catch(e => { bai = null; toast(e.message); })];
   if (t.CoAnhDe) jobs.push(drwImg('d_' + t.MaBV, { maBV: t.MaBV, de: 1 }).then(x => { de = x; }).catch(() => {}));
   await Promise.all(jobs);
@@ -2716,6 +2728,85 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
     if (open && $('#rv_' + open)) mountReview($('#rv_' + open), t, t.bai.find(x => x.MaNop === open));
   };
   draw();
+});
+
+/* ================= HS khối 10 tự luyện vẽ – AI chấm (không cần GV giao) ================= */
+const DRAW_PRACTICE = {
+  hinhchieu: ['Vẽ 3 hình chiếu vuông góc (đứng, bằng, cạnh) của vật thể chữ L: khối hộp 60×40×30 mm bị cắt bỏ một khối hộp 30×40×15 mm ở góc trên bên phải. Phương pháp chiếu góc thứ nhất, tỉ lệ 1:1, ghi kích thước.',
+    'Vẽ 3 hình chiếu vuông góc của gối đỡ: đế hình hộp 70×40×12 mm, phía trên là khối hộp 30×40×28 mm đặt giữa đế, có lỗ trụ Ø14 xuyên suốt theo chiều rộng. Tỉ lệ 1:1.',
+    'Vẽ 3 hình chiếu vuông góc của khối hộp 50×30×30 mm có rãnh hình hộp rộng 16 mm, sâu 10 mm chạy suốt chiều dài ở mặt trên.'],
+  trucdo: ['Vẽ hình chiếu trục đo vuông góc đều của khối hộp chữ nhật 50×30×20 mm có một lỗ trụ Ø16 xuyên suốt ở giữa mặt trên.',
+    'Vẽ hình chiếu trục đo xiên góc cân của vật thể chữ L: khối hộp 60×40×30 mm bị cắt bỏ khối hộp 30×40×15 mm ở góc trên.',
+    'Vẽ hình chiếu trục đo vuông góc đều của khối trụ Ø40, cao 30 mm đặt đứng trên tấm đế hình vuông 60×60×10 mm.'],
+  hinhcat: ['Vẽ hình chiếu đứng có hình cắt toàn bộ A–A của ống lót: hình trụ Ø50, dài 40 mm, có lỗ Ø24 xuyên suốt dọc trục.',
+    'Vẽ hình chiếu đứng có hình cắt một nửa của bạc lót hình trụ Ø40 cao 36 mm, có lỗ bậc Ø24 sâu 12 mm và Ø14 xuyên suốt.',
+    'Vẽ mặt cắt rời của trục Ø30 có rãnh then rộng 8 mm, sâu 4 mm.'],
+  xaydung: ['Vẽ mặt bằng một phòng ngủ 4,0 m × 3,5 m (tỉ lệ 1:50) có 1 cửa đi rộng 0,9 m và 1 cửa sổ rộng 1,2 m; ghi kích thước.',
+    'Vẽ mặt bằng nhà một tầng gồm phòng khách 4,5 × 4 m và phòng ngủ 3,5 × 4 m, có cửa đi, cửa sổ; tỉ lệ 1:100, ghi kích thước chung và từng phòng.',
+    'Vẽ mặt đứng chính của ngôi nhà một tầng mái dốc, rộng 7 m, cao tường 3,3 m, có 1 cửa đi và 2 cửa sổ; tỉ lệ 1:100.'],
+  phoicanh: ['Vẽ hình chiếu phối cảnh một điểm tụ của khối hộp chữ nhật đặt phía dưới đường chân trời.',
+    'Vẽ hình chiếu phối cảnh hai điểm tụ của khối hộp chữ nhật (mô phỏng ngôi nhà) có cạnh đứng gần người quan sát nhất.',
+    'Vẽ phối cảnh một điểm tụ của một con đường thẳng có hai hàng cột điện hai bên.']
+};
+route(/^\/tuluyenve$/, async () => {
+  if (!session) { location.hash = '#/dangnhap'; return; }
+  let loai = store.get('tlv_loai', 'hinhchieu'); if (!DRAW_TYPES[loai]) loai = 'hinhchieu';
+  let pick = 0, own = '', deImg = null, baiImg = null, result = null, busyNow = false;
+  let tasks = session.role === 'hs' ? store.get('drw_' + uid(), null) : [];
+  document.body.classList.add('wide');
+  const unpaste = pasteImgTo('tlbai');
+  cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
+  const deBai = () => pick === -1 ? own.trim() : DRAW_PRACTICE[loai][pick];
+  const draw = () => {
+    const open = (tasks || []).filter(t => !t.HanNop || new Date(t.HanNop) > new Date());
+    setView(`<a href="${isGV() && session.role !== 'hs' ? '#/gv?khoi=10' : '#/onluyen'}">← Quay lại</a>
+      <section class="tl-hero"><span class="tl-ic">📷</span><div><h1>Bài vẽ – AI chấm</h1><p>Vẽ tay trên giấy, chụp ảnh gửi lên. AI kiểm tra theo yêu cầu, <b>khoanh chỗ sai</b> và <b>hướng dẫn sửa</b>.</p></div></section>
+      ${open.length ? `<div class="gh-head"><h2>Bài thầy cô giao</h2></div><div class="rows">${open.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''} · ${t.bai.length ? 'đã nộp ' + t.bai.length + ' lần' : 'chưa nộp'}</span></span><span class="chev">›</span></a>`).join('')}</div>` : ''}
+      <div class="gh-head"><h2>Tự luyện</h2><span class="hint">Không tính điểm vào sổ</span></div>
+      <div class="tl-types">${Object.entries(DRAW_TYPES).map(([key, v]) => `<button class="${key === loai ? 'on' : ''}" data-lo="${key}">${v}</button>`).join('')}</div>
+      <div class="tl-grid">
+        <div class="card"><h3 style="margin-top:0">1. Chọn đề</h3>
+          <div class="tl-de">${DRAW_PRACTICE[loai].map((d, i) => `<label class="${pick === i ? 'on' : ''}"><input type="radio" name="de" value="${i}" ${pick === i ? 'checked' : ''}><span>${esc(d)}</span></label>`).join('')}
+            <label class="${pick === -1 ? 'on' : ''}"><input type="radio" name="de" value="-1" ${pick === -1 ? 'checked' : ''}><span><b>Đề của em</b> (bài tập trong SGK, vở…)</span></label></div>
+          ${pick === -1 ? `<textarea id="own" maxlength="1500" placeholder="Chép đề bài, ví dụ: Vẽ hình chiếu trục đo của vật thể Hình 11.6 SGK…">${esc(own)}</textarea>
+            <label style="margin-top:6px">Ảnh đề / vật thể <span class="hint">(không bắt buộc – chụp hình trong sách)</span></label>${imgDrop('tlde', 'Chụp hoặc chọn ảnh đề', 'Bấm để chọn ảnh', deImg)}` : ''}
+        </div>
+        <div class="card"><h3 style="margin-top:0">2. Nộp bài vẽ</h3>
+          <p class="hint">Vẽ bằng bút chì đậm trên giấy trắng. Chụp thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ.</p>
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0">
+            <label class="btn ghost grow">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
+            <label class="btn ghost grow">🖼️ Gửi tệp ảnh<input id="file" type="file" accept="image/*" hidden></label></div>
+          <div id="tlbai" class="imgdrop imgdrop-lite">${baiImg ? `<img src="${baiImg}" alt="Ảnh bài vẽ">` : '<span class="hint">Hoặc kéo thả / dán (Ctrl+V) ảnh vào đây</span>'}</div>
+          <div id="msg"></div>
+          <button class="btn block" id="go" style="margin-top:10px" ${baiImg && !busyNow ? '' : 'disabled'}>${busyNow ? '🤖 AI đang xem bài vẽ (10–30 giây)…' : '🤖 Nhờ AI nhận xét'}</button></div>
+      </div>
+      ${result ? '<div class="gh-head"><h2>Kết quả</h2><button class="btn ghost sm" id="again">Vẽ lại & nộp tiếp</button></div><div id="tlrv"></div>' : ''}`);
+    $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); pick = 0; result = null; draw(); });
+    $$('input[name=de]').forEach(r => r.onchange = () => { pick = +r.value; result = null; draw(); });
+    if ($('#own')) $('#own').oninput = e => { own = e.target.value; };
+    bindImgDrop('tlde', v => { deImg = v; draw(); });
+    const take = async f => { if (!f) return; try { baiImg = await compressImage(f); result = null; draw(); } catch (e) { toast('Không đọc được ảnh, hãy chụp lại'); } };
+    $('#cam').onchange = e => take(e.target.files[0]);
+    $('#file').onchange = e => take(e.target.files[0]);
+    const z = $('#tlbai'); z._take = take;
+    z.ondragover = e => { e.preventDefault(); z.classList.add('over'); }; z.ondragleave = () => z.classList.remove('over');
+    z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); take(e.dataTransfer.files[0]); };
+    z.onclick = () => $('#file').click();
+    $('#go').onclick = async () => {
+      if (!deBai()) { errBox($('#msg'), 'Hãy chép đề bài của em'); return; }
+      if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để AI nhận xét'); return; }
+      busyNow = true; draw();
+      try { result = await api('practice_drawing', { loai, deBai: deBai(), tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: pick === -1 ? deImg : null }); }
+      catch (e) { busyNow = false; draw(); errBox($('#msg'), /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang được cập nhật chức năng tự luyện. Em thử lại sau ít phút nhé.' : e); return; }
+      busyNow = false; draw();
+      const t = { MaBV: 'TL', DeBai: deBai(), DiemToiDa: 10, CoAnhDe: false };
+      mountReview($('#tlrv'), t, { MaNop: 'TL', AI: result, AIDiem: result.doc_duoc === false ? null : result.diem, TrangThai: 'tuluyen' }, { baiSrc: baiImg, deSrc: pick === -1 ? deImg : null });
+      window.scrollTo(0, $('#tlrv').offsetTop - 90);
+    };
+    if ($('#again')) $('#again').onclick = () => { baiImg = null; result = null; draw(); window.scrollTo(0, 0); };
+  };
+  draw();
+  if (session.role === 'hs') api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (location.hash === '#/tuluyenve' && !result && !busyNow) draw(); }).catch(() => {});
 });
 
 route(/^\/gv\/baive$/, async () => {
