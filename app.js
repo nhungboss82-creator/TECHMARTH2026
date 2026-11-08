@@ -459,6 +459,71 @@ route(/^\/quenmk$/, params => {
   step1();
 });
 
+
+/* ================= Cập nhật 08/11/2026: chọn trường, danh sách lớp, Gmail ================= */
+const SCHOOLS = (CFG.SCHOOLS && CFG.SCHOOLS.length) ? CFG.SCHOOLS : ['THPT Phong Điền', 'THPT Hương Thủy', 'THPT Trần Văn Kỷ', 'THPT Lương Thế Vinh'];
+function schoolField(id, val, label = 'Trường') {
+  val = String(val || '').trim();
+  const other = Boolean(val) && !SCHOOLS.includes(val);
+  return `<label for="${id}">${label}</label><select id="${id}">${SCHOOLS.map(x => `<option${x === val ? ' selected' : ''}>${esc(x)}</option>`).join('')}<option value="__khac"${other ? ' selected' : ''}>Trường khác…</option></select>
+    <input id="${id}_k" class="school-k" type="text" maxlength="80" placeholder="Nhập tên trường, vd: THPT Nguyễn Huệ" value="${other ? esc(val) : ''}"${other ? '' : ' hidden'}>`;
+}
+function bindSchool(id) { const x = $('#' + id), k = $('#' + id + '_k'); if (!x || !k) return; x.onchange = () => { k.hidden = x.value !== '__khac'; k.required = !k.hidden; if (!k.hidden) k.focus(); }; x.onchange(); }
+function setSchool(id, val) { const x = $('#' + id), k = $('#' + id + '_k'); if (!x || !val) return; if (SCHOOLS.includes(val)) x.value = val; else { x.value = '__khac'; k.value = val; } bindSchool(id); }
+function schoolVal(id) { const x = $('#' + id); if (!x) return ''; return x.value === '__khac' ? $('#' + id + '_k').value.trim() : x.value; }
+const normName = v => String(v || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
+const dupAccBtn = el => { if (el && /đã có tài khoản/i.test(el.textContent)) el.insertAdjacentHTML('beforeend', '<div class="row" style="margin-top:8px;gap:8px"><a class="btn sm" href="#/dangnhap">Đăng nhập ngay</a><a class="btn sm ghost" href="#/quenmk">Quên mật khẩu</a></div>'); };
+const ROSTER_HINT = 'Mở file Excel danh sách lớp, bôi đen cột <b>Họ và tên</b> (hoặc cả hai cột <b>STT</b> và <b>Họ và tên</b>), bấm <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">C</kbd>, rồi bấm vào ô đầu tiên bên dưới và <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">V</kbd>.';
+function rosterEditor() {
+  return `<div class="roster"><div class="roster-tools"><span id="rcount" class="hint"></span><span class="grow"></span>
+      <button type="button" class="btn sm ghost" id="radd">+ 10 dòng</button><button type="button" class="btn sm ghost" id="rclr">Xóa hết</button></div>
+    <div class="roster-wrap"><table class="roster-t"><thead><tr><th class="n">STT</th><th>Họ và tên học sinh</th></tr></thead><tbody id="rbody"></tbody></table></div></div>`;
+}
+function rosterName(line) {
+  const cells = line.split('\t').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  if (!cells.length) return '';
+  let name = cells.find(x => !/^\d+[.)]?$/.test(x)) || '';
+  name = name.replace(/^\d+\s*[.)\-]\s*/, '').replace(/^\d+\s+(?=\D)/, '');
+  if (/^(stt|họ\s*(và)?\s*tên|ho\s*ten|tên|danh sách)/i.test(name)) return '';
+  return name.slice(0, 60);
+}
+function bindRoster(names) {
+  const body = $('#rbody');
+  const rowHtml = (i, v) => `<tr><td class="n">${i + 1}</td><td><input type="text" maxlength="60" value="${esc(v || '')}" aria-label="Họ và tên học sinh số ${i + 1}" autocomplete="off"></td></tr>`;
+  const inputs = () => $$('input', body);
+  const count = () => { const n = getRoster().length; $('#rcount').textContent = n ? n + ' học sinh' : 'Chưa có tên nào'; };
+  const grow = n => { let i = inputs().length; const end = i + n; let h = ''; for (; i < end; i++) h += rowHtml(i, ''); body.insertAdjacentHTML('beforeend', h); };
+  body.innerHTML = '';
+  const start = (names || []).filter(Boolean);
+  body.insertAdjacentHTML('beforeend', start.map((v, i) => rowHtml(i, v)).join(''));
+  grow(Math.max(5, 40 - start.length));
+  body.addEventListener('paste', e => {
+    const t = e.target; if (t.tagName !== 'INPUT') return;
+    const text = (e.clipboardData || window.clipboardData).getData('text') || '';
+    if (!/[\n\t]/.test(text.trim())) return;
+    e.preventDefault();
+    const list = text.replace(/\r/g, '').split('\n').map(rosterName).filter(Boolean);
+    let idx = inputs().indexOf(t);
+    const need = idx + list.length - inputs().length + 3;
+    if (need > 0) grow(need);
+    const all = inputs();
+    list.forEach(n => { all[idx++].value = n; });
+    count(); toast('Đã dán ' + list.length + ' học sinh');
+  });
+  body.addEventListener('input', count);
+  body.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+    e.preventDefault();
+    const all = inputs(), i = all.indexOf(e.target);
+    if (i === all.length - 1) grow(5);
+    inputs()[i + 1].focus();
+  });
+  $('#radd').onclick = () => grow(10);
+  $('#rclr').onclick = () => { if (!confirm('Xóa toàn bộ danh sách đang nhập?')) return; inputs().forEach(x => { x.value = ''; }); count(); };
+  count();
+}
+const getRoster = () => $$('#rbody input').map(x => x.value.replace(/\s+/g, ' ').trim()).filter(Boolean);
+
 route(/^\/dangky$/, params => {
   if (params.get('lop') && params.get('cach') !== 'machung') return registerByClassCode(params);
   let classes = null, common = '', khoi = '';
@@ -475,7 +540,9 @@ route(/^\/dangky$/, params => {
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
       <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.10a1" maxlength="30">
       <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
-      <label for="em">Email <span class="hint">(nên khai – em đăng nhập bằng email và <b>tự lấy lại mật khẩu</b> khi quên)</span></label><input id="em" type="email" autocomplete="email" placeholder="vd: an123@gmail.com">
+      <label for="em">Gmail <span class="hint">(bắt buộc – em đăng nhập bằng Gmail và <b>tự lấy lại mật khẩu</b> khi quên)</span></label><input id="em" type="email" required autocomplete="email" maxlength="80" placeholder="vd: an123@gmail.com">
+      <div class="hint">Mỗi em chỉ có một tài khoản: nếu họ tên và Gmail đã đăng ký, app sẽ báo để em đăng nhập lại.</div>
+      ${schoolField('sc', CFG.SCHOOL_DEFAULT || SCHOOLS[0])}
       <label for="p1">Mật khẩu</label><input id="p1" type="password" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 kí tự">
       <label for="p2">Nhập lại mật khẩu</label><input id="p2" type="password" required minlength="6" autocomplete="new-password">
       <div id="msg"></div>
@@ -491,7 +558,8 @@ route(/^\/dangky$/, params => {
     $('#newwrap').hidden = sel.value !== '__new';
   };
   $$('#kh button').forEach(b => b.onclick = () => { khoi = b.dataset.k; $$('#kh button').forEach(x => x.classList.toggle('on', x === b)); fill(); });
-  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; };
+  bindSchool('sc');
+  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; const c = (classes || []).find(x => x.MaLop === $('#lop').value); if (c && c.Truong) setSchool('sc', c.Truong); };
   $('#f1').onsubmit = async e => {
     e.preventDefault();
     await busy($('#f1 .btn'), async () => {
@@ -512,11 +580,11 @@ route(/^\/dangky$/, params => {
     if ($('#p1').value !== $('#p2').value) return errBox($('#msg'), 'Hai lần nhập mật khẩu chưa giống nhau.');
     await busy($('#f .btn'), async () => {
       try {
-        const req = { common, khoi, name: $('#n').value, username: $('#u').value, password: $('#p1').value, email: ($('#em') || {}).value || '' };
+        const req = { common, khoi, name: $('#n').value.trim(), username: $('#u').value, password: $('#p1').value, email: (($('#em') || {}).value || '').trim(), school: schoolVal('sc') };
         if (lop === '__new') req.newClass = $('#nl').value.trim(); else req.code = lop;
         const s = await api('register_hs', req);
         setSession(s); flush(); toast('Đăng ký thành công! Chào mừng em.'); location.hash = '#/';
-      } catch (err) { errBox($('#msg'), err); }
+      } catch (err) { errBox($('#msg'), err); dupAccBtn($('#msg')); }
     });
   };
 });
@@ -530,33 +598,35 @@ function registerByClassCode(params) {
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
       <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.12a3" maxlength="30">
       <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
-      <label for="em2">Email <span class="hint">(nên khai – đăng nhập bằng email và tự lấy lại mật khẩu khi quên)</span></label><input id="em2" type="email" autocomplete="email" maxlength="80" placeholder="vd: an12a3@gmail.com">
+      <label for="em2">Gmail <span class="hint">(bắt buộc – đăng nhập bằng Gmail và tự lấy lại mật khẩu khi quên)</span></label><input id="em2" type="email" required autocomplete="email" maxlength="80" placeholder="vd: an12a3@gmail.com">
+      ${schoolField('sc2', CFG.SCHOOL_DEFAULT || SCHOOLS[0])}
       <div id="msg"></div>
       <div style="margin-top:14px"><button class="btn block">Đăng ký</button></div>
     </form><p class="sub" style="text-align:center"><a href="#/dangky?cach=machung">Đăng ký bằng mã chung</a> · <a href="#/dangnhap">Đã có tài khoản? Đăng nhập</a></p></div>`);
   const check = async () => {
     const c = $('#c').value.trim().toUpperCase(); $('#ci').textContent = '';
     if (c.length < 3) return;
-    try { const i = await api('classInfo', { code: c }); ($('#ci') || {}).innerHTML = `✅ Lớp <b>${esc(i.TenLop || c)}</b> – khối ${esc(i.Khoi)} – ${esc(i.Truong)}`; }
+    try { const i = await api('classInfo', { code: c }); ($('#ci') || {}).innerHTML = `✅ Lớp <b>${esc(i.TenLop || c)}</b> – khối ${esc(i.Khoi)} – ${esc(i.Truong)}`; setSchool('sc2', i.Truong); }
     catch (e) { $('#ci').textContent = '⚠️ ' + e.message; }
   };
+  bindSchool('sc2');
   $('#c').oninput = check; if (params.get('lop')) check();
   $('#f').onsubmit = async e => {
     e.preventDefault();
     await busy($('#f .btn'), async () => {
       try {
-        const s = await api('register_hs', { code: $('#c').value.trim().toUpperCase(), classPw: $('#cp').value, name: $('#n').value, username: $('#u').value, email: ($('#em2') || {}).value || '' });
+        const s = await api('register_hs', { code: $('#c').value.trim().toUpperCase(), classPw: $('#cp').value, name: $('#n').value.trim(), username: $('#u').value, email: (($('#em2') || {}).value || '').trim(), school: schoolVal('sc2') });
         setSession(s); toast('Đăng ký thành công! Hãy đặt mật khẩu riêng.'); location.hash = '#/doimk';
-      } catch (err) { errBox($('#msg'), err); }
+      } catch (err) { errBox($('#msg'), err); dupAccBtn($('#msg')); }
     });
   };
 }
 
 route(/^\/dangkygv$/, () => {
-  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Sau khi gửi, tài khoản cần <b>Quản trị viên duyệt</b> mới dùng được.</p>
+  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Thầy/cô ở bất kỳ trường nào cũng tự đăng ký được. Sau khi gửi, tài khoản cần <b>Quản trị viên duyệt</b> mới dùng được; mỗi trường quản lý riêng lớp và học sinh của mình.</p>
     <form class="card" id="f">
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60">
-      <label for="s">Trường</label><input id="s" type="text" required maxlength="80" value="${esc(CFG.SCHOOL_DEFAULT || '')}">
+      ${schoolField('s', CFG.SCHOOL_DEFAULT || SCHOOLS[0])}
       <label for="e">Email</label><input id="e" type="email" required>
       <label for="p">Mật khẩu (tối thiểu 6 ký tự)</label><input id="p" type="password" required minlength="6">
       <div id="msg"></div>
@@ -566,12 +636,13 @@ route(/^\/dangkygv$/, () => {
     e.preventDefault();
     await busy($('#f .btn'), async () => {
       try {
-        const s = await api('register_gv', { name: $('#n').value, school: $('#s').value, email: $('#e').value, password: $('#p').value });
+        const s = await api('register_gv', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#e').value, password: $('#p').value });
         if (s && s.token) { setSession(s); toast('Đăng ký thành công!'); location.hash = '#/'; }
         else ($('#f') || {}).innerHTML = '<div class="okmsg">✅ Đã gửi đăng ký. Tài khoản sẽ dùng được sau khi <b>Quản trị viên duyệt</b>. Khi được duyệt, thầy/cô đăng nhập bằng email và mật khẩu vừa tạo.</div>';
       } catch (err) { errBox($('#msg'), err); }
     });
   };
+  bindSchool('s');
 });
 
 route(/^\/doimk$/, () => {
@@ -582,18 +653,19 @@ route(/^\/doimk$/, () => {
       <label for="o">Mật khẩu hiện tại${forced ? ' (mật khẩu chung của lớp)' : ''}</label><input id="o" type="password" required>
       <label for="n1">Mật khẩu mới (tối thiểu 6 ký tự)</label><input id="n1" type="password" required minlength="6">
       <label for="n2">Nhập lại mật khẩu mới</label><input id="n2" type="password" required minlength="6">
-      ${forced ? `<label for="sc">Trường của em</label><input id="sc" type="text" maxlength="80" value="${esc(session.user.Truong)}">` : ''}
+      ${forced ? schoolField('sc', session.user.Truong, 'Trường của em') : ''}
       <div id="msg"></div>
       <div style="margin-top:14px"><button class="btn block">Lưu mật khẩu</button></div>
     </form></div>`);
+  bindSchool('sc');
   $('#f').onsubmit = async e => {
     e.preventDefault();
     if ($('#n1').value !== $('#n2').value) { errBox($('#msg'), 'Hai mật khẩu mới không khớp'); return; }
     await busy($('#f .btn'), async () => {
       try {
         await api('change_pw', { oldPw: $('#o').value, newPw: $('#n1').value });
-        if (forced && $('#sc') && $('#sc').value.trim() && $('#sc').value.trim() !== session.user.Truong) {
-          session.user = await api('update_profile', { school: $('#sc').value.trim() });
+        if (forced && $('#sc') && schoolVal('sc') && schoolVal('sc') !== session.user.Truong) {
+          session.user = await api('update_profile', { school: schoolVal('sc') });
         }
         if (session.role === 'hs') session.user.DoiMK = false;
         setSession(session); toast('Đã đổi mật khẩu'); location.hash = '#/';
@@ -684,13 +756,36 @@ const K12_TOPICS = {
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
+const LESSON_V = '20261108';
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
-  const src = T.file + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
+  const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
+  const khoi = (key === 'hcat' || key === 'hctd') ? '10' : '12';
+  const back = isGV() ? '#/gv?khoi=' + khoi : '#/onluyen';
   document.body.classList.add('immersive');
   setView(`<iframe class="lessonfull" src="${src}" title="${T.name}" allow="autoplay; fullscreen"></iframe>
-    <a class="lessonback" href="${isGV() ? '#/gv' : '#/onluyen'}" title="Quay lại trang chủ" aria-label="Quay lại trang chủ">←</a>`);
-  cleanup = () => document.body.classList.remove('immersive');
+    <a class="lessonback" href="${back}" title="Quay lại (Esc)" aria-label="Quay lại trang chủ">←</a>
+    <div class="lessonhint" id="lhint">Bấm <kbd>Esc</kbd> để trở về ${isGV() ? 'trang giáo viên' : 'trang ôn luyện'}</div>`);
+  // mở toàn màn hình ngay khi chọn bài; bấm Esc (thoát toàn màn hình) → trở về trang giáo viên
+  let wasFs = false, gone = false;
+  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/' + key) location.hash = back; };
+  const onFs = () => { if (fsEl()) wasFs = true; else if (wasFs) leave(); };
+  const onKey = e => { if (e.key === 'Escape' && !fsEl()) setTimeout(() => { if (!e.defaultPrevented) leave(); }, 0); };
+  document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
+  document.addEventListener('keydown', onKey);
+  const f = $('.lessonfull');
+  f.addEventListener('load', () => { try { f.contentWindow.addEventListener('keydown', onKey); } catch (e) {} try { f.focus(); } catch (e) {} });
+  const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req && !fsEl()) { try { const pr = req.call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } catch (e) {} }
+  setTimeout(() => { const h = $('#lhint'); if (h) h.classList.add('off'); }, 3500);
+  cleanup = () => {
+    gone = true;
+    document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
+    document.removeEventListener('keydown', onKey);
+    if (fsEl()) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
+    document.body.classList.remove('immersive');
+  };
 });
 
 /* ================= Trang Ôn luyện (gom mọi cách tự ôn) ================= */
@@ -1393,15 +1488,17 @@ route(/^\/hoso$/, () => {
   setView(`<div class="auth"><h1>Hồ sơ của em</h1><form class="card" id="f">
     <label>Tên đăng nhập</label><input type="text" value="${esc(u.TenDN)}" disabled>
     <label>Lớp</label><input type="text" value="${esc(u.TenLop + ' (khối ' + u.Khoi + ')')}" disabled>
-    <label for="n">Họ và tên</label><input id="n" type="text" maxlength="60" value="${esc(u.HoTen)}">
-    <label for="s">Trường</label><input id="s" type="text" maxlength="80" value="${esc(u.Truong)}">
-    <label for="em">Email <span class="hint">(để lấy lại mật khẩu khi quên)</span></label><input id="em" type="email" maxlength="80" value="${esc(u.Email || '')}" placeholder="vd: an123@gmail.com">
+    <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" value="${esc(u.HoTen)}">
+    ${schoolField('s', u.Truong)}
+    <label for="em">Gmail <span class="hint">(để đăng nhập và lấy lại mật khẩu khi quên)</span></label><input id="em" type="email" maxlength="80" value="${esc(u.Email || '')}" placeholder="vd: an123@gmail.com">
     ${u.Email ? '' : '<div class="hint">⚠️ Em chưa có email: nếu quên mật khẩu sẽ phải nhờ thầy cô đặt lại.</div>'}
-    <div id="msg"></div><div class="row" style="margin-top:14px"><button class="btn">Lưu</button><a class="btn ghost" href="#/doimk">Đổi mật khẩu</a></div></form></div>`);
+    <div id="msg"></div><div class="row" style="margin-top:14px"><button class="btn">Lưu thay đổi</button><a class="btn ghost" href="#/doimk">Đổi mật khẩu</a></div></form>
+    <p class="hint">Em tự cập nhật được họ tên, trường, Gmail và mật khẩu. Lớp và tên đăng nhập do thầy/cô quản lý.</p></div>`);
+  bindSchool('s');
   $('#f').onsubmit = async e => {
     e.preventDefault();
     await busy($('#f .btn'), async () => {
-      try { session.user = await api('update_profile', { name: $('#n').value, school: $('#s').value, email: $('#em').value }); setSession(session); ($('#msg') || {}).innerHTML = '<div class="okmsg">Đã lưu</div>'; }
+      try { session.user = await api('update_profile', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#em').value.trim() }); setSession(session); ($('#msg') || {}).innerHTML = '<div class="okmsg">Đã lưu thông tin tài khoản</div>'; }
       catch (err) { errBox($('#msg'), err); }
     });
   };
@@ -1575,17 +1672,21 @@ route(/^\/gv\/diem$/, async params => {
 
 route(/^\/gv\/taolop$/, () => {
   if (!needGV()) return;
-  setView(`<div class="auth"><h1>Tạo lớp mới</h1><form class="card" id="f">
-    <label for="n">Tên lớp</label><input id="n" type="text" required maxlength="30" placeholder="12A3">
-    <label for="k">Khối</label><select id="k"><option>10</option><option>11</option><option selected>12</option></select>
-    <label for="s">Trường</label><input id="s" type="text" maxlength="80" value="${esc(session.user.Truong)}">
+  setView(`<div class="auth auth-wide"><h1>Tạo lớp mới</h1><form class="card" id="f">
+    <div class="grid2"><div><label for="n">Tên lớp</label><input id="n" type="text" required maxlength="30" placeholder="12A3"></div>
+    <div><label for="k">Khối</label><select id="k"><option>10</option><option>11</option><option selected>12</option></select></div></div>
+    ${schoolField('s', session.user.Truong)}
     <label for="p">Mật khẩu chung cho HS đăng ký</label><input id="p" type="text" required minlength="4" maxlength="30" placeholder="vd: cn12a3">
     <div class="hint">HS dùng mã lớp + mật khẩu này để đăng ký, sau đó bắt buộc đổi mật khẩu riêng.</div>
+    <h3 style="margin:20px 0 4px">Danh sách học sinh <span class="hint" style="font-weight:500">(có thể bổ sung sau)</span></h3>
+    <div class="hint">${ROSTER_HINT}</div>
+    ${rosterEditor()}
     <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Tạo lớp</button></div></form></div>`);
+  bindSchool('s'); bindRoster([]);
   $('#f').onsubmit = async e => {
     e.preventDefault();
-    await busy($('#f .btn'), async () => {
-      try { const c = await api('create_class', { name: $('#n').value, khoi: $('#k').value, school: $('#s').value, classPw: $('#p').value }); location.hash = '#/gv/lop/' + c.MaLop; }
+    await busy($('#f .btn.block'), async () => {
+      try { const c = await api('create_class', { name: $('#n').value, khoi: $('#k').value, school: schoolVal('s'), classPw: $('#p').value, roster: getRoster() }); window._gvCls = null; location.hash = '#/gv/lop/' + c.MaLop; }
       catch (err) { errBox($('#msg'), err); }
     });
   };
@@ -1617,12 +1718,26 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   const maxT = tops.length ? tops[0][1] : 1;
   const hardQ = Object.entries(wrongQ).sort((a, b) => b[1] - a[1]).slice(0, 5);
   const now = Date.now();
+  let roster = Array.isArray(c.DanhSach) ? c.DanhSach : [];
+  const rosterView = () => {
+    if (!roster.length) return '<div class="empty">Chưa có danh sách. Bấm “Dán danh sách” để dán cột Họ và tên từ Excel – app sẽ đánh dấu em nào đã đăng ký tài khoản.</div>';
+    const byName = {}; students.forEach(st => { (byName[normName(st.HoTen)] = byName[normName(st.HoTen)] || []).push(st); });
+    const inList = new Set(roster.map(normName));
+    const extra = students.filter(st => !inList.has(normName(st.HoTen)));
+    const done = roster.filter(n => byName[normName(n)]).length;
+    return `<p class="hint" style="margin-top:0">${done}/${roster.length} em đã đăng ký tài khoản.</p><div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ và tên</th><th>Tài khoản</th></tr></thead><tbody>
+      ${roster.map((n, i) => { const m = byName[normName(n)]; return `<tr><td class="n">${i + 1}</td><td>${esc(n)}</td><td>${m ? '<span class="pill">✅ ' + esc(m.map(x => x.TenDN).join(', ')) + '</span>' : '<span class="pill warn">Chưa đăng ký</span>'}</td></tr>`; }).join('')}
+      ${extra.map(st => `<tr><td class="n">–</td><td>${esc(st.HoTen)}</td><td><span class="pill bad" title="Họ tên không khớp danh sách">Ngoài danh sách · ${esc(st.TenDN)}</span></td></tr>`).join('')}
+      </tbody></table></div>`;
+  };
   setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
     <div id="ledit"></div>
     <div class="card"><div class="row"><div class="grow"><div class="hint">Mã lớp</div><div class="code">${esc(code)}</div>
       <div class="hint">Mật khẩu chung: <b>${esc(c.MatKhauLop || '')}</b></div>
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" id="cp">📋 Sao chép link đăng ký</button></div></div><div id="qr" style="width:132px"></div></div></div>
-    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Danh sách lớp${roster.length ? ' (' + roster.length + ')' : ''}</h2><button class="btn sm ghost" id="rsEdit">✏️ ${roster.length ? 'Sửa danh sách' : 'Dán danh sách'}</button></div>
+    <div class="card" id="rsBox">${rosterView()}</div>
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
     ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
     <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
       ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
@@ -1635,6 +1750,16 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <h2>Bài đã giao cho lớp</h2>
     <div class="list">${myAsg.map(a => `<a class="item" href="#/gv/bai/${a.MaBai}"><div class="grow"><b>${esc(a.TieuDe)}</b><div class="meta">${a.DanhSachCau.length} câu · ${results.filter(r => r.key === a.MaBai).length} lượt nộp</div></div>›</a>`).join('') || '<div class="card empty">Chưa giao bài cho lớp này.</div>'}</div>`);
   qrInto($('#qr'), joinLink(code));
+  $('#rsEdit').onclick = () => {
+    $('#rsEdit').hidden = true;
+    $('#rsBox').innerHTML = `<div class="hint" style="margin-top:0">${ROSTER_HINT}</div>${rosterEditor()}<div id="rsMsg"></div><div class="row" style="margin-top:10px"><button class="btn" id="rsSave">Lưu danh sách</button><button class="btn ghost" id="rsCancel" type="button">Hủy</button></div>`;
+    bindRoster(roster);
+    $('#rsCancel').onclick = () => { $('#rsEdit').hidden = false; $('#rsBox').innerHTML = rosterView(); };
+    $('#rsSave').onclick = () => busy($('#rsSave'), async () => {
+      try { const r = await api('update_roster', { code, roster: getRoster() }); roster = r.DanhSach || getRoster(); window._gvCls = null; $('#rsEdit').hidden = false; $('#rsEdit').textContent = '✏️ Sửa danh sách'; $('#rsBox').innerHTML = rosterView(); toast('Đã lưu danh sách lớp'); }
+      catch (e) { errBox($('#rsMsg'), e); }
+    });
+  };
   $('#cp').onclick = async () => { try { await navigator.clipboard.writeText(joinLink(code)); toast('Đã sao chép link đăng ký'); } catch (e) { prompt('Link đăng ký:', joinLink(code)); } };
   $$('[data-r]').forEach(b => b.onclick = async () => {
     if (!confirm('Cấp lại mật khẩu cho ' + b.dataset.n + '?\nMật khẩu mới sẽ là: PD2026')) return;

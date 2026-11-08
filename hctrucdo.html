@@ -82,7 +82,7 @@ svg.drw{width:100%;height:100%;max-height:100%}
 .seg{display:flex;background:#eef2f9;border:1px solid var(--line);border-radius:12px;padding:3px}
 .seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:700;color:var(--muted);font-size:14px}
 .seg button.on{background:linear-gradient(140deg,#7c3aed,#5b21b6);color:#fff;box-shadow:0 6px 14px -6px #7c3aed}
-.steps{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-bottom:10px}
 .steps button{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;border:1.5px solid var(--line);background:#fff;border-radius:13px;padding:8px 4px;font-weight:700;font-size:12.5px;line-height:1.2;color:var(--muted);transition:.15s}
 .steps button:hover{border-color:#93b4f5}
 .steps .num{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;background:#eef2f9;color:var(--muted)}
@@ -100,6 +100,7 @@ svg.drw{width:100%;height:100%;max-height:100%}
 .explain.s1{border-color:var(--ax);background:#fff1f3}.explain.s2,.explain.s3{border-color:var(--base);background:#eff5ff}
 .explain.s4{border-color:var(--dim);background:#fff8eb}.explain.s5{border-color:var(--feat);background:#fff3ea}.explain.s6{border-color:var(--ok);background:#ecfaf3}
 .et{font-weight:800;font-size:16.5px;margin-bottom:3px}.ex{font-size:14.5px}
+.note.hid{background:#fff3ea;color:#9a3412}
 .cr{color:var(--ax)}.cb{color:var(--base)}.cd{color:var(--dim)}.cf{color:var(--feat)}
 .note{display:block;margin-top:6px;padding:6px 10px;border-radius:10px;background:#f3e8ff;color:#5b21b6;font-size:13.5px}
 .ctrl{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
@@ -130,34 +131,6 @@ th{background:#f1f5fb;font-size:13px;color:var(--muted)}th:nth-child(2){color:#0
 .opt.ok{border:3px solid var(--ok);background:#ecfdf5}.opt.bad{border:3px solid var(--bad);background:#fef2f2}
 .fb{margin-top:10px;padding:10px 14px;border-radius:12px;font-size:14.5px}.fb.ok{background:#ecfdf5;color:#065f46}.fb.bad{background:#fef2f2;color:#991b1b}
 
-
-.steps button.s3d .num{background:#ede9fe;color:#6d28d9}
-.steps button.s3d.on{background:linear-gradient(135deg,#7c3aed,#2563eb);box-shadow:0 10px 22px -10px #7c3aed}
-.steps button.s3d.on .num{background:#fff;color:#6d28d9}
-.explain.s7{border-color:var(--vio);background:#f5f0ff}
-.cvbox canvas.v3{touch-action:none;cursor:grab}
-.cvbox canvas.half{width:50%}.cvbox canvas.half.r{left:50%;border-left:2px dashed #dbe3f0}
-.v3tag{position:absolute;z-index:2;top:10px;left:10px;font-weight:800;font-size:14px;color:#fff;background:linear-gradient(140deg,#0f766e,#115e59);border-radius:10px;padding:5px 11px;pointer-events:none}
-.v3tag.r{left:calc(50% + 10px);background:linear-gradient(140deg,#7c3aed,#5b21b6)}.v3tag small{display:block;font-size:11.5px;font-weight:600;opacity:.9}.cvbox canvas.v3:active{cursor:grabbing}
-.v3bar{position:absolute;z-index:2;bottom:10px;right:10px;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:calc(100% - 20px)}
-.v3bar button{border:1.5px solid var(--line);background:rgba(255,255,255,.94);border-radius:10px;padding:6px 11px;font-weight:700;font-size:13px;color:var(--navy2);box-shadow:0 4px 12px -8px rgba(15,23,42,.4)}
-.v3bar button.on{background:linear-gradient(140deg,#7c3aed,#5b21b6);color:#fff;border-color:transparent}
-.v3hint{position:absolute;z-index:2;left:10px;bottom:10px;font-size:12.5px;font-weight:600;color:var(--muted);background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:999px;padding:4px 11px;pointer-events:none}
-.v3leg{position:absolute;z-index:2;left:10px;bottom:46px;display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:10px;padding:6px 9px;pointer-events:none}
-.sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px;border:1px solid rgba(15,23,42,.25)}
-/* ---- so sánh 3D ---- */
-.ss{height:100%;display:grid;grid-template-columns:200px minmax(0,1fr);gap:14px}.ss>*{min-width:0}
-.sscol{min-height:0;display:flex;flex-direction:column;gap:12px}
-.sstool{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 18px;padding:10px 14px}.sstool .gridtg{margin-left:0}.sstool b{font-size:15.5px;color:var(--navy2);margin-right:auto}
-.cmp2{flex:1;min-height:240px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.cv3{position:relative;flex:1;min-height:0;border-radius:14px;background:#fbfdff;border:1px solid #e3eaf6;overflow:hidden}
-.cv3 canvas{position:absolute;inset:0;width:100%;height:100%}
-.cv3 .v3hint{font-size:11.5px}
-.sstab{flex:none;max-height:38%;overflow:auto;padding:4px 8px}
-.sstab td:first-child{font-weight:600;white-space:nowrap}
-.sstab td,.sstab th{padding:7px 10px;font-size:13.5px}
-@media (max-width:1180px){.ss{grid-template-columns:190px 1fr}.cmp2{flex:none;height:420px}.sstab{max-height:none}}
-@media (max-width:760px){.ss{grid-template-columns:1fr}.cmp2{grid-template-columns:1fr;height:auto}.cmp2 .panel{height:340px}.steps button.s3d{grid-column:span 3}.sstab td:first-child{white-space:normal}}
 @media (max-height:800px) and (min-width:1181px){.steps button{padding:5px 3px;font-size:11.5px}.steps .num{width:24px;height:24px;font-size:12.5px}.explain{padding:8px 12px;min-height:0}.et{font-size:15px}.ex{font-size:13.5px}.note{font-size:12.5px;padding:4px 8px}.btn{min-height:38px;padding:7px 14px}.stagehd{margin-bottom:6px}.panel{padding:12px}}
 /* ---- màn hình nhỏ ---- */
 @media (max-width:1180px){.ve,.lt{grid-template-columns:190px 1fr}.ve .stage,.lt .stage{grid-column:1/-1}.main{height:auto;overflow:visible}.ve .pv,.lt .pv{height:440px}.cvbox{min-height:440px}.optgrid{min-height:220px}.steps .tt{font-size:11.5px}}
@@ -343,8 +316,8 @@ function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
     const A = Q[0], Bq = Q[i1], C = Q[i2], bx = Bq[0] - A[0], by = Bq[1] - A[1], cx = C[0] - A[0], cy = C[1] - A[1], det = bx * cy - cx * by;
     const ga = ((Bq[2] - A[2]) * cy - (C[2] - A[2]) * by) / det, gb = (bx * (C[2] - A[2]) - cx * (Bq[2] - A[2])) / det;
     const dAt = (x, y) => A[2] + ga * (x - A[0]) + gb * (y - A[1]);
-    const lam = Math.max(0, (f.n[0] * Lt[0] + f.n[1] * Lt[1] + f.n[2] * Lt[2]) / ln), cc = 178 + 70 * lam, fb = o.faceColor ? o.faceColor(f) : base;
-    const R = o.draft ? 255 : f.cut ? 252 : cc * fb[0], G = o.draft ? 255 : f.cut ? 214 : cc * fb[1], Bc = o.draft ? 255 : f.cut ? 200 : cc * fb[2], HC0 = o.draft ? 30 : 150, HC1 = o.draft ? 41 : 36, HC2 = o.draft ? 59 : 36;
+    const lam = Math.max(0, (f.n[0] * Lt[0] + f.n[1] * Lt[1] + f.n[2] * Lt[2]) / ln), cc = 178 + 70 * lam;
+    const R = o.draft ? 255 : f.cut ? 252 : cc * base[0], G = o.draft ? 255 : f.cut ? 214 : cc * base[1], Bc = o.draft ? 255 : f.cut ? 200 : cc * base[2], HC0 = o.draft ? 30 : 150, HC1 = o.draft ? 41 : 36, HC2 = o.draft ? 59 : 36;
     let y0 = Infinity, y1 = -Infinity; Q.forEach(q => { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
     y0 = Math.max(0, Math.floor(y0)); y1 = Math.min(h - 1, Math.ceil(y1));
     for (let y = y0; y <= y1; y++) {
@@ -810,18 +783,34 @@ function sizeCv(cv) { const r = cv.getBoundingClientRect(), d = window.devicePix
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 function dSeg(m, a, b) { const ab = sub(b, a), am = sub(m, a), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return Math.hypot(...am); const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); return Math.hypot(am[0] - ab[0] * t, am[1] - ab[1] * t, am[2] - ab[2] * t); }
 const bodyEdges = o => o._be || (o._be = getF(o, 'body').flatMap(f => f.edges));
+function pip(p, L, i, j) { let c = false; for (let k = 0, m = L.length - 1; k < L.length; m = k++) { const a = L[k], b = L[m]; if ((a[j] > p[j]) !== (b[j] > p[j]) && p[i] < (b[i] - a[i]) * (p[j] - a[j]) / (b[j] - a[j]) + a[i]) c = !c; } return c; }
+/* điểm m có bị mặt nào của vật thể che khuất khi nhìn theo hướng V không */
+function occluded(m, V, F) {
+  for (const f of F) {
+    const n = f.n, nv = n[0] * V[0] + n[1] * V[1] + n[2] * V[2]; if (Math.abs(nv) < 1e-9) continue;
+    const q = f.pts[0], t = ((n[0] * m[0] + n[1] * m[1] + n[2] * m[2]) - (n[0] * q[0] + n[1] * q[1] + n[2] * q[2])) / nv;
+    if (t < 1e-3) continue;
+    const x = [m[0] - t * V[0], m[1] - t * V[1], m[2] - t * V[2]], an = n.map(Math.abs), dr = an[0] > an[1] && an[0] > an[2] ? 0 : an[1] > an[2] ? 1 : 2, i = dr === 0 ? 1 : 0, j = dr === 2 ? 1 : 2;
+    if (pip(x, f.pts, i, j) && !(f.holes || []).some(h => pip(x, h, i, j))) return true;
+  }
+  return false;
+}
 function featEdges(o, V, type) {
   const key = '_fe' + type; if (o[key]) return o[key];
   const body = bodyEdges(o), F = getF(o, 'full'), fr = f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3, segs = [], out = [];
   F.forEach(f => { f.edges.forEach(e => segs.push(e)); (f.sil || []).forEach(s => { if (fr(f) !== fr(s.g)) segs.push([s.a, s.b]); }); });
   segs.forEach(([a, b]) => {
-    const n = Math.max(1, Math.ceil(Math.hypot(...sub(b, a)) / 0.08)); let run = null;
+    const n = Math.max(1, Math.ceil(Math.hypot(...sub(b, a)) / 0.06)); let run = null;
+    const flush = () => { if (run) out.push(run); run = null; };
     for (let i = 0; i < n; i++) {
       const p0 = a.map((v, j) => v + (b[j] - v) * i / n), p1 = a.map((v, j) => v + (b[j] - v) * (i + 1) / n), m = p0.map((v, j) => (v + p1[j]) / 2);
-      if (!body.some(s => dSeg(m, s[0], s[1]) < 2e-3)) { if (run) run[1] = p1; else run = [p0, p1]; } else if (run) { out.push(run); run = null; }
+      if (body.some(s => dSeg(m, s[0], s[1]) < 2e-3)) { flush(); continue; }
+      const hid = occluded(m, V, F);
+      if (run && run.hid === hid) run[1] = p1; else { flush(); run = [p0, p1]; run.hid = hid; }
     }
-    if (run) out.push(run);
+    flush();
   });
+  out.sort((p, q) => p.hid - q.hid);   // nét thấy vẽ trước, nét khuất vẽ sau
   return (o[key] = out);
 }
 const hasFeat = o => featEdges(o, [-0.577, 0.577, -0.577], 'vgd').length > 0;
@@ -909,7 +898,16 @@ function renderStep(cv, o, type, step, g = 1) {
   // bước 5: rãnh, lỗ
   if (step >= 5 && fade > 0.01) {
     const fe = featEdges(o, pr.V, type), show = Math.ceil(fe.length * gs(5));
-    fe.slice(0, show).forEach(([a, b]) => line(ctx, pr.P(a), pr.P(b), COL.feat, 2.4, null, fade, dp));
+    const vis = fe.slice(0, show), chains = [];
+    vis.forEach(e => {
+      if (!e.hid) return line(ctx, pr.P(e[0]), pr.P(e[1]), COL.feat, 2.6, null, fade, dp);
+      const last = chains[chains.length - 1], A = pr.P(e[0]), B = pr.P(e[1]);
+      if (last) { const E = last[last.length - 1]; if (Math.hypot(E[0] - A[0], E[1] - A[1]) < 1.5 * dp) { last.push(B); return; } }
+      chains.push([A, B]);
+    });
+    ctx.globalAlpha = 0.9 * fade; ctx.strokeStyle = COL.feat; ctx.lineWidth = 1.3 * dp; ctx.setLineDash([7 * dp, 5 * dp]); ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
+    chains.forEach(c => { ctx.beginPath(); ctx.moveTo(c[0][0], c[0][1]); c.slice(1).forEach(p => ctx.lineTo(p[0], p[1])); ctx.stroke(); });
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
   }
   // bước 6: kiểm tra, tô đậm
   if (step >= 6) hcPaint(ctx, Wc, Hc, getF(o, 'full'), pr.P, pr.V, dp, { k: pr.k, lw: 3, alpha: g, color: [0.9, 0.95, 1], edge: '#0f172a' });
@@ -930,132 +928,10 @@ function renderFinal(cv, F, o, type, axes) {
   hcPaint(ctx, cv.width, cv.height, F, pr.P, pr.V, dp, { k: pr.k, lw: 2.6, color: [0.9, 0.95, 1], edge: '#0f172a' });
 }
 
-
-/* ================= KHỐI 3D (trắng hoặc tô màu theo mặt) – phép chiếu song song tổng quát ================= */
-const FCOL = { x: [1, 0.74, 0.48], y: [0.58, 0.74, 1], z: [0.6, 0.9, 0.64] }, PAPER = [0.9, 0.95, 1], WHITE3 = [1, 1, 1];
-function faceCol(f, mode, mix = 1) {
-  let c = WHITE3;
-  if (mode === 'face') { const a = f.n.map(Math.abs), s = a[0] + a[1] + a[2] || 1; c = [0, 1, 2].map(i => (a[0] * FCOL.x[i] + a[1] * FCOL.y[i] + a[2] * FCOL.z[i]) / s); }
-  return mix >= 1 ? c : c.map((v, i) => PAPER[i] + (v - PAPER[i]) * mix);
-}
-const crs = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-/* ma trận chiếu 2×3 (toạ độ vật thể p → màn hình), hàng x: sang phải, hàng y: lên trên */
-const MAT = {
-  vgd: () => ({ x: [C30, C30, 0], y: [-0.5, 0.5, 1] }),
-  xien: () => ({ x: [1, Q * C45, 0], y: [0, Q * C45, 1] }),
-  orbit: (th, ph) => { const s = Math.sqrt(1.5), e = [Math.sin(th) * Math.cos(ph), -Math.cos(th) * Math.cos(ph), Math.sin(ph)], R = [Math.cos(th), Math.sin(th), 0], U = crs(e, R); return { x: R.map(v => v * s), y: U.map(v => v * s) }; }
-};
-const ISO = [Math.PI / 4, Math.asin(1 / Math.sqrt(3))];
-function projMat(o, M, Wc, Hc, dp, k, type, sh = [0, 0]) {
-  const pc = [o.W / 2, o.D / 2, o.H / 2], c = crs(M.x, M.y), l = Math.hypot(...c) || 1, V = c.map(v => -v / l);
-  const dot3 = (a, d) => a[0] * d[0] + a[1] * d[1] + a[2] * d[2];
-  const S = p => { const d = [p[0] - pc[0], p[1] - pc[1], p[2] - pc[2]]; return [Wc / 2 + k * (dot3(M.x, d) - sh[0]), Hc / 2 - k * (dot3(M.y, d) - sh[1])]; };
-  return { S, V, k, dp, P: p => { const s = S(p); return [s[0], s[1], dot3(V, p)]; }, PA: A => S([A[0], o.D - A[1], A[2]]),
-    ax: [[o.W + 1.5, 0, 0], [0, o.D + (type === 'xien' ? 2.8 : 1.5), 0], [0, 0, o.H + 1.4]] };
-}
-function fitK(o, Wc, Hc, dp) {
-  const kv = proj(o, 'vgd', Wc, Hc, dp, false, 44).k, kx = proj(o, 'xien', Wc, Hc, dp, false, 44).k;
-  const kr = (Math.min(Wc, Hc) - 24 * dp) / (Math.sqrt(1.5) * Math.hypot(o.W, o.D, o.H));
-  return Math.min(kv, kx, kr);
-}
-const V3 = { cur: null, th: ISO[0], ph: ISO[1], mode: 'type', auto: false, col: 'white', axes: true, intro: false, kick: () => {} };
-/* vật thể xoay (ma trận Rm), hệ trục O′X′Y′Z′ đứng yên phía sau vật thể */
-const mul3 = (A, B) => A.map(r => [0, 1, 2].map(j => r[0] * B[0][j] + r[1] * B[1][j] + r[2] * B[2][j]));
-const rotAx = (u, t) => { const [x, y, z] = u, c = Math.cos(t), s = Math.sin(t), C = 1 - c; return [[c + x * x * C, x * y * C - z * s, x * z * C + y * s], [y * x * C + z * s, c + y * y * C, y * z * C - x * s], [z * x * C - y * s, z * y * C + x * s, c + z * z * C]]; };
-const ortho3 = R => { const n = v => { const l = Math.hypot(...v) || 1; return v.map(x => x / l); }; const c0 = n([R[0][0], R[1][0], R[2][0]]); let c1 = [R[0][1], R[1][1], R[2][1]]; const d = c0[0] * c1[0] + c0[1] * c1[1] + c0[2] * c1[2]; c1 = n(c1.map((v, i) => v - d * c0[i])); const c2 = crs(c0, c1); return [0, 1, 2].map(i => [c0[i], c1[i], c2[i]]); };
-const I3 = () => [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
-function draw3D(cv, o, Rm, k, dp, mix, type) {
-  const ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
-  const H = MAT[type](), sh = shiftOf(o, type);
-  const rowR = r => [0, 1, 2].map(j => r[0] * Rm[0][j] + r[1] * Rm[1][j] + r[2] * Rm[2][j]);
-  drawAxes(ctx, projMat(o, H, cv.width, cv.height, dp, k, type, sh), type, 1, false, 1);       // trục cố định, vẽ trước → nằm sau vật thể
-  const pr = projMat(o, { x: rowR(H.x), y: rowR(H.y) }, cv.width, cv.height, dp, k, type, sh);
-  hcPaint(ctx, cv.width, cv.height, getF(o, 'full'), pr.P, pr.V, dp, { k, lw: 2.6, edge: '#0f172a', faceColor: f => faceCol(f, 'white', mix) });
-}
-/* độ lệch để khối + trục nằm giữa khung ở vị trí trục đo */
-function shiftOf(o, type) {
-  const M = MAT[type](), pc = [o.W / 2, o.D / 2, o.H / 2], d3 = (a, p) => a[0] * (p[0] - pc[0]) + a[1] * (p[1] - pc[1]) + a[2] * (p[2] - pc[2]);
-  const pts = [[0, 0, 0], [o.W, 0, 0], [0, o.D, 0], [0, 0, o.H], [o.W, o.D, o.H], [o.W + 1.9, o.D, 0], [0, o.D - (type === 'xien' ? 3.2 : 1.9), 0], [0, o.D, o.H + 1.9]];
-  const xs = pts.map(p => d3(M.x, p)), ys = pts.map(p => d3(M.y, p));
-  return [(Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2];
-}
-/* bước so sánh: hai khối 3D cạnh nhau (trái: vuông góc đều, phải: xiên góc cân), xoay cùng nhau */
-function start3D(intro) {
-  const cL = $('#cvL'), cR = $('#cvR'); if (!cL || !cR) return;
-  const dp = sizeCv(cL); sizeCv(cR);
-  const o = objOf(st.obj), k = Math.min(fitK(o, cL.width, cL.height, dp), proj(o, 'vgd', cL.width, cL.height, dp, true, 34).k, proj(o, 'xien', cL.width, cL.height, dp, true, 34).k) * 0.86;
-  if (intro || !V3.R) { V3.R = I3(); V3.home = false; }
-  const t0 = performance.now(); let mix = intro ? 0 : 1;
-  cancelAnimationFrame(raf); raf = 0;
-  const tick = now => {
-    raf = 0; let moving = false;
-    if (V3.home) {
-      const I = I3(); let dmax = 0;
-      V3.R = ortho3(V3.R.map((r, i) => r.map((v, j) => { const d = I[i][j] - v; dmax = Math.max(dmax, Math.abs(d)); return v + d * 0.18; })));
-      if (dmax < 1e-3) { V3.R = I; V3.home = false; } else moving = true;
-    }
-    if (intro) mix = Math.min(1, (now - t0) / 800);
-    draw3D(cL, o, V3.R, k, dp, mix, 'vgd'); draw3D(cR, o, V3.R, k, dp, mix, 'xien');
-    if (moving || (intro && mix < 1)) raf = requestAnimationFrame(tick);
-  };
-  V3.kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
-  [cL, cR].forEach(cv => {
-    cv.onpointerdown = e => { V3.drag = [e.clientX, e.clientY]; V3.home = false; try { cv.setPointerCapture(e.pointerId); } catch (_) {} };
-    cv.onpointermove = e => {
-      if (!V3.drag) return;
-      const dx = e.clientX - V3.drag[0], dy = e.clientY - V3.drag[1]; V3.drag = [e.clientX, e.clientY];
-      V3.R = ortho3(mul3(rotAx([1, 0, 0], dy * 0.01), mul3(rotAx([0, 0, 1], dx * 0.01), V3.R))); V3.kick();
-    };
-    cv.onpointerup = cv.onpointercancel = () => { V3.drag = null; };
-    cv.ondblclick = () => { V3.home = true; V3.kick(); };
-  });
-  V3.kick();
-}
-const LEG3 = () => V3.col === 'face' ? `<span><i class="sw" style="background:#9dbdff"></i>Mặt ∥ X′O′Z′ (trước, sau)</span><span><i class="sw" style="background:#9be6a4"></i>Mặt ∥ X′O′Y′ (trên, dưới)</span><span><i class="sw" style="background:#ffbe7d"></i>Mặt ∥ Y′O′Z′ (hai bên)</span>` : '';
-function barHtml() {
-  return `<div class="v3bar"><button data-v3="home" class="${V3.mode === 'type' && !V3.auto ? 'on' : ''}">🎯 Về góc trục đo</button><button data-v3="auto" class="${V3.auto ? 'on' : ''}">⟳ Tự xoay</button><button data-v3="col" class="${V3.col === 'face' ? 'on' : ''}">🎨 Tô màu theo mặt</button><button data-v3="axes" class="${V3.axes ? 'on' : ''}">Trục đo</button></div>`
-    + (V3.col === 'face' ? `<div class="v3leg">${LEG3()}</div>` : '');
-}
-function syncBar() {
-  const box = $('.cvbox'); if (!box) return;
-  $$('.v3bar,.v3leg', box).forEach(e => e.remove()); box.insertAdjacentHTML('beforeend', barHtml());
-  $$('[data-v3]', box).forEach(b => b.onclick = () => {
-    const a = b.dataset.v3;
-    if (a === 'home') { V3.mode = 'type'; V3.auto = false; }
-    if (a === 'auto') { V3.auto = !V3.auto; if (V3.auto && V3.mode !== 'orbit') { V3.th = ISO[0]; V3.ph = ISO[1]; } }
-    if (a === 'col') V3.col = V3.col === 'face' ? 'white' : 'face';
-    if (a === 'axes') V3.axes = !V3.axes;
-    syncBar(); V3.kick();
-  });
-}
-
-/* ---------- so sánh 3D: kích thước bao ---------- */
-function arrowHead(ctx, P, ang, col, dp) { const h = 8 * dp; ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(P[0] - h * Math.cos(ang - 0.4), P[1] - h * Math.sin(ang - 0.4)); ctx.lineTo(P[0] - h * Math.cos(ang + 0.4), P[1] - h * Math.sin(ang + 0.4)); ctx.fill(); }
-function drawDims(ctx, pr, o, type, dp) {
-  const { W, D, H } = o, C = pr.P([W / 2, D / 2, H / 2]), r10 = v => String(Math.round(v * 10));
-  [[[0, 0, 0], [W, 0, 0], r10(W)], [[W, 0, 0], [W, D, 0], type === 'xien' ? `${r10(D)} × 0,5` : r10(D)], [[0, 0, 0], [0, 0, H], r10(H)]].forEach(([a, b, t]) => {
-    const A = pr.P(a), B = pr.P(b), L = Math.hypot(B[0] - A[0], B[1] - A[1]) || 1; let nx = -(B[1] - A[1]) / L, ny = (B[0] - A[0]) / L;
-    if (((A[0] + B[0]) / 2 - C[0]) * nx + ((A[1] + B[1]) / 2 - C[1]) * ny < 0) { nx = -nx; ny = -ny; }
-    const off = 24 * dp, A2 = [A[0] + nx * off, A[1] + ny * off], B2 = [B[0] + nx * off, B[1] + ny * off];
-    [A, B].forEach(E => line(ctx, [E[0] + nx * 5 * dp, E[1] + ny * 5 * dp], [E[0] + nx * (off + 6 * dp), E[1] + ny * (off + 6 * dp)], COL.dim, 1.2, null, 0.9, dp));
-    line(ctx, A2, B2, COL.dim, 1.8, null, 1, dp);
-    const an = Math.atan2(B2[1] - A2[1], B2[0] - A2[0]); arrowHead(ctx, B2, an, COL.dim, dp); arrowHead(ctx, A2, an + Math.PI, COL.dim, dp);
-    pill(ctx, (A2[0] + B2[0]) / 2, (A2[1] + B2[1]) / 2, t, COL.dim, dp, '#fff', 12);
-  });
-}
-function renderCmp(cv, o, type) {
-  const dp = sizeCv(cv), ctx = cv.getContext('2d'); ctx.clearRect(0, 0, cv.width, cv.height);
-  const pr = proj(o, type, cv.width, cv.height, dp, st.ss.axes, st.ss.dim ? 52 : 36);
-  if (st.ss.axes) { drawAxes(ctx, pr, type, 0.55, false, 1); }
-  hcPaint(ctx, cv.width, cv.height, getF(o, 'full'), pr.P, pr.V, dp, { k: pr.k, lw: 2.6, edge: '#0f172a', faceColor: f => faceCol(f, st.ss.col) });
-  if (st.ss.dim) drawDims(ctx, pr, o, type, dp);
-  if (st.ss.axes) axisIcon(ctx, type, 64 * dp, 62 * dp, 40 * dp, dp);
-}
-
 /* ================= GIAO DIỆN ================= */
 const TYPE = { vgd: 'Vuông góc đều', xien: 'Xiên góc cân' };
 const STEPS = ['Gắn trục toạ độ', 'Vẽ hình chiếu cơ sở', 'Kẻ đường song song', 'Đặt độ dài, nối điểm', 'Vẽ rãnh, lỗ', 'Kiểm tra, tô đậm'];
-const st = { tab: 've', obj: DEMO[0].id, type: 'vgd', step: 0, grid: false, pi: 0, ptype: 'vgd', ans: store.get('ans', {}), ss: { col: 'white', axes: true, dim: true } };
+const st = { tab: 've', obj: DEMO[0].id, type: 'vgd', step: 0, grid: false, pi: 0, ptype: 'vgd', ans: store.get('ans', {}) };
 const objOf = id => ALL.find(o => o.id === id);
 let raf = 0;
 
@@ -1069,26 +945,25 @@ function stepText(o, type, s) {
     case 2: return ['Bước 2. Vẽ hình chiếu cơ sở', `Chọn <b class="cb">${bn}</b> làm cơ sở. Chỉ vẽ <b class="cb">đường bao quanh</b> của nó trên mặt phẳng <b>${pl}</b>, bắt đầu <b>từ gốc O′ đi ra</b>, các đoạn song song với trục nào thì vẽ song song với trục đo đó. ${undist ? '<span class="note">Hình chiếu trục đo xiên góc cân: mặt phẳng X′O′Z′ có góc 90° nên mặt này <b>không bị biến dạng</b> – vẽ đúng hình dạng và kích thước thật.</span>' : xi ? 'Theo phương O′Y′ phải nhân kích thước với q = 0,5.' : 'Kích thước theo các trục giữ nguyên (p = q = r = 1).'}`];
     case 3: return ['Bước 3. Kẻ đường song song', `Xác định <b class="cb">các điểm tại những chỗ gấp khúc</b> (đỉnh) của đường bao vừa vẽ. Từ mỗi điểm, kẻ các đường thẳng <b>song song với trục ${other}</b> – trục còn lại chưa dùng.`];
     case 4: return ['Bước 4. Đặt độ dài, nối các điểm', `Lấy kích thước tương ứng trên ${front ? 'hình chiếu bằng / hình chiếu cạnh' : 'hình chiếu đứng / hình chiếu cạnh'} (<b class="cd">${L}</b>${xi && front ? ` × 0,5 = <b class="cd">${L / 2}</b>` : ''}) và đặt lên từng đường song song – có đoạn dài, đoạn ngắn tuỳ từng phần của vật thể. Được các điểm <b class="cd">●</b>, nối chúng lại theo hình chiếu.`];
-    case 5: return ['Bước 5. Vẽ phần rãnh, lỗ', hasFeat(o) ? `Vẽ hình chiếu trục đo của <b class="cf">phần rãnh, lỗ</b>: đặt tâm, kích thước theo các trục rồi vẽ. ${xi ? 'Lỗ tròn trên mặt song song với X′O′Z′ <b>vẫn là đường tròn</b>; lỗ tròn trên các mặt còn lại biến thành elip.' : 'Lỗ tròn trên mọi mặt đều biến thành <b>elip</b>.'}` : 'Vật thể này <b>không có rãnh, lỗ</b> – chuyển sang Bước 6.'];
-    case 6: return ['Bước 6. Kiểm tra, tô đậm', 'Đối chiếu lại với ba hình chiếu vuông góc, <b>xoá các nét dựng hình</b> và <b>tô đậm các cạnh thấy</b>. Hình chiếu trục đo không vẽ nét khuất. Bấm <b>⚖️ So sánh 3D</b> để xem vật thể thành khối theo cả hai kiểu.'];
-    case 7: return ['So sánh khối 3D: vuông góc đều – xiên góc cân', `Cùng một vật thể dựng thành <b>khối 3D màu trắng</b> theo hai kiểu. Bên trái <b>vuông góc đều</b>: ba mặt biến dạng như nhau, lỗ tròn thành elip. Bên phải <b>xiên góc cân</b>: mặt trước giữ <b>đúng hình dạng thật</b>, chiều rộng chỉ vẽ một nửa. <b>Kéo một khối</b> để xoay cả hai cùng lúc; bấm <b>↻ Vẽ lại</b> để trở về đúng vị trí trục đo.`];
+    case 5: return ['Bước 5. Vẽ phần rãnh, lỗ', hasFeat(o) ? `Vẽ hình chiếu trục đo của <b class="cf">phần rãnh, lỗ</b>: đặt tâm, kích thước theo các trục rồi vẽ. ${xi ? 'Lỗ tròn trên mặt song song với X′O′Z′ <b>vẫn là đường tròn</b>; lỗ tròn trên các mặt còn lại biến thành elip.' : 'Lỗ tròn trên mọi mặt đều biến thành <b>elip</b>.'} <span class="note hid"><b>Nét liền</b> – phần nhìn thấy, cần vẽ. <b>Nét đứt mảnh</b> – phần bị khuất bên trong vật thể, chỉ để hình dung, <b>không vẽ</b> (sẽ xoá ở Bước 6).</span>` : 'Vật thể này <b>không có rãnh, lỗ</b> – chuyển sang Bước 6.'];
+    case 6: return ['Bước 6. Kiểm tra, tô đậm', 'Đối chiếu lại với ba hình chiếu vuông góc, <b>xoá các nét dựng hình</b> và <b>tô đậm các cạnh thấy</b>. Hình chiếu trục đo không vẽ nét khuất.'];
   }
 }
 
 function header() {
   return `<header class="hd"><div class="brand"><span class="logo">11</span><div><b>Hình chiếu trục đo</b><small>Công nghệ 10 · Bài 11 · SmarttechCN 2026</small></div></div>
-    <nav class="tabs">${[['ve', '✏️ Vẽ từng bước'], ['ss', '🧊 So sánh 3D'], ['nho', '📌 Ghi nhớ'], ['lt', '🎯 Luyện tập']].map(([k, t]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
+    <nav class="tabs">${[['ve', '✏️ Vẽ từng bước'], ['nho', '📌 Ghi nhớ'], ['lt', '🎯 Luyện tập']].map(([k, t]) => `<button data-tab="${k}" class="${st.tab === k ? 'on' : ''}">${t}</button>`).join('')}</nav>
     <button class="fs" id="fs" title="Toàn màn hình">⛶</button></header>`;
 }
 const typeSeg = (k, cur) => `<div class="seg" data-seg="${k}">${Object.entries(TYPE).map(([v, t]) => `<button data-v="${v}" class="${cur === v ? 'on' : ''}">${t}</button>`).join('')}</div>`;
 
 function render() {
-  cancelAnimationFrame(raf); raf = 0;
+  cancelAnimationFrame(raf);
   const app = $('#app');
-  app.innerHTML = header() + `<main class="main">${st.tab === 've' ? pageVe() : st.tab === 'ss' ? pageSs() : st.tab === 'nho' ? pageNho() : pageLt()}</main>`;
+  app.innerHTML = header() + `<main class="main">${st.tab === 've' ? pageVe() : st.tab === 'nho' ? pageNho() : pageLt()}</main>`;
   $$('[data-tab]').forEach(b => b.onclick = () => { st.tab = b.dataset.tab; render(); });
   $('#fs').onclick = () => { const d = document; if (!d.fullscreenElement) (d.documentElement.requestFullscreen || d.documentElement.webkitRequestFullscreen || (() => {})).call(d.documentElement); else d.exitFullscreen(); };
-  ({ ve: bindVe, ss: bindSs, nho: bindNho, lt: bindLt })[st.tab]();
+  ({ ve: bindVe, nho: bindNho, lt: bindLt })[st.tab]();
 }
 
 /* ---------- Trang 1: vẽ từng bước ---------- */
@@ -1102,10 +977,10 @@ function pageVe() {
       <div class="drwbox">${drawingSvg(o, { axes: st.step >= 1, base: st.step === 2 || st.step === 3, dim: st.step === 4 })}</div>
       <div class="legend"><span><i class="lg v"></i>Cạnh thấy</span><span><i class="lg h"></i>Cạnh khuất</span><span><i class="lg c"></i>Đường tâm</span>${st.step >= 1 ? '<span><i class="lg a"></i>Trục toạ độ</span>' : ''}</div></div>
     <div class="panel stage"><div class="stagehd">${typeSeg('type', st.type)}<span class="oname">${o.ten}</span></div>
-      <div class="steps">${STEPS.map((t, i) => `<button data-step="${i + 1}" class="${st.step === i + 1 ? 'on' : st.step > i + 1 ? 'done' : ''}"><span class="num">${i + 1}</span><span class="tt">${t}</span></button>`).join('')}<button data-step="7" class="s3d ${st.step === 7 ? 'on' : ''}"><span class="num">⚖️</span><span class="tt">So sánh 3D</span></button></div>
-      <div class="cvbox">${st.step === 7 ? `<canvas id="cvL" class="v3 half"></canvas><canvas id="cvR" class="v3 half r"></canvas>` : '<canvas id="cv"></canvas>'}${st.step === 0 ? '<div class="start"><button class="go" data-step="1">▶ Bắt đầu – Bước 1</button><small>Dùng phím ← → hoặc bút trình chiếu để chuyển bước</small></div>' : ''}</div>
-      ${st.step === 7 ? '' : `<div class="explain s${st.step}"><div class="et">${tt}</div><div class="ex">${tx}</div></div>`}
-      <div class="ctrl"><button class="btn ghost" id="pv" ${st.step === 0 ? 'disabled' : ''}>← Bước trước</button><button class="btn ghost" id="rp" ${st.step === 0 ? 'disabled' : ''}>↻ Vẽ lại</button><button class="btn" id="nx" ${st.step === 7 ? 'disabled' : ''}>${st.step === 0 ? 'Bắt đầu →' : st.step === 6 ? '⚖️ So sánh khối 3D →' : 'Bước tiếp →'}</button></div></div></section>`;
+      <div class="steps">${STEPS.map((t, i) => `<button data-step="${i + 1}" class="${st.step === i + 1 ? 'on' : st.step > i + 1 ? 'done' : ''}"><span class="num">${i + 1}</span><span class="tt">${t}</span></button>`).join('')}</div>
+      <div class="cvbox"><canvas id="cv"></canvas>${st.step === 0 ? '<div class="start"><button class="go" data-step="1">▶ Bắt đầu – Bước 1</button><small>Dùng phím ← → hoặc bút trình chiếu để chuyển bước</small></div>' : ''}</div>
+      <div class="explain s${st.step}"><div class="et">${tt}</div><div class="ex">${tx}</div></div>
+      <div class="ctrl"><button class="btn ghost" id="pv" ${st.step === 0 ? 'disabled' : ''}>← Bước trước</button><button class="btn ghost" id="rp" ${st.step === 0 ? 'disabled' : ''}>↻ Vẽ lại</button><button class="btn" id="nx" ${st.step === 6 ? 'disabled' : ''}>${st.step === 0 ? 'Bắt đầu →' : 'Bước tiếp →'}</button></div></div></section>`;
 }
 function animStep() {
   const cv = $('#cv'); if (!cv) return; sizeCv(cv);
@@ -1114,51 +989,13 @@ function animStep() {
   const go = now => { const g = Math.min(1, (now - t0) / ms), e = g < .5 ? 2 * g * g : 1 - Math.pow(-2 * g + 2, 2) / 2; renderStep(cv, o, st.type, st.step, e); if (g < 1) raf = requestAnimationFrame(go); };
   raf = requestAnimationFrame(go);
 }
-function setStep(s) { st.step = Math.max(0, Math.min(7, s)); if (st.step === 7) V3.intro = true; render(); }
+function setStep(s) { st.step = Math.max(0, Math.min(6, s)); render(); }
 function bindVe() {
   $$('[data-o]').forEach(b => b.onclick = () => { st.obj = b.dataset.o; st.step = 0; render(); });
   $$('[data-step]').forEach(b => b.onclick = () => setStep(+b.dataset.step));
-  $$('[data-seg="type"] button').forEach(b => b.onclick = () => { st.type = b.dataset.v; if (st.step === 7) { V3.mode = 'type'; V3.auto = false; } render(); });
-  $('#pv').onclick = () => setStep(st.step - 1); $('#nx').onclick = () => setStep(st.step + 1); $('#rp').onclick = () => { if (st.step === 7) { V3.home = true; V3.kick(); } else animStep(); };
-  setTimeout(() => { if (st.step === 7) { const it = V3.intro; V3.intro = false; start3D(it); } else animStep(); }, 0);
-}
-
-
-/* ---------- Trang: so sánh 3D ---------- */
-function pageSs() {
-  const o = objOf(st.obj), r10 = v => Math.round(v * 10), xs = st.ss;
-  const chip = (x, i, pre) => `<button data-o="${x.id}" class="${x.id === st.obj ? 'on' : ''}"><span class="n">${pre}${i + 1}</span><span>${x.ten}${x.sgk ? `<small>${x.sgk}</small>` : ''}</span></button>`;
-  const grp = {}; (o.axes || []).forEach(a => { const d = Math.round(a.r * 20), kk = a.ax + d; (grp[kk] = grp[kk] || { ax: a.ax, d, n: 0 }).n++; });
-  const PL = { y: 'mặt trước (∥ X′O′Z′)', z: 'mặt nằm ngang (∥ X′O′Y′)', x: 'mặt bên (∥ Y′O′Z′)' };
-  const holes = Object.values(grp).map(g => `<tr><td>${g.n > 1 ? g.n + ' lỗ' : 'Lỗ'} Ø${g.d} trên ${PL[g.ax]}</td><td>Thành <b>elip</b></td><td>${g.ax === 'y' ? '<b>Vẫn là đường tròn</b> Ø' + g.d + ' – vẽ bằng compa' : 'Thành <b>elip</b> (dẹt, nghiêng)'}</td></tr>`).join('')
-    || `<tr><td>Lỗ tròn</td><td colspan="2" style="color:var(--muted)">Vật thể này không có lỗ tròn – chọn vật thể có lỗ để so sánh đường tròn và elip.</td></tr>`;
-  const sw = c => `<i class="sw" style="background:${c}"></i>`, colOn = xs.col === 'face';
-  const ck = (k, on, t) => `<label class="gridtg"><input type="checkbox" data-ss="${k}" ${on ? 'checked' : ''}> ${t}</label>`;
-  return `<section class="ss">
-    <aside class="side"><h3>Vật thể mẫu</h3><div class="olist">${DEMO.map((x, i) => chip(x, i, '')).join('')}</div>
-      <h3>Bài luyện tập</h3><div class="olist">${PRACT.map((x, i) => chip(x, i, 'L')).join('')}</div></aside>
-    <div class="sscol">
-      <div class="panel sstool"><b>${o.ten}</b>${ck('col', colOn, 'Tô màu theo mặt')}${ck('axes', xs.axes, 'Trục đo')}${ck('dim', xs.dim, 'Kích thước')}</div>
-      <div class="cmp2">
-        <div class="panel"><div class="ph"><b>Vuông góc đều</b><span class="chipmini">120° · p = q = r = 1</span></div><div class="cv3"><canvas id="s1"></canvas></div></div>
-        <div class="panel"><div class="ph"><b>Xiên góc cân</b><span class="chipmini">90°, 135° · p = r = 1, q = 0,5</span></div><div class="cv3"><canvas id="s2"></canvas></div></div>
-      </div>
-      <div class="panel sstab"><div class="tablewrap"><table><thead><tr><th>So sánh trên vật thể này</th><th>Vuông góc đều</th><th>Xiên góc cân</th></tr></thead><tbody>
-        <tr><td>${colOn ? sw('#9dbdff') : ''}Mặt trước, sau (∥ X′O′Z′)</td><td>Bị biến dạng: hình chữ nhật thành hình bình hành</td><td><b>Không biến dạng</b>: đúng hình dạng và kích thước thật</td></tr>
-        <tr><td>${colOn ? sw('#9be6a4') : ''}Mặt trên, dưới (∥ X′O′Y′)</td><td>Biến dạng như nhau ở cả ba mặt</td><td>Biến dạng; cạnh theo chiều rộng chỉ vẽ <b>một nửa</b></td></tr>
-        <tr><td>${colOn ? sw('#ffbe7d') : ''}Mặt hai bên (∥ Y′O′Z′)</td><td>Biến dạng như nhau ở cả ba mặt</td><td>Biến dạng; cạnh theo chiều rộng chỉ vẽ <b>một nửa</b></td></tr>
-        <tr><td>Kích thước khi vẽ (dài × rộng × cao)</td><td>${r10(o.W)} × <b>${r10(o.D)}</b> × ${r10(o.H)}</td><td>${r10(o.W)} × <b>${Math.round(o.D * 5)}</b> × ${r10(o.H)} (rộng ${r10(o.D)} × 0,5)</td></tr>
-        ${holes}
-        <tr><td>Hình dáng chung</td><td>Cân đối, ba mặt thể hiện đồng đều, trông gần giống vật thật</td><td>Mặt trước nổi bật, chiều sâu trông ngắn lại</td></tr>
-        <tr><td>Nên dùng khi</td><td>Các mặt của vật thể quan trọng như nhau</td><td>Mặt trước có nhiều đường tròn, đường cong – vẽ nhanh, dễ</td></tr>
-      </tbody></table></div></div>
-    </div></section>`;
-}
-function bindSs() {
-  $$('[data-o]').forEach(b => b.onclick = () => { st.obj = b.dataset.o; st.step = 0; render(); });
-  $$('[data-ss]').forEach(b => b.onchange = e => { const k = b.dataset.ss; st.ss[k] = k === 'col' ? (e.target.checked ? 'face' : 'white') : e.target.checked; render(); });
-  const o = objOf(st.obj);
-  setTimeout(() => { renderCmp($('#s1'), o, 'vgd'); renderCmp($('#s2'), o, 'xien'); }, 0);
+  $$('[data-seg="type"] button').forEach(b => b.onclick = () => { st.type = b.dataset.v; render(); });
+  $('#pv').onclick = () => setStep(st.step - 1); $('#nx').onclick = () => setStep(st.step + 1); $('#rp').onclick = animStep;
+  setTimeout(animStep, 0);
 }
 
 /* ---------- Trang 2: ghi nhớ ---------- */
@@ -1217,10 +1054,10 @@ function bindLt() {
 /* ---------- phím tắt, thay đổi kích thước ---------- */
 document.addEventListener('keydown', e => {
   if (st.tab !== 've' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
-  if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); if (st.step < 7) setStep(st.step + 1); }
+  if (['ArrowRight', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); if (st.step < 6) setStep(st.step + 1); }
   if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); if (st.step > 0) setStep(st.step - 1); }
 });
-let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (st.tab === 've') { const cv = $('#cv'); if (st.step === 7) start3D(false); else if (cv) { { sizeCv(cv); renderStep(cv, objOf(st.obj), st.type, st.step, 1); } } } else ({ ss: bindSs, nho: bindNho, lt: bindLt })[st.tab](); }, 120); });
+let rt = 0; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (st.tab === 've') { const cv = $('#cv'); if (cv) { sizeCv(cv); renderStep(cv, objOf(st.obj), st.type, st.step, 1); } } else ({ nho: bindNho, lt: bindLt })[st.tab](); }, 120); });
 document.addEventListener('fullscreenchange', () => window.dispatchEvent(new Event('resize')));
 render();
 })();
