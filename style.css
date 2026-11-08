@@ -589,3 +589,51 @@ body.immersive .view{position:fixed;inset:0;max-width:none;margin:0!important;pa
 .roster-t input:focus{background:var(--info-soft,#e9f0fe);box-shadow:none}
 .brand .noibo{font-size:11px;font-weight:600;color:var(--muted);margin-left:8px;align-self:center;white-space:nowrap;letter-spacing:.01em}
 @media (max-width:480px){.brand .noibo{font-size:9.5px;margin-left:6px;white-space:normal;flex:none;width:50px;line-height:1.15}.net:not(.off){font-size:0;gap:0}}
+
+/* ===== Bài vẽ – AI chấm (08/11/2026): đề | bài làm | nhận xét ===== */
+body.wide .view{max-width:1360px}
+.imgdrop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:120px;border:2px dashed var(--line2);border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:var(--card);position:relative;margin:4px 0 8px}
+.imgdrop:hover,.imgdrop:focus-visible,.imgdrop.over{border-color:var(--brand2);background:var(--info-soft);outline:none}
+.imgdrop .imgdrop-ic{font-size:26px}
+.imgdrop.has{padding:6px;border-style:solid}
+.imgdrop img{max-width:100%;max-height:320px;border-radius:8px;display:block}
+.imgdrop-x{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(15,23,42,.75);color:#fff;cursor:pointer;font-size:14px}
+.imgdrop-lite{min-height:70px}
+.imgdrop-lite img{max-height:360px}
+.de-img{max-width:100%;max-height:340px;border-radius:10px;border:1px solid var(--line);display:block;margin:6px 0 8px}
+@media (min-width:900px){.hs-draw{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;align-items:start}.hs-draw>.card{margin:0}}
+.rv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) minmax(220px,.75fr);gap:12px;align-items:start}
+.rv-col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.rv-h{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rv-de img{width:100%;border-radius:8px;border:1px solid var(--line);display:block;margin-bottom:6px}
+.rv-txt{white-space:pre-wrap;font-size:14px}
+.rv-stage{position:relative;line-height:0}
+.rv-stage img{width:100%;border-radius:8px;display:block}
+.rv-stage.marking{cursor:crosshair}
+.mk{position:absolute;line-height:1;pointer-events:auto}
+.mk.ai{border:2.5px solid #e11d48;border-radius:8px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.mk.ai span,.mk.gv span{position:absolute;top:-11px;left:-11px;min-width:22px;height:22px;border-radius:11px;background:#e11d48;color:#fff;font:800 12px/22px system-ui,sans-serif;text-align:center;padding:0 4px}
+.mk.gv{width:0;height:0}
+.mk.gv span{background:#7c3aed;top:-11px;left:-11px;box-shadow:0 0 0 2px #fff}
+.rv-nx{font-size:13.5px;max-height:78vh;overflow:auto}
+.rv-score{font-size:13px;color:var(--muted);margin-bottom:6px}
+.rv-score b{font-size:18px;color:var(--ink,inherit)}
+.rv-score.ok b{color:var(--ok)}
+.rv-verdict{font-weight:800;padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:14px}
+.rv-verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.rv-verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.rv-p{margin:4px 0;line-height:1.45}
+.rv-sec{font-weight:800;font-size:12.5px;margin:10px 0 4px}
+.rv-errs{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.rv-errs li{display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.rv-n{flex:none;min-width:20px;height:20px;border-radius:10px;background:#e11d48;color:#fff;font:800 11.5px/20px system-ui,sans-serif;text-align:center;padding:0 4px}
+.rv-n.gv{background:#7c3aed}
+.rv-fix{color:var(--ok);font-weight:600;margin-top:2px}
+.rv-minus{color:var(--bad)}
+.rv-det summary{cursor:pointer;font-weight:700;font-size:12.5px;margin-top:8px}
+.rv-det ul{margin:4px 0;padding-left:18px}
+.rv-mk{display:flex;gap:6px;align-items:center;margin:4px 0}
+.rv-mk input{margin:0;padding:6px 8px;font-size:13px}
+@media (max-width:1000px){.rv{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}.rv-nx{grid-column:1/-1;max-height:none}}
+@media (max-width:640px){.rv{grid-template-columns:1fr}}
+@media (min-width:980px){body.wide:not(.focus) .view{margin-left:max(112px,calc((100vw - 1360px) / 2));margin-right:16px}}
