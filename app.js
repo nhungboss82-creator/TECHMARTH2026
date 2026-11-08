@@ -712,7 +712,6 @@ route(/^\/$/, params => {
     <div class="sechead"><h2>Ôn luyện nhanh</h2><a href="#/onluyen">Xem thêm</a></div>
     <div class="quick">
       <a class="qa" href="#/chude?by=bai"><span class="ic">📖</span>Ôn theo bài</a>
-      <a class="qa amber" href="#/dinhki"><span class="ic">📑</span>Đề định kì</a>
       <a class="qa" href="#/chude?by=dang&dang=L"><span class="ic">✍️</span>Tự luận AI chấm</a>
       <a class="qa green" href="${is12 ? '#/thitn' : '#/de?tab=bai'}"><span class="ic">${is12 ? '📁' : '🎓'}</span>${is12 ? 'Bộ đề thi TN' : 'Làm nguyên bài'}</a>
       ${window.STC_SGK ? '<a class="qa" href="#/sgk"><span class="ic">📘</span>Sách giáo khoa</a>' : '<a class="qa" href="#/hinhchieu"><span class="ic">🧊</span>Hình chiếu 3D</a>'}
@@ -814,7 +813,6 @@ route(/^\/onluyen$/, () => {
       ${row('#/de?tab=bai', '📚', '', 'Làm nguyên bài', 'Toàn bộ câu hỏi của một bài, có bấm giờ')}
     </div>
     <h2>Luyện đề</h2><div class="rows">
-      ${window.STC_MATRAN ? row('#/dinhki', '📑', 'amber', 'Đề kiểm tra định kì', 'Giữa kì, cuối kì đúng ma trận CV 7991') : ''}
       ${row('#/thitn', '📁', 'green', 'Bộ đề luyện thi TN THPT', deList().length + ' đề đủ 28 câu · mỗi lần mở đều đảo câu, đảo đáp án' + (is12 ? '' : ' (dành cho HS lớp 12)'))}
       ${row('', '🧪', 'green', is12 ? 'Đề tổng hợp theo ma trận' : 'Đề tổng hợp Lớp ' + g, 'Mỗi lần làm là một đề mới', 'id="mx"')}
     </div>
@@ -1533,7 +1531,6 @@ const GV_APPS = k => {
   const hs = [
     ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
     A('#/chude?by=bai&k=' + k, '📖', '', 'Ôn theo bài học', 'Câu hỏi từng bài SGK Lớp ' + k + ', chấm ngay', 'HS'),
-    A('#/dinhki?k=' + k, '📑', 'amber', 'Đề kiểm tra định kì', 'Giữa kì, cuối kì theo ma trận', 'HS'),
     ...(k === '10' ? [A('#/tuluyenve', '📷', 'violet', 'Bài vẽ – AI chấm (HS tự luyện)', 'Vẽ tay, chụp ảnh – AI khoanh lỗi, hướng dẫn sửa', 'HS'),
       A('#/gocchieu', '🎯', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết, xếp hình chiếu nhiều vật thể', 'HS')] : [])
   ];
@@ -5696,6 +5693,7 @@ route(/^\/gv\/thietke$/, async params => {
 
 /* ================= HS luyện đề kiểm tra định kì theo ma trận CV 7991 ================= */
 route(/^\/dinhki$/, params => {
+  if (!isGV()) { location.replace('#/onluyen'); return; }  // đã gỡ khỏi mục Học sinh (08/11/2026)
   const all = window.STC_MATRAN || [];
   const ks = [...new Set(all.map(t => t.khoi))].filter(k => isGV() || getAllowedGrades().includes(k));
   if (!ks.length) { setView('<h1>Luyện đề định kì</h1><div class="card empty">Chưa có ma trận cho khối của em.</div>'); return; }
