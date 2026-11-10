@@ -1838,6 +1838,18 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   const nk = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(), dupK = {};
   students.forEach(s => { dupK[nk(s.HoTen)] = (dupK[nk(s.HoTen)] || 0) + 1; });
   const dupN = Object.values(dupK).filter(n => n > 1).reduce((x, n) => x + n - 1, 0);
+  // HS có nhiều tài khoản: trùng họ tên (không phân biệt hoa/thường, khoảng trắng) hoặc trùng Gmail.
+  // Mỗi nhóm giữ 1 tài khoản chính (nhiều lượt làm nhất, rồi dùng gần nhất); các tài khoản còn lại là "thừa".
+  const grpOf = {}, par = {}, find = x => par[x] === x ? x : (par[x] = find(par[x]));
+  students.forEach(s => { par[s.MaHS] = s.MaHS; });
+  const byKey = {};
+  students.forEach(s => { [['n', nk(s.HoTen)], ['e', String(s.Email || '').trim().toLowerCase()]].forEach(([t, k]) => { if (!k) return; const kk = t + ':' + k; if (byKey[kk]) par[find(s.MaHS)] = find(byKey[kk]); else byKey[kk] = s.MaHS; }); });
+  students.forEach(s => { (grpOf[find(s.MaHS)] = grpOf[find(s.MaHS)] || []).push(s); });
+  const extra = new Set(), mainOf = {};
+  Object.values(grpOf).filter(g => g.length > 1).forEach(g => {
+    const k = g.slice().sort((a, b) => (b.soLuot || 0) - (a.soLuot || 0) || new Date(b.lanCuoi || 0) - new Date(a.lanCuoi || 0))[0];
+    g.forEach(x => { if (x !== k) { extra.add(x.MaHS); mainOf[x.MaHS] = k; } });
+  });
   const myAsg = asg.filter(a => a.DanhSachLop.includes(code));
   // thống kê chủ đề hay sai
   const wrongTopic = {}, wrongQ = {};
@@ -1865,11 +1877,11 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" id="cp">📋 Sao chép link đăng ký</button></div></div><div id="qr" style="width:132px"></div></div></div>
     <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Danh sách lớp${roster.length ? ' (' + roster.length + ')' : ''}</h2><button class="btn sm ghost" id="rsEdit">✏️ ${roster.length ? 'Sửa danh sách' : 'Dán danh sách'}</button></div>
     <div class="card" id="rsBox">${rosterView()}</div>
-    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
-    ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${extra.size ? `<button class="btn sm warnbtn" id="pickdup" title="Tích sẵn các tài khoản thừa để xoá">🧹 Xoá ${extra.size} tài khoản trùng</button>` : ''}${dupN ? `<button class="btn sm ghost" id="merge" title="Dồn kết quả làm bài về 1 tài khoản rồi xoá tài khoản thừa">🔗 Gộp kết quả & xoá trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
+    ${extra.size ? `<p class="hint" style="margin-top:0">Có <b>${extra.size}</b> tài khoản thừa (cùng họ tên hoặc cùng Gmail với một tài khoản khác, đánh dấu <span class="pill warn">trùng</span>). Bấm <b>🧹 Xoá tài khoản trùng</b>: app tự tích các tài khoản thừa, giữ lại tài khoản làm nhiều bài nhất, cô xem lại rồi bấm Xoá. Muốn giữ cả kết quả của tài khoản thừa thì bấm <b>🔗 Gộp</b>.</p>` : ''}
     <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
       <div class="tablewrap"><table class="hstable"><thead><tr><th class="ck"><input type="checkbox" id="hsall2" title="Chọn tất cả" aria-label="Chọn tất cả"></th><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
-      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
+      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${extra.has(s.MaHS) || dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${extra.has(s.MaHS) ? ` <span class="pill warn" title="Trùng với tài khoản ${esc(mainOf[s.MaHS].TenDN)} (giữ lại)">trùng · thừa</span>` : ''}${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
         <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td class="hsact"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp / đổi trường">✏️</button><button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 MK</button><button class="btn ghost sm delbtn" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh này">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="8"></td></tr>`; }).join('')}
       </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
     <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
@@ -1989,6 +2001,11 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   };
   ['#hsall', '#hsall2'].forEach(id => { const x = $(id); if (x) x.onchange = () => { cks().forEach(c => { c.checked = x.checked; }); syncSel(); }; });
   cks().forEach(c => c.onchange = syncSel);
+  if ($('#pickdup')) $('#pickdup').onclick = () => {
+    cks().forEach(x => { x.checked = extra.has(x.value); }); syncSel();
+    const f = cks().find(x => x.checked); if (f) f.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    toast(`Đã tích ${extra.size} tài khoản thừa – xem lại rồi bấm "Xoá HS đã chọn"`);
+  };
   if ($('#hsdel')) $('#hsdel').onclick = async () => {
     const ids = cks().filter(x => x.checked).map(x => x.value);
     if (!ids.length) return;
