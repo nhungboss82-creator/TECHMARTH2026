@@ -3446,11 +3446,12 @@ function Viewer3D(canvas, s) {
     hcPaint(ctx, W | 0, H | 0, PF, P, V, dp0, { k });
     // mũi tên hướng chiếu từ trước
     const a1 = P([cx, -1.6, cz]), a2 = P([cx, -0.35, cz]);
-    ctx.strokeStyle = '#e89a2c'; ctx.fillStyle = '#c97c12'; ctx.lineWidth = 3 * (window.devicePixelRatio || 1);
-    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a2[0], a2[1]); ctx.stroke();
-    const ang = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]);
-    ctx.beginPath(); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(a2[0] - 12 * Math.cos(ang - 0.45), a2[1] - 12 * Math.sin(ang - 0.45)); ctx.lineTo(a2[0] - 12 * Math.cos(ang + 0.45), a2[1] - 12 * Math.sin(ang + 0.45)); ctx.fill();
-    const dp = window.devicePixelRatio || 1; ctx.font = `600 ${Math.round(14 * dp)}px system-ui,sans-serif`; const lbl = 'Hướng chiếu từ trước', tw = ctx.measureText(lbl).width; const tx = Math.max(6 * dp, Math.min(W - tw - 6 * dp, a1[0] - tw / 2)), ty = Math.max(20 * dp, Math.min(H - 8 * dp, a1[1] + 18 * dp)); ctx.fillText(lbl, tx, ty);
+    const dpa = window.devicePixelRatio || 1, ang = Math.atan2(a2[1] - a1[1], a2[0] - a1[0]), hl = 17 * dpa;
+    ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 8 * dpa; ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a2[0], a2[1]); ctx.stroke();
+    ctx.strokeStyle = '#6b2f0a'; ctx.fillStyle = '#6b2f0a'; ctx.lineWidth = 4.5 * dpa;
+    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(a2[0] - 9 * dpa * Math.cos(ang), a2[1] - 9 * dpa * Math.sin(ang)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a2[0], a2[1]); ctx.lineTo(a2[0] - hl * Math.cos(ang - 0.42), a2[1] - hl * Math.sin(ang - 0.42)); ctx.lineTo(a2[0] - hl * Math.cos(ang + 0.42), a2[1] - hl * Math.sin(ang + 0.42)); ctx.closePath(); ctx.fill();
+    const dp = window.devicePixelRatio || 1; ctx.font = `800 ${Math.round(14 * dp)}px system-ui,sans-serif`; const lbl = 'Hướng chiếu từ trước', tw = ctx.measureText(lbl).width; const tx = Math.max(6 * dp, Math.min(W - tw - 6 * dp, a1[0] - tw / 2)), ty = Math.max(20 * dp, Math.min(H - 8 * dp, a1[1] + 18 * dp)); ctx.lineJoin = 'round'; ctx.lineWidth = 4 * dp; ctx.strokeStyle = '#fff'; ctx.strokeText(lbl, tx, ty); ctx.fillText(lbl, tx, ty);
   };
   const fit = () => { const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1; canvas.width = Math.max(200, r.width * d); canvas.height = Math.max(200, r.height * d); draw(); };
   let drag = null; const pts = new Map();
@@ -4011,9 +4012,12 @@ function HCScene(canvas, opt) {
     };
     const arrow = (a, b, col, label) => {
       const A = P(a), B = P(b), ang = Math.atan2(B[1] - A[1], B[0] - A[0]);
-      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 3 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(B[0] - 12 * dp * Math.cos(ang - 0.45), B[1] - 12 * dp * Math.sin(ang - 0.45)); ctx.lineTo(B[0] - 12 * dp * Math.cos(ang + 0.45), B[1] - 12 * dp * Math.sin(ang + 0.45)); ctx.fill();
-      if (label) { ctx.font = `700 ${Math.round(12 * dp)}px system-ui,sans-serif`; ctx.fillText(label, A[0] + 4 * dp, A[1] - 6 * dp); }
+      ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 8 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();   // viền sáng cho nổi trên vật thể
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 4.5 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0] - 10 * dp * Math.cos(ang), B[1] - 10 * dp * Math.sin(ang)); ctx.stroke();
+      const hl = 19 * dp; ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(B[0] - hl * Math.cos(ang - 0.42), B[1] - hl * Math.sin(ang - 0.42)); ctx.lineTo(B[0] - hl * Math.cos(ang + 0.42), B[1] - hl * Math.sin(ang + 0.42)); ctx.closePath();
+      ctx.lineWidth = 3 * dp; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(); ctx.fill();
+      if (label) { ctx.font = `800 ${Math.round(13.5 * dp)}px system-ui,sans-serif`; ctx.lineJoin = 'round'; ctx.lineWidth = 4 * dp; ctx.strokeStyle = '#fff'; ctx.strokeText(label, A[0] + 6 * dp, A[1] - 9 * dp); ctx.fillText(label, A[0] + 6 * dp, A[1] - 9 * dp); }
     };
     const labels = () => {
       ctx.font = `700 ${Math.round(12.5 * dp)}px system-ui,sans-serif`; ctx.textAlign = 'center';
@@ -4034,7 +4038,7 @@ function HCScene(canvas, opt) {
     if (showPl && m === 1) drawPlanes();
     if (showPl) drawRays();
     drawObj();
-    if (st.show === 'object' || (showPl && t < 0.05)) { const { W, D, H } = O; arrow([W * 0.5, -2.6, H * 0.45], [W * 0.5, -0.4, H * 0.45], '#e89a2c', st.show === 'object' ? 'Hướng chiếu từ trước' : ''); }
+    if (st.show === 'object' || (showPl && t < 0.05)) { const { W, D, H } = O; arrow([W * 0.5, -2.6, H * 0.45], [W * 0.5, -0.4, H * 0.45], '#6b2f0a', st.show === 'object' ? 'Hướng chiếu từ trước' : ''); }
     if (showPl && m === 3) drawPlanes();
     if (showPl) labels();
   };
@@ -4109,7 +4113,7 @@ route(/^\/hcvg$/, params => {
     const m = tab === 'g1' ? 1 : 3, O = OBJ[oi];
     const STEPS = [['object', '1. Quan sát vật thể'], ['planes', '2. Đặt vào 3 mặt phẳng chiếu'], ['project', '3. Chiếu lên các mặt phẳng'], ['unfold', '4. Lật thành một mặt phẳng']];
     const txt = {
-      object: 'Xoay vật thể (kéo chuột hoặc vuốt) để quan sát. Mũi tên cam là <b>hướng chiếu từ trước</b>.',
+      object: 'Xoay vật thể (kéo chuột hoặc vuốt) để quan sát. Mũi tên <b style="color:#6b2f0a">màu nâu</b> là <b>hướng chiếu từ trước</b>.',
       planes: m === 1 ? 'Đặt vật thể vào góc tạo bởi 3 mặt phẳng vuông góc từng đôi: <b style="color:#e53935">mặt phẳng chiếu đứng</b> ở <b>phía sau</b>, <b style="color:#1e63d6">mặt phẳng chiếu bằng</b> ở <b>phía dưới</b>, <b style="color:#c026d3">mặt phẳng chiếu cạnh</b> ở <b>bên phải</b> vật thể. <b>Vật thể nằm giữa người quan sát và mặt phẳng chiếu.</b>'
         : 'Đặt 3 mặt phẳng chiếu <b>giữa người quan sát và vật thể</b>: <b style="color:#e53935">mặt phẳng chiếu đứng</b> ở <b>phía trước</b>, <b style="color:#1e63d6">mặt phẳng chiếu bằng</b> ở <b>phía trên</b>, <b style="color:#c026d3">mặt phẳng chiếu cạnh</b> ở <b>bên trái</b> vật thể (các mặt phẳng coi như trong suốt).',
       project: 'Chiếu vuông góc vật thể lên từng mặt phẳng: nhìn <b>từ trước</b> được hình chiếu đứng, nhìn <b>từ trên</b> được hình chiếu bằng, nhìn <b>từ trái</b> được hình chiếu cạnh. Cạnh thấy vẽ nét liền đậm, cạnh khuất vẽ nét đứt, đường tâm vẽ nét gạch chấm.',
