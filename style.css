@@ -729,3 +729,13 @@ button.gh-grph>span:first-child{flex:1}
 .gh-grp.k10.open{border-color:rgba(245,158,11,.45)}
 .gh-grp.k11.open{border-color:rgba(16,185,129,.45)}
 .gh-grp.k12.open{border-color:rgba(37,99,235,.4)}
+
+/* Quản lý lớp: chọn nhiều HS bằng ô tích, xoá cùng lúc (10/11/2026) */
+.hsbulk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 2px 10px;border-bottom:1px solid var(--line,#e2e8f0);margin-bottom:6px}
+.hsbulk .chk{padding:5px 10px;margin:0}
+.hstable th.ck,.hstable td.ck{width:34px;text-align:center;padding-left:4px;padding-right:4px}
+.hstable input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer;accent-color:var(--brand,#1d4ed8);vertical-align:middle}
+.hstable tr.hssel td{background:color-mix(in srgb,var(--brand,#1d4ed8) 8%,transparent)}
+.hstable td.hsact{white-space:nowrap;text-align:right}
+.hstable td.hsact .btn{margin-left:4px;padding-left:9px;padding-right:9px}
+.hstable td.hsact .delbtn:hover{border-color:#dc2626;color:#dc2626}

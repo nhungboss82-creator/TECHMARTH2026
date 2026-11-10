@@ -1867,9 +1867,10 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <div class="card" id="rsBox">${rosterView()}</div>
     <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
     ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
-    <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
-      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
-        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 Cấp lại MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="7"></td></tr>`; }).join('')}
+    <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
+      <div class="tablewrap"><table class="hstable"><thead><tr><th class="ck"><input type="checkbox" id="hsall2" title="Chọn tất cả" aria-label="Chọn tất cả"></th><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
+      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
+        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td class="hsact"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp / đổi trường">✏️</button><button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 MK</button><button class="btn ghost sm delbtn" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh này">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="8"></td></tr>`; }).join('')}
       </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
     <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
     <h2>Chủ đề lớp hay sai nhất</h2>
@@ -1978,6 +1979,31 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     if (!confirm('Xoá tài khoản học sinh ' + b.dataset.n + '? Em sẽ không đăng nhập được nữa (kết quả cũ vẫn lưu trong Google Sheets).')) return;
     try { await api('delete_student', { maHS: b.dataset.x }); toast('Đã xoá học sinh'); reload(); } catch (e) { toast(e.message); }
   });
+  // chọn nhiều học sinh bằng ô tích → xoá cùng lúc
+  const cks = () => $$('.hsck'), syncSel = () => {
+    const all = cks(), n = all.filter(x => x.checked).length;
+    ['#hsall', '#hsall2'].forEach(id => { const x = $(id); if (x) { x.checked = n > 0 && n === all.length; x.indeterminate = n > 0 && n < all.length; } });
+    const d = $('#hsdel'), t = $('#hscnt'); if (d) { d.disabled = !n; d.textContent = n ? `🗑 Xoá ${n} HS đã chọn` : '🗑 Xoá HS đã chọn'; }
+    if (t) t.innerHTML = n ? `Đã chọn <b>${n}</b>/${all.length} học sinh` : 'Tích ô ở đầu dòng để chọn học sinh';
+    all.forEach(x => x.closest('tr').classList.toggle('hssel', x.checked));
+  };
+  ['#hsall', '#hsall2'].forEach(id => { const x = $(id); if (x) x.onchange = () => { cks().forEach(c => { c.checked = x.checked; }); syncSel(); }; });
+  cks().forEach(c => c.onchange = syncSel);
+  if ($('#hsdel')) $('#hsdel').onclick = async () => {
+    const ids = cks().filter(x => x.checked).map(x => x.value);
+    if (!ids.length) return;
+    const names = ids.map(id => (students.find(s => s.MaHS === id) || {}).HoTen).filter(Boolean);
+    if (!confirm(`Xoá ${ids.length} tài khoản học sinh?\n\n${names.slice(0, 12).join('\n')}${names.length > 12 ? '\n… và ' + (names.length - 12) + ' em khác' : ''}\n\nCác em sẽ không đăng nhập được nữa (kết quả cũ vẫn lưu trong Google Sheets).`)) return;
+    const btn = $('#hsdel'); btn.disabled = true; $$('#hsbulk input').forEach(x => { x.disabled = true; });
+    let ok = 0; const fail = [];
+    for (const id of ids) {
+      btn.textContent = `Đang xoá ${ok + fail.length + 1}/${ids.length}…`;
+      try { await api('delete_student', { maHS: id }); ok++; } catch (e) { fail.push(((students.find(s => s.MaHS === id) || {}).HoTen || id) + ': ' + e.message); }
+    }
+    toast(`Đã xoá ${ok} học sinh` + (fail.length ? ` · ${fail.length} em chưa xoá được` : ''));
+    if (fail.length) alert('Chưa xoá được:\n' + fail.join('\n'));
+    reload();
+  };
   $('#tobd').onclick = () => { const h = $('#bdh'); if (h) window.scrollTo({ top: h.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); };
   scoreSheet($('#bd'), c, students, results, myAsg);
 });
