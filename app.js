@@ -3934,7 +3934,12 @@ const HC = (() => {
 /* ---------- cảnh 3D: vật thể, 3 mặt phẳng chiếu, chiếu và lật mặt phẳng ---------- */
 function HCScene(canvas, opt) {
   const ctx = canvas.getContext('2d');
-  const st = { yaw: 0.62, pitch: 0.42, zoom: 1, t: 0, show: opt.show || 'object' };   // show: object | planes | project | unfold
+  const st = { yaw: 0.62, pitch: 0.42, zoom: 1, t: 0, p: 1, show: opt.show || 'object' };   // show: object | planes | project | unfold; p: tiến trình chiếu (0→1)
+  let praf = 0, phase = 0;
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const PIDX = { front: 0, top: 1, side: 2 };
+  // bước "Chiếu": lần lượt đứng → bằng → cạnh; tia chiếu chấm chạy tới mặt phẳng rồi hình chiếu hiện dần
+  const qOf = kk => st.show === 'project' ? clamp01((st.p - PIDX[kk] * 0.27) / 0.46) : 1;
   let O = opt.obj, m = opt.m || 1, fitR = 1, fitC = [0, 0, 0], fitB = null, fitP = [], raf = 0, zb = null;
   const g = 1.4;
   const COL = { front: '#e53935', top: '#1e63d6', side: '#c026d3' };
@@ -3985,7 +3990,7 @@ function HCScene(canvas, opt) {
     const P = p => { const r = rot(p); return [Wc / 2 + r[0] * k, Hc / 2 - r[2] * k, r[1]]; };
     ctx.clearRect(0, 0, Wc, Hc);
     const poly = (loops, fill, alpha, stroke, lw) => { ctx.beginPath(); loops.forEach(L => { L.forEach((p, i) => { const q = P(p); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath(); }); if (fill) { ctx.globalAlpha = alpha; ctx.fillStyle = fill; ctx.fill('evenodd'); ctx.globalAlpha = 1; } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw * dp; ctx.stroke(); } };
-    const line = (a, b, col, lw, dash, alpha = 1) => { const A = P(a), B = P(b); ctx.globalAlpha = alpha; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; };
+    const line = (a, b, col, lw, dash, alpha = 1, off = 0) => { const A = P(a), B = P(b); ctx.globalAlpha = alpha; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineDashOffset = off * dp; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; };
     const t = st.t, showPl = st.show !== 'object', showV = st.show === 'project' || st.show === 'unfold';
     const objA = st.show === 'unfold' ? Math.max(0, 1 - t * 1.6) : 1;
     const drawPlanes = () => {
@@ -3993,7 +3998,8 @@ function HCScene(canvas, opt) {
       ks.forEach(({ kk }) => {
         const C = G.planes[kk].c.map(p => turn(p, kk, t));
         poly([C], COL[kk], m === 3 && t < 0.98 ? 0.10 : 0.13, COL[kk], 2.6);
-        if (showV) HC.segs(O.views[kk]).forEach(sg => { const mp = G.map[kk]; line(turn(mp(...sg.a), kk, t), turn(mp(...sg.b), kk, t), sg.k === 'c' ? '#dc2626' : '#0f172a', sg.k === 'v' ? 2.6 : sg.k === 'h' ? 1.5 : 1, sg.k === 'h' ? [5, 3.5] : sg.k === 'c' ? [10, 3, 2, 3] : null); });
+        const fv = st.show === 'project' ? clamp01((qOf(kk) - 0.42) / 0.5) : 1;   // hình chiếu "vẽ dần" sau khi tia chiếu chạm mặt phẳng
+        if (showV && fv > 0) HC.segs(O.views[kk]).forEach(sg => { const mp = G.map[kk], a = turn(mp(...sg.a), kk, t), b0 = turn(mp(...sg.b), kk, t), b = fv < 1 ? a.map((v, i) => v + (b0[i] - v) * fv) : b0; line(a, b, sg.k === 'c' ? '#dc2626' : '#0f172a', sg.k === 'v' ? 2.6 : sg.k === 'h' ? 1.5 : 1, sg.k === 'h' ? [5, 3.5] : sg.k === 'c' ? [10, 3, 2, 3] : null, 0.35 + 0.65 * fv); });
       });
     };
     const drawObj = () => {
@@ -4003,11 +4009,14 @@ function HCScene(canvas, opt) {
     };
     const drawRays = () => {
       if (st.show !== 'project' && !(st.show === 'unfold' && t < 0.05)) return;
-      const { W, D, H } = O, cs = [[0, 0, 0], [W, 0, 0], [0, 0, H], [W, 0, H], [0, D, H], [W, D, H]];
-      cs.forEach(p => {
-        line(p, G.map.front(p[0], p[2]), '#64748b', 1, [1.5, 4]);
-        line(p, G.map.top(p[0], p[1]), '#64748b', 1, [1.5, 4]);
-        line(p, G.map.side(D - p[1], p[2]), '#64748b', 1, [1.5, 4]);
+      const { W, D, H } = O, cs = [0, 1].flatMap(i => [0, 1].flatMap(j => [0, 1].map(l => [i * W, j * D, l * H])));
+      const tgt = { front: p => G.map.front(p[0], p[2]), top: p => G.map.top(p[0], p[1]), side: p => G.map.side(D - p[1], p[2]) };
+      ['front', 'top', 'side'].forEach(kk => {
+        const reach = clamp01(qOf(kk) / 0.5); if (reach <= 0) return;
+        const active = st.show === 'project' && qOf(kk) < 1;
+        cs.forEach(p => { const e = tgt[kk](p), q = reach < 1 ? p.map((v, i) => v + (e[i] - v) * reach) : e;
+          line(p, q, active ? COL[kk] : '#64748b', active ? 2 : 1.2, [0.1, 5], active ? 0.95 : 0.75, -phase); });
+        if (reach < 1) cs.forEach(p => { const e = tgt[kk](p), q = P(p.map((v, i) => v + (e[i] - v) * reach)); ctx.globalAlpha = 1; ctx.fillStyle = COL[kk]; ctx.beginPath(); ctx.arc(q[0], q[1], 3.2 * dp, 0, 7); ctx.fill(); });
       });
     };
     const arrow = (a, b, col, label) => {
@@ -4066,11 +4075,17 @@ function HCScene(canvas, opt) {
   refit(); setTimeout(fit, 0);
   return {
     set(o) { if (o.obj) O = o.obj; if (o.m) m = o.m; if (o.show) st.show = o.show; if (o.t != null) st.t = o.t; G = geo(); refit(); draw(); },
-    unfold(ms = 2600) { st.show = 'unfold'; refit(); anim({ t: 1, yaw: 0, pitch: 0 }, ms); },
+    unfold(ms = 2600) { cancelAnimationFrame(praf); st.p = 1; st.show = 'unfold'; refit(); anim({ t: 1, yaw: 0, pitch: 0 }, ms); },
+    /** chiếu dần: tia chấm chạy từ vật thể tới từng mặt phẳng, hình chiếu hiện ra; các chấm tiếp tục chạy để thấy "đang chiếu" */
+    project(ms = 4800) {
+      cancelAnimationFrame(praf); st.show = 'project'; st.p = 0; const t0 = performance.now(); let last = t0;
+      const step = now => { if (st.show !== 'project') return; st.p = Math.min(1, (now - t0) / ms); phase += (now - last) * 0.02; last = now; draw(); praf = requestAnimationFrame(step); };
+      praf = requestAnimationFrame(step);
+    },
     view(yaw, pitch) { anim({ yaw, pitch }, 600); },
     setT(t) { st.t = t; if (t > 0) st.show = 'unfold'; draw(); },
     iso() { anim({ yaw: 0.62, pitch: 0.42 }, 600); },
-    destroy() { cancelAnimationFrame(raf); window.removeEventListener('resize', fit); }
+    destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(praf); window.removeEventListener('resize', fit); }
   };
 }
 
@@ -4128,7 +4143,7 @@ route(/^\/hcvg$/, params => {
           <div class="hcsteps">${STEPS.map(([k, t], i) => `<button data-step="${k}" class="s${i + 1}${step === k ? ' on' : ''}${i < si ? ' done' : ''}"><i>${i < si ? '✓' : i + 1}</i><span>${t.replace(/^\d\.\s*/, '')}</span></button>`).join('')}</div>
           <canvas id="hc3d" class="hc3d"></canvas>
           <div class="hvctl">
-            ${step === 'unfold' ? `<label class="hvrange">Lật <input id="tt" type="range" min="0" max="100" value="100"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : '<span class="hvhint">🖱️ Kéo để xoay · cuộn để phóng to</span>'}
+            ${step === 'unfold' ? `<label class="hvrange">Lật <input id="tt" type="range" min="0" max="100" value="100"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : step === 'project' ? '<button class="btn ghost sm" id="reproj">▶ Chiếu lại</button><span class="hvhint">Lần lượt: đứng → bằng → cạnh</span>' : '<span class="hvhint">🖱️ Kéo để xoay · cuộn để phóng to</span>'}
             <span class="grow"></span><button class="btn ghost sm" id="iso">↺ Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">👁 Nhìn thẳng từ trước</button></div>
         </section>
         <aside class="hvinfo">
@@ -4142,6 +4157,7 @@ route(/^\/hcvg$/, params => {
     bindTop();
     sc = HCScene($('#hc3d'), { obj: O, m, cleanEnd: true, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
     if (step === 'unfold') setTimeout(() => sc && sc.unfold(), 350);
+    if (step === 'project') { sc.project(); if ($('#reproj')) $('#reproj').onclick = () => sc.project(); }
     $$('[data-step]').forEach(b => b.onclick = () => { step = b.dataset.step; draw(); });
     if ($('#next')) $('#next').onclick = () => { step = step === 'object' ? 'planes' : step === 'planes' ? 'project' : 'unfold'; draw(); };
     if ($('#tt')) $('#tt').oninput = e => sc.setT(+e.target.value / 100);
