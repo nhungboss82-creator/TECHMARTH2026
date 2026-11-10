@@ -687,6 +687,20 @@ route(/^\/$/, params => {
   const forceHs = params.get('role') === 'hs';
   if (isTeacher && !forceHs) { location.hash = '#/gv'; return; }
 
+  // HS: lấy thông tin tài khoản mới nhất (GV có thể đã sửa trường/lớp); chưa có lớp → tự chọn lớp
+  if (session && session.role === 'hs' && !DEMO) {
+    if (!session.user.MaLop) { location.hash = '#/chonlop'; return; }
+    if (!window._hsInfoAt || Date.now() - window._hsInfoAt > 6e5) {
+      window._hsInfoAt = Date.now();
+      api('my_info').then(r => {
+        const o = session.user, n = r.user;
+        if (o.MaLop !== n.MaLop || o.Truong !== n.Truong || o.TenLop !== n.TenLop || o.HoTen !== n.HoTen) {
+          session.user = Object.assign({}, o, n, { DoiMK: o.DoiMK && n.DoiMK }); setSession(session);
+          if (!n.MaLop) location.hash = '#/chonlop'; else if (location.hash === '#/' || location.hash === '') render();
+        }
+      }).catch(() => {});
+    }
+  }
   const currentGrade = getStudentGrade();
   const u = session ? session.user : { HoTen: 'bạn', TenLop: '', Khoi: currentGrade };
   const hist = store.get('hist_' + uid(), []);
@@ -1490,12 +1504,53 @@ route(/^\/ketqua$/, async () => {
     <tbody>${rows.map(r => r.an ? `<tr><td>${dt(r.t)}</td><td>${esc(r.bai)}</td><td class="n" colspan="2"><span class="pill warn">⏳ Chờ cả lớp nộp</span></td><td class="n">${mmss(r.giay)}</td></tr>` : `<tr><td>${dt(r.t)}</td><td>${esc(r.bai)}</td><td class="n"><b>${fmt(r.diem)}</b></td><td class="n">${r.dung}/${r.tong}</td><td class="n">${mmss(r.giay)}</td></tr>`).join('')}</tbody></table></div></div>`;
 });
 
+/* HS tự chọn lại lớp thuộc trường của em (khi GV đổi trường hoặc lớp cũ không thuộc trường) */
+route(/^\/chonlop$/, async () => {
+  if (!session || session.role !== 'hs') { location.hash = '#/'; return; }
+  setView('<div class="auth"><h1>Chọn lớp của em</h1><div class="card"><p class="hint">Đang tải danh sách lớp…</p></div></div>');
+  let info;
+  try { info = await api('my_info'); } catch (e) { setView(`<div class="auth"><h1>Chọn lớp của em</h1><div class="card"><div class="err">${esc(e.message)}</div></div></div>`); return; }
+  session.user = Object.assign({}, session.user, info.user); setSession(session);
+  const u = session.user;
+  let khoi = String(u.Khoi || '');
+  setView(`<div class="auth"><h1>Chọn lớp của em</h1>
+    <p class="sub">${u.MaLop ? 'Lớp hiện tại: <b>' + esc(u.TenLop) + '</b>. ' : 'Tài khoản của em <b>chưa có lớp</b> (thầy/cô vừa cập nhật trường). '}Trường: <b>${esc(u.Truong || '(chưa có)')}</b> · <a href="#/hoso">sửa trường trong Hồ sơ</a></p>
+    <form class="card" id="f">
+      <label>Khối</label><div class="tabs" id="kh" style="margin:4px 0 10px">${['10', '11', '12'].map(k => `<button type="button" data-k="${k}" class="${k === khoi ? 'on' : ''}">Khối ${k}</button>`).join('')}</div>
+      <label for="lop">Lớp</label><select id="lop"></select>
+      <div id="newwrap" hidden><label for="nl">Tên lớp của em</label><input id="nl" type="text" maxlength="15" placeholder="vd: 10A1 hoặc 10/1"></div>
+      <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Vào lớp</button></div>
+    </form>${u.MaLop ? '<p class="sub" style="text-align:center"><a href="#/">← Về trang chủ</a></p>' : ''}</div>`);
+  const fill = () => {
+    const list = info.classes.filter(c => c.Khoi === khoi), sel = $('#lop');
+    sel.innerHTML = (khoi ? '<option value="">— Chọn lớp —</option>' : '<option value="">— Chọn khối trước —</option>') + list.map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}</option>`).join('') + (khoi ? '<option value="__new">➕ Lớp của em chưa có – tự nhập tên lớp</option>' : '');
+    if (khoi && !list.length) sel.value = '__new';
+    $('#newwrap').hidden = sel.value !== '__new';
+  };
+  $$('#kh button').forEach(b => b.onclick = () => { khoi = b.dataset.k; $$('#kh button').forEach(x => x.classList.toggle('on', x === b)); fill(); });
+  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; };
+  fill();
+  $('#f').onsubmit = async e => {
+    e.preventDefault();
+    const lop = $('#lop').value;
+    if (!khoi) return errBox($('#msg'), 'Em hãy chọn khối.');
+    if (!lop) return errBox($('#msg'), 'Em hãy chọn lớp.');
+    if (lop === '__new' && !$('#nl').value.trim()) return errBox($('#msg'), 'Em hãy nhập tên lớp.');
+    await busy($('#f .btn'), async () => {
+      try {
+        const n = await api('join_class', lop === '__new' ? { newClass: $('#nl').value.trim(), khoi } : { code: lop });
+        session.user = Object.assign({}, session.user, n); setSession(session); toast('Em đã vào lớp ' + n.TenLop); location.hash = '#/';
+      } catch (err) { errBox($('#msg'), err); }
+    });
+  };
+});
+
 route(/^\/hoso$/, () => {
   if (!session || session.role !== 'hs') { location.hash = '#/'; return; }
   const u = session.user;
   setView(`<div class="auth"><h1>Hồ sơ của em</h1><form class="card" id="f">
     <label>Tên đăng nhập</label><input type="text" value="${esc(u.TenDN)}" disabled>
-    <label>Lớp</label><input type="text" value="${esc(u.TenLop + ' (khối ' + u.Khoi + ')')}" disabled>
+    <label>Lớp</label>${u.MaLop ? `<input type="text" value="${esc(u.TenLop + ' (khối ' + u.Khoi + ')')}" disabled>` : '<a class="btn ghost sm" href="#/chonlop">🏫 Em chưa có lớp – chọn lớp</a>'}
     <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" value="${esc(u.HoTen)}">
     ${schoolField('s', u.Truong)}
     <label for="em">Gmail <span class="hint">(để đăng nhập và lấy lại mật khẩu khi quên)</span></label><input id="em" type="email" maxlength="80" value="${esc(u.Email || '')}" placeholder="vd: an123@gmail.com">
@@ -1506,7 +1561,11 @@ route(/^\/hoso$/, () => {
   $('#f').onsubmit = async e => {
     e.preventDefault();
     await busy($('#f .btn'), async () => {
-      try { session.user = await api('update_profile', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#em').value.trim() }); setSession(session); ($('#msg') || {}).innerHTML = '<div class="okmsg">Đã lưu thông tin tài khoản</div>'; }
+      try {
+        const oldSk = schKey(session.user.Truong);
+        session.user = await api('update_profile', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#em').value.trim() }); setSession(session);
+        ($('#msg') || {}).innerHTML = '<div class="okmsg">Đã lưu thông tin tài khoản' + (schKey(session.user.Truong) !== oldSk ? '. Em đã đổi trường: nếu lớp hiện tại không thuộc trường mới, hãy <a href="#/chonlop">chọn lại lớp</a>.' : '') + '</div>';
+      }
       catch (err) { errBox($('#msg'), err); }
     });
   };
@@ -1514,11 +1573,53 @@ route(/^\/hoso$/, () => {
 
 /* ================= GIÁO VIÊN ================= */
 function needGV() { if (!isGV()) { location.hash = '#/'; return false; } return true; }
-function csv(name, rows) {
-  const s = '﻿' + rows.map(r => r.map(v => { v = v == null ? '' : String(v); return /[",\n;]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }).join(',')).join('\r\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([s], { type: 'text/csv;charset=utf-8' })); a.download = name; document.body.appendChild(a); a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+/* Xuất Excel thật (.xlsx) ngay trên trình duyệt: mở bằng Excel là đúng từng cột, số là số (cập nhật 10/11/2026).
+   File CSV cũ bị dồn hết vào cột A khi máy Windows tiếng Việt dùng dấu ; làm dấu phân cách. */
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+const crc32 = b => { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+function zipStore(files) {
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = n => [n & 255, (n >>> 8) & 255], u32 = n => [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255];
+  files.forEach(([name, text]) => {
+    const nm = enc.encode(name), data = enc.encode(text), crc = crc32(data);
+    const common = [...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nm.length)];
+    const loc = new Uint8Array([0x50, 0x4b, 3, 4, ...common, ...u16(0)]);
+    parts.push(loc, nm, data);
+    cen.push(new Uint8Array([0x50, 0x4b, 1, 2, ...u16(20), ...common, ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += loc.length + nm.length + data.length;
+  });
+  const csize = cen.reduce((a, b) => a + b.length, 0);
+  return new Blob([...parts, ...cen, new Uint8Array([0x50, 0x4b, 5, 6, 0, 0, 0, 0, ...u16(files.length), ...u16(files.length), ...u32(csize), ...u32(off), 0, 0])], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
+/** rows[0] là dòng tiêu đề cột; opt.title: các dòng tên bảng phía trên; opt.fmt1: chỉ số cột hiển thị 1 chữ số thập phân */
+function xlsx(name, rows, opt = {}) {
+  const x = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+  const col = i => { let r = ''; i++; while (i) { const m = (i - 1) % 26; r = String.fromCharCode(65 + m) + r; i = (i - m - 1) / 26; } return r; };
+  const isNum = v => typeof v === 'number' ? isFinite(v) : /^-?(0|[1-9]\d{0,14})(\.\d+)?$/.test(String(v));
+  const title = opt.title || [], ncol = Math.max(...rows.map(r => r.length)), fmt1 = new Set(opt.fmt1 || []);
+  const widths = Array.from({ length: ncol }, (_, j) => Math.min(48, Math.max(6, ...rows.map(r => String(r[j] == null ? '' : r[j]).length + 2))));
+  if (opt.nameCol != null) widths[opt.nameCol] = Math.max(widths[opt.nameCol], 26);
+  let xml = '', R = 0;
+  const cell = (ref, v, st) => v == null || v === '' ? `<c r="${ref}" s="${st}"/>` : isNum(v) ? `<c r="${ref}" s="${st}"><v>${Number(v)}</v></c>` : `<c r="${ref}" s="${st}" t="inlineStr"><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  title.forEach((t, i) => { R++; xml += `<row r="${R}"${i ? '' : ' ht="22" customHeight="1"'}>${cell('A' + R, t, i ? 4 : 1)}</row>`; });
+  if (title.length) { R++; xml += `<row r="${R}"/>`; }
+  const head = R + 1;
+  rows.forEach((r, i) => { R++; xml += `<row r="${R}">${Array.from({ length: ncol }, (_, j) => cell(col(j) + R, r[j], i === 0 ? 2 : fmt1.has(j) && isNum(r[j]) ? 5 : isNum(r[j]) ? 6 : 3)).join('')}</row>`; });
+  const merges = title.map((_, i) => `<mergeCell ref="A${i + 1}:${col(ncol - 1)}${i + 1}"/>`).join('');
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"><pane ySplit="${head}" topLeftCell="A${head + 1}" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w, j) => `<col min="${j + 1}" max="${j + 1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${xml}</sheetData>${merges ? `<mergeCells count="${title.length}">${merges}</mergeCells>` : ''}<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="portrait"/></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="0.0"/></numFmts><fonts count="4"><font><sz val="12"/><name val="Times New Roman"/></font><font><b/><sz val="14"/><name val="Times New Roman"/></font><font><b/><sz val="12"/><name val="Times New Roman"/></font><font><i/><sz val="11"/><name val="Times New Roman"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F2"/></patternFill></fill></fills><borders count="2"><border/><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="7"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"></xf><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center"/></xf><xf numFmtId="164" fontId="2" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const sheetName = x(String(opt.sheet || 'Bảng điểm').replace(/[\\\/?*\[\]:]/g, '-').slice(0, 31));
+  const blob = zipStore([
+    ['[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>'],
+    ['_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+    ['xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${sheetName}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+    ['xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'],
+    ['xl/worksheets/sheet1.xml', sheet], ['xl/styles.xml', styles]]);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = String(name).replace(/\.(csv|xlsx)$/i, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^\w.\-]+/g, '_').replace(/_+/g, '_') + '.xlsx'; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+/* các nút "Xuất Excel" cũ gọi csv(): nay đều ra file .xlsx */
+function csv(name, rows) { xlsx(name, rows); }
 const joinLink = code => location.origin + location.pathname + '#/dangky?lop=' + code;
 
 /* ================= Trang chủ Giáo viên (gọn: Quản lý học sinh + Hỗ trợ dạy học theo khối) ================= */
@@ -1767,8 +1868,8 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${dupN ? `<button class="btn sm warnbtn" id="merge">🔗 Gộp ${dupN} HS trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
     ${dupN ? `<p class="hint" style="margin-top:0">Có học sinh trùng họ tên trong lớp (đăng ký nhiều tài khoản). Bấm <b>Gộp</b> để dồn kết quả về một tài khoản, xoá tài khoản thừa.</p>` : ''}
     <div class="card">${students.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
-      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
-        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 Cấp lại MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="6"></td></tr>`; }).join('')}
+      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
+        <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td style="white-space:nowrap"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp">✏️</button> <button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 Cấp lại MK</button> <button class="btn ghost sm" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh khỏi lớp">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="7"></td></tr>`; }).join('')}
       </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
     <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
     <h2>Chủ đề lớp hay sai nhất</h2>
@@ -1856,15 +1957,19 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
       <div class="grow"><label>Họ và tên</label><input name="n" value="${esc(s.HoTen)}" maxlength="60"></div>
       <div><label>Tên đăng nhập</label><input name="u" value="${esc(s.TenDN)}" maxlength="30" autocapitalize="none"></div>
       <div><label>Lớp</label><select name="l">${lopOpts(code)}</select></div>
+      <div class="hsschool">${schoolField('hsc_' + s.MaHS, s.Truong || c.Truong)}</div>
       <button class="btn sm">Lưu</button><button type="button" class="btn ghost sm" data-c>Huỷ</button><div class="msg" style="flex-basis:100%"></div></form>`;
     const f = tr.querySelector('form');
+    bindSchool('hsc_' + s.MaHS);
     f.querySelector('[data-c]').onclick = () => { tr.hidden = true; };
     f.onsubmit = async e => {
       e.preventDefault();
       await busy(f.querySelector('.btn'), async () => {
         try {
-          const r = await api('update_student', { maHS: s.MaHS, name: f.n.value, username: f.u.value, toCode: f.l.value });
-          toast(r.moved ? 'Đã chuyển học sinh sang lớp mới' : 'Đã lưu'); reload();
+          const sc = schoolVal('hsc_' + s.MaHS), lopTo = cls.find(x => x.MaLop === f.l.value) || c;
+          if (sc && schKey(sc) !== schKey(lopTo.Truong) && !confirm('Trường "' + sc + '" khác trường của lớp ' + lopTo.TenLop + '.\nHọc sinh sẽ rời lớp này; khi đăng nhập, em tự chọn lại lớp thuộc trường mới. Tiếp tục?')) return;
+          const r = await api('update_student', { maHS: s.MaHS, name: f.n.value, username: f.u.value, toCode: f.l.value, school: sc });
+          toast(r.detached ? 'Đã đổi trường: học sinh sẽ tự chọn lại lớp khi đăng nhập' : r.moved ? 'Đã chuyển học sinh sang lớp mới' : 'Đã lưu'); reload();
         } catch (err) { errBox(f.querySelector('.msg'), err); }
       });
     };
@@ -1906,6 +2011,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
     return (mode === 'first' ? srt[0] : srt[srt.length - 1]).diem;
   };
   const r2 = n => Math.round(n * 100) / 100;
+  const r1 = n => n == null ? null : Math.round(n * 10 + 1e-9) / 10;
   const build = () => {
     const chosen = list.filter(x => sel.has(x.id));
     const rows = students.map((s, i) => {
@@ -1973,8 +2079,14 @@ function scoreSheet(box, cls, students, results, myAsg) {
     $('#bdx', box).onclick = () => {
       const { chosen, rows } = build();
       if (!chosen.length) { toast('Hãy tích chọn ít nhất 1 cột điểm'); return; }
-      const head = ['STT', 'Họ tên', 'Tên đăng nhập', ...chosen.map(x => colName(x)), 'Tổng điểm', 'Điểm TB', 'Hạng lớp', ...(gd ? ['Hạng khối'] : []), 'Số bài đã làm'];
-      csv('BangDiem_' + String(cls.TenLop).replace(/[\/:*?"<>|]+/g, '-') + '.csv', [head, ...rows.map(r => [r.i + 1, r.s.HoTen, r.s.TenDN, ...r.v.map(x => x == null ? '' : x), r.tong, r.tb == null ? '' : r.tb, r.hl + '/' + students.length, ...(gd ? [r.hk + '/' + rows.nk] : []), r.lam + '/' + chosen.length])]);
+      // Bảng điểm gửi nhà trường: STT | Họ tên | điểm từng bài (tên cột GV đã đặt) | [Điểm TB nếu nhiều cột] | Điểm làm tròn (1 chữ số thập phân)
+      const many = chosen.length > 1;
+      const head = ['STT', 'Họ và tên', ...chosen.map(x => colName(x)), ...(many ? ['Điểm TB'] : []), 'Điểm làm tròn'];
+      const body = rows.map(r => { const base = many ? r.tb : r.v[0]; return [r.i + 1, r.s.HoTen, ...r.v.map(x => x == null ? '' : x), ...(many ? [r.tb == null ? '' : r.tb] : []), base == null ? '' : r1(base)]; });
+      const lop = String(cls.TenLop).replace(/[\/:*?"<>|]+/g, '-');
+      xlsx('BangDiem_' + lop + (many ? '' : '_' + colName(chosen[0]).replace(/[\/:*?"<>|]+/g, '-')), [head, ...body], {
+        title: ['BẢNG ĐIỂM LỚP ' + String(cls.TenLop).toUpperCase() + (cls.Truong ? ' – ' + String(cls.Truong).toUpperCase() : ''), (many ? chosen.map(x => colName(x)).join(' · ') : colName(chosen[0])) + ' · Xuất ngày ' + new Date().toLocaleDateString('vi-VN')],
+        fmt1: [head.length - 1], nameCol: 1, sheet: 'Lớp ' + lop });
     };
   };
   const loadGrade = async () => {
