@@ -306,7 +306,7 @@ function renderNav(path) {
   document.body.classList.toggle('focus', focus);
   const items = isGV()
     ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|dientutuongtu|htdien|linhkien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -751,8 +751,9 @@ async function homeTodo(box) {
 const K12_TOPICS = {
   hcat: { file: 'hinhcat.html', name: 'Bài 10. Hình cắt và mặt cắt' },
   hctd: { file: 'hctrucdo.html', name: 'Bài 11. Hình chiếu trục đo' },
-  tien: { file: 'cn11_tien.html', name: 'Bài 8. Phương pháp tiện', k: '11' },
-  phay: { file: 'cn11_phay.html', name: 'Bài 8. Phương pháp phay', k: '11' },
+  bai8: { file: 'cn11_bai8.html', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
+  tien: { file: 'cn11_bai8.html', hash: '#tien', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
+  phay: { file: 'cn11_bai8.html', hash: '#phay', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
   quytrinh: { file: 'cn11_quytrinh.html', name: 'Bài 9. Quy trình công nghệ gia công chi tiết', k: '11' },
   htdien: { file: 'htdien.html', name: 'Chủ đề Hệ thống điện gia đình' },
   linhkien: { file: 'linhkien.html', name: 'Chủ đề Linh kiện điện tử' },
@@ -761,9 +762,9 @@ const K12_TOPICS = {
 };
 const LESSON_V = '20261110';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
-route(/^\/(hcat|hctd|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
+route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
-  const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
+  const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : (T.hash || ''));
   const khoi = T.k || ((key === 'hcat' || key === 'hctd') ? '10' : '12');
   const back = isGV() ? '#/gv?khoi=' + khoi : '#/onluyen';
   document.body.classList.add('immersive');
@@ -804,8 +805,7 @@ route(/^\/onluyen$/, () => {
       ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
     </div>` : ''}
     ${g === '11' || is12 ? `<h2>Thư mục Khối 11</h2><div class="rows">
-      ${row('#/tien', '🔩', '', 'Bài 8. Phương pháp tiện', 'Mô hình 3D máy tiện: chuyển động cắt, phoi, vùng cắt, nhiều góc nhìn')}
-      ${row('#/phay', '⚙️', 'green', 'Bài 8. Phương pháp phay', 'Mô hình 3D máy phay: bộ dao phay, nguyên công cơ bản, sản phẩm phay')}
+      ${row('#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', 'Phương pháp tiện và phương pháp phay: mô hình 3D máy, dao cắt, chuyển động cắt, sản phẩm')}
       ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập')}
     </div>` : ''}
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
@@ -1531,8 +1531,7 @@ const GV_APPS = k => {
       A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
       A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
-    '11': [A('#/tien', '🔩', 'blue', 'Bài 8. Phương pháp tiện', 'Mô hình 3D máy tiện: chuyển động cắt, phoi, vùng cắt, nhiều góc nhìn', 'GV·HS'),
-      A('#/phay', '⚙️', 'green', 'Bài 8. Phương pháp phay', 'Mô hình 3D máy phay: bộ dao phay, nguyên công cơ bản, sản phẩm phay', 'GV·HS'),
+    '11': [A('#/bai8', '🔩', 'blue', 'Bài 8. Một số phương pháp gia công cơ khí', 'Phương pháp tiện và phương pháp phay: mô hình 3D máy, dao cắt, chuyển động cắt, sản phẩm', 'GV·HS'),
       A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập', 'GV·HS')],
     '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
       A('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Bài 15, 16, 17: điện trở, tụ, cuộn cảm, diode, transistor, IC', 'GV·HS'),

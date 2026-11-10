@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bài 8. Một số phương pháp gia công cơ khí – Công nghệ 11</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap">
+<style>
+/* Khung gộp Bài 8: thanh chọn Tiện | Phay ở trên, bài gốc (giữ nguyên 100%) chiếm phần còn lại */
+:root{--paper:#f2f6fb;--panel:#fff;--ink:#14213a;--muted:#5b6985;--line:#d8e1ee;--accent:#1d4ed8;--accent-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--paper:#0d1424;--panel:#151e34;--ink:#e7eeff;--muted:#98a7c6;--line:#27334f;--accent:#60a5fa;--accent-ink:#0b1424}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--paper);color:var(--ink);font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;overflow:hidden}
+.bar{flex:none;display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;background:var(--panel);border-bottom:1px solid var(--line);
+  padding:6px max(14px,env(safe-area-inset-right,0px)) 6px max(14px,env(safe-area-inset-left,0px))}
+.ttl{display:flex;align-items:baseline;gap:8px;min-width:0}
+.ttl small{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.ttl b{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs{display:flex;gap:6px;margin-left:auto}
+.tab{font:inherit;font-size:14px;font-weight:700;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 16px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px}
+.tab:hover{border-color:var(--accent)}
+.tab[aria-current="page"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{flex:1;min-height:0;position:relative}
+main iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--paper)}
+@media (max-width:620px){.ttl small{display:none}.ttl b{font-size:14px}.tabs{margin-left:0}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="ttl"><small>Công nghệ 11</small><b>Bài 8. Một số phương pháp gia công cơ khí</b></div>
+  <nav class="tabs" aria-label="Chọn phương pháp gia công">
+    <a class="tab" href="#tien" data-k="tien">🔩 Phương pháp tiện</a>
+    <a class="tab" href="#phay" data-k="phay">⚙️ Phương pháp phay</a>
+  </nav>
+</header>
+<main id="m"></main>
+<script>
+(function () {
+  "use strict";
+  /* Mỗi phần là file bài học gốc, không sửa nội dung; chỉ mở một phần tại một thời điểm để máy chiếu chạy nhẹ */
+  var FILES = { tien: "cn11_tien.html", phay: "cn11_phay.html" }, cur = null, host = document.getElementById("m");
+  function show(k) {
+    if (!FILES[k]) k = "tien";
+    if (k === cur) return; cur = k;
+    document.querySelectorAll(".tab").forEach(function (t) { if (t.dataset.k === k) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
+    host.innerHTML = "";
+    var f = document.createElement("iframe");
+    f.src = FILES[k] + "?v=20261110b"; f.title = k === "tien" ? "Phương pháp tiện" : "Phương pháp phay";
+    f.setAttribute("allow", "fullscreen; autoplay");
+    host.appendChild(f);
+    f.addEventListener("load", function () {
+      try {
+        f.contentWindow.focus();
+        /* Esc trong bài → báo lên app để trở về trang giáo viên (nếu bài không tự dùng phím Esc) */
+        f.contentWindow.addEventListener("keydown", function (e) {
+          if (e.key !== "Escape") return;
+          setTimeout(function () { if (!e.defaultPrevented) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); }, 0);
+        });
+      } catch (e) {}
+    });
+  }
+  function fromHash() { show(location.hash.replace("#", "")); }
+  addEventListener("hashchange", fromHash); fromHash();
+})();
+</script>
+</body>
+</html>
