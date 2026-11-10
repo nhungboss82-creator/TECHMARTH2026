@@ -3938,6 +3938,30 @@ function HCScene(canvas, opt) {
   let praf = 0, phase = 0;
   const clamp01 = x => Math.max(0, Math.min(1, x));
   const PIDX = { front: 0, top: 1, side: 2 };
+  /* tia chiếu: mỗi đỉnh (góc gãy) của hình chiếu ↔ đỉnh thật của vật thể có cùng toạ độ; điểm nào vật thể không có thì bỏ qua.
+     Chọn đỉnh nằm gần mặt phẳng chiếu nhất để tia không xuyên qua vật thể. */
+  let rpKey = null, rpVal = null;
+  const rayPts = () => {
+    if (rpKey === O && rpVal && rpVal.m === m) return rpVal;
+    const { D } = O, eps = 0.012, vs = [], seen = {};
+    (O.F || []).forEach(f => [f.pts, ...(f.holes || [])].forEach(L => (L || []).forEach(p => { const k = p.map(v => v.toFixed(3)).join(','); if (!seen[k]) { seen[k] = 1; vs.push(p); } })));
+    const spec = {   // (u,w) của hình chiếu ↔ toạ độ 3D; hướng chọn đỉnh gần mặt phẳng
+      front: { mt: (p, u, w) => Math.abs(p[0] - u) < eps && Math.abs(p[2] - w) < eps, sc: p => m === 1 ? p[1] : -p[1] },
+      top: { mt: (p, u, w) => Math.abs(p[0] - u) < eps && Math.abs(p[1] - w) < eps, sc: p => m === 1 ? -p[2] : p[2] },
+      side: { mt: (p, u, w) => Math.abs(p[1] - (D - u)) < eps && Math.abs(p[2] - w) < eps, sc: p => m === 1 ? p[0] : -p[0] } };
+    const out = { m };
+    ['front', 'top', 'side'].forEach(kk => {
+      const pts = {}, res = [];
+      ((O.views[kk] || {}).it || []).forEach(it => { if (it.p && (it.k === 'v' || it.k === 'h')) it.p.forEach(q => { pts[q[0].toFixed(3) + ',' + q[1].toFixed(3)] = q; }); });
+      Object.values(pts).forEach(([u, w]) => {
+        const c = vs.filter(p => spec[kk].mt(p, u, w)); if (!c.length) return;
+        const best = c.reduce((a, b) => spec[kk].sc(b) > spec[kk].sc(a) ? b : a);
+        res.push([best, G.map[kk](u, w)]);
+      });
+      out[kk] = res;
+    });
+    rpKey = O; rpVal = out; return out;
+  };
   // bước "Chiếu": lần lượt đứng → bằng → cạnh; tia chiếu chấm chạy tới mặt phẳng rồi hình chiếu hiện dần
   const qOf = kk => st.show === 'project' ? clamp01((st.p - PIDX[kk] * 0.27) / 0.46) : 1;
   let O = opt.obj, m = opt.m || 1, fitR = 1, fitC = [0, 0, 0], fitB = null, fitP = [], raf = 0, zb = null;
@@ -4009,14 +4033,13 @@ function HCScene(canvas, opt) {
     };
     const drawRays = () => {
       if (st.show !== 'project' && !(st.show === 'unfold' && t < 0.05)) return;
-      const { W, D, H } = O, cs = [0, 1].flatMap(i => [0, 1].flatMap(j => [0, 1].map(l => [i * W, j * D, l * H])));
-      const tgt = { front: p => G.map.front(p[0], p[2]), top: p => G.map.top(p[0], p[1]), side: p => G.map.side(D - p[1], p[2]) };
+      const RP = rayPts();
       ['front', 'top', 'side'].forEach(kk => {
         const reach = clamp01(qOf(kk) / 0.5); if (reach <= 0) return;
         const active = st.show === 'project' && qOf(kk) < 1;
-        cs.forEach(p => { const e = tgt[kk](p), q = reach < 1 ? p.map((v, i) => v + (e[i] - v) * reach) : e;
-          line(p, q, active ? COL[kk] : '#64748b', active ? 2 : 1.2, [0.1, 5], active ? 0.95 : 0.75, -phase); });
-        if (reach < 1) cs.forEach(p => { const e = tgt[kk](p), q = P(p.map((v, i) => v + (e[i] - v) * reach)); ctx.globalAlpha = 1; ctx.fillStyle = COL[kk]; ctx.beginPath(); ctx.arc(q[0], q[1], 3.2 * dp, 0, 7); ctx.fill(); });
+        RP[kk].forEach(([p, e]) => { const q = reach < 1 ? p.map((v, i) => v + (e[i] - v) * reach) : e;
+          line(p, q, active ? COL[kk] : '#64748b', active ? 2 : 1.2, [0.1, 5], active ? 0.95 : 0.75, -phase);
+          if (reach < 1) { const Q = P(q); ctx.globalAlpha = 1; ctx.fillStyle = COL[kk]; ctx.beginPath(); ctx.arc(Q[0], Q[1], 3.2 * dp, 0, 7); ctx.fill(); } });
       });
     };
     const arrow = (a, b, col, label) => {
@@ -4089,6 +4112,30 @@ function HCScene(canvas, opt) {
   };
 }
 
+/** bản vẽ ba hình chiếu trên một tờ: các hình chiếu dóng thẳng hàng, khoảng cách đều (giống kết quả sau khi lật mặt phẳng) */
+function hcSheetSvg(O, m, o = {}) {
+  const V = O.views, cell = o.cell || 40;
+  const gap = o.gap != null ? o.gap : Math.max(0.9, Math.min(1.6, Math.max(O.W, O.D, O.H) * 0.28));
+  const off = m === 1 ? { front: [0, 0], top: [0, -O.D - gap], side: [O.W + gap, 0] } : { front: [0, 0], top: [0, O.H + gap], side: [-O.D - gap, 0] };
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  ['front', 'top', 'side'].forEach(k => { const v = V[k], [ox, oy] = off[k], u0 = v.u0 || 0, w0 = v.v0 || 0; x0 = Math.min(x0, ox + u0); x1 = Math.max(x1, ox + u0 + v.W); y0 = Math.min(y0, oy + w0); y1 = Math.max(y1, oy + w0 + v.H); });
+  const pad = 0.45; x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+  const ST = { v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"', n: 'stroke="#0f172a" stroke-width="1.2"', g: 'stroke="#0f766e" stroke-width="1.6"', m: 'stroke="#0f172a" stroke-width="4.2"' };
+  let body = '';
+  ['front', 'top', 'side'].forEach(k => {
+    const [ox, oy] = off[k], X = u => ((ox + u - x0) * cell).toFixed(1), Y = w => ((y1 - (oy + w)) * cell).toFixed(1);
+    V[k].it.forEach(it => {
+      if (it.f || it.tx || it.ar) return;
+      const st = (ST[it.k] || ST.v) + ' fill="none" stroke-linecap="round" stroke-linejoin="round"';
+      if (it.p) body += `<path d="M${it.p.map(q => X(q[0]) + ' ' + Y(q[1])).join(' L')}${it.z ? 'Z' : ''}" ${st}/>`;
+      else if (it.c) body += `<circle cx="${X(it.c[0])}" cy="${Y(it.c[1])}" r="${(it.c[2] * cell).toFixed(1)}" ${st}/>`;
+      else if (it.a) { const [cx, cy, r, a0, a1] = it.a, Pt = a => [X(cx + r * Math.cos(a * Math.PI / 180)), Y(cy + r * Math.sin(a * Math.PI / 180))], [ax, ay] = Pt(a0), [bx, by] = Pt(a1);
+        body += `<path d="M${ax} ${ay} A${(r * cell).toFixed(1)} ${(r * cell).toFixed(1)} 0 ${a1 - a0 > 180 ? 1 : 0} 0 ${bx} ${by}" ${st}/>`; }
+    });
+  });
+  const W = (x1 - x0) * cell, H = (y1 - y0) * cell;
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Bản vẽ ba hình chiếu">${body}</svg>`;
+}
 /** ô 3×3 đặt ba hình chiếu theo phương pháp m (1 hoặc 3) */
 function hcLayoutHtml(O, m, o = {}) {
   const c = o.cell || 30, V = O.views, card = (k, t) => `<div class="hccell hc-${k}${o.noTag ? ' notag' : ''}">${o.noTag ? '' : `<span class="hctag hc-${k}">${t}</span>`}${HC.svg(V[k], c)}</div>`;
@@ -4148,14 +4195,14 @@ route(/^\/hcvg$/, params => {
         </section>
         <aside class="hvinfo">
           <div class="hvmeth"><span>${m === 1 ? 'Phương pháp chiếu góc thứ nhất' : 'Phương pháp chiếu góc thứ ba'}</span><b>Hình ${oi + 1}. ${esc(hcShort(O.ten))}</b></div>
-          ${step === 'unfold' ? `<div class="hvresult"><div class="hvrt">Bản vẽ ba hình chiếu</div>${hcLayoutHtml(O, m, { cell: 30, noTag: true })}</div>` : ''}
+          ${step === 'unfold' ? `<div class="hvresult"><div class="hvrt">Bản vẽ ba hình chiếu</div><div class="hvsheet">${hcSheetSvg(O, m)}</div></div>` : ''}
           <div class="expl hvexpl"><b class="t">${STEPS[si][1]}</b>${txt[step]}</div>
           ${step !== 'unfold' ? `<button class="btn block hvnext" id="next">${step === 'object' ? 'Tiếp: Đặt vào 3 mặt phẳng →' : step === 'planes' ? 'Tiếp: Chiếu lên các mặt phẳng →' : 'Tiếp: Lật thành một mặt phẳng →'}</button>`
             : `<button class="btn block hvnext" data-tab="${m === 1 ? 'g3' : 'ss'}">${m === 1 ? 'Tiếp: Phương pháp chiếu góc thứ ba →' : 'Tiếp: So sánh hai phương pháp →'}</button>`}
         </aside>
       </div>`);
     bindTop();
-    sc = HCScene($('#hc3d'), { obj: O, m, cleanEnd: true, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
+    sc = HCScene($('#hc3d'), { obj: O, m, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
     if (step === 'unfold') setTimeout(() => sc && sc.unfold(), 350);
     if (step === 'project') { sc.project(); if ($('#reproj')) $('#reproj').onclick = () => sc.project(); }
     $$('[data-step]').forEach(b => b.onclick = () => { step = b.dataset.step; draw(); });
