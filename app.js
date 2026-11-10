@@ -4017,6 +4017,7 @@ function HCScene(canvas, opt) {
     };
     const labels = () => {
       ctx.font = `700 ${Math.round(12.5 * dp)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+      if (t > 0.95 && opt.cleanEnd) return;   // kết quả sau cùng: chỉ còn bản vẽ, không ghi chữ
       const NAME = t > 0.95 ? { front: 'Hình chiếu đứng', top: 'Hình chiếu bằng', side: 'Hình chiếu cạnh' } : { front: 'MP chiếu đứng', top: 'MP chiếu bằng', side: 'MP chiếu cạnh' };
       const PL = ['front', 'top', 'side'].map(kk => { const C = G.planes[kk].c.map(p => turn(p, kk, t)).map(P); return { kk, C, c: [C.reduce((a, b) => a + b[0], 0) / 4, C.reduce((a, b) => a + b[1], 0) / 4] }; });
       const sc0 = [PL.reduce((a, b) => a + b.c[0], 0) / 3, PL.reduce((a, b) => a + b.c[1], 0) / 3];
@@ -4071,7 +4072,7 @@ function HCScene(canvas, opt) {
 
 /** ô 3×3 đặt ba hình chiếu theo phương pháp m (1 hoặc 3) */
 function hcLayoutHtml(O, m, o = {}) {
-  const c = o.cell || 30, V = O.views, card = (k, t) => `<div class="hccell hc-${k}"><span class="hctag hc-${k}">${t}</span>${HC.svg(V[k], c)}</div>`;
+  const c = o.cell || 30, V = O.views, card = (k, t) => `<div class="hccell hc-${k}${o.noTag ? ' notag' : ''}">${o.noTag ? '' : `<span class="hctag hc-${k}">${t}</span>`}${HC.svg(V[k], c)}</div>`;
   const F = card('front', 'Hình chiếu đứng'), T = card('top', 'Hình chiếu bằng'), S = card('side', 'Hình chiếu cạnh'), E = '<div></div>';
   return `<div class="hclayout m${m}">${m === 1 ? F + S + T + E : E + T + S + F}</div>`;
 }
@@ -4080,11 +4081,24 @@ route(/^\/hcvg$/, params => {
   const OBJ = HC.OBJ;
   let tab = (params && params.get('tab')) || 'g1', oi = 0, sc = null, step = 'object';
   let qs = [], qi = 0, qm = 1, slots = {}, held = null, done = false, score = 0, cards = [];
-  const TABS = [['g1', '① Góc chiếu thứ nhất'], ['g3', '② Góc chiếu thứ ba'], ['ss', '③ So sánh'], ['lt', '④ Luyện tập']];
-  const head = () => `${k10nav('#/hcvg')}
-    <div class="tabs hctabs">${TABS.map(([k, t]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${t}</button>`).join('')}</div>`;
+  const TABS = [['g1', '①', 'Góc chiếu thứ nhất'], ['g3', '②', 'Góc chiếu thứ ba'], ['ss', '③', 'So sánh'], ['lt', '④', 'Luyện tập']];
+  // giao diện toàn màn hình, không cuộn (cập nhật 10/11/2026)
+  const back = isGV() ? '#/gv?khoi=10' : '#/onluyen';
+  document.body.classList.add('immersive', 'hvfs');
+  const head = () => `<header class="hvbar"><a class="hvback" href="${back}" title="Quay lại (Esc)" aria-label="Quay lại">←</a>
+      <div class="hvttl"><small>Công nghệ 10 · Thiết kế và vẽ kĩ thuật</small><b>Bài 9. Hình chiếu vuông góc</b></div>
+      <nav class="hvtabs">${TABS.map(([k, n, t]) => `<button data-tab="${k}" class="t-${k}${tab === k ? ' on' : ''}"><i>${n}</i>${t}</button>`).join('')}</nav>
+      <button class="hvfsbtn" id="hvfs" title="Bật / tắt toàn màn hình">⛶</button></header>`;
+  let wasFs = false, gone = false;
+  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/hcvg') location.hash = back; };
+  const onFs = () => { if (fsEl()) wasFs = true; else if (wasFs) leave(); };
+  const onKey = e => { if (e.key === 'Escape' && !fsEl()) leave(); };
+  document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs); document.addEventListener('keydown', onKey);
+  { const el = document.documentElement, rq = el.requestFullscreen || el.webkitRequestFullscreen; if (rq && !fsEl()) { try { const pr = rq.call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } catch (e) {} } }
+  const toggleFs = () => { if (fsEl()) { wasFs = false; (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { const el = document.documentElement, pr = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } };
   const pickObj = () => `<div class="gcpick compact">${OBJ.map((o, i) => hcBtn(i === oi, `data-o="${i}"`, i, o.ten)).join('')}</div>`;
   const bindTop = () => {
+    if ($('#hvfs')) $('#hvfs').onclick = toggleFs;
     $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 'object'; if (tab === 'lt') startLT(); else draw(); });
     $$('[data-o]').forEach(b => b.onclick = () => { oi = +b.dataset.o; step = 'object'; if (tab === 'lt') startLT(); else draw(); });
   };
@@ -4102,27 +4116,33 @@ route(/^\/hcvg$/, params => {
       unfold: m === 1 ? 'Giữ nguyên mặt phẳng chiếu đứng; <b>lật mặt phẳng chiếu bằng xuống dưới</b> và <b>mặt phẳng chiếu cạnh sang phải</b> 90° cho trùng với mặt phẳng chiếu đứng. Kết quả: <b>hình chiếu bằng ở dưới</b>, <b>hình chiếu cạnh ở bên phải</b> hình chiếu đứng.'
         : 'Giữ nguyên mặt phẳng chiếu đứng; <b>lật mặt phẳng chiếu bằng lên trên</b> và <b>mặt phẳng chiếu cạnh sang trái</b> 90° cho trùng với mặt phẳng chiếu đứng. Kết quả: <b>hình chiếu bằng ở trên</b>, <b>hình chiếu cạnh ở bên trái</b> hình chiếu đứng.'
     };
+    const si = STEPS.findIndex(x => x[0] === step), mc = m === 1 ? 'm1' : 'm3';
     setView(`${head()}
       ${pickObj()}
-      <div class="card"><div class="hcsteps">${STEPS.map(([k, t]) => `<button data-step="${k}" class="${step === k ? 'on' : ''}">${t}</button>`).join('')}</div>
-        <canvas id="hc3d" class="hc3d"></canvas>
-        <div class="row" style="flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">
-          ${step === 'unfold' ? `<label class="grow" style="display:flex;align-items:center;gap:8px;margin:0">Lật mặt phẳng <input id="tt" type="range" min="0" max="100" value="100" style="flex:1"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : '<span class="grow"></span>'}
-          <button class="btn ghost sm" id="iso">Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">Nhìn thẳng từ trước</button>${isGV() ? '<button class="btn ghost sm" id="fs">🖥️ Toàn màn hình</button>' : ''}</div>
-        <div class="expl" style="margin-top:10px"><b class="t">${STEPS.find(s => s[0] === step)[1]}</b>${txt[step]}</div>
-        ${step !== 'unfold' ? `<button class="btn block" id="next" style="margin-top:8px">${step === 'object' ? 'Tiếp: Đặt vào 3 mặt phẳng →' : step === 'planes' ? 'Tiếp: Chiếu lên các mặt phẳng →' : 'Tiếp: Lật thành một mặt phẳng →'}</button>`
-          : `<div style="margin-top:12px"><b>Bản vẽ ba hình chiếu sau khi lật (${m === 1 ? 'góc chiếu thứ nhất' : 'góc chiếu thứ ba'})</b>${hcLayoutHtml(O, m)}</div>
-             <div class="row" style="margin-top:8px"><button class="btn" data-tab="${m === 1 ? 'g3' : 'ss'}">${m === 1 ? 'Tiếp: Phương pháp chiếu góc thứ ba →' : 'Tiếp: So sánh hai phương pháp →'}</button></div>`}
-        </div>`);
+      <div class="hvstage ${mc}">
+        <section class="hvcanvas">
+          <div class="hcsteps">${STEPS.map(([k, t], i) => `<button data-step="${k}" class="s${i + 1}${step === k ? ' on' : ''}${i < si ? ' done' : ''}"><i>${i < si ? '✓' : i + 1}</i><span>${t.replace(/^\d\.\s*/, '')}</span></button>`).join('')}</div>
+          <canvas id="hc3d" class="hc3d"></canvas>
+          <div class="hvctl">
+            ${step === 'unfold' ? `<label class="hvrange">Lật <input id="tt" type="range" min="0" max="100" value="100"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : '<span class="hvhint">🖱️ Kéo để xoay · cuộn để phóng to</span>'}
+            <span class="grow"></span><button class="btn ghost sm" id="iso">↺ Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">👁 Nhìn thẳng từ trước</button></div>
+        </section>
+        <aside class="hvinfo">
+          <div class="hvmeth"><span>${m === 1 ? 'Phương pháp chiếu góc thứ nhất' : 'Phương pháp chiếu góc thứ ba'}</span><b>Hình ${oi + 1}. ${esc(hcShort(O.ten))}</b></div>
+          ${step === 'unfold' ? `<div class="hvresult"><div class="hvrt">Bản vẽ ba hình chiếu</div>${hcLayoutHtml(O, m, { cell: 30, noTag: true })}</div>` : ''}
+          <div class="expl hvexpl"><b class="t">${STEPS[si][1]}</b>${txt[step]}</div>
+          ${step !== 'unfold' ? `<button class="btn block hvnext" id="next">${step === 'object' ? 'Tiếp: Đặt vào 3 mặt phẳng →' : step === 'planes' ? 'Tiếp: Chiếu lên các mặt phẳng →' : 'Tiếp: Lật thành một mặt phẳng →'}</button>`
+            : `<button class="btn block hvnext" data-tab="${m === 1 ? 'g3' : 'ss'}">${m === 1 ? 'Tiếp: Phương pháp chiếu góc thứ ba →' : 'Tiếp: So sánh hai phương pháp →'}</button>`}
+        </aside>
+      </div>`);
     bindTop();
-    sc = HCScene($('#hc3d'), { obj: O, m, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
+    sc = HCScene($('#hc3d'), { obj: O, m, cleanEnd: true, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
     if (step === 'unfold') setTimeout(() => sc && sc.unfold(), 350);
     $$('[data-step]').forEach(b => b.onclick = () => { step = b.dataset.step; draw(); });
     if ($('#next')) $('#next').onclick = () => { step = step === 'object' ? 'planes' : step === 'planes' ? 'project' : 'unfold'; draw(); };
     if ($('#tt')) $('#tt').oninput = e => sc.setT(+e.target.value / 100);
     if ($('#replay')) $('#replay').onclick = () => { sc.set({ show: 'planes', t: 0 }); sc.iso(); setTimeout(() => sc.unfold(), 700); };
     $('#iso').onclick = () => sc.iso(); $('#fr').onclick = () => sc.view(0, 0);
-    if ($('#fs')) $('#fs').onclick = () => { try { $('#hc3d').requestFullscreen(); } catch (e) {} };
   };
   /* ---- So sánh ---- */
   const drawSS = () => {
@@ -4194,7 +4214,12 @@ route(/^\/hcvg$/, params => {
     $$('[data-a]').forEach(b => b.onclick = () => { ans9 = +b.dataset.a; if (q.opts[ans9].ok) score++; drawLT(); });
     if ($('#nx')) $('#nx').onclick = () => { qi++; done = false; ans9 = null; drawLT(); };
   };
-  cleanup = kill;
+  cleanup = () => {
+    kill(); gone = true;
+    document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); document.removeEventListener('keydown', onKey);
+    if (fsEl()) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
+    document.body.classList.remove('immersive', 'hvfs');
+  };
   if (tab === 'lt') startLT(); else draw();
 });
 

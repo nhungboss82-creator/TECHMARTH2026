@@ -739,3 +739,89 @@ button.gh-grph>span:first-child{flex:1}
 .hstable td.hsact{white-space:nowrap;text-align:right}
 .hstable td.hsact .btn{margin-left:4px;padding-left:9px;padding-right:9px}
 .hstable td.hsact .delbtn:hover{border-color:#dc2626;color:#dc2626}
+
+/* ===== Bài 9 – Hình chiếu vuông góc: toàn màn hình, không cuộn, màu sắc sinh động (10/11/2026) ===== */
+body.hvfs .view{display:flex;flex-direction:column;overflow:hidden;
+  background:radial-gradient(1200px 500px at 0% 0%,rgba(255,196,87,.22),transparent 60%),radial-gradient(900px 500px at 100% 100%,rgba(139,92,246,.18),transparent 60%),radial-gradient(800px 400px at 100% 0%,rgba(14,165,233,.16),transparent 60%),var(--bg)}
+.hvbar{flex:none;display:flex;align-items:center;gap:14px;padding:10px 16px;color:#fff;
+  background:linear-gradient(100deg,#f59e0b 0%,#ef4444 30%,#d946ef 62%,#6366f1 100%);box-shadow:0 6px 22px -10px rgba(99,102,241,.7)}
+.hvback{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;font-weight:800;color:#fff;text-decoration:none;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35)}
+.hvback:hover{background:rgba(255,255,255,.3)}
+.hvttl{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.hvttl small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85;white-space:nowrap}
+.hvttl b{font-size:19px;font-weight:800;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+.hvtabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.hvtabs button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:700;font-size:14px;padding:7px 14px 7px 8px;border-radius:999px;cursor:pointer;transition:.15s}
+.hvtabs button i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.25);font-size:13px}
+.hvtabs button:hover{background:rgba(255,255,255,.26)}
+.hvtabs button.on{background:#fff;color:#9d174d;border-color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.hvtabs button.on i{background:linear-gradient(135deg,#f59e0b,#ec4899);color:#fff}
+.hvfsbtn{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer}
+body.hvfs .k10wrap{flex:1;min-height:0;grid-template-columns:210px minmax(0,1fr);gap:14px;padding:14px 16px 16px;align-items:stretch}
+body.hvfs .k10side{position:static;top:auto;max-height:none;height:100%;overflow-y:auto;padding:10px;border-radius:18px;background:color-mix(in srgb,var(--card) 82%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+body.hvfs .k10side .gcpick.compact button{border:1px solid transparent;background:transparent;font-weight:600;padding:7px 10px;transition:.12s}
+body.hvfs .k10side .gcpick.compact button:hover{background:color-mix(in srgb,#f59e0b 12%,transparent)}
+body.hvfs .k10side .gcpick.compact button.on{color:#fff;border-color:transparent;background:linear-gradient(110deg,#f59e0b,#ec4899 60%,#8b5cf6);box-shadow:0 6px 16px -6px rgba(236,72,153,.7)}
+body.hvfs .k10main{min-height:0;height:100%;overflow-y:auto;scrollbar-width:thin}
+.hvstage{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,25vw,380px);gap:14px;min-height:0}
+.hvcanvas,.hvinfo{min-height:0;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 30px -18px rgba(30,41,59,.45)}
+.hvcanvas{display:flex;flex-direction:column;padding:12px;gap:10px}
+.hvcanvas .hczw{flex:1;min-height:0}
+.hvcanvas .hc3d{height:100%;margin:0;border-radius:16px;border:0;
+  background:radial-gradient(circle at 50% 40%,#ffffff 0%,#f1f5ff 45%,#e3e9fb 100%)}
+.hvcanvas .hcsteps{gap:8px}
+.hvcanvas .hcsteps button{display:flex;align-items:center;gap:9px;text-align:left;border:2px solid transparent;border-radius:14px;padding:8px 10px;font-size:13.5px;color:var(--ink);background:var(--bg);transition:.15s}
+.hvcanvas .hcsteps button i{flex:none;font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}
+.hvcanvas .hcsteps .s1 i{background:#0ea5e9}.hvcanvas .hcsteps .s2 i{background:#10b981}.hvcanvas .hcsteps .s3 i{background:#f59e0b}.hvcanvas .hcsteps .s4 i{background:#8b5cf6}
+.hvcanvas .hcsteps button.done{opacity:.85}
+.hvcanvas .hcsteps .s1.on{border-color:#0ea5e9;background:#e0f2fe;color:#075985}
+.hvcanvas .hcsteps .s2.on{border-color:#10b981;background:#d1fae5;color:#065f46}
+.hvcanvas .hcsteps .s3.on{border-color:#f59e0b;background:#fef3c7;color:#92400e}
+.hvcanvas .hcsteps .s4.on{border-color:#8b5cf6;background:#ede9fe;color:#5b21b6}
+.hvcanvas .hcsteps button.on{box-shadow:0 6px 16px -8px currentColor;transform:translateY(-1px)}
+.hvctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hvhint{font-size:13px;color:var(--muted)}
+.hvrange{display:flex;align-items:center;gap:8px;font-weight:700;margin:0;min-width:220px}
+.hvrange input{flex:1;accent-color:#8b5cf6}
+.hvinfo{display:flex;flex-direction:column;gap:12px;padding:14px;overflow-y:auto}
+.hvmeth{border-radius:14px;padding:10px 14px;color:#fff;display:flex;flex-direction:column;gap:2px}
+.hvmeth span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.9}
+.hvmeth b{font-size:17px}
+.hvstage.m1 .hvmeth{background:linear-gradient(120deg,#0d9488,#0ea5e9)}
+.hvstage.m3 .hvmeth{background:linear-gradient(120deg,#7c3aed,#db2777)}
+.hvresult{border-radius:14px;padding:10px;background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px dashed #f59e0b}
+.hvrt{font-weight:800;font-size:13px;color:#b45309;text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.hvresult .hclayout{margin-top:6px;gap:8px}
+.hvresult .hccell{padding:6px;border-width:0;background:transparent}
+.hvresult .hccell svg{max-height:15vh;width:auto;max-width:100%}
+.hccell.notag{padding-top:6px}
+.hvexpl{margin:0;line-height:1.55;font-size:14.5px}
+.hvnext{margin-top:auto;background:linear-gradient(110deg,#f59e0b,#ec4899 55%,#8b5cf6);border:0;box-shadow:0 10px 22px -10px rgba(236,72,153,.8)}
+.hvnext:hover{filter:brightness(1.06)}
+body.hvfs .hccompare,body.hvfs .qcard,body.hvfs .qbar,body.hvfs .k10main>.card,body.hvfs .k10main>.hero{margin-top:0}
+@media (prefers-color-scheme:dark){
+  .hvcanvas .hc3d{background:radial-gradient(circle at 50% 40%,#ffffff 0%,#eef2fb 60%,#dfe6f6 100%)}
+  .hvresult{background:var(--card)}
+}
+@media (max-width:1100px){.hvttl small{display:none}.hvtabs button{font-size:13px;padding:6px 10px 6px 6px}}
+@media (max-width:900px){
+  .hvbar{flex-wrap:wrap}.hvtabs{margin-left:0;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  body.hvfs .k10wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:8px}
+  body.hvfs .k10side{height:auto;overflow-x:auto;overflow-y:hidden;padding:6px}
+  .hvstage{grid-template-columns:1fr;height:auto}
+  .hvcanvas{height:62vh}
+  body.hvfs .k10main{overflow-y:auto}
+}
+body.hvfs .qbar{top:0;margin-bottom:10px}
+.hvnext{position:sticky;bottom:0;flex:none}
+.hvctl{flex-wrap:nowrap}.hvctl .btn{white-space:nowrap}
+.hvrange{min-width:120px;flex:1;max-width:280px}
+@media (max-height:800px){
+  .hvbar{padding:7px 14px}.hvttl b{font-size:17px}
+  body.hvfs .k10wrap{padding:10px 12px 12px;gap:10px}.hvstage{gap:10px}
+  .hvinfo{gap:8px;padding:10px}.hvmeth{padding:8px 12px}.hvmeth b{font-size:15.5px}
+  .hvresult .hccell svg{max-height:11vh}.hvresult{padding:8px}
+  .hvexpl{font-size:13.5px;line-height:1.45;padding:9px 12px}
+  .hvcanvas{padding:10px;gap:8px}.hvcanvas .hcsteps button{padding:6px 8px;font-size:13px}.hvcanvas .hcsteps button i{width:24px;height:24px;font-size:12.5px}
+}
+@media (max-width:1300px){.hvctl #iso,.hvctl #fr{font-size:0;padding:6px 10px}.hvctl #iso::before{content:'↺ Ban đầu';font-size:13px}.hvctl #fr::before{content:'👁 Từ trước';font-size:13px}}
