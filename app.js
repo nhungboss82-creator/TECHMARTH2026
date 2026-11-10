@@ -306,7 +306,7 @@ function renderNav(path) {
   document.body.classList.toggle('focus', focus);
   const items = isGV()
     ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|dientutuongtu|htdien|linhkien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -751,17 +751,20 @@ async function homeTodo(box) {
 const K12_TOPICS = {
   hcat: { file: 'hinhcat.html', name: 'Bài 10. Hình cắt và mặt cắt' },
   hctd: { file: 'hctrucdo.html', name: 'Bài 11. Hình chiếu trục đo' },
+  tien: { file: 'cn11_tien.html', name: 'Bài 8. Phương pháp tiện', k: '11' },
+  phay: { file: 'cn11_phay.html', name: 'Bài 8. Phương pháp phay', k: '11' },
+  quytrinh: { file: 'cn11_quytrinh.html', name: 'Bài 9. Quy trình công nghệ gia công chi tiết', k: '11' },
   htdien: { file: 'htdien.html', name: 'Chủ đề Hệ thống điện gia đình' },
   linhkien: { file: 'linhkien.html', name: 'Chủ đề Linh kiện điện tử' },
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-const LESSON_V = '20261108c';
+const LESSON_V = '20261110';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
-route(/^\/(hcat|hctd|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
+route(/^\/(hcat|hctd|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
   const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : '');
-  const khoi = (key === 'hcat' || key === 'hctd') ? '10' : '12';
+  const khoi = T.k || ((key === 'hcat' || key === 'hctd') ? '10' : '12');
   const back = isGV() ? '#/gv?khoi=' + khoi : '#/onluyen';
   document.body.classList.add('immersive');
   setView(`<iframe class="lessonfull" src="${src}" title="${T.name}" allow="autoplay; fullscreen"></iframe>
@@ -799,6 +802,11 @@ route(/^\/onluyen$/, () => {
       ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D: hình cắt toàn bộ, một nửa, mặt cắt rời, mặt cắt chập')}
       ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Vẽ từng bước: vuông góc đều, xiên góc cân; luyện tập đọc bản vẽ')}
       ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
+    </div>` : ''}
+    ${g === '11' || is12 ? `<h2>Thư mục Khối 11</h2><div class="rows">
+      ${row('#/tien', '🔩', '', 'Bài 8. Phương pháp tiện', 'Mô hình 3D máy tiện: chuyển động cắt, phoi, vùng cắt, nhiều góc nhìn')}
+      ${row('#/phay', '⚙️', 'green', 'Bài 8. Phương pháp phay', 'Mô hình 3D máy phay: bộ dao phay, nguyên công cơ bản, sản phẩm phay')}
+      ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập')}
     </div>` : ''}
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
       ${row('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Sơ đồ hệ thống điện, thiết bị điện, lắp mạch điện trong nhà')}
@@ -1523,7 +1531,10 @@ const GV_APPS = k => {
       A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
       A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
-    '11': [], '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
+    '11': [A('#/tien', '🔩', 'blue', 'Bài 8. Phương pháp tiện', 'Mô hình 3D máy tiện: chuyển động cắt, phoi, vùng cắt, nhiều góc nhìn', 'GV·HS'),
+      A('#/phay', '⚙️', 'green', 'Bài 8. Phương pháp phay', 'Mô hình 3D máy phay: bộ dao phay, nguyên công cơ bản, sản phẩm phay', 'GV·HS'),
+      A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập', 'GV·HS')],
+    '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
       A('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Bài 15, 16, 17: điện trở, tụ, cuộn cảm, diode, transistor, IC', 'GV·HS'),
       A('#/dientutuongtu', '📈', 'green', 'Chủ đề Điện tử tương tự', 'Bài 19, 20: khuếch đại thuật toán, thực hành mạch khuếch đại đảo', 'GV·HS'),
       A('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21, 22, 23: cổng logic, mạch xử lí tín hiệu, mạch báo cháy 3D', 'GV·HS')]
@@ -1541,7 +1552,7 @@ const GV_APPS = k => {
     ...(k === '10' ? [A('#/gv/baive?k=10', '📷', 'violet', 'Bài vẽ – AI chấm', 'Giao bài vẽ, HS chụp nộp, AI chấm', 'GV')] : [])
   ];
   const game = A('#/trochoi?k=' + k, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh', 'GV·HS');
-  return [['🖥️ Trình chiếu trên lớp', k === '12' ? [game, ...show] : [...show, ...sgk, game]],
+  return [['🖥️ Trình chiếu trên lớp', k === '10' ? [...show, ...sgk, game] : k === '11' ? [game, ...show, ...sgk] : [game, ...show]],
     ['📚 Học sinh tự ôn luyện', hs], ['🧰 Công cụ cho giáo viên', gv]];
 };
 const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
@@ -1598,11 +1609,14 @@ route(/^\/gv$/, async params => {
       <div class="gh-head"><h2>Hỗ trợ dạy học</h2><span class="hint">Chọn khối</span></div>
       <div class="gh-khoi" role="tablist">${['10', '11', '12'].map(v => { const I = KHOI_INFO[v]; return `<button role="tab" aria-selected="${k === v}" data-khoi="${v}" class="${I.c} ${k === v ? 'on' : ''}"><span class="gh-kic">${I.ic}</span><b>${I.t}</b><span>${I.d}</span></button>`; }).join('')}</div>
       ${k === '10' ? `<a class="gh-feature" href="#/gv/baive"><span class="gh-fic">📷</span><span class="gh-ftx"><b>Bài vẽ – AI chấm</b><span>Giao bài vẽ cho lớp hoặc để HS tự luyện: chụp bài vẽ tay → AI khoanh lỗi, hướng dẫn sửa</span></span><span class="gh-fgo">Mở ›</span></a>` : ''}
-      ${groups.map(([t, xs]) => `<section class="gh-grp ${KI.c}"><div class="gh-grph"><span>${t}</span><small>${xs.length} mục</small></div><div class="gh-apps">${xs.map(ghApp).join('')}</div></section>`).join('') || `<div class="card empty">Nội dung ${KI.t} đang được bổ sung.</div>`}
+      ${groups.map(([t, xs], i) => { const id = k + '_' + i, on = fold[id] === undefined ? i === 0 : !!fold[id];
+        return `<section class="gh-grp ${KI.c} ${on ? 'open' : ''}"><button type="button" class="gh-grph" data-fold="${id}" aria-expanded="${on}"><span>${t}</span><small>${xs.length} mục</small><span class="gh-chev" aria-hidden="true">▾</span></button>${on ? `<div class="gh-apps">${xs.map(ghApp).join('')}</div>` : ''}</section>`; }).join('') || `<div class="card empty">Nội dung ${KI.t} đang được bổ sung.</div>`}
       <p class="hint gh-legend"><span class="who">GV·HS</span> trình chiếu, HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>
       <div class="gh-foot"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
+    $$('[data-fold]').forEach(b => b.onclick = () => { const id = b.dataset.fold, cur = fold[id] === undefined ? id.endsWith('_0') : !!fold[id]; fold[id] = cur ? 0 : 1; store.set('gh_fold', fold); draw(); });
   };
+  const fold = store.get('gh_fold', {});
   draw();
   api('visit_stats').then(r => { window._vs = r; if (location.hash.replace(/\?.*/, '') === '#/gv') draw(); }).catch(() => {});
   if (session.role === 'admin' && !window._pendShown) api('list_gv').then(l => { const p = l.filter(g => g.TrangThai === 'cho_duyet'); if (p.length && location.hash.replace(/\?.*/, '') === '#/gv') pendingModal(p); }).catch(() => {});

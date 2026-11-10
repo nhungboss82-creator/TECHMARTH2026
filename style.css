@@ -719,3 +719,13 @@ body.wide .view{max-width:1360px}
 .tl-de label.on{border-color:#7c3aed;background:rgba(124,58,237,.07)}
 .tl-de input{margin-top:3px;accent-color:#7c3aed;width:auto}
 .gh-app:has(.who) .gh-tx{padding-right:40px}
+/* nhóm nội dung tự thu gọn (10/11/2026) */
+.gh-grp{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--card) 70%,transparent);padding:4px 10px;margin-top:12px}
+.gh-grp.open{padding-bottom:12px}
+button.gh-grph{width:100%;display:flex;align-items:center;gap:8px;margin:0;padding:10px 2px;background:none;border:0;font:inherit;font-weight:800;font-size:15px;color:var(--ink);cursor:pointer;text-align:left}
+button.gh-grph>span:first-child{flex:1}
+.gh-chev{transition:transform .2s;color:var(--muted);font-size:13px}
+.gh-grp:not(.open) .gh-chev{transform:rotate(-90deg)}
+.gh-grp.k10.open{border-color:rgba(245,158,11,.45)}
+.gh-grp.k11.open{border-color:rgba(16,185,129,.45)}
+.gh-grp.k12.open{border-color:rgba(37,99,235,.4)}
