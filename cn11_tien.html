@@ -1862,7 +1862,7 @@ const MODES = {
     pass(p, k) { const r = p.rMin + this.dk(p, k); return { A: [p.xE + 0.12, r], B: [p.xR - p.relW * 0.5, r] }; },
     ret: [0, -0.045], dir: [-1, 0, 0],
     title: 'Tiện ren trong (ren đai ốc)',
-    desc: 'Lỗ được khoan, tiện trước bằng <b>đường kính chân ren trong</b>. Dao ren trong mũi <b>60°</b> lắp trên cán dài, đưa vào lỗ; vít me đồng bộ chuyển động để dao tiến <b>1 bước ren P mỗi vòng</b>. Cuối lỗ có rãnh thoát dao.',
+    desc: 'Lỗ được khoan, tiện trước bằng <b>đường kính đỉnh ren trong</b> (đường kính nhỏ D<sub>1</sub>). Dao ren trong mũi <b>60°</b> lắp trên cán dài, đưa vào lỗ; vít me đồng bộ chuyển động để dao tiến <b>1 bước ren P mỗi vòng</b>. Cuối lỗ có rãnh thoát dao.',
     steps: ['Đưa dao vào miệng lỗ, mũi dao ngang tâm, ăn dao ra phía thành lỗ.', 'Đóng đai ốc hai nửa, dao cắt rãnh xoắn vào sâu trong lỗ.', 'Tới rãnh thoát: lùi mũi dao về phía tâm, rút ra, ăn sâu thêm lượt sau.'],
     formula: () => `P = ${fmt(state.pitch, 2)} mm · Dao lùi về phía tâm khi kết thúc lượt`,
     note: 'Phôi được bổ đôi để thấy đường ren xoắn hình thành trong lỗ.'

@@ -774,7 +774,7 @@ const K12_TOPICS = {
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-const LESSON_V = '20261110';
+const LESSON_V = '20261110c';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
@@ -3847,7 +3847,7 @@ const HC = (() => {
    * item: {p:[[u,v]...], k:'v'|'h'|'c', z:đóng} đường gấp khúc · {c:[u,v,r],k} đường tròn · {a:[u,v,r,a0,a1],k} cung (độ) · k: v=nét thấy, h=nét khuất, c=đường tâm */
   const L = (x1, y1, x2, y2, k = 'v') => ({ p: [[x1, y1], [x2, y2]], k });
   const OBJ = [
-    { id: 'bacvat', ten: 'Khối bậc có vát (hình mẫu của cô)', anh: 'img/GC_hop_goc1.webp', W: 4, D: 3, H: 3,
+    { id: 'bacvat', ten: 'Khối bậc có vát', anh: 'img/GC_hop_goc1.webp', W: 4, D: 3, H: 3,
       faces: () => [...extrude('x', [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), ...box(2.4, 4, 0, 3, 0, 1)],
       views: {
         front: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 1], [2.4, 1], [2.4, 3], [0, 3]], z: 1, k: 'v' }, L(0, 2.2, 2.4, 2.2)] },
@@ -3856,17 +3856,17 @@ const HC = (() => {
         right: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], z: 1, k: 'v' }, L(0, 1, 3, 1)], why: 'Đây là hình nhìn từ phải (bậc thấp ở gần nên thấy rõ, phần vát ở bên trái).' },
         back: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [1.6, 3], [1.6, 1], [0, 1]], z: 1, k: 'v' }, L(1.6, 2.2, 4, 2.2, 'h')], why: 'Đây là hình nhìn từ phía sau.' }
       }, dis: ['right', 'back'] },
-    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)', anh: 'img/GC_giado_3d.webp', W: 4, D: 3, H: 4.2,
+    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9)', anh: 'img/GC_giado_3d.webp', W: 4, D: 3, H: 4.2,
       faces: () => [
         ...extrude('z', [[1, 0], [3.3, 0], [3.3, 3], [1, 3], ...arcPts(1, 2, 1, 90, 180, 8).slice(1, 8), [0, 2, 0], [0, 1, 1], ...arcPts(1, 1, 1, 180, 270, 8).slice(1, 8)], [circ(0.8, 0.85, 0.3, 20), circ(0.8, 2.15, 0.3, 20)], 0, 0.8),
         ...extrude('x', [[0, 0], [3, 0], [3, 2.7, 1], ...arcPts(1.5, 2.7, 1.5, 0, 180, 16).slice(1, 16), [0, 2.7]], [circ(1.5, 2.75, 0.65, 24)], 3.3, 4),
         ...extrude('y', xz([[1.6, 0.8], [3.3, 0.8], [3.3, 2.0]]), [], 1.25, 1.75)],
       views: {
         front: { W: 4, H: 4.2, it: [{ p: [[0, 0], [4, 0], [4, 4.2], [3.3, 4.2], [3.3, 0.8], [0, 0.8]], z: 1, k: 'v' }, L(1.6, 0.8, 3.3, 2.0), L(0.5, 0, 0.5, 0.8, 'h'), L(1.1, 0, 1.1, 0.8, 'h'), L(3.3, 2.1, 4, 2.1, 'h'), L(3.3, 3.4, 4, 3.4, 'h'), L(0.8, -0.35, 0.8, 1.15, 'c'), L(2.95, 2.75, 4.35, 2.75, 'c')] },
-        top: { W: 4, H: 3, it: [{ p: [[1, 0], [4, 0], [4, 3], [1, 3]], k: 'v' }, { a: [1, 2, 1, 90, 180], k: 'v' }, L(0, 2, 0, 1), { a: [1, 1, 1, 180, 270], k: 'v' }, L(3.3, 0, 3.3, 3), L(1.6, 1.25, 3.3, 1.25), L(1.6, 1.75, 3.3, 1.75), L(1.6, 1.25, 1.6, 1.75), { c: [0.8, 0.85, 0.3], k: 'v' }, { c: [0.8, 2.15, 0.3], k: 'v' }, L(0.8, 0.3, 0.8, 2.7, 'c'), L(0.3, 0.85, 1.3, 0.85, 'c'), L(0.3, 2.15, 1.3, 2.15, 'c')] },
+        top: { W: 4, H: 3, it: [{ p: [[1, 0], [4, 0], [4, 3], [1, 3]], k: 'v' }, { a: [1, 2, 1, 90, 180], k: 'v' }, L(0, 2, 0, 1), { a: [1, 1, 1, 180, 270], k: 'v' }, L(3.3, 0, 3.3, 3), L(3.3, 0.85, 4, 0.85, 'h'), L(3.3, 2.15, 4, 2.15, 'h'), L(1.6, 1.25, 3.3, 1.25), L(1.6, 1.75, 3.3, 1.75), L(1.6, 1.25, 1.6, 1.75), { c: [0.8, 0.85, 0.3], k: 'v' }, { c: [0.8, 2.15, 0.3], k: 'v' }, L(0.8, 0.3, 0.8, 2.7, 'c'), L(0.3, 0.85, 1.3, 0.85, 'c'), L(0.3, 2.15, 1.3, 2.15, 'c')] },
         side: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'v' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c'), L(0.85, -0.35, 0.85, 1.15, 'c'), L(2.15, -0.35, 2.15, 1.15, 'c')] },
         right: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8, 'h'), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'h' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che mất gân và đế nên gân, đế vẽ nét đứt.' },
-        top2: { W: 4, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0, 3]], k: 'v' }, { a: [3, 2, 1, 0, 90], k: 'v' }, L(4, 2, 4, 1), { a: [3, 1, 1, 270, 360], k: 'v' }, L(0.7, 0, 0.7, 3), L(0.7, 1.25, 2.4, 1.25), L(0.7, 1.75, 2.4, 1.75), L(2.4, 1.25, 2.4, 1.75), { c: [3.2, 0.85, 0.3], k: 'v' }, { c: [3.2, 2.15, 0.3], k: 'v' }, L(3.2, 0.3, 3.2, 2.7, 'c')], why: 'Hình này bị lật ngược trái – phải so với hình chiếu bằng.' }
+        top2: { W: 4, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0, 3]], k: 'v' }, { a: [3, 2, 1, 0, 90], k: 'v' }, L(4, 2, 4, 1), { a: [3, 1, 1, 270, 360], k: 'v' }, L(0.7, 0, 0.7, 3), L(0, 0.85, 0.7, 0.85, 'h'), L(0, 2.15, 0.7, 2.15, 'h'), L(0.7, 1.25, 2.4, 1.25), L(0.7, 1.75, 2.4, 1.75), L(2.4, 1.25, 2.4, 1.75), { c: [3.2, 0.85, 0.3], k: 'v' }, { c: [3.2, 2.15, 0.3], k: 'v' }, L(3.2, 0.3, 3.2, 2.7, 'c')], why: 'Hình này bị lật ngược trái – phải so với hình chiếu bằng.' }
       }, dis: ['right', 'top2'] },
     { id: 'chuL91', ten: 'Khối chữ L có hai lỗ (SGK H.9.1)', W: 5, D: 4, H: 6,
       faces: () => [...extrude('x', [[0, 0], [4, 0], [4, 6], [0, 6]], [circ(2, 4, 0.75, 24)], 0, 1.5), ...extrude('z', [[1.5, 0], [5, 0], [5, 4], [1.5, 4]], [circ(3.25, 2, 1, 28)], 0, 2)],
@@ -3881,7 +3881,7 @@ const HC = (() => {
       faces: () => [...extrude('z', [[0, 0], [4.2, 0], [4.2, 3.6], [0, 3.6], [0, 2.4], [1.8, 2.4], [1.8, 1.2], [0, 1.2]], [], 0, 2.4), ...extrude('x', [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], [circ(1.8, 4.5, 1.2, 28)], 4.2, 6)],
       views: {
         front: { W: 6, H: 6.6, it: [{ p: [[0, 0], [6, 0], [6, 6.6], [4.2, 6.6], [4.2, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.8, 0, 1.8, 2.4, 'h'), L(4.2, 3.3, 6, 3.3, 'h'), L(4.2, 5.7, 6, 5.7, 'h'), L(3.8, 4.5, 6.4, 4.5, 'c')] },
-        top: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6]], z: 1, k: 'v' }, { p: [[0, 1.2], [1.8, 1.2], [1.8, 2.4], [0, 2.4]], k: 'v' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h'), L(3.8, 1.8, 6.4, 1.8, 'c')] },
+        top: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6], [0, 2.4], [1.8, 2.4], [1.8, 1.2], [0, 1.2]], z: 1, k: 'v' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h'), L(3.8, 1.8, 6.4, 1.8, 'c')] },
         side: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4), L(1.2, 0, 1.2, 2.4), L(2.4, 0, 2.4, 2.4), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c'), L(0.25, 4.5, 3.35, 4.5, 'c')] },
         right: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4, 'h'), L(1.2, 0, 1.2, 2.4, 'h'), L(2.4, 0, 2.4, 2.4, 'h'), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che hết phần đế nên đế và rãnh phải vẽ nét đứt.' },
         topX: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6]], z: 1, k: 'v' }, { p: [[0, 1.2], [1.8, 1.2], [1.8, 2.4], [0, 2.4]], k: 'h' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h')], why: 'Nhìn từ trên thấy rõ rãnh ở đầu đế nên phải vẽ nét liền.' }
@@ -4291,7 +4291,7 @@ route(/^\/hcvg$/, params => {
 });
 
 /** tên ngắn gọn của vật thể trên nút chọn (tên đầy đủ, số hình SGK hiện khi rê chuột) */
-const HC_SHORT = { 'Khối bậc có vát (hình mẫu của cô)': 'Khối bậc vát', 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)': 'Gối đỡ', 'Khối chữ L có hai lỗ (SGK H.9.1)': 'Chữ L hai lỗ', 'Giá đỡ (SGK H.9.10)': 'Giá đỡ',
+const HC_SHORT = { 'Khối bậc có vát': 'Khối bậc vát', 'Gối đỡ (SGK H.9.9)': 'Gối đỡ', 'Khối chữ L có hai lỗ (SGK H.9.1)': 'Chữ L hai lỗ', 'Giá đỡ (SGK H.9.10)': 'Giá đỡ',
   'Gối đỡ chữ U': 'Chữ U', 'Khối chữ L có lỗ': 'Chữ L có lỗ', 'Khối hộp vát góc có lỗ (SGK H.11.14)': 'Khối vát có lỗ', 'Tấm có lỗ bậc': 'Tấm lỗ bậc', 'Ống lót có vai': 'Ống lót', 'Vật thể có rãnh và lỗ (SGK H.10.16)': 'Khối có rãnh',
   'Giá đỡ (SGK H.10.10)': 'Giá đỡ', 'Khay (SGK H.10.6)': 'Khay', 'Gối đỡ (SGK H.10.17)': 'Gối đỡ', 'Trục có rãnh then (SGK H.10.9)': 'Trục', 'Giá chữ L (SGK H.12.5)': 'Giá chữ L', 'Ngôi nhà (SGK H.12.7a)': 'Ngôi nhà', 'Khối chữ T ngược': 'Chữ T ngược', 'Gối đỡ có vát': 'Gối vát', 'Khối ghép có rãnh': 'Khối ghép', 'Tai treo có lỗ': 'Tai treo', 'Khối chữ L': 'Chữ L', 'Khối bậc thang': 'Bậc thang' };
 const hcShort = t => HC_SHORT[t] || String(t).replace(/\s*\(.*\)\s*$/, '');
@@ -5646,8 +5646,8 @@ route(/^\/hcpc$/, params => {
     qs = [
       ...types.map(t => ({ kind: 'type', t, obj: PC_OBJ[rnd(PC_OBJ.length)], opts: shuffle([{ k: 'p1', t: 'Phối cảnh 1 điểm tụ' }, { k: 'p2', t: 'Phối cảnh 2 điểm tụ' }, { k: 'td', t: 'Hình chiếu trục đo' }]).map(o => ({ ...o, ok: o.k === t })),
         why: { p1: 'Mặt trước giữ nguyên hình dạng, các cạnh chạy ra xa hội tụ về một điểm → phối cảnh 1 điểm tụ.', p2: 'Chỉ các cạnh thẳng đứng còn song song; hai hướng cạnh nằm ngang chụm về hai phía → phối cảnh 2 điểm tụ.', td: 'Các cạnh song song trên vật thể vẫn song song trên hình (không chụm lại) → hình chiếu trục đo.' }[t] })),
-      ...eyes.map(e => ({ kind: 'eye', e, obj: PC_OBJ[rnd(PC_OBJ.length)], m: 1 + rnd(2), opts: shuffle([{ k: 'hi', t: 'Từ trên xuống (tầm mắt cao hơn vật thể)' }, { k: 'mid', t: 'Ngang tầm vật thể' }, { k: 'lo', t: 'Từ dưới lên (tầm mắt thấp hơn mặt đất)' }]).map(o => ({ ...o, ok: o.k === e })),
-        why: { hi: 'Thấy được mặt trên của vật thể → đường chân trời (tầm mắt) cao hơn vật thể: nhìn từ trên xuống.', mid: 'Không thấy mặt trên lẫn mặt dưới, đường chân trời cắt ngang vật thể → nhìn ngang tầm.', lo: 'Thấy được mặt đáy của vật thể → tầm mắt thấp hơn mặt đất: nhìn từ dưới lên.' }[e] })),
+      ...eyes.map(e => ({ kind: 'eye', e, obj: PC_OBJ[rnd(PC_OBJ.length)], m: 1 + rnd(2), opts: shuffle([{ k: 'hi', t: 'Từ trên xuống (tầm mắt cao hơn vật thể)' }, { k: 'mid', t: 'Ngang tầm vật thể' }, { k: 'lo', t: 'Từ dưới lên (tầm mắt thấp hơn mặt đáy vật thể)' }]).map(o => ({ ...o, ok: o.k === e })),
+        why: { hi: 'Thấy được mặt trên của vật thể → đường chân trời (tầm mắt) cao hơn vật thể: nhìn từ trên xuống.', mid: 'Không thấy mặt trên lẫn mặt dưới, đường chân trời cắt ngang vật thể → nhìn ngang tầm.', lo: 'Thấy được mặt đáy của vật thể → đường chân trời (tầm mắt) thấp hơn mặt đáy vật thể: nhìn từ dưới lên.' }[e] })),
       { kind: 'txt', stem: 'Hình chiếu phối cảnh được xây dựng bằng phép chiếu nào?', opts: shuffle([{ t: 'Phép chiếu xuyên tâm', ok: true }, { t: 'Phép chiếu vuông góc', why: 'Phép chiếu vuông góc dùng cho hình chiếu vuông góc, hình chiếu trục đo vuông góc đều.' }, { t: 'Phép chiếu song song xiên', why: 'Phép chiếu song song xiên dùng cho hình chiếu trục đo xiên góc cân.' }]) },
       { kind: 'txt', stem: 'Đường chân trời là giao tuyến của', opts: shuffle([{ t: 'mặt phẳng tầm mắt với mặt tranh', ok: true }, { t: 'mặt phẳng vật thể với mặt tranh', why: 'Giao tuyến này là đường nền (đường đáy tranh), không phải đường chân trời.' }, { t: 'mặt phẳng tầm mắt với mặt phẳng vật thể', why: 'Hai mặt phẳng này song song nên không cắt nhau.' }]) },
       { kind: 'txt', stem: 'Phối cảnh một điểm tụ nhận được khi mặt tranh', opts: shuffle([{ t: 'song song với một mặt của vật thể', ok: true }, { t: 'không song song với mặt nào của vật thể', why: 'Khi đó ta được phối cảnh hai điểm tụ.' }, { t: 'nằm ngang, song song với mặt đất', why: 'Mặt tranh luôn thẳng đứng.' }]) },

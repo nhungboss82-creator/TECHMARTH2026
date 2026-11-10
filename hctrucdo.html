@@ -241,7 +241,7 @@ const HC = (() => {
    * item: {p:[[u,v]...], k:'v'|'h'|'c', z:đóng} đường gấp khúc · {c:[u,v,r],k} đường tròn · {a:[u,v,r,a0,a1],k} cung (độ) · k: v=nét thấy, h=nét khuất, c=đường tâm */
   const L = (x1, y1, x2, y2, k = 'v') => ({ p: [[x1, y1], [x2, y2]], k });
   const OBJ = [
-    { id: 'bacvat', ten: 'Khối bậc có vát (hình mẫu của cô)', anh: 'img/GC_hop_goc1.webp', W: 4, D: 3, H: 3,
+    { id: 'bacvat', ten: 'Khối bậc có vát', anh: 'img/GC_hop_goc1.webp', W: 4, D: 3, H: 3,
       faces: () => [...extrude('x', [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), ...box(2.4, 4, 0, 3, 0, 1)],
       views: {
         front: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 1], [2.4, 1], [2.4, 3], [0, 3]], z: 1, k: 'v' }, L(0, 2.2, 2.4, 2.2)] },
@@ -250,7 +250,7 @@ const HC = (() => {
         right: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], z: 1, k: 'v' }, L(0, 1, 3, 1)], why: 'Đây là hình nhìn từ phải (bậc thấp ở gần nên thấy rõ, phần vát ở bên trái).' },
         back: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [1.6, 3], [1.6, 1], [0, 1]], z: 1, k: 'v' }, L(1.6, 2.2, 4, 2.2, 'h')], why: 'Đây là hình nhìn từ phía sau.' }
       }, dis: ['right', 'back'] },
-    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9 – hình mẫu của cô)', anh: 'img/GC_giado_3d.webp', W: 4, D: 3, H: 4.2,
+    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9)', anh: 'img/GC_giado_3d.webp', W: 4, D: 3, H: 4.2,
       faces: () => [
         ...extrude('z', [[1, 0], [3.3, 0], [3.3, 3], [1, 3], ...arcPts(1, 2, 1, 90, 180, 8).slice(1, 8), [0, 2, 0], [0, 1, 1], ...arcPts(1, 1, 1, 180, 270, 8).slice(1, 8)], [circ(0.8, 0.85, 0.3, 20), circ(0.8, 2.15, 0.3, 20)], 0, 0.8),
         ...extrude('x', [[0, 0], [3, 0], [3, 2.7, 1], ...arcPts(1.5, 2.7, 1.5, 0, 180, 16).slice(1, 16), [0, 2.7]], [circ(1.5, 2.75, 0.65, 24)], 3.3, 4),
