@@ -1,5 +1,5 @@
 /* SmarttechCN 2026 – Service Worker: chạy offline, tải nhanh */
-const VER = 'stc-2026.11.10-10';
+const VER = 'stc-2026.11.13-1';
 const SHELL = ['./', 'index.html', 'app.js', 'style.css', 'config.js', 'matran.js', 'manifest.webmanifest', 'bank.json', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
