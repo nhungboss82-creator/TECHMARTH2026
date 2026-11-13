@@ -774,7 +774,7 @@ const K12_TOPICS = {
   dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
   dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
 };
-const LESSON_V = '20261113a';
+const LESSON_V = '20261113b';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
@@ -793,8 +793,12 @@ route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dient
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
   document.addEventListener('keydown', onKey);
   const f = $('.lessonfull');
-  f.addEventListener('load', () => { try { f.contentWindow.addEventListener('keydown', onKey); } catch (e) {} try { f.focus(); } catch (e) {} });
   const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+  // bấm chọn bài (Bài 8, 9, 10…) bên trong chủ đề → bật lại toàn màn hình nếu đang ở cửa sổ thường
+  const goFs = () => { if (req && !fsEl()) { try { const pr = req.call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } catch (e) {} } };
+  const onPick = e => { const t = e.target && e.target.closest && e.target.closest('[data-l], button, a, [role=button]'); if (!t) return;
+    if (t.hasAttribute('data-l') || /^\s*(?:📘\s*)?Bài\s*\d+/.test(t.textContent || '')) goFs(); };
+  f.addEventListener('load', () => { try { f.contentWindow.addEventListener('keydown', onKey); f.contentDocument.addEventListener('click', onPick, true); } catch (e) {} try { f.focus(); } catch (e) {} });
   if (req && !fsEl()) { try { const pr = req.call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } catch (e) {} }
   setTimeout(() => { const h = $('#lhint'); if (h) h.classList.add('off'); }, 3500);
   cleanup = () => {

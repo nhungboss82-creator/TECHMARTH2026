@@ -639,6 +639,91 @@ body.b9only #learnBody.lb-dev{padding:12px 18px 12px}
 .sbadge .sbn{font:700 36px/1 var(--f-label);background:rgba(255,255,255,.22);border-radius:10px;padding:4px 10px}
 .sbadge .sbn small{font-size:17px;opacity:.9}
 .sbadge .sbi{display:flex;flex-direction:column;gap:2px;font-size:15px;line-height:1.2}.sbadge .sbi b{font-size:16px}
+/* Bài 8 – đồng hồ tròn đỏ + điểm tròn xanh ở góc phải dưới */
+.hud{position:fixed;right:22px;bottom:14px;z-index:60;display:flex;align-items:center;gap:14px;pointer-events:none}
+.hscore,.htimer{border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;box-shadow:0 8px 22px rgba(0,0,0,.28)}
+.hscore{width:108px;height:108px;background:radial-gradient(circle at 35% 30%,#4ADE80,#16A34A 55%,#0F7A3A);border:5px solid #fff;outline:2px solid #16A34A;pointer-events:auto}
+.hscore b{font:700 36px/1 var(--f-label);font-variant-numeric:tabular-nums}
+.hscore small{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.95;margin-top:1px}
+.hscore i{font-style:normal;font-size:12px;font-weight:700;background:rgba(255,255,255,.22);border-radius:999px;padding:0 7px;margin-top:2px}
+.hscore.bump{animation:bump .6s ease-out}
+@keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.22);box-shadow:0 0 0 12px rgba(34,197,94,.35)}100%{transform:scale(1)}}
+.htimer{width:132px;height:132px;padding:7px;box-sizing:border-box;background:conic-gradient(#fff calc(var(--p,100) * 1%),rgba(255,255,255,.28) 0);background-color:#C2282D}
+.htimer{background:conic-gradient(#FFE08A calc(var(--p,100) * 1%),#7F1D1D 0)}
+.htimer .hin{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F87171,#DC2626 55%,#991B1B);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.htimer b{font:700 38px/1 var(--f-label);font-variant-numeric:tabular-nums;letter-spacing:.02em;text-shadow:0 2px 4px rgba(0,0,0,.25)}
+.htimer small{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.95;margin-top:3px}
+.htimer.low{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.htimer.done .hin{background:radial-gradient(circle at 35% 30%,#9CA3AF,#6B7280 60%,#4B5563)}.htimer.done{background:#D1D5DB}
+@media (max-width:1500px),(max-height:760px){.hscore{width:88px;height:88px;border-width:4px}.hscore b{font-size:28px}.htimer{width:106px;height:106px;padding:6px}.htimer b{font-size:30px}.hscore small,.htimer small{font-size:11px}}
+@media (prefers-reduced-motion:reduce){.htimer.low,.hscore.bump{animation:none}}
+/* ---------- màu riêng từng bài, hài hoà ---------- */
+body{--lc:#0D9488}
+body[data-lesson=b8]{--lc:#2563EB}body[data-lesson=b9]{--lc:#EA580C}body[data-lesson=b10]{--lc:#7C3AED}body[data-lesson=free]{--lc:#0D9488}
+.top{border-bottom:3px solid var(--lc)!important}
+#lessonNav{gap:6px;background:transparent}
+#lessonNav button{--c:#0D9488;color:var(--c);background:color-mix(in srgb,var(--c) 10%,white);border:2px solid color-mix(in srgb,var(--c) 35%,white);font-weight:700;transition:background .15s,color .15s,transform .15s}
+#lessonNav button[data-l=b8]{--c:#2563EB}#lessonNav button[data-l=b9]{--c:#EA580C}#lessonNav button[data-l=b10]{--c:#7C3AED}#lessonNav button[data-l=free]{--c:#0D9488}
+#lessonNav button:hover{background:color-mix(in srgb,var(--c) 20%,white);color:var(--c);transform:translateY(-1px)}
+#lessonNav button.on{background:var(--c);color:#fff;border-color:var(--c);box-shadow:0 4px 12px color-mix(in srgb,var(--c) 45%,transparent)}
+#learn .ltop{background:linear-gradient(90deg,color-mix(in srgb,var(--lc) 14%,white),#fff 55%,color-mix(in srgb,var(--lc) 8%,white))!important;border-bottom:3px solid var(--lc)}
+#learn .ltop h2,#learn.b9 .ltop h2{color:var(--lc)!important}
+#learn .ltabs button.on{background:var(--lc)!important;color:#fff!important}
+#learn .sprog,.dvprog{background:var(--lc)!important}
+#learn .btnrow .sbtn.pri{background:var(--lc);border-color:var(--lc)}
+/* Bài 9 – nền thiết bị màu trắng */
+#learnBody.lb-dev .dvc,#learnBody.lb-dev .dvc.ok,#learnBody.lb-dev .dvc.no{background:#fff}
+#learnBody.lb-dev .dvc .im,.dvfocus .im{background:#fff!important;box-shadow:none!important;border:1px solid #EEF1F5}
+#learnBody.lb-dev .dvc .im::before,.dvfocus .im::before{display:none}
+.dvfocus{background:#fff}
+.hscore b{font-size:32px}
+#learnBody.lb-dev .dvinfo.guide{--dc:var(--lc)!important}
+/* ---------- khung Nhiệm vụ bên phải: gọn, nhỏ, thu gọn được ---------- */
+.insp{width:290px!important;transition:width .25s ease}
+.tabs{margin:8px 8px 0!important;padding:2px!important}
+.tabs button{font-size:13px!important;padding:6px 1px!important;letter-spacing:0}
+#rp{padding:10px 12px 16px!important;font-size:12.5px!important;line-height:1.5!important}
+#rp h3{font-size:18px!important}
+#rp h4{margin:12px 0 6px!important;font-size:15px!important}
+#rp .box{padding:8px 10px!important;margin-bottom:8px!important}
+#rp .learnbox{padding:7px 9px!important;margin-bottom:8px!important;font-size:12.5px;line-height:1.45}
+#rp .learnbox .btnrow{margin-top:5px!important}
+#rp .learnbox .sbtn{padding:6px 10px!important;font-size:13px!important}
+#rp .sbtn{font-size:13px}
+.rpToggle{position:absolute;left:-22px;top:46%;z-index:30;width:22px;height:60px;border:1px solid var(--rule);border-right:0;border-radius:10px 0 0 10px;background:var(--lc,#1F3A5F);color:#fff;font:700 18px/1 var(--f-label);cursor:pointer;box-shadow:-2px 2px 8px rgba(0,0,0,.15);padding:0}
+.rpToggle:hover{filter:brightness(1.1)}
+body.rp-min .insp{width:0!important;border-left:0}
+body.rp-min .insp>*:not(.rpToggle){display:none!important}
+body.rp-min .rpToggle{width:30px;left:-30px;height:110px;writing-mode:vertical-rl;font-size:15px}
+body.rp-min .rpToggle::after{content:" Nhiệm vụ";font:600 13px var(--f-label)}
+@media (max-width:1366px){.insp{width:260px!important}}
+/* ---------- công cụ trong vùng lắp mạch: gọn, nhỏ, ít che bảng ---------- */
+.dock{top:10px!important;left:10px!important;width:58px!important;padding:4px!important;gap:1px!important;border-radius:12px}
+.tool{padding:5px 1px 4px!important;gap:2px!important;font-size:10.5px!important;border-radius:8px}
+.tool svg{width:18px!important;height:18px!important}
+.dock hr{margin:2px 3px}
+.wirebar{top:10px!important;gap:6px!important;padding:4px 8px!important;border-radius:12px}
+.wirebar .lbl{font-size:13px!important}
+.chip{width:20px!important;height:20px!important;border-width:2px!important}
+.wirebar select{padding:3px 4px!important;font-size:12px!important}
+.wirebar label{font-size:12px!important;gap:4px}
+.wirebar input[type=checkbox]{width:14px;height:14px}
+.wirebar button:not(.chip){font-size:12.5px!important;padding:4px 9px!important}
+#stepFloat{left:10px!important;bottom:10px!important;gap:9px!important;padding:5px 16px 5px 5px!important;font-size:16px!important}
+#stepFloat .sn{width:30px!important;height:30px!important;font-size:17px!important}
+#stepFloat small{font-size:12px!important;margin-top:2px!important}
+#stepFloat.mini,#stepFloat.livemini{font-size:14px!important;padding:4px 12px 4px 4px!important}
+#stepFloat.mini .sn,#stepFloat.livemini .sn{width:24px!important;height:24px!important;font-size:14px!important}
+.zoombar{right:10px!important;bottom:10px!important;gap:1px!important;padding:3px!important;border-radius:12px}
+.zoombar button{min-width:26px!important;height:26px!important;font-size:12px!important;padding:0 6px!important}
+.zoombar input[type=range]{width:90px!important}
+.zoombar span,.zoombar output,.zoombar b{font-size:13px!important}
+#zFit{display:none!important}
+#learnBody.lb-dev .dvinfo.fit .dvcols{grid-template-columns:1fr 1.08fr;gap:22px}
+#learnBody.lb-dev .dvinfo.fit .dvcols>.dvsec:first-child{border-right:2px dashed color-mix(in srgb,var(--dc) 30%,white);padding-right:18px}
+#learnBody.lb-dev .dvinfo.fit .dvcols .fn{margin:0 0 .3em}
+.htimer small{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -696,15 +781,16 @@ body.b9only #learnBody.lb-dev{padding:12px 18px 12px}
     </div>
     <div class="float zoombar" aria-label="Phóng to, thu nhỏ">
       <button id="zOut" title="Thu nhỏ (phím −)" aria-label="Thu nhỏ"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
-      <label class="sr" for="zSlider">Mức phóng</label><input type="range" id="zSlider" min="30" max="250" step="5" value="100">
+      <label class="sr" for="zSlider">Mức phóng</label><input type="range" id="zSlider" min="50" max="400" step="5" value="100">
       <button id="zIn" title="Phóng to (phím +)" aria-label="Phóng to"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 8h10M8 3v10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
       <span id="zLbl">100%</span>
       <span class="vsep"></span>
-      <button id="z100" title="Kích thước thật (phím 1)">100%</button>
+      <button id="z100" title="100% – cả bảng vừa khung giữa màn hình (phím 1)">100%</button>
       <button id="zFit" title="Vừa khung (phím 0)">Vừa khung</button>
     </div>
   </section>
   <aside class="insp">
+    <button class="rpToggle" id="rpToggle" title="Thu gọn / mở khung Nhiệm vụ" aria-label="Thu gọn khung Nhiệm vụ">»</button>
     <div id="diag" hidden></div>
     <div class="tabs" id="tabs">
       <button data-tab="task" class="on">Nhiệm vụ</button>
@@ -762,7 +848,15 @@ const J = 4;              // mật độ dòng điện cho phép (A/mm²) – SG
 const R_C = 0.01;         // điện trở tiếp điểm đóng
 const R_W = 0.02;         // điện trở một đoạn dây
 const GLEAK = 1e-9;
-const W = 1600, H = 1100;
+let W = 1600, H = 1100;   // W co giãn theo tỉ lệ vùng lắp mạch để bảng vừa khít khung
+const W0 = 1600; let SX = 1, noScale = false;
+function boardFor(key) {
+  const wr = document.getElementById('wrap'); if (!wr || !wr.clientWidth) return;
+  const a = (wr.clientWidth - 96) / Math.max(200, wr.clientHeight - 96);
+  if ((key || state.lesson) === 'b8') { H = 680; W = Math.max(900, Math.min(2000, Math.round(H * a / 10) * 10)); SX = 1; return; }  // Bài 8: bảng nhỏ hơn → thiết bị hiện to, rõ
+  H = 1100; W = Math.max(W0, Math.min(2800, Math.round(H * a / 10) * 10)); SX = W / W0;
+}
+function applyZones(key) { (LESSONS[key].zones || []).forEach(z => { if (z._x == null) { z._x = z.x; z._w = z.w; } z.x = Math.round(z._x * SX); z.w = Math.round(z._w * SX); }); }
 const APT_R = [6, 10, 16, 20, 25, 32];
 const WIRE_S = [0.5, 0.75, 1, 1.5, 2, 2.5, 4, 6];
 const WCOL = { L: '#dc2626', N: '#2563eb', K: '#d97706', D: '#111827' };
@@ -1229,10 +1323,12 @@ function nextLabel(type) {
   const pf = DEF[type].prefix; if (!pf) return '';
   let n = 1; while (state.devices.some(d => d.label === pf + n)) n++; return pf + n;
 }
+/* Kích thước mặc định của thiết bị – tương xứng với khung lắp mạch */
+const DSC = () => noScale ? 1 : state.lesson === 'b8' ? 1.4 : 2;
 function addDevice(type, x, y, p = {}, extra = {}) {
   const def = DEF[type]; const params = {};
   (def.params || []).forEach(q => params[q.k] = q.def); (def.num || []).forEach(q => params[q.k] = q.def);
-  const d = { id: gid(type), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, rot: 0, scale: 1, p: Object.assign(params, p), st: defaultSt(type), label: type === 'nguon' ? 'NGUỒN' : nextLabel(type), ...extra };
+  const d = { id: gid(type), type, x: Math.round(x / 10) * 10, y: Math.round(y / 10) * 10, rot: 0, scale: type === 'jn' ? 1 : DSC(), p: Object.assign(params, p), st: defaultSt(type), label: type === 'nguon' ? 'NGUỒN' : nextLabel(type), ...extra };
   state.devices.push(d); return d;
 }
 function addWire(a, b, color, size, pts = []) { const w = { id: gid('w'), a, b, color, size, pts, auto: !pts.length }; state.wires.push(w); return w; }
@@ -2392,7 +2488,7 @@ function propPanel() {
   h += `<div class="row"><label>Kí hiệu</label><input type="text" data-dp="label" value="${esc(d.label)}" ${state.power || d.type === 'nguon' ? 'disabled' : ''}></div>`;
   def.params.forEach(p => { h += `<div class="row"><label>${p.label}</label><select data-dp="${p.k}" ${lock ? 'disabled' : ''}>${p.opts.map(o => `<option value="${o.v}" ${d.p[p.k] == o.v ? 'selected' : ''}>${o.t}</option>`).join('')}</select></div>`; });
   (def.num || []).forEach(p => { h += `<div class="row"><label>${p.label}</label><input type="number" step="100" min="0" data-dpn="${p.k}" value="${d.p[p.k]}" ${lock ? 'disabled' : ''}></div>`; });
-  if (d.type !== 'nguon') h += `<div class="row"><label>Kích thước</label><input type="range" min="0.5" max="2.5" step="0.05" value="${d.scale || 1}" data-scale style="flex:1"><span class="muted">${Math.round((d.scale || 1) * 100)}%</span></div>
+  if (d.type !== 'nguon') h += `<div class="row"><label>Kích thước</label><input type="range" min="0.5" max="4" step="0.05" value="${d.scale || 1}" data-scale style="flex:1"><span class="muted">${Math.round((d.scale || 1) * 100)}%</span></div>
     <div class="btnrow"><button class="sbtn" data-act="rotL" ${state.power ? 'disabled' : ''}>⟲ Xoay trái</button><button class="sbtn" data-act="rotR" ${state.power ? 'disabled' : ''}>⟳ Xoay phải</button><button class="sbtn" data-act="dup" ${state.power || d.fixed ? 'disabled' : ''}>⧉ Copy thêm</button>${d.fixed ? '' : `<button class="sbtn dan" data-act="del" ${state.power ? 'disabled' : ''}>🗑️ Xoá</button>`}</div>`;
   if (k === 'load') h += `<div class="box">Dòng điện định mức: <b>I = P / U = ${vn(d.p.P, 0)} / 220 = ${vn(d.p.P / U, 2)} A</b><br>Tiết diện dây tối thiểu: <b>S = I / J = ${vn(d.p.P / U / J, 3)} mm²</b></div>`;
   if (k === 'outlet') h += `<div class="box">Dòng tính toán theo công suất dự kiến: <b>${vn(d.p.designP / U, 2)} A</b> (ổ cắm ${d.p.r} A ${d.p.designP / U > d.p.r ? '❌ không chịu được' : '✅'})</div>`;
@@ -2551,7 +2647,7 @@ function deleteSel() {
   state.devices.filter(d => d.type === 'jn').forEach(j => { const n = wireCount(j.id + ':j'); if (n === 0) state.devices = state.devices.filter(x => x !== j); else if (n === 2) mergeJunction(j); });
   state.sel = null; changed();
 }
-const SC_MIN = 0.5, SC_MAX = 2.5;
+const SC_MIN = 0.5, SC_MAX = 4;
 function scaleSel(k) { if (locked() || !state.sel || !state.sel.d) return; const d = dev(state.sel.d); if (!d || d.type === 'jn' || d.type === 'nguon') return; pushUndo();
   d.scale = Math.max(SC_MIN, Math.min(SC_MAX, Math.round(((d.scale || 1) + k) * 20) / 20)); state.wires.forEach(w => { if (w.a.d === d.id || w.b.d === d.id) { w.auto = true; w.pts = []; } }); changed(); }
 function nudgeSel(dx, dy) { if (locked() || !state.sel || !state.sel.d) return; const d = dev(state.sel.d); if (!d) return; pushUndo();
@@ -2561,7 +2657,7 @@ function dupDev(src, n = 1) {
   if (locked() || !src || src.type === 'jn' || src.type === 'nguon') return null; pushUndo(); let last = null;
   for (let i = 1; i <= n; i++) { let x = src.x + 50 * i, y = src.y + 40 * i;
     for (let k = 0; k < 8 && state.devices.some(o => o.type !== 'jn' && Math.abs(o.x - snap(x)) < 30 && Math.abs(o.y - snap(y)) < 30); k++) { x += 40; y += 30; }
-    last = addDevice(src.type, Math.max(60, Math.min(W - 60, x)), Math.max(60, Math.min(H - 60, y)), JSON.parse(JSON.stringify(src.p))); last.rot = src.rot || 0; last.scale = 1;
+    last = addDevice(src.type, Math.max(60, Math.min(W - 60, x)), Math.max(60, Math.min(H - 60, y)), JSON.parse(JSON.stringify(src.p))); last.rot = src.rot || 0; last.scale = src.scale || DSC();
     logE('⧉', `Copy ${src.label} → ${last.label}`); }
   state.sel = { d: last.id }; state.newDev = { id: last.id, until: Date.now() + 3000 }; setTimeout(renderSvg, 3050); timerStart(); sfx('click'); changed();
   toast(`⧉ Đã copy ${src.label} thành ${last.label} (cùng thông số, kích thước vừa phải 100%). Kéo thiết bị mới tới chỗ cần lắp.`, 'ok'); return last;
@@ -2623,7 +2719,7 @@ $('#quick').addEventListener('click', e => {
   if (a.dataset.qa === 'del') { state.sel = sel; hideQuick(); deleteSel(); }
   if (a.dataset.qa === 'rot') { state.sel = sel; rotateSel(1); openQuick(sel); }
   if (a.dataset.qa === 'dup') { const n = dupDev(dev(sel.d)); if (n) openQuick({ d: n.id }); }
-  if (a.dataset.qa === 'fit') { state.sel = sel; const d = dev(sel.d); if (d && !locked()) { scaleSel(1 - (d.scale || 1)); openQuick(sel); } }
+  if (a.dataset.qa === 'fit') { state.sel = sel; const d = dev(sel.d); if (d && !locked()) { scaleSel(DSC() - (d.scale || 1)); openQuick(sel); } }
   if (a.dataset.qa === 'sm' || a.dataset.qa === 'lg') { state.sel = sel; scaleSel(a.dataset.qa === 'lg' ? 0.1 : -0.1); openQuick(sel); }
 });
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#quick') && !e.target.closest('#svg')) hideQuick(); }, true);
@@ -2712,17 +2808,19 @@ window.addEventListener('pagehide', timerCommit); document.addEventListener('vis
 /* =====================================================================
    12. LƯU, NẠP BÀI, MẠCH MẪU (GV)
    ===================================================================== */
-function save() { if (state.noSave || state.compare) return; try { localStorage.setItem('cn12lab_' + state.lesson, JSON.stringify({ devices: state.devices, wires: state.wires, flags: state.flags, sheet: state.sheet })); localStorage.setItem('cn12lab_student', JSON.stringify({ n: $('#stName').value, c: $('#stClass').value, l: state.lesson })); } catch (_) { } }
+function save() { if (state.noSave || state.compare) return; try { localStorage.setItem('cn12lab_' + state.lesson, JSON.stringify({ devices: state.devices, wires: state.wires, flags: state.flags, sheet: state.sheet, W, H })); localStorage.setItem('cn12lab_student', JSON.stringify({ n: $('#stName').value, c: $('#stClass').value, l: state.lesson })); } catch (_) { } }
 function initLesson(key, fresh) {
   if (state.compare && !state.noSave) exitCompare();
   if (state.power) powerOff();
   state.lesson = key; state.sel = null; state.active = null; state.undo = []; state.grade = null; state.safety = { hash: null, passed: false, results: null }; state.meter = { a: null }; state.log = [];
   let data = null; if (!fresh) try { data = JSON.parse(localStorage.getItem('cn12lab_' + key)); } catch (_) { }
+  if (noScale) { W = W0; H = 1100; SX = 1; } else if (data && data.devices && data.devices.length && data.W) { W = data.W; H = data.H || 1100; SX = key === 'b8' ? 1 : W / W0; } else boardFor(key);
+  applyZones(key);
   if (data && data.devices && data.devices.length) { state.devices = data.devices; state.wires = data.wires; state.flags = data.flags || {}; state.sheet = data.sheet || {}; if (state.flags.tRun) state.flags.tRun = Date.now(); }
   else {
     state.devices = []; state.wires = []; state.flags = {}; state.sheet = {};
-    addDevice('nguon', 110, 160);
-    (LESSONS[key].fixed || []).forEach(f => { const d = addDevice(f.type, f.x, f.y, f.p); d.fixed = true; });
+    addDevice('nguon', Math.round(110 * SX), key === 'b8' ? 160 : 185);
+    (LESSONS[key].fixed || []).forEach(f => { const d = addDevice(f.type, Math.round(f.x * SX), f.y, f.p); d.fixed = true; });
   }
   state.view = state.flags.view || (key === 'b10' || key === 'free' ? 'real' : 'schema');
   state.tab = 'task'; logE('📘', 'Mở ' + LESSONS[key].title); renderCatalog(); renderNav(); fitZoom(); renderAll(); save(); if (!state.noSave) setTimeout(() => toast('Lăn chuột để phóng to, thu nhỏ. Kéo chỗ trống để di chuyển bảng.'), 600);
@@ -2752,7 +2850,7 @@ const SAMPLES = {
     checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Dây nóng sau aptomat rẽ nhánh tới 2 công tắc.', 'Công tắc 1 → đèn; công tắc 2 → quạt trần.', 'Đèn và quạt cùng nối về dây nguội qua mối nối rẽ nhánh.'] }
 };
 function buildSample(key) {
-  const S = SAMPLES[key]; initLesson(S.lesson, true);
+  const S = SAMPLES[key]; noScale = true; initLesson(S.lesson, true);
   const D = (t, x, y, p, rot) => { const d = addDevice(t, x, y, p); if (rot) d.rot = rot; return d; };
   const Jn = (x, y) => { const j = addDevice('jn', x, y); j.x = x; j.y = y; j.label = ''; return j; };
   const t = (d, tt) => ({ d: d.id, t: tt || 'j' });
@@ -2859,6 +2957,7 @@ function buildSample(key) {
     }
     }
   }
+  noScale = false; boardFor(S.lesson === 'b8' ? 'x' : S.lesson); applyZones(S.lesson); if (SX !== 1) { state.devices.forEach(d => { d.x = Math.round(d.x * SX); }); state.wires.forEach(w => (w.pts || []).forEach(q => { q.x = Math.round(q.x * SX); })); }
   state.flags.read = true; state.undo = []; logE('📐', 'Dựng mạch mẫu: ' + S.name); changed(); fitSample(key);
 }
 function fitSample(key) { if (SAMPLES[key] && SAMPLES[key].lesson === 'free') fitDevices(); else fitZoom(true); }
@@ -3068,15 +3167,15 @@ function renderLearn() {
   let h = '';
   if (LS.tab === 'sym') {
     const NC = 3, rows = Math.ceil(SYMS.length / NC);
-    const f8 = state.flags; if (!f8.symT0 && !f8.symLocked) { f8.symT0 = Date.now(); save(); }
+    const f8 = state.flags;
     if (f8.symLocked && LS.symView !== 'table') h += symResultHtml(); else {
     h += `<h3 class="stitle">Hoàn thành tên gọi một số kí hiệu thông dụng</h3>`;
-    h += `<div class="sleg">${Object.values(SYG).map(g => `<span style="--gc:${g.c};--gb:${g.bg}"><i></i>${g.n}</span>`).join('')}<span class="stimer" id="symTimer"></span><span class="sprog">Đã chọn: <b>${SYMS.filter(x => normVN((state.flags.symAns || {})[x.id]).trim()).length}</b>/${SYMS.length}</span></div>`;
+    h += `<div class="sleg">${Object.values(SYG).map(g => `<span style="--gc:${g.c};--gb:${g.bg}"><i></i>${g.n}</span>`).join('')}<span class="sprog">Đã chọn: <b>${SYMS.filter(x => normVN((state.flags.symAns || {})[x.id]).trim()).length}</b>/${SYMS.length}</span></div>`;
     h += `<table class="stab c3"><thead><tr>${'<th>Kí hiệu</th><th>Tên gọi</th>'.repeat(NC)}</tr></thead><tbody>`;
     for (let r = 0; r < rows; r++) { h += '<tr>'; for (let c = 0; c < NC; c++) { const k = c * rows + r; h += k < SYMS.length ? symCell(SYMS[k], k) : '<td class="sy empty"></td><td class="nm empty"></td>'; } h += '</tr>'; }
     h += `</tbody></table>`;
     h += f8.symLocked
-      ? `<div class="btnrow"><button class="sbtn pri" data-sview="res">📊 Xem điểm &amp; sơ đồ Bài 8</button><button class="sbtn" data-sreset>↻ Làm lại từ đầu</button><button class="sbtn" data-ltab="dia">Sang phần Sơ đồ →</button>${scoreBadge((f8.symScore || 0) >= 8 ? 'good' : (f8.symScore || 0) >= 5 ? 'mid' : 'low', f8.symScore || 0, f8.symOK || 0, SYMS.length, ($('#lName').value || $('#stName').value || '').trim() || 'Học sinh', ($('#lClass').value || $('#stClass').value || '').trim(), f8)}</div>`
+      ? `<div class="btnrow"><button class="sbtn pri" data-sview="res">📊 Xem điểm &amp; sơ đồ Bài 8</button><button class="sbtn" data-sreset>↻ Làm lại từ đầu</button><button class="sbtn" data-ltab="dia">Sang phần Sơ đồ →</button></div>`
       : `<div class="btnrow"><button class="sbtn pri" data-scheck>✔ Kiểm tra – nộp bài</button><button class="sbtn" data-sreset>Xoá hết các ô đã chọn</button><button class="sbtn" data-ltab="dia">Sang phần Sơ đồ →</button>${LS.msg ? `<div class="smsg ${LS.msg.ok ? 'ok' : 'no'}">${LS.msg.html.replace(/<br>/g, ' ')}</div>` : ''}</div>`;
     }
   }
@@ -3087,6 +3186,7 @@ function renderLearn() {
       <div class="dside"><h4 class="lg">So sánh</h4><table class="ltab"><tr><th></th><th class="nl">Sơ đồ nguyên lí</th><th class="ld">Sơ đồ lắp đặt</th></tr>${CMP.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td><td>${r[2]}</td></tr>`).join('')}</table>
       <div class="btnrow"><button class="sbtn" data-ltab="sym">← Về bảng kí hiệu</button><button class="sbtn pri" data-lclose>Bắt đầu lắp mạch Bài 8 →</button></div></div></div>`;
   }
+  if (LS.tab === 'sym') h += symHud();
   if (LS.tab === 'dev') h = devHtml();
   el.className = 'lb-' + LS.tab; el.innerHTML = h; fitSym(); symTick(); fitDev();
 }
@@ -3096,11 +3196,21 @@ function fitSym() {
   const t = b.querySelector('.stab'); if (!t) return; const rows = t.tBodies[0].rows.length;
   b.style.setProperty('--rh', '40px');
   const cs = getComputedStyle(b), free = b.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-  let used = 0; [...b.children].forEach(c => { if (c !== t) { const m = getComputedStyle(c); used += c.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom); } });
+  let used = 0; [...b.children].forEach(c => { if (c !== t && !c.classList.contains('hud')) { const m = getComputedStyle(c); used += c.offsetHeight + parseFloat(m.marginTop) + parseFloat(m.marginBottom); } });
   used += t.tHead.offsetHeight + 4;
   const rh = Math.max(40, Math.min(96, Math.floor((free - used) / rows)));
   b.style.setProperty('--rh', rh + 'px');
 }
+$('#rpToggle').addEventListener('click', () => { const m = document.body.classList.toggle('rp-min'); $('#rpToggle').textContent = m ? '«' : '»'; $('#rpToggle').title = m ? 'Mở khung Nhiệm vụ' : 'Thu gọn khung Nhiệm vụ'; setTimeout(() => { window.dispatchEvent(new Event('resize')); fitZoom(true); }, 280); });
+/* Bài 8 / Thực hành: bảng tự rộng – hẹp theo khung (không làm lệch thiết bị đã lắp) */
+function refitBoard() {
+  if (state.compare || !['b8', 'free'].includes(state.lesson)) return;
+  const oW = W, oH = H, oSX = SX; boardFor(state.lesson === 'b8' ? 'b8' : 'x');
+  const nW = W; H = oH; SX = oSX; W = oW;
+  const maxX = Math.max(0, ...state.devices.map(d => d.x + 60), ...state.wires.flatMap(w => (w.pts || []).map(q => q.x + 20)));
+  if (nW !== oW && nW >= maxX) { W = nW; svg.setAttribute('viewBox', `0 0 ${W} ${H}`); renderSvg(); save(); }
+}
+let rzT; window.addEventListener('resize', () => { clearTimeout(rzT); rzT = setTimeout(() => { refitBoard(); if (!state.compare) fitZoom(true); }, 200); });
 window.addEventListener('resize', () => { fitSym(); b9Layout(); fitDev(); });
 /* Bài 9: chữ trong khung thông tin tự phóng to cho vừa khít khung */
 function fitDev() {
@@ -3120,12 +3230,18 @@ function b9Layout() {
 const SYM_LIM = 10 * 60 * 1000;
 const mmss = ms => { const t = Math.max(0, Math.round(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
 function symLeft() { const f = state.flags; if (!f.symT0) return SYM_LIM; return Math.max(0, SYM_LIM - (f.symLocked ? (f.symUsed || 0) : Date.now() - f.symT0)); }
+function symLive() { const c = state.flags.symChk || {}; return Math.round(SYMS.filter(x => c[x.id] === true).length / SYMS.length * 1000) / 100; }
+function symHud() {
+  const f = state.flags, sc = f.symLocked ? (f.symScore || 0) : symLive(), ok = SYMS.filter(x => (f.symChk || {})[x.id] === true).length;
+  return `<div class="hud" aria-live="polite"><div class="hscore" title="Đúng ${ok}/${SYMS.length} kí hiệu"><b>${vn(sc, 2)}</b><small>điểm</small><i>${ok}/${SYMS.length}</i></div><div class="htimer" id="symTimer"><div class="hin"><b></b><small></small></div></div></div>`;
+}
 function symTick() {
   if (state.lesson !== 'b8' || state.compare) return; const f = state.flags;
   if (f.symT0 && !f.symLocked && Date.now() - f.symT0 >= SYM_LIM && !$('#learn').hidden) { checkSymbols(true); return; }
   const el = $('#symTimer'); if (!el) return; const left = symLeft();
-  el.className = 'stimer' + (f.symLocked ? ' done' : left <= 60000 ? ' low' : left <= 3 * 60000 ? ' warn' : '');
-  el.innerHTML = `${f.symLocked ? '✔ Đã nộp' : '⏳ Còn lại'} <b>${mmss(left)}</b>`;
+  el.className = 'htimer' + (f.symLocked ? ' done' : left <= 60000 ? ' low' : '');
+  el.style.setProperty('--p', (left / SYM_LIM * 100).toFixed(2));
+  el.querySelector('b').textContent = mmss(left); el.querySelector('small').textContent = f.symLocked ? (f.symTimeUp ? 'hết giờ' : 'đã nộp') : f.symT0 ? 'còn lại' : 'chưa bắt đầu';
 }
 setInterval(symTick, 1000);
 function checkSymbols(auto) {
@@ -3148,7 +3264,7 @@ function symResultHtml() {
   const cm = sc === 10 ? '🏆 Xuất sắc! Em chọn đúng tất cả các kí hiệu.' : sc >= 8 ? '🌟 Tốt lắm! Em xem lại vài kí hiệu còn sai nhé.' : sc >= 5 ? '👍 Khá. Em bấm “Xem lại bài làm” để biết các ô sai, ôn lại SGK tr. 40.' : '💪 Cần cố gắng hơn. Em ôn lại bảng kí hiệu SGK tr. 40 rồi làm lại.';
   return `<div class="sres"><h4 class="sdh">📐 Sơ đồ mạch điện Bài 8 <span>1 aptomat · 1 công tắc điều khiển 1 đèn · 1 ổ cắm</span></h4>
     <div class="sdia"><figure><figcaption class="nl">SƠ ĐỒ NGUYÊN LÍ</figcaption>${diagNL(false)}</figure><figure><figcaption class="ld">SƠ ĐỒ LẮP ĐẶT</figcaption>${diagLD(false)}</figure></div></div>
-    <div class="btnrow"><button class="sbtn" data-sview="table">📋 Xem lại bài làm (✓ / ✕)</button><button class="sbtn" data-sreset>↻ Làm lại từ đầu</button><button class="sbtn" data-ltab="dia">So sánh 2 loại sơ đồ →</button><button class="sbtn pri" data-lclose>🔧 Sang Lắp mạch Bài 8</button>${scoreBadge(lv, sc, ok, N, nm, cl, f)}</div>`;
+    <div class="btnrow"><button class="sbtn" data-sview="table">📋 Xem lại bài làm (✓ / ✕)</button><button class="sbtn" data-sreset>↻ Làm lại từ đầu</button><button class="sbtn" data-ltab="dia">So sánh 2 loại sơ đồ →</button><button class="sbtn pri" data-lclose>🔧 Sang Lắp mạch Bài 8</button></div>`;
 }
 document.addEventListener('click', e => {
   if (!e.target.closest('#learn')) return;
@@ -3157,14 +3273,19 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-lback]')) { closeLearn(); if (state.lesson === 'b8') showFolders(); return; }
   if (e.target.closest('[data-scheck]')) { checkSymbols(); return; }
   const sv = e.target.closest('[data-sview]'); if (sv) { LS.symView = sv.dataset.sview; renderLearn(); return; }
-  if (e.target.closest('[data-sreset]')) { const f = state.flags; if (f.symLocked) { ['symLocked', 'symScore', 'symUsed', 'symTimeUp', 'symAt', 'symOK', 'symDone'].forEach(k => delete f[k]); f.symT0 = Date.now(); LS.symView = null; } state.flags.symAns = {}; state.flags.symChk = {}; LS.msg = null; save(); renderLearn(); $('#learnBody').scrollTop = 0; }
+  if (e.target.closest('[data-sreset]')) { const f = state.flags; if (f.symLocked) { ['symLocked', 'symScore', 'symUsed', 'symTimeUp', 'symAt', 'symOK', 'symDone'].forEach(k => delete f[k]); delete f.symT0; LS.symView = null; } state.flags.symAns = {}; state.flags.symChk = {}; LS.msg = null; save(); renderLearn(); $('#learnBody').scrollTop = 0; }
 });
 const onSymPick = e => {
   const i = e.target.closest && e.target.closest('[data-sa]'); if (!i) return;
   const a = state.flags.symAns || (state.flags.symAns = {}); a[i.dataset.sa] = i.value; i.classList.toggle('has', !!i.value);
   const pr = $('#learnBody .sprog b'); if (pr) pr.textContent = SYMS.filter(x => (a[x.id] || '').trim()).length;
-  if (state.flags.symChk && state.flags.symChk[i.dataset.sa] !== undefined) { delete state.flags.symChk[i.dataset.sa]; const td = i.closest('td'); td.classList.remove('ok', 'no'); const m = td.querySelector('.mk2'); if (m) m.remove(); }
-  clearTimeout(LS.st); LS.st = setTimeout(save, 400);
+  if (e.type !== 'change') return;
+  const sy = SYMS.find(x => x.id === i.dataset.sa); const chk = state.flags.symChk || (state.flags.symChk = {});
+  if (i.value && !state.flags.symT0) state.flags.symT0 = Date.now();
+  if (i.value) { chk[sy.id] = symOk(sy, i.value); sfx(chk[sy.id] ? 'ok' : 'err'); } else delete chk[sy.id];
+  const before = LS.lastSc || 0; save(); renderLearn();
+  const nx = symLive(); if (nx > before) { const hs = $('#learn .hscore'); if (hs) { hs.classList.remove('bump'); void hs.offsetWidth; hs.classList.add('bump'); } }
+  LS.lastSc = nx;
 };
 document.addEventListener('input', onSymPick); document.addEventListener('change', onSymPick);
 document.addEventListener('keydown', e => { const i = e.target.closest && e.target.closest('[data-sa]'); if (i && e.key === 'Enter') { e.preventDefault(); const all = [...document.querySelectorAll('#learnBody [data-sa]')]; const n = all[all.indexOf(i) + 1]; if (n) n.focus(); else checkSymbols(); } });
@@ -3223,7 +3344,7 @@ function devHtml() {
       h += `<div class="dvc ${st}" data-dv="${x.id}" style="--dc:${x.c}"><span class="no">${i + 1}</span>${st ? `<span class="mk">${st === 'ok' ? '✓' : '✕'}</span>` : ''}<div class="im ${x.two ? 'two' : ''}">${x.img()}</div>${st === 'ok' ? '<span class="see">👆 Bấm để xem</span>' : ''}<select data-da="${x.id}" class="${v ? 'has' : ''}" ${st === 'ok' ? 'disabled' : ''} aria-label="Chọn tên thiết bị số ${i + 1}"><option value="">— Chọn tên —</option>${DNAMES.map(n => `<option ${v === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>`; });
     h += `</div>`;
   }
-  if (d) h += `<div class="dvinfo full fit" style="--dc:${d.c}"><div class="dvih">${d.n}</div><div class="dvsec"><h4>a) Chức năng</h4><p class="fn">${d.fn}</p></div><div class="dvcols"><div class="dvsec"><h4>b) Cấu tạo</h4><ul class="ctl">${DEVX[d.id].ct.map(x => `<li>${x}</li>`).join('')}</ul></div><div class="dvsec"><h4>c) Thông số kĩ thuật <small class="src">${['apt', 'oc', 'sw2', 'sw3'].includes(d.id) ? 'ví dụ minh hoạ' : 'theo SGK'}</small></h4><div class="plate">${d.tag.map(t => `<span>${t}</span>`).join('')}</div><table>${d.ps.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div></div></div>`;
+  if (d) h += `<div class="dvinfo full fit" style="--dc:${d.c}"><div class="dvih">${d.n}</div><div class="dvcols"><div class="dvsec"><h4>a) Chức năng</h4><p class="fn">${d.fn}</p><h4>b) Cấu tạo</h4><ul class="ctl">${DEVX[d.id].ct.map(x => `<li>${x}</li>`).join('')}</ul></div><div class="dvsec"><h4>c) Thông số kĩ thuật <small class="src">${['apt', 'oc', 'sw2', 'sw3'].includes(d.id) ? 'ví dụ minh hoạ' : 'theo SGK'}</small></h4><div class="plate">${d.tag.map(t => `<span>${t}</span>`).join('')}</div><table>${d.ps.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table></div></div></div>`;
   else h += `<div class="dvinfo guide fit"><div class="dvih">📋 Cách làm</div><ol class="gsteps"><li><b>Quan sát</b> hình từng thiết bị bên trái.</li><li><b>Chọn tên đúng</b> trong danh sách dưới mỗi hình.</li><li>Chọn đúng → thẻ <b class="g">xanh ✓</b>. Chọn sai → thẻ <b class="r">đỏ ✕</b>, em chọn lại.</li><li><b>Bấm vào thiết bị đã chọn đúng</b> → thiết bị hiện to, kèm <b>chức năng, cấu tạo, kí hiệu, thông số kĩ thuật</b> như SGK.</li><li>Bấm <b>“Quay lại bộ thiết bị”</b> để xem thiết bị khác.</li></ol></div>`;
   h += `</div>`;
   const all = ok === DEVS.length;
@@ -3246,11 +3367,13 @@ document.addEventListener('click', e => {
 });
 
 function L9Fill() { LESSONS.b9.sheet.forEach(r => { state.sheet[r.id + '_I'] = Math.round(r.P / U * 100) / 100; state.sheet[r.id + '_S'] = Math.round(r.P / U / J * 100) / 100; }); }
-const ZMIN = .3, ZMAX = 2.5;
-function fitValue() { return Math.max(ZMIN, Math.min(1.6, Math.min((wrap.clientWidth - 104 - 30) / W, (wrap.clientHeight - 70 - 24) / H))); }
+/* 100% = cả bảng mạch vừa khít vùng giữa màn hình (chừa chỗ thanh công cụ) */
+function fitValue() { return Math.max(.08, Math.min((wrap.clientWidth - 78 - 18) / W, (wrap.clientHeight - 50 - 46) / H)); }
+let ZMIN = .3, ZMAX = 2.5;
+function zLimits() { const f = fitValue(); ZMIN = f * .5; ZMAX = f * 4; }
 function applyZoomSize() { svg.setAttribute('width', W * state.zoom); svg.setAttribute('height', H * state.zoom); }
 function setZoom(z, cx, cy) {
-  z = Math.max(ZMIN, Math.min(ZMAX, z)); const wr = wrap.getBoundingClientRect();
+  zLimits(); z = Math.max(ZMIN, Math.min(ZMAX, z)); const wr = wrap.getBoundingClientRect();
   if (cx === undefined) { cx = wr.left + wrap.clientWidth / 2; cy = wr.top + wrap.clientHeight / 2; }
   const r0 = svg.getBoundingClientRect(); const px = (cx - r0.left) / r0.width * W, py = (cy - r0.top) / r0.height * H;
   state.zoom = z; applyZoomSize();
@@ -3260,17 +3383,17 @@ function setZoom(z, cx, cy) {
 }
 function centerOn(wx, wy) { const r = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect(); wrap.scrollLeft += (r.left + wx * state.zoom) - (wr.left + wrap.clientWidth / 2); wrap.scrollTop += (r.top + wy * state.zoom) - (wr.top + wrap.clientHeight / 2); renderMinimap(); }
 function fitZoom(all) {
-  state.zoom = all ? fitValue() : Math.max(1.05, fitValue()); applyZoomSize(); zoomUi();
-  requestAnimationFrame(() => { if (all) centerOn(W / 2, H / 2); else { wrap.scrollLeft = 0; wrap.scrollTop = 0; } renderMinimap(); });
+  zLimits(); state.zoom = fitValue(); applyZoomSize(); zoomUi();
+  requestAnimationFrame(() => { centerOn(W / 2, H / 2); wrap.scrollLeft -= 30; wrap.scrollTop -= 2; renderMinimap(); });
 }
-function zoomUi() { $('#zLbl').textContent = Math.round(state.zoom * 100) + '%'; $('#zSlider').value = Math.round(state.zoom * 100); $('#zIn').disabled = state.zoom >= ZMAX - 1e-6; $('#zOut').disabled = state.zoom <= ZMIN + 1e-6; }
+function zoomUi() { zLimits(); const pc = Math.round(state.zoom / fitValue() * 100); $('#zLbl').textContent = pc + '%'; $('#zSlider').value = pc; $('#zIn').disabled = state.zoom >= ZMAX - 1e-6; $('#zOut').disabled = state.zoom <= ZMIN + 1e-6; }
 function viewRect() { const r = svg.getBoundingClientRect(), wr = wrap.getBoundingClientRect(); return { x: (wr.left - r.left) / state.zoom, y: (wr.top - r.top) / state.zoom, w: wrap.clientWidth / state.zoom, h: wrap.clientHeight / state.zoom }; }
 function renderMinimap() { /* bản đồ thu nhỏ đã bỏ để màn hình lắp mạch rộng hơn */ }
 
 /* =====================================================================
    13. NÚT BẤM & PHÍM TẮT
    ===================================================================== */
-function renderAll() { b9Layout(); const bl = $('#btnLearn'); if (bl) { bl.style.display = ['b8', 'b9'].includes(state.lesson) ? '' : 'none'; bl.textContent = state.lesson === 'b9' ? '📗 Thiết bị' : '📘 Kí hiệu'; } renderTimer(); renderSvg(); renderPowerbar(); renderRight(); renderSteps(); renderDiag(); zoomUi(); $('#devCount').textContent = `${state.devices.filter(d => !['nguon', 'jn'].includes(d.type)).length} đã lắp`; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === state.tool)); document.querySelectorAll('[data-color]').forEach(b => b.classList.toggle('on', b.dataset.color === state.color)); document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === state.view)); }
+function renderAll() { document.body.dataset.lesson = state.compare ? 'cmp' : state.lesson; b9Layout(); const bl = $('#btnLearn'); if (bl) { bl.style.display = ['b8', 'b9'].includes(state.lesson) ? '' : 'none'; bl.textContent = state.lesson === 'b9' ? '📗 Thiết bị' : '📘 Kí hiệu'; } renderTimer(); renderSvg(); renderPowerbar(); renderRight(); renderSteps(); renderDiag(); zoomUi(); $('#devCount').textContent = `${state.devices.filter(d => !['nguon', 'jn'].includes(d.type)).length} đã lắp`; document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('on', b.dataset.tool === state.tool)); document.querySelectorAll('[data-color]').forEach(b => b.classList.toggle('on', b.dataset.color === state.color)); document.querySelectorAll('[data-view]').forEach(b => b.classList.toggle('on', b.dataset.view === state.view)); }
 $('#wireSize').innerHTML = WIRE_S.map(s => `<option value="${s}" ${s === 1.5 ? 'selected' : ''}>${vn(s, 2)} mm²</option>`).join('');
 $('#wireSize').onchange = e => { state.size = +e.target.value; };
 $('#lessonNav').onclick = e => { const b = e.target.closest('[data-l]'); if (!b) return; if (b.dataset.l !== state.lesson) initLesson(b.dataset.l); if (b.dataset.l === 'b8' && !state.compare) showFolders(); if (b.dataset.l === 'b9' && !state.compare && !state.flags.devDone) openLearn('dev'); };
@@ -3287,8 +3410,8 @@ $('#btnTidy').onclick = () => { if (locked()) return; pushUndo(); state.wires.fo
 $('#zIn').onclick = () => setZoom(state.zoom * 1.2);
 $('#zOut').onclick = () => setZoom(state.zoom / 1.2);
 $('#zFit').onclick = () => fitZoom(true);
-$('#z100').onclick = () => setZoom(1);
-$('#zSlider').oninput = e => setZoom(+e.target.value / 100);
+$('#z100').onclick = () => fitZoom(true);
+$('#zSlider').oninput = e => setZoom(+e.target.value / 100 * fitValue());
 let spaceDown = false;
 document.addEventListener('keydown', e => { if (e.code === 'Space' && !e.target.matches('input,textarea,select,button')) { e.preventDefault(); if (!spaceDown) { spaceDown = true; wrap.classList.add('space'); } } });
 document.addEventListener('keyup', e => { if (e.code === 'Space') { spaceDown = false; wrap.classList.remove('space'); } });
@@ -3401,7 +3524,7 @@ document.addEventListener('keydown', e => {
   else if (e.key === '+' || e.key === '=') setZoom(state.zoom * 1.2);
   else if (e.key === '-' || e.key === '_') setZoom(state.zoom / 1.2);
   else if (e.key === '0') fitZoom(true);
-  else if (e.key === '1') setZoom(1);
+  else if (e.key === '1') fitZoom(true);
   else if (e.key === 'v' || e.key === 'V') document.querySelector('[data-tool=select]').click();
   else if (e.key === 'm' || e.key === 'M') document.querySelector('[data-tool=meter]').click();
   else if (e.key === 'p' || e.key === 'P') document.querySelector('[data-tool=pen]').click();
@@ -3417,7 +3540,7 @@ window.addEventListener('resize', () => { renderMinimap(); });
   try { Object.keys(localStorage).filter(k => k.startsWith('cn12lab_')).forEach(k => localStorage.removeItem(k)); } catch (_) { }
   let st = null; try { st = JSON.parse(localStorage.getItem('cn12lab_student')); } catch (_) { }
   if (st) { $('#stName').value = st.n || ''; $('#stClass').value = st.c || ''; }
-  renderCatalog(); initLesson(st && LESSONS[st.l] ? st.l : 'b10'); if (state.lesson === 'b8') showFolders();
+  renderCatalog(); initLesson(st && LESSONS[st.l] ? st.l : 'b10'); setTimeout(() => fitZoom(true), 350); window.addEventListener('load', () => fitZoom(true)); if (state.lesson === 'b8') showFolders();
 })();
 </script>
 </body>
