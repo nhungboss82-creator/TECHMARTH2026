@@ -1,0 +1,1491 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Thực hành mạch khuếch đại</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Chakra+Petch:wght@500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Bố cục: bàn thí nghiệm 3D ở giữa, khay linh kiện bên trái, sơ đồ + đồng hồ + bảng kết quả bên phải */
+:root{
+  --paper:#f3f8ff; --panel:#ffffff; --ink:#14213d; --muted:#56658a; --line:#d8e3f3;
+  --accent:#0aa6b5; --accent-ink:#ffffff; --accent-soft:#dcf6f8; --accent-2:#3d6cf2;
+  --c1:#ff6b4a; --c2:#ffb020; --c3:#19b97a; --c4:#3d6cf2; --c5:#d63d9a; --c6:#0aa6b5;
+  --warn:#d97706; --bad:#e11d48; --good:#12a150;
+  --bench:#3d8fa6; --lcd:#c6e09a; --lcd-ink:#1b2a0c;
+  --glow1:rgba(255,176,32,.20); --glow2:rgba(10,166,181,.18); --glow3:rgba(214,61,154,.12);
+  --f-display:"Chakra Petch", "Be Vietnam Pro", system-ui, sans-serif;
+  --f-body:"Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --paper:#0c1222; --panel:#141c33; --ink:#e8eeff; --muted:#97a6c8; --line:#26324f;
+  --accent:#2fd6e3; --accent-ink:#04212a; --accent-soft:#0f3442; --accent-2:#7d9bff;
+  --c1:#ff8a6b; --c2:#ffc34d; --c3:#3ddc97; --c4:#7d9bff; --c5:#f06bbd; --c6:#2fd6e3;
+  --warn:#fbbf24; --bad:#fb7185; --good:#4ade80;
+  --bench:#1e5566; --lcd:#a9c47c; --lcd-ink:#101a06;
+  --glow1:rgba(255,195,77,.10); --glow2:rgba(47,214,227,.12); --glow3:rgba(240,107,189,.10); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --paper:#0c1222; --panel:#141c33; --ink:#e8eeff; --muted:#97a6c8; --line:#26324f;
+  --accent:#2fd6e3; --accent-ink:#04212a; --accent-soft:#0f3442; --accent-2:#7d9bff;
+  --c1:#ff8a6b; --c2:#ffc34d; --c3:#3ddc97; --c4:#7d9bff; --c5:#f06bbd; --c6:#2fd6e3;
+  --warn:#fbbf24; --bad:#fb7185; --good:#4ade80;
+  --bench:#1e5566; --lcd:#a9c47c; --lcd-ink:#101a06;
+  --glow1:rgba(255,195,77,.10); --glow2:rgba(47,214,227,.12); --glow3:rgba(240,107,189,.10); color-scheme:dark }
+
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.5;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:14px 28px}
+*{box-sizing:border-box}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px 24px;margin-bottom:12px}
+.eyebrow{font-family:var(--f-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header.top h1{font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:.01em}
+.tasks{display:flex;gap:6px;flex-wrap:wrap}
+.timer{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px 6px 14px}
+.timer b{font-family:var(--f-mono);font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.timer.warn{border-color:var(--warn)}.timer.warn b{color:var(--warn)}
+.timer.over{border-color:var(--bad)}.timer.over b{color:var(--bad)}
+.tab{border:1px solid var(--line);background:var(--panel);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.app{display:grid;gap:12px;grid-template-columns:280px minmax(0,1fr) 340px;grid-template-areas:"left stage right";align-items:start}
+.left{grid-area:left}.stage{grid-area:stage}.right{grid-area:right}
+@media (max-width:1180px){.app{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"stage stage" "left right"}}
+@media (max-width:720px){.app{grid-template-columns:minmax(0,1fr);grid-template-areas:"stage" "left" "right"}}
+
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card h2{font-size:15px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card h2 small{font-family:var(--f-mono);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.06em}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px;color:var(--ink)}
+.steps li::marker{font-family:var(--f-mono);color:var(--accent);font-weight:700}
+.muted{color:var(--muted)}
+
+.lib{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.lib button{display:flex;align-items:center;gap:8px;text-align:left;padding:7px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;cursor:pointer;min-height:44px;line-height:1.25;font-size:13px}
+.lib button:hover{border-color:var(--accent)}
+.lib button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.lib svg{flex:none}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);font-weight:600}
+.swatch{width:26px;height:26px;border-radius:50%;border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+
+.stage-wrap{position:relative;height:min(76vh,760px);min-height:440px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--bench)}
+.stage-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+.hud{position:absolute;left:10px;top:10px;right:10px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.chip{pointer-events:auto;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:999px;padding:4px 11px;font-size:12.5px;backdrop-filter:blur(4px)}
+.chip.mode{font-weight:600;border-color:var(--accent)}
+.chip.on{color:var(--good);border-color:var(--good);font-weight:600}
+.chip.off{color:var(--muted)}
+.hover-info{position:absolute;left:10px;bottom:10px;max-width:calc(100% - 20px)}
+.view-btns{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.view-btns .btn{background:color-mix(in srgb,var(--panel) 92%,transparent);padding:6px 10px;font-size:12.5px}
+.toast{position:absolute;left:50%;top:52px;transform:translateX(-50%);max-width:min(92%,520px);background:var(--ink);color:var(--paper);padding:9px 14px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;text-align:center}
+.toast.show{opacity:1}
+.toast.bad{background:var(--bad);color:#fff}
+
+.schem svg{width:100%;height:auto;display:block}
+.schem text{font-family:var(--f-body);fill:var(--ink)}
+.schem .pin{font-family:var(--f-mono);font-size:10px;fill:var(--accent);font-weight:700}
+.schem .lbl{font-size:11px}
+.schem .str{stroke:var(--ink);fill:none;stroke-width:1.6}
+.schem .fillw{fill:var(--panel);stroke:var(--ink);stroke-width:1.6}
+.schem .dot{fill:var(--ink)}
+
+.meter-read{display:flex;align-items:baseline;justify-content:flex-end;gap:8px;background:var(--lcd);color:var(--lcd-ink);border-radius:8px;padding:10px 14px;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.meter-read b{font-size:32px;font-weight:700;letter-spacing:.02em;line-height:1}
+.meter-read span{font-size:13px;font-weight:700}
+.dial{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.dial button{padding:6px 4px;font-family:var(--f-mono);font-size:12.5px}
+.probe-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.probe-row .btn{display:flex;align-items:center;gap:6px;justify-content:center}
+.pdot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.small{font-size:12.5px}
+
+.src-ctl{display:flex;flex-direction:column;gap:6px}
+.src-ctl input[type=range]{width:100%;accent-color:var(--accent)}
+.src-val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:700}
+.power{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.switch{position:relative;width:54px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--paper);cursor:pointer;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--muted);transition:transform .15s,background .15s}
+.switch[aria-checked="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(24px);background:var(--accent)}
+
+.tbl-wrap{overflow-x:auto}
+table.res{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+table.res th,table.res td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:center}
+table.res th{font-weight:600;font-size:12px;color:var(--muted)}
+table.res input{width:66px;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-family:var(--f-mono);text-align:right}
+table.res input.ok{border-color:var(--good);box-shadow:0 0 0 1px var(--good)}
+table.res input.no{border-color:var(--bad);box-shadow:0 0 0 1px var(--bad)}
+.check-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.check-list li{display:flex;gap:7px;align-items:flex-start}
+.check-list li::before{content:"";flex:none;width:8px;height:8px;border-radius:50%;margin-top:6px;background:var(--muted)}
+.check-list li.ok::before{background:var(--good)}
+.check-list li.no::before{background:var(--bad)}
+.score{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.score div{border:1px solid var(--line);border-radius:8px;padding:6px 4px}
+.score b{display:block;font-family:var(--f-display);font-size:20px;font-variant-numeric:tabular-nums}
+.score span{font-size:11px;color:var(--muted)}
+.score .total{border-color:var(--accent);background:var(--accent-soft)}
+.report{margin-top:12px;gap:14px}
+.rep-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px}
+.rep-title{font-size:22px;font-weight:700}
+.report h3{font-family:var(--f-body);font-size:15px;font-weight:600;margin:4px 0 0}
+.rep-id{display:flex;flex-wrap:wrap;gap:10px 20px}
+.rep-id label{display:flex;align-items:center;gap:8px;flex:1 1 240px}
+.rep-id input{flex:1;min-width:0;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.rep-tables{display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.stage{display:flex;flex-direction:column;min-width:0}
+.stage .report{margin-top:12px}
+.rep-tables h4{margin:0 0 6px;font-size:13.5px;font-weight:600}
+.rep-tables .tbl-wrap{border:1px solid var(--line);border-radius:8px}
+table.res td.note input{width:100%;min-width:110px;text-align:left;font-family:var(--f-body)}
+table.res th{background:var(--accent-soft);color:var(--ink)}
+.rep-q{display:flex;flex-direction:column;gap:10px}
+.rep-q label{display:flex;flex-direction:column;gap:5px}
+.rep-q textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--paper);resize:vertical;font:inherit}
+/* ---- lớp màu sinh động ---- */
+body{background:radial-gradient(900px 500px at 8% -10%,var(--glow1),transparent 60%),radial-gradient(800px 500px at 100% 0%,var(--glow2),transparent 60%),radial-gradient(700px 600px at 50% 110%,var(--glow3),transparent 60%),var(--paper);background-attachment:fixed}
+header.top{position:relative;padding:14px 16px 14px 18px;border-radius:14px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+header.top::before{content:"";position:absolute;left:0;top:0;right:0;height:5px;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c6),var(--c4),var(--c5))}
+header.top h1{background:linear-gradient(90deg,var(--accent-2),var(--accent) 45%,var(--c3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.eyebrow{color:var(--c5)}
+.card{border-top:4px solid var(--hue,var(--accent));box-shadow:0 6px 18px -12px color-mix(in srgb,var(--hue,var(--accent)) 70%,transparent)}
+.card h2{color:var(--hue,var(--ink))}
+.left .card:nth-child(1){--hue:var(--c1)}.left .card:nth-child(2){--hue:var(--c4)}.left .card:nth-child(3){--hue:var(--c3)}
+.right .card:nth-child(1){--hue:var(--c5)}.right .card:nth-child(2){--hue:var(--c2)}.right .card:nth-child(3){--hue:var(--c6)}
+.report{--hue:var(--c4)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;box-shadow:0 4px 14px -6px var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.lib button{background:color-mix(in srgb,var(--c4) 5%,var(--panel));touch-action:none;user-select:none;cursor:grab;transition:transform .12s,box-shadow .12s,border-color .12s}
+.lib button:hover{transform:translateY(-1px);box-shadow:0 6px 14px -8px var(--c4);border-color:var(--c4)}
+.lib button:active{cursor:grabbing}
+.stage-wrap{border:2px solid transparent;background:linear-gradient(var(--bench),var(--bench)) padding-box,linear-gradient(120deg,var(--c2),var(--c6),var(--c4),var(--c5)) border-box;box-shadow:0 18px 40px -24px var(--accent)}
+.stage-wrap.drop{box-shadow:0 0 0 3px var(--c2),0 18px 40px -24px var(--accent)}
+.chip.mode{background:color-mix(in srgb,var(--accent) 16%,var(--panel));color:var(--ink)}
+.timer{border-color:color-mix(in srgb,var(--c2) 60%,var(--line))}
+.timer b{color:var(--accent-2)}
+table.res th{background:color-mix(in srgb,var(--c4) 14%,var(--panel))}
+.score div{background:color-mix(in srgb,var(--c2) 8%,var(--panel))}
+.score .total{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 22%,var(--panel)),color-mix(in srgb,var(--c3) 22%,var(--panel)))}
+.steps li::marker{color:var(--c1)}
+/* nút + bảng quy trình ẩn trên mạch */
+.top-btns{position:absolute;right:10px;top:10px;z-index:3;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.proc-btn{background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;border:0;font-weight:700;box-shadow:0 6px 16px -8px var(--c1)}
+.sample-btn{background:linear-gradient(135deg,var(--c4),var(--c5));color:#fff;border:0;font-weight:700;box-shadow:0 6px 16px -8px var(--c5)}
+.sample-btn[aria-pressed="true"]{box-shadow:0 0 0 3px color-mix(in srgb,var(--c5) 40%,transparent)}
+.hud{right:470px}
+.check-btn{background:linear-gradient(135deg,var(--c3),var(--c6));color:#fff;border:0;font-weight:700;box-shadow:0 6px 16px -8px var(--c3)}
+.verdict{position:absolute;left:50%;bottom:54px;transform:translateX(-50%);z-index:3;max-width:calc(100% - 20px);padding:10px 18px;border-radius:12px;font-family:var(--f-display);font-weight:700;font-size:clamp(15px,2.2vw,20px);text-align:center;color:#fff;box-shadow:0 12px 28px -12px rgba(0,0,0,.5)}
+.verdict{cursor:grab;touch-action:none;user-select:none}
+.fmeter{position:absolute;right:12px;top:58px;z-index:4;width:236px;border-radius:26px;background:linear-gradient(90deg,#2f56ad,#4a74cf 12%,#3b62b8 50%,#4a74cf 88%,#2f56ad);padding:10px 10px 12px;box-shadow:0 22px 40px -16px rgba(0,0,0,.6),inset 0 2px 0 rgba(255,255,255,.25);user-select:none;touch-action:none}
+.fm-top{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:0 6px 6px;color:#dfe7ff;font:600 10.5px/1.2 var(--f-mono);cursor:grab}
+.fm-top button{border:0;background:rgba(0,0,0,.25);color:#fff;border-radius:6px;width:24px;height:22px;cursor:pointer;font-weight:700}
+.fm-face{background:linear-gradient(#45494d,#3a3d41);border-radius:16px 16px 22px 22px;padding:12px 12px 10px;display:flex;flex-direction:column;gap:9px;box-shadow:inset 0 0 0 2px #2c2f32}
+.fm-lcdbox{background:#26292c;border-radius:10px;padding:8px}
+.fm-lcd{background:linear-gradient(#c9cfc4,#b9c0b3);border-radius:5px;padding:5px 9px 7px;color:#202421;box-shadow:inset 0 2px 7px rgba(0,0,0,.35)}
+.fm-ind{display:flex;gap:8px;font:700 9px var(--f-mono);min-height:12px;color:#2b302c}
+.fm-ind span{opacity:.15}.fm-ind span.on{opacity:1}
+.fm-num{display:flex;justify-content:flex-end;align-items:baseline;gap:6px}
+.fm-num b{font:700 italic 38px/1.05 var(--f-mono);letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.fm-num span{font:700 13px var(--f-mono)}
+.fm-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.fm-btns .k{border:0;border-radius:7px;padding:5px 0;font:700 8.5px var(--f-mono);color:#2b2e31;background:linear-gradient(#d9dcdf,#a9adb1);box-shadow:0 2px 0 #222;cursor:pointer}
+.fm-btns .k.hold{background:linear-gradient(#a98ef0,#7d5fd6);color:#fff}
+.fm-btns .k.hold.on{outline:2px solid #ffd34d}
+.fm-btns .k.dk{background:linear-gradient(#5b6066,#3c4045);color:#fff}
+.fm-dial{width:100%;height:auto;display:block}
+.fm-dial .lb{font:700 12px var(--f-body);fill:#f1f3f5;cursor:pointer}
+.fm-dial .lb.on{fill:#ffd34d}
+.fm-name{display:flex;flex-direction:column;gap:2px;color:#f1f3f5;font-size:9.5px;letter-spacing:.04em}
+.fm-name .tr{align-self:flex-start;border:1px solid #cfd3d6;border-radius:6px;padding:0 5px;font-style:italic;font-weight:700;font-size:9px}
+.fm-name b{font:700 11px var(--f-display)}
+.fm-jacks{display:grid;grid-template-columns:repeat(3,1fr);align-items:end;text-align:center;color:#f1f3f5}
+.fm-jacks .jk{display:flex;flex-direction:column;align-items:center;gap:3px}
+.fm-jacks em{font:700 10px var(--f-mono);font-style:normal}
+.fm-jacks em.com{background:#f1f3f5;color:#222;border-radius:3px;padding:0 4px}
+.fm-jacks i{width:20px;height:20px;border-radius:50%;background:#0d0f11;box-shadow:inset 0 0 0 4px #2a2d30,0 0 0 2px #55595d}
+.fm-jacks i.b{box-shadow:inset 0 0 0 4px #1b1b1b,0 0 0 2px #55595d;background:#000}
+.fm-jacks i.r{box-shadow:inset 0 0 0 4px #c62828,0 0 0 2px #55595d}
+.fm-jacks small{font:600 7.5px var(--f-mono);opacity:.8}
+.fm-probes{display:flex;justify-content:space-around}
+.probe-tok{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:grab;padding:4px 8px;border-radius:8px;font-size:11px;color:#e3e7ea;touch-action:none}
+.probe-tok:hover{background:rgba(255,255,255,.08)}
+.probe-tok.set{outline:2px solid #ffd34d}
+.fm-info{font-size:11px;color:#c9d0d4;text-align:center;line-height:1.35}
+.fmeter.min .fm-face{display:none}.fmeter.min{width:auto;border-radius:12px;padding:6px}
+.probe-ghost{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,-6%)}
+/* đồng hồ thu gọn cho cân với bo mạch */
+.fmeter{width:178px;border-radius:20px;padding:7px 7px 9px;right:12px;top:96px}
+.fm-top{padding:0 4px 4px;font-size:9px}
+.fm-face{padding:8px 8px 7px;gap:6px;border-radius:12px 12px 16px 16px}
+.fm-lcdbox{padding:5px;border-radius:7px}
+.fm-num b{font-size:27px}.fm-num span{font-size:10.5px}.fm-ind{font-size:8px;min-height:10px}
+.fm-btns{gap:3px}.fm-btns .k{font-size:6.6px;padding:4px 0;border-radius:5px}
+.fm-dial .lb{font-size:13px}
+.fm-name{font-size:8px}.fm-name b{font-size:9px}.fm-name .tr{font-size:7.5px}
+.fm-jacks i{width:15px;height:15px}.fm-jacks em{font-size:8.5px}.fm-jacks small{font-size:6.5px}
+.probe-tok{padding:2px 6px;font-size:10px}.probe-tok svg{width:17px;height:54px}
+.fm-info{font-size:10px}
+.meter-btn{background:linear-gradient(135deg,#2f56ad,#4a74cf);color:#fff;border:0;font-weight:700;box-shadow:0 6px 16px -8px #2f56ad}
+.meter-btn[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(74,116,207,.4)}
+.hud{top:54px!important;right:10px!important}
+.verdict ol{margin:8px 0 0;padding-left:22px;text-align:left;font-family:var(--f-body);font-weight:500;font-size:13.5px;line-height:1.45;display:flex;flex-direction:column;gap:4px}
+.verdict ol b{font-weight:700;color:#fff3c4}
+.verdict.has-list{width:min(560px,calc(100% - 20px));max-height:62%;overflow:auto}
+.verdict.dragging{cursor:grabbing;opacity:.92}
+.verdict.ok{background:linear-gradient(135deg,#12a150,#19b97a)}
+.verdict.no{background:linear-gradient(135deg,#e11d48,#ff6b4a)}
+.verdict.wait{background:linear-gradient(135deg,#3d6cf2,#0aa6b5)}
+.verdict-line{font-family:var(--f-display);font-weight:700;font-size:16px;padding:8px 12px;border-radius:8px;background:var(--paper);border:1px solid var(--line)}
+.verdict-line.ok{color:var(--good);border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--panel))}
+.verdict-line.no{color:var(--bad);border-color:var(--bad);background:color-mix(in srgb,var(--bad) 8%,var(--panel))}
+@media (max-width:980px){.hud{top:54px;right:10px}}
+.proc{position:absolute;right:10px;top:52px;z-index:4;width:min(400px,calc(100% - 20px));max-height:calc(100% - 110px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--c1);border-radius:12px;padding:12px 14px;box-shadow:0 20px 40px -18px rgba(0,0,0,.45);display:flex;flex-direction:column;gap:8px}
+.proc h3{font-size:16px;color:var(--c1);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.proc h3 button{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:2px 9px;cursor:pointer}
+/* bóng linh kiện khi kéo */
+.drag-ghost{position:fixed;z-index:50;pointer-events:none;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:10px;background:var(--panel);border:2px solid var(--c2);box-shadow:0 10px 24px -10px rgba(0,0,0,.45);font-weight:600;font-size:13px;transform:translate(-50%,-120%)}
+.fixbox{display:flex;flex-direction:column;gap:8px;border:1px dashed var(--c1);border-radius:10px;padding:10px 12px;background:color-mix(in srgb,var(--c1) 7%,var(--panel))}
+.fixbox h3{font-size:14px;color:var(--c1)}
+.fixes{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.fixes li::marker{color:var(--c1);font-weight:700;font-family:var(--f-mono)}
+.fixes b{color:var(--c4)}
+/* ===== Tô màu hàng tiêu đề ===== */
+header.top{background:radial-gradient(420px 160px at 92% 0%,rgba(255,214,102,.45),transparent 70%),radial-gradient(380px 180px at 0% 100%,rgba(255,107,74,.35),transparent 70%),linear-gradient(120deg,#0a9fb0 0%,#2f6bea 48%,#8e3fd1 78%,#d63d9a 100%);border:0;color:#fff;box-shadow:0 16px 34px -18px rgba(47,107,234,.8)}
+header.top::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;background:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.55) 46px 48px),repeating-linear-gradient(0deg,transparent 0 46px,rgba(255,255,255,.35) 46px 47px);-webkit-mask:linear-gradient(90deg,transparent,#000 60%);mask:linear-gradient(90deg,transparent,#000 60%)}
+header.top>*{position:relative;z-index:1}
+header.top .eyebrow{color:#ffe28a;font-weight:700}
+header.top h1{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:#fff;-webkit-text-fill-color:#fff;text-shadow:0 2px 12px rgba(20,10,60,.35)}
+header.top .timer{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.45);backdrop-filter:blur(6px)}
+header.top .timer .eyebrow{color:#fff3c4}
+header.top .timer b{color:#fff;text-shadow:0 0 14px rgba(255,226,138,.8)}
+header.top .timer.warn b{color:#ffe28a}header.top .timer.over b{color:#ffd0d8}
+header.top #tStart{background:linear-gradient(135deg,#ffb020,#ff6b4a);color:#fff;border:0;box-shadow:0 6px 16px -6px rgba(255,107,74,.9)}
+header.top #tReset{background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.55);color:#fff}
+/* ===== Nút thường: mỗi nút một màu nhẹ ===== */
+.btn{--t:var(--c4);background:color-mix(in srgb,var(--t) 11%,var(--panel));border-color:color-mix(in srgb,var(--t) 38%,var(--line));color:var(--ink);transition:background .12s,transform .12s}
+.btn:hover{background:color-mix(in srgb,var(--t) 20%,var(--panel));border-color:var(--t);transform:translateY(-1px)}
+.btn[aria-pressed="true"]{background:var(--t);border-color:var(--t);color:#fff}
+#toolSelect{--t:var(--c6)}#btnDelete{--t:var(--bad)}#btnUndo{--t:var(--c2)}#btnClear{--t:var(--c1)}
+#viewTop{--t:var(--c3)}#viewPersp{--t:var(--c5)}#zoomIn,#zoomOut{--t:var(--c4)}
+#probeRed{--t:#d62828}#probeBlack{--t:#4b5563}#probeHome{--t:var(--c6)}
+#pinSel .btn{--t:var(--c2)}#polBtn{--t:var(--c5)}#dial .btn{--t:var(--c4)}
+#hintToggle{--t:var(--c1)}#btnCopy{--t:var(--c3)}
+/* ===== Dòng trạng thái và bảng nổi ===== */
+.chip{background:color-mix(in srgb,var(--c4) 14%,var(--panel));border-color:color-mix(in srgb,var(--c4) 40%,var(--line))}
+.chip.mode{background:linear-gradient(135deg,color-mix(in srgb,var(--c6) 30%,var(--panel)),color-mix(in srgb,var(--c4) 22%,var(--panel)));border-color:var(--c6)}
+#pwrChip.off{background:color-mix(in srgb,var(--c1) 16%,var(--panel));border-color:color-mix(in srgb,var(--c1) 55%,var(--line));color:var(--ink)}
+#pwrChip.on{background:color-mix(in srgb,var(--good) 18%,var(--panel));border-color:var(--good)}
+#meterChip{background:color-mix(in srgb,var(--c5) 14%,var(--panel));border-color:color-mix(in srgb,var(--c5) 45%,var(--line))}
+.hover-info{background:color-mix(in srgb,var(--c2) 20%,var(--panel));border-color:color-mix(in srgb,var(--c2) 60%,var(--line))}
+.view-btns .btn{background:color-mix(in srgb,var(--t) 18%,var(--panel))}
+.toast{background:linear-gradient(135deg,#2f3a8f,#6a3fc7);color:#fff;box-shadow:0 12px 26px -12px rgba(60,40,160,.7)}
+.proc{border-top:0;padding-top:0;overflow:auto}
+.proc h3{margin:0 -14px;padding:10px 14px;background:linear-gradient(135deg,var(--c1),var(--c2));color:#fff;position:sticky;top:0}
+.proc h3 button{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6);color:#fff}
+.fixbox{border-style:solid;background:linear-gradient(135deg,color-mix(in srgb,var(--c1) 10%,var(--panel)),color-mix(in srgb,var(--c2) 10%,var(--panel)))}
+.verdict-line{background:color-mix(in srgb,var(--c4) 8%,var(--panel))}
+.check-list li::before{background:var(--c4)}
+.small.muted,.muted{color:color-mix(in srgb,var(--c4) 35%,var(--muted))}
+.switch{background:color-mix(in srgb,var(--c1) 14%,var(--panel));border-color:color-mix(in srgb,var(--c1) 45%,var(--line))}
+.switch::after{background:var(--c1)}
+.switch[aria-checked="true"]{background:color-mix(in srgb,var(--good) 20%,var(--panel));border-color:var(--good)}
+.switch[aria-checked="true"]::after{background:var(--good)}
+.meter-read{background:linear-gradient(#cfe7a6,#b6d388);box-shadow:inset 0 2px 6px rgba(0,0,0,.2)}
+table.res tbody tr:nth-child(even){background:color-mix(in srgb,var(--c6) 6%,transparent)}
+.rep-id input,.rep-q textarea,table.res input{background:color-mix(in srgb,var(--c4) 5%,var(--panel));border-color:color-mix(in srgb,var(--c4) 30%,var(--line))}
+.schem details summary{color:var(--c5);font-weight:600}
+.hdr-score{display:flex;flex-direction:column;align-items:center;padding:6px 16px;border-radius:12px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.5);color:#fff;margin-left:auto}
+.hdr-score span{font:700 10.5px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:#fff3c4}
+.hdr-score b{font:700 30px/1.05 var(--f-display);font-variant-numeric:tabular-nums;text-shadow:0 0 14px rgba(255,226,138,.8)}
+.hdr-score small{font-size:15px;opacity:.85}
+.meas-btn{background:linear-gradient(135deg,var(--c5),#8e3fd1);color:#fff;border:0;font-weight:700;box-shadow:0 6px 16px -8px var(--c5)}
+.proc.meas h3{background:linear-gradient(135deg,var(--c5),#8e3fd1)}
+.proc .steps b{color:var(--c4)}
+/* bảng gộp 2 lần đo */
+table.res2 th{padding:6px 6px;line-height:1.25;font-size:12px}
+table.res2 th.grp{border-bottom:1px solid color-mix(in srgb,var(--c4) 35%,var(--line));background:color-mix(in srgb,var(--c6) 18%,var(--panel))}
+table.res2 th.sub{background:color-mix(in srgb,var(--c6) 10%,var(--panel));font-size:11.5px}
+table.res2 th.calc,table.res2 td.calc{background:color-mix(in srgb,var(--c2) 12%,var(--panel))}
+table.res2 td{padding:5px 6px}
+table.res2 td.tn{font-weight:700;color:var(--c4)}
+table.res2 td.uv{font-family:var(--f-mono);font-weight:700}
+table.res2 input{width:min(100%,92px)}
+.note-one{display:flex;flex-direction:column;gap:5px;margin-top:10px;font-weight:600;font-size:13.5px}
+.note-one textarea{width:100%;padding:8px 10px;border:1px solid color-mix(in srgb,var(--c4) 30%,var(--line));border-radius:8px;background:color-mix(in srgb,var(--c4) 5%,var(--panel));resize:vertical;font:inherit;font-weight:400}
+.grp{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:6px 10px;align-items:start}
+.gl{display:flex;align-items:center;gap:5px;font-weight:600;font-size:13px;white-space:nowrap}
+.gl input{width:64px;padding:5px 7px;border:1px solid color-mix(in srgb,var(--c3) 35%,var(--line));border-radius:6px;background:var(--panel)}
+.grp-names{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.grp-name{padding:5px 8px;border:1px solid color-mix(in srgb,var(--c3) 35%,var(--line));border-radius:6px;background:var(--panel);font-size:13px;min-width:0}
+@media (max-width:620px){.grp{grid-template-columns:auto auto}.grp-names{grid-column:1/-1}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+<style>body{margin:0;font-size:14px}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+
+<header class="top">
+  <div>
+    <div class="eyebrow">Công nghệ 12 · Điện – điện tử · KNTT · Bài 20 · tr. 107–108</div>
+    <h1>Thực hành: Mạch khuếch đại đảo dùng LM741</h1>
+  </div>
+  <div class="hdr-score" aria-live="polite"><span id="hdrLabel">Điểm nhóm</span><b id="hdrScore">–<small>/10</small></b></div>
+  <div class="timer" id="timer" aria-live="polite">
+    <div><div class="eyebrow">Thời gian · tự chạy khi chọn linh kiện</div><b id="tClock">45:00</b></div>
+    <button class="btn primary" id="tStart">Bắt đầu</button>
+    <button class="btn" id="tReset">Đặt lại</button>
+  </div>
+</header>
+
+<main class="app">
+  <aside class="panel left">
+    <section class="card">
+      <h2>Khay linh kiện <small>kéo lên bo mạch</small></h2>
+      <div class="lib" id="lib"></div>
+      <div id="wireColors" class="row" hidden>
+        <span class="small muted">Màu dây:</span>
+      </div>
+    </section>
+    <section class="card">
+      <h2>Thao tác</h2>
+      <div class="row">
+        <button class="btn" id="toolSelect" aria-pressed="true">Chọn</button>
+        <button class="btn" id="btnDelete">Xoá</button>
+        <button class="btn" id="btnUndo">Hoàn tác</button>
+        <button class="btn" id="btnClear">Tháo hết</button>
+      </div>
+      <p class="small muted" style="margin:0">Kéo để xoay bàn, lăn chuột hoặc chụm hai ngón để phóng to. Bấm vào linh kiện đã cắm để chọn, phím Delete để xoá, Esc để huỷ.</p>
+    </section>
+    <section class="card">
+      <h2>Kiểm tra mạch</h2>
+      <button class="btn primary" id="btnCheck">Kiểm tra mạch đã lắp</button>
+      <div class="verdict-line" id="verdictLine">Chưa kiểm tra mạch.</div>
+      <ul class="check-list" id="checkList"><li>Chưa kiểm tra.</li></ul>
+      <div class="fixbox" id="fixBox" hidden>
+        <h3>Hướng dẫn cắm lại</h3>
+        <ol class="fixes" id="fixList"></ol>
+        <p class="small muted" style="margin:0">Bóng cam nhấp nháy trên bo là chỗ cần cắm, khung đỏ là linh kiện cần gỡ hoặc thay. Hướng dẫn tự cập nhật khi em sửa mạch.</p>
+        <button class="btn" id="hintToggle">Ẩn gợi ý trên bo</button>
+      </div>
+    </section>
+  </aside>
+
+  <section class="stage">
+    <div class="stage-wrap" id="stageWrap">
+      <canvas id="c3d" aria-label="Bàn thực hành 3D: bo mạch cắm, nguồn, đồng hồ vạn năng"></canvas>
+      <div class="hud">
+        <span class="chip mode" id="modeChip">Chế độ chọn</span>
+        <span class="chip off" id="pwrChip">Nguồn: TẮT</span>
+        <span class="chip" id="meterChip">Đồng hồ: OFF</span>
+      </div>
+      <div class="top-btns">
+        <button class="btn meter-btn" id="meterBtn" aria-pressed="false">Lấy đồng hồ đo</button>
+        <button class="btn check-btn" id="btnCheck2">Kiểm tra mạch</button>
+        <button class="btn sample-btn" id="sampleBtn" aria-pressed="false">Xem mạch mẫu</button>
+        <button class="btn meas-btn" id="measBtn" aria-expanded="false" aria-controls="measPanel">Cách đo</button>
+        <button class="btn proc-btn" id="procBtn" aria-expanded="false" aria-controls="procPanel">Quy trình thực hành</button>
+      </div>
+      <div class="proc" id="procPanel" hidden>
+        <h3>Quy trình thực hành <button id="procClose" aria-label="Đóng quy trình">Đóng</button></h3>
+        <p class="small muted" style="margin:0">SGK tr. 108 · Yêu cầu: mạch hoạt động đúng chức năng; liên kết giữa các phần tử chắc chắn, gọn gàng.</p>
+        <ol class="steps" id="steps"></ol>
+      </div>
+      <div class="proc meas" id="measPanel" hidden>
+        <h3>Cách đo điện áp <button id="measClose" aria-label="Đóng cách đo">Đóng</button></h3>
+        <ol class="steps">
+          <li>Bấm <b>Kiểm tra mạch</b>, khi bảng báo <b>MẠCH ĐÚNG</b> thì bật công tắc <b>Nguồn ±12 V</b>.</li>
+          <li>Bấm <b>Lấy đồng hồ đo</b>, vặn núm sang <b>⎓V</b> (đồng hồ tự chọn thang).</li>
+          <li>Kéo <b>que đen</b> thả vào thanh <b>GND</b> (thanh xanh phía dưới bo). Que đen để yên ở GND suốt buổi đo.</li>
+          <li>Đặt <b>Uvào</b> theo bảng: chọn <b>0, 1 hoặc 2 pin</b>; bấm <b>Đảo cực pin</b> để có −1,5 V và −3 V.</li>
+          <li>Kéo <b>que đỏ</b> thả vào <b>cột chân 6</b> của IC (cột thứ 3 tính từ chân 1, nửa trên, ví dụ chân 1 ở f5 thì đo ở cột 7). Đọc số trên màn hình, ghi vào cột <b>Ura đo được</b>, giữ cả dấu “−”.</li>
+          <li>Muốn kiểm tra Uvào thật: đặt que đỏ vào <b>cột dây pin</b> (cột 3, nửa trên).</li>
+          <li>Tính <b>Ura theo công thức</b>: Ura = −(R2/R1)·Uvào = <b>−2,2·Uvào</b>, ghi vào cột bên cạnh, rồi so sánh để ghi nhận xét.</li>
+          <li>Đo đủ 5 thực nghiệm, ghi vào cột <b>Lần 1</b>; sau đó đo lại từ đầu, ghi vào cột <b>Lần 2</b>. Cuối cùng viết <b>một nhận xét</b> dưới bảng.</li>
+          <li>Đo điện trở R1, R2 (nếu cần): <b>tắt nguồn</b>, vặn núm sang <b>Ω</b>, đặt hai que vào hai đầu điện trở.</li>
+        </ol>
+        <p class="small muted" style="margin:0">Mẹo: bấm <b>HOLD</b> để giữ số trên màn hình khi ghi chép. Kéo đồng hồ sang chỗ trống để không che bo.</p>
+      </div>
+      <div class="verdict" id="verdict" hidden></div>
+      <div class="fmeter" id="fmeter" hidden aria-label="Đồng hồ vạn năng số, kéo để di chuyển">
+        <div class="fm-top" id="fmDrag" title="Kéo để di chuyển đồng hồ"><span>⠿ kéo để di chuyển</span><button id="fmMin" aria-label="Cất đồng hồ">×</button></div>
+        <div class="fm-face" id="fmBody">
+          <div class="fm-lcdbox"><div class="fm-lcd">
+            <div class="fm-ind"><span id="fmAuto">AUTO</span><span id="fmHoldI">H</span><span id="fmMode"></span></div>
+            <div class="fm-num"><b id="fmRead">&nbsp;</b><span id="fmUnit"></span></div>
+          </div></div>
+          <div class="fm-btns"><button class="k hold" id="fmHold">HOLD</button><button class="k" data-x="MAX/MIN">MAX/MIN</button><button class="k" data-x="FILTER">FILTER</button><button class="k dk" data-x="RANGE">RANGE</button></div>
+          <svg class="fm-dial" id="fmDial" viewBox="0 0 230 196" role="group" aria-label="Núm vặn chọn thang đo"></svg>
+          <div class="fm-name"><span class="tr">True RMS</span><b>ĐỒNG HỒ VẠN NĂNG SỐ</b></div>
+          <div class="fm-jacks">
+            <div class="jk"><em>A</em><i></i><small>10A FUSED</small></div>
+            <div class="jk"><em class="com">COM</em><i class="b"></i></div>
+            <div class="jk"><em>V Ω</em><i class="r"></i><small>CAT III 600V</small></div>
+          </div>
+          <div class="fm-probes">
+            <div class="probe-tok" data-k="black" title="Kéo que đen thả vào lỗ trên bo">
+              <svg viewBox="0 0 30 96" width="22" height="70"><rect x="9" y="30" width="12" height="62" rx="5" fill="#1f1f1f"/><rect x="6" y="26" width="18" height="6" rx="2" fill="#1f1f1f"/><rect x="13.5" y="2" width="3" height="26" fill="#c8ccd2"/></svg><span>Que đen</span></div>
+            <div class="probe-tok" data-k="red" title="Kéo que đỏ thả vào lỗ trên bo">
+              <svg viewBox="0 0 30 96" width="22" height="70"><rect x="9" y="30" width="12" height="62" rx="5" fill="#d62828"/><rect x="6" y="26" width="18" height="6" rx="2" fill="#d62828"/><rect x="13.5" y="2" width="3" height="26" fill="#c8ccd2"/></svg><span>Que đỏ</span></div>
+          </div>
+          <div class="fm-info" id="fmInfo">Kéo que đo thả vào lỗ trên bo</div>
+        </div>
+      </div>
+      <div class="toast" id="toast"></div>
+      <span class="chip hover-info" id="hoverInfo">Di chuột lên bo mạch để xem các lỗ nối thông nhau</span>
+      <div class="view-btns">
+        <button class="btn" id="zoomOut" title="Thu nhỏ mô hình">− Thu nhỏ</button>
+        <button class="btn" id="zoomIn" title="Phóng to mô hình">+ Phóng to</button>
+        <button class="btn" id="viewTop">Nhìn từ trên</button>
+        <button class="btn" id="viewPersp">Góc nghiêng</button>
+      </div>
+    </div>
+    <section class="card report" id="report">
+      <div class="rep-head">
+        <div><div class="eyebrow">Báo cáo thực hành</div><h2 class="rep-title">Mạch khuếch đại đảo</h2></div>
+        <div class="row"><button class="btn" id="btnCopy">Sao chép báo cáo</button><button class="btn primary" id="btnGrade">Chấm điểm</button></div>
+      </div>
+      <div class="grp">
+        <label class="gl" for="grpNo">Nhóm<input id="grpNo" inputmode="numeric"></label>
+        <label class="gl" for="stClass">Lớp<input id="stClass"></label>
+        <div class="grp-names" id="grpList"></div>
+      </div>
+      <h3>1. Đo điện áp lối ra U<sub>ra</sub> khi thay đổi điện áp lối vào U<sub>vào</sub></h3>
+      <div class="rep-tables" id="tables"></div>
+      <h3>2. Đánh giá kết quả và kết luận</h3>
+      <div class="rep-q">
+        <label for="q1">Mạch điện hoạt động có đúng yêu cầu không?<textarea id="q1" rows="2"></textarea></label>
+        <label for="q2">Giá trị điện áp U<sub>ra</sub> đo được có bị sai số so với tính trực tiếp bằng công thức của mạch khuếch đại đảo hay không?<textarea id="q2" rows="2"></textarea></label>
+      </div>
+      <div class="score" id="score">
+        <div><b id="sc1">–</b><span>Lắp mạch /4</span></div>
+        <div><b id="sc2">–</b><span>Ura đo được /3</span></div>
+        <div><b id="sc3">–</b><span>Ura tính /3</span></div>
+        <div class="total"><b id="sc4">–</b><span>Tổng /10</span></div>
+      </div>
+      <ul class="check-list" id="gradeList"></ul>
+    </section>
+  </section>
+
+  <aside class="panel right">
+    <section class="card schem">
+      <h2>Sơ đồ nguyên lí <small>Hình 20.1</small></h2>
+      <div id="schem"></div>
+      <details>
+        <summary class="small" style="cursor:pointer">Sơ đồ chân IC LM741 (nhìn từ trên)</summary>
+        <svg viewBox="0 0 300 120" role="img" aria-label="Sơ đồ chân IC LM741">
+          <rect x="70" y="30" width="160" height="60" rx="4" class="fillw"/>
+          <path d="M70 50 a10 10 0 0 1 0 20" class="str"/>
+          <circle cx="85" cy="78" r="4" class="dot"/>
+          <g class="lbl">
+            <text x="82" y="22" text-anchor="middle">8</text><text x="122" y="22" text-anchor="middle">7</text><text x="162" y="22" text-anchor="middle">6</text><text x="202" y="22" text-anchor="middle">5</text>
+            <text x="82" y="106" text-anchor="middle">1</text><text x="122" y="106" text-anchor="middle">2</text><text x="162" y="106" text-anchor="middle">3</text><text x="202" y="106" text-anchor="middle">4</text>
+          </g>
+          <g class="pin">
+            <text x="122" y="44" text-anchor="middle">V+</text><text x="162" y="44" text-anchor="middle">Ra</text><text x="82" y="44" text-anchor="middle">NC</text><text x="202" y="44" text-anchor="middle">OS</text>
+            <text x="82" y="84" text-anchor="middle">OS</text><text x="122" y="84" text-anchor="middle">−</text><text x="162" y="84" text-anchor="middle">+</text><text x="202" y="84" text-anchor="middle">V−</text>
+          </g>
+          <text x="262" y="64" class="lbl">LM741</text>
+          <text x="8" y="64" class="lbl">khuyết</text>
+        </svg>
+      </details>
+    </section>
+
+    <section class="card">
+      <h2>Nguồn điện</h2>
+      <div class="power">
+        <div><b>Nguồn ±12 V</b><div class="small muted">Bật sau khi đã kiểm tra mạch</div></div>
+        <button class="switch" id="pwr" role="switch" aria-checked="false" aria-label="Bật/tắt nguồn"></button>
+      </div>
+      <div class="src-ctl">
+        <span class="small">Hộp pin 1,5 V × 3 cấp Uvào: gạt công tắc chọn số pin mắc nối tiếp, bấm đảo cực để có Uvào âm</span>
+        <div class="row" id="pinSel">
+          <button class="btn" data-n="0" aria-pressed="false">0 pin</button>
+          <button class="btn" data-n="1" aria-pressed="true">1 pin</button>
+          <button class="btn" data-n="2" aria-pressed="false">2 pin</button>
+          <button class="btn" data-n="3" aria-pressed="false">3 pin</button>
+        </div>
+        <button class="btn" id="polBtn" aria-pressed="false">Đảo cực pin: Thuận (+)</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Đồng hồ vạn năng <small>số</small></h2>
+      <div class="meter-read" aria-live="polite"><b id="mRead">&nbsp;</b><span id="mUnit"></span></div>
+      <div class="dial" id="dial"></div>
+      <div class="probe-row">
+        <button class="btn" id="probeRed"><i class="pdot" style="background:#d62828"></i>Đặt que đỏ</button>
+        <button class="btn" id="probeBlack"><i class="pdot" style="background:#222"></i>Đặt que đen</button>
+      </div>
+      <button class="btn" id="probeHome">Thu que đo về</button>
+      <div class="small muted" id="probeInfo">Que đỏ: chưa đặt · Que đen: chưa đặt</div>
+    </section>
+
+  </aside>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s);
+const V3=THREE.Vector3;
+
+/* ---------- Nhiệm vụ ---------- */
+const TASKS={
+ 1:{name:"Khuếch đại đảo",short:"KĐ ĐẢO",uin:[0,1.5,3,-1.5,-3],steps:[
+  "<b>Bước 1.</b> Chuẩn bị: kéo đúng linh kiện từ khay thả lên bo mạch (điện trở 1 kΩ, điện trở 2,2 kΩ, IC LM741, dây nối). Chỗ thả là chân thứ nhất, sau đó bấm lỗ để cắm chân còn lại.",
+  "<b>Bước 2.</b> Lắp ráp như Hình 20.2: cắm IC vắt qua rãnh giữa, chấm tròn (chân 1) ở góc trái phía dưới.",
+  "Nối chân 7 lên thanh +12 V, chân 4 xuống thanh −12 V, chân 3 xuống thanh GND.",
+  "Lắp R1 = 1 kΩ từ cột dây pin (cột 3, dây đỏ từ cực + hộp pin) đến cột chân 2; lắp R2 = 2,2 kΩ từ cột chân 2 đến cột chân 6.",
+  "<b>Bước 3.</b> Kiểm tra mạch lắp ráp: bấm “Kiểm tra mạch”, sửa hết lỗi.",
+  "<b>Bước 4.</b> Bật nguồn ±12 V. Gạt hộp pin để có Uvào = 0; 1,5; 3 V, bấm đảo cực pin để có −1,5; −3 V cấp tới chân 2.",
+  "Vặn đồng hồ sang ⎓V (hoặc AUTO V), que đen đặt ở thanh GND, que đỏ đo Uvào (cột dây pin) rồi đo Ura (cột chân 6). Đo hai lần cho mỗi thực nghiệm.",
+  "<b>Bước 5.</b> Hoàn thành báo cáo thực hành bên dưới: ghi Ura đo được, Ura tính theo công thức, nhận xét, rồi bấm “Chấm điểm”."]}
+};
+
+/* ---------- Khay linh kiện ---------- */
+const BAND={black:"#1b1b1b",brown:"#7b3f12",red:"#c62828",orange:"#ef7d10",yellow:"#f2c40f",green:"#2e8b3e",blue:"#1f5fbf",violet:"#7b3fa0",grey:"#8a8a8a",white:"#f4f4f4",gold:"#c9a227"};
+const LIB={
+ ic:{type:"ic",name:"IC LM741"},
+ r1k:{type:"res",name:"Điện trở 1 kΩ",ohm:1000,bands:["brown","black","red","gold"]},
+ r2k2:{type:"res",name:"Điện trở 2,2 kΩ",ohm:2200,bands:["red","red","red","gold"]},
+ r10k:{type:"res",name:"Điện trở 10 kΩ",ohm:10000,bands:["brown","black","orange","gold"]},
+ r4k7:{type:"res",name:"Điện trở 4,7 kΩ",ohm:4700,bands:["yellow","violet","red","gold"]},
+ r100:{type:"res",name:"Điện trở 100 Ω",ohm:100,bands:["brown","black","brown","gold"]},
+ cap:{type:"cap",name:"Tụ hoá 100 µF"},
+ led:{type:"led",name:"LED đỏ"},
+ wire:{type:"wire",name:"Dây nối"}
+};
+const WIRE_COLORS=[["#d62828","đỏ"],["#222222","đen"],["#1f5fbf","xanh dương"],["#2e8b3e","xanh lá"],["#f2c40f","vàng"],["#ef7d10","cam"]];
+
+/* ---------- Bo mạch cắm ---------- */
+const ROWS={a:-5.5,b:-4.5,c:-3.5,d:-2.5,e:-1.5,f:1.5,g:2.5,h:3.5,i:4.5,j:5.5};
+const RAILS={tv:-8.5,tg:-7.5,bg:7.5,bm:8.5};
+const RAIL_NAME={tv:"+12 V",tg:"thanh phụ (chưa nối nguồn)",bg:"GND",bm:"−12 V"};
+const NC=30;
+const colX=c=>(c-15.5);
+const HOLES=new Map();
+for(let c=1;c<=NC;c++){
+  for(const r in ROWS) HOLES.set(r+c,{id:r+c,x:colX(c),z:ROWS[r],row:r,col:c,rail:false});
+  for(const r in RAILS) HOLES.set(r+c,{id:r+c,x:colX(c),z:RAILS[r],row:r,col:c,rail:true});
+}
+const HOLE_LIST=[...HOLES.values()];
+function baseNet(id){const h=HOLES.get(id);if(h.rail)return h.row;return("abcde".includes(h.row)?"T":"B")+h.col;}
+const hp=(id,y=0)=>{const h=HOLES.get(id);return new V3(h.x,y,h.z);};
+
+/* ---------- Trạng thái ---------- */
+const S={hold:false,holdVal:null,task:1,tool:"select",lib:null,wireColor:"#d62828",pending:null,objs:[],nid:1,sel:null,undo:[],
+  power:false,pins:1,pol:1,vin:1.583,dial:"OFF",probe:{red:null,black:null},check:{1:null,2:null}};
+const BAT=[1.583,1.556,1.604];const vinOf=n=>BAT.slice(0,n).reduce((a,b)=>a+b,0);
+const VP=12.03,VN=-11.97,VSATP=10.85,VSATN=-10.62,AOL=2e5;
+
+/* Dây cố định của nguồn ±12 V và nguồn tín hiệu */
+const SUP={x:-5,z:-15.6};      // tâm khối nguồn
+const SUPT={p:new V3(-10,1.95,-14.6),g:new V3(-6,1.95,-14.6),n:new V3(-2,1.95,-14.6)};
+const SRC={x:-22.6,z:1.5};
+const SRCT={p:new V3(-20.3,1.15,4.4),g:new V3(-21.5,1.15,4.4)};
+const FIXED=[
+ {hole:"tv1",src:"V+",from:SUPT.p,color:"#d62828",via:new V3(-15,4,-12)},
+ {hole:"bg1",src:"GND",from:SUPT.g,color:"#222222",via:new V3(-19,4,2)},
+ {hole:"bm1",src:"V-",from:SUPT.n,color:"#1f5fbf",via:new V3(-19.5,4.5,4)},
+ {hole:"e3",src:"VIN",from:SRCT.p,color:"#d62828",via:new V3(-17,3.2,1.5)},
+ {hole:"bg2",src:"GND",from:SRCT.g,color:"#222222",via:new V3(-18,3,7.5)}
+];
+const fixedHoles=new Set(FIXED.map(f=>f.hole));
+
+/* ---------- Mạng điện ---------- */
+function buildNets(ex){
+  const p={};
+  const f=x=>{if(p[x]===undefined)p[x]=x;while(p[x]!==x){p[x]=p[p[x]];x=p[x];}return x;};
+  for(const o of S.objs) if(o.type==="wire"&&o.id!==ex){const a=f(baseNet(o.holes[0])),b=f(baseNet(o.holes[1]));if(a!==b)p[a]=b;}
+  return id=>f(baseNet(id));
+}
+function pinHole(ic,n){const c=ic.col;return n<=4?("f"+(c+n-1)):("e"+(c+8-n));}
+function srcMap(R){const m={};for(const f of FIXED){const r=R(f.hole);(m[r]||(m[r]=new Set())).add(f.src);}return m;}
+
+function gauss(M,N){
+  for(let c=0;c<N;c++){
+    let p=c,mx=Math.abs(M[c][c]);
+    for(let r=c+1;r<N;r++){const v=Math.abs(M[r][c]);if(v>mx){mx=v;p=r;}}
+    if(mx<1e-18)continue;
+    if(p!==c){const t=M[p];M[p]=M[c];M[c]=t;}
+    for(let r=0;r<N;r++){if(r===c)continue;const fct=M[r][c]/M[c][c];if(!fct)continue;for(let k=c;k<=N;k++)M[r][k]-=fct*M[c][k];}
+  }
+  const x=new Float64Array(N);for(let i=0;i<N;i++)x[i]=Math.abs(M[i][i])<1e-18?0:M[i][N]/M[i][i];return x;
+}
+function solve(n,elems){
+  const nv=elems.filter(e=>e.t==="V"||e.t==="E").length,N=n+nv;
+  const M=Array.from({length:N},()=>new Float64Array(N+1));
+  const add=(r,c,v)=>{if(r>=0&&c>=0)M[r][c]+=v;};
+  for(let i=0;i<n;i++)M[i][i]+=1e-9;
+  let k=n;
+  for(const e of elems){
+    if(e.t==="R"){add(e.a,e.a,e.g);add(e.b,e.b,e.g);add(e.a,e.b,-e.g);add(e.b,e.a,-e.g);}
+    else if(e.t==="I"){if(e.p>=0)M[e.p][N]+=e.i;}
+    else if(e.t==="V"){add(e.p,k,1);add(k,e.p,1);M[k][N]=e.v;k++;}
+    else if(e.t==="E"){add(e.o,k,1);add(k,e.o,1);add(k,e.p,-e.A);add(k,e.m,e.A);M[k][k]+=1e-12;k++;}
+  }
+  return gauss(M,N);
+}
+
+/* Mô phỏng mạch một chiều với IC lí tưởng hoá có bão hoà */
+function simulate(vin,powerOn){
+  const R=buildNets(),src=srcMap(R);
+  const res=S.objs.filter(o=>o.type==="res").map(o=>({a:R(o.holes[0]),b:R(o.holes[1]),r:o.actual,o}));
+  const ics=S.objs.filter(o=>o.type==="ic").map(o=>{const p=[null];for(let n=1;n<=8;n++)p.push(R(pinHole(o,n)));return{o,p};});
+  let short=null;
+  const act=x=>powerOn||x==="GND"||x==="VIN";
+  for(const r in src){const a=[...src[r]].filter(act);if(a.length>1){short=a;break;}}
+  const isG=r=>!!(src[r]&&src[r].has("GND"));
+  if(short)return{R,src,res,ics,short,V:()=>0,isG};
+  const idx=new Map();const gi=r=>{if(isG(r))return -1;if(!idx.has(r))idx.set(r,idx.size);return idx.get(r);};
+  const base=[];
+  for(const r in src){const s=src[r];if(s.has("VIN"))base.push({t:"V",p:gi(r),v:vin});else if(powerOn&&s.has("V+"))base.push({t:"V",p:gi(r),v:VP});else if(powerOn&&s.has("V-"))base.push({t:"V",p:gi(r),v:VN});}
+  for(const x of res)base.push({t:"R",a:gi(x.a),b:gi(x.b),g:1/x.r});
+  const ops=[];
+  for(const ic of ics){
+    const p=ic.p;const s7=src[p[7]],s4=src[p[4]];
+    const powered=powerOn&&s7&&s7.has("V+")&&s4&&s4.has("V-");
+    if(powered&&!src[p[6]])ops.push({o:gi(p[6]),p:gi(p[3]),m:gi(p[2]),st:"lin"});
+  }
+  const n=idx.size;let x=null;
+  for(let it=0;it<4;it++){
+    const el=base.slice();
+    for(const op of ops){if(op.st==="lin")el.push({t:"E",o:op.o,p:op.p,m:op.m,A:AOL});else el.push({t:"V",p:op.o,v:op.st==="hi"?VSATP:VSATN});}
+    x=solve(n,el);
+    let changed=false;
+    for(const op of ops){if(op.st==="lin"&&op.o>=0){const v=x[op.o];if(v>VSATP){op.st="hi";changed=true;}else if(v<VSATN){op.st="lo";changed=true;}}}
+    if(!changed)break;
+  }
+  const V=r=>isG(r)?0:(idx.has(r)?x[idx.get(r)]:0);
+  return{R,src,res,ics,short:null,V,isG};
+}
+function ohms(red,black){
+  const R=buildNets();const rr=R(red),rb=R(black);if(rr===rb)return 0;
+  const idx=new Map();const gi=r=>{if(r===rb)return -1;if(!idx.has(r))idx.set(r,idx.size);return idx.get(r);};
+  const el=[];gi(rr);
+  for(const o of S.objs)if(o.type==="res")el.push({t:"R",a:gi(R(o.holes[0])),b:gi(R(o.holes[1])),g:1/o.actual});
+  el.push({t:"I",p:gi(rr),i:1e-3});
+  const x=solve(idx.size,el);return x[idx.get(rr)]/1e-3;
+}
+
+/* ---------- Kiểm tra mạch ---------- */
+function checkCircuit(task){
+  const R=buildNets(),src=srcMap(R);const out=[];let ok=true;
+  const has=(r,s)=>!!(src[r]&&src[r].has(s));
+  const fail=t=>{out.push({ok:false,t});ok=false;},pass=t=>out.push({ok:true,t});
+  for(const r in src)if(src[r].size>1){fail("Chập nguồn: "+[...src[r]].map(s=>s==="V-"?"−12 V":s==="V+"?"+12 V":s==="VIN"?"cực + của pin":"GND").join(" nối thẳng với ")+".");}
+  const ics=S.objs.filter(o=>o.type==="ic");
+  if(ics.length!==1){fail(ics.length?"Trên bo chỉ cần 1 IC LM741.":"Chưa cắm IC LM741.");return{ok:false,out};}
+  pass("Đã cắm IC LM741 vắt qua rãnh giữa.");
+  const ic=ics[0],p=[null];for(let n=1;n<=8;n++)p.push(R(pinHole(ic,n)));
+  if(has(p[7],"V-")&&has(p[4],"V+"))fail("IC bị cấp nguồn ngược: chân 7 phải nối +12 V, chân 4 nối −12 V.");
+  else{has(p[7],"V+")?pass("Chân 7 đã nối +12 V."):fail("Chân 7 chưa nối với thanh +12 V.");
+       has(p[4],"V-")?pass("Chân 4 đã nối −12 V."):fail("Chân 4 chưa nối với thanh −12 V.");}
+  if(src[p[6]])fail("Chân 6 (đầu ra) đang nối thẳng vào nguồn hoặc GND.");
+  const res=S.objs.filter(o=>o.type==="res").map(o=>({o,a:R(o.holes[0]),b:R(o.holes[1])}));
+  const between=(x,y)=>res.filter(r=>(r.a===x&&r.b===y)||(r.a===y&&r.b===x));
+  const toGnd=x=>res.filter(r=>(r.a===x&&has(r.b,"GND"))||(r.b===x&&has(r.a,"GND")));
+  const vinR=R("e3");const kO=o=>o>=1000?String(o/1000).replace(".",",")+" kΩ":o+" Ω";const used=new Set();
+  const want=(list,ohm,label,where)=>{
+    if(!list.length){fail("Chưa có điện trở "+label+" "+where+".");return;}
+    const good=list.find(r=>r.o.ohm===ohm);
+    if(good){used.add(good.o);pass(label+" = "+kO(ohm)+" lắp đúng "+where+".");}
+    else{used.add(list[0].o);fail(label+" "+where+" sai giá trị: đang dùng "+LIB[list[0].o.key].name.replace("Điện trở ","")+", cần "+kO(ohm)+".");}
+  };
+  if(task===1){
+    has(p[3],"GND")?pass("Chân 3 (+) đã nối GND."):fail("Chân 3 (+) phải nối xuống GND.");
+    if(p[2]===vinR)fail("Chân 2 đang nối thẳng với dây pin, thiếu điện trở R1.");
+    else want(between(p[2],vinR),1000,"R1","giữa dây pin (Uvào) và chân 2");
+    want(between(p[2],p[6]),2200,"R2","giữa chân 2 và chân 6");
+  }else{
+    p[3]===vinR?pass("Chân 3 (+) đã nối với Uvào."):fail("Chân 3 (+) phải nối với Uvào (cột 2).");
+    want(toGnd(p[2]),1000,"R1","giữa chân 2 và GND");
+    want(between(p[2],p[6]),10000,"R2","giữa chân 2 và chân 6");
+  }
+  const extra=S.objs.filter(o=>o.type!=="wire"&&o.type!=="ic"&&!used.has(o));
+  if(extra.length)fail("Có linh kiện thừa trên bo: "+extra.map(o=>LIB[o.key].name).join(", ")+".");
+  return{ok,out};
+}
+
+/* ---------- Three.js ---------- */
+const canvas=$("#c3d"),wrap=$("#stageWrap");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(38,1,0.1,300);
+const controls=new THREE.OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=0.12;controls.maxPolarAngle=Math.PI*0.47;controls.minDistance=8;controls.maxDistance=110;
+function viewPersp(){camera.position.set(1,39,39);controls.target.set(1,0,-1);controls.update();}
+function viewTop(){camera.position.set(0,56,0.01);controls.target.set(0,0,0);controls.update();}
+function zoomBy(f){const off=camera.position.clone().sub(controls.target);off.setLength(Math.min(controls.maxDistance,Math.max(controls.minDistance,off.length()*f)));camera.position.copy(controls.target).add(off);controls.update();}
+viewPersp();
+
+scene.add(new THREE.HemisphereLight(0xffffff,0x6b7470,0.75));
+const sun=new THREE.DirectionalLight(0xffffff,0.85);sun.position.set(-12,30,18);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-32,right:32,top:24,bottom:-24,near:1,far:80});sun.shadow.bias=-0.0006;
+scene.add(sun);
+
+const bench=new THREE.Mesh(new THREE.PlaneGeometry(220,160),new THREE.MeshStandardMaterial({color:0xc3cbc4,roughness:.95}));
+bench.rotation.x=-Math.PI/2;bench.position.y=-0.8;bench.receiveShadow=true;scene.add(bench);
+function syncTheme(){const c=getComputedStyle(document.documentElement).getPropertyValue("--bench").trim();if(c)bench.material.color.set(c);}
+syncTheme();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",syncTheme);
+new MutationObserver(syncTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+const MAT={
+ lead:new THREE.MeshStandardMaterial({color:0xc8ccd2,metalness:.85,roughness:.32}),
+ resBody:new THREE.MeshStandardMaterial({color:0xd8c39a,roughness:.55}),
+ icBody:new THREE.MeshStandardMaterial({color:0x1d1d20,roughness:.6}),
+ dark:new THREE.MeshStandardMaterial({color:0x2a2e31,roughness:.7}),
+ module:new THREE.MeshStandardMaterial({color:0x3a4146,roughness:.6}),
+ meter:new THREE.MeshStandardMaterial({color:0x3b62b8,roughness:.7})
+};
+const bandMat={};for(const k in BAND)bandMat[k]=new THREE.MeshStandardMaterial({color:BAND[k],roughness:.5});
+const colorMat=c=>new THREE.MeshStandardMaterial({color:c,roughness:.45});
+function shadowAll(o){o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;}});return o;}
+function polyTube(pts,r,mat,seg=8){const path=new THREE.CurvePath();for(let i=0;i<pts.length-1;i++)path.add(new THREE.LineCurve3(pts[i],pts[i+1]));return new THREE.Mesh(new THREE.TubeGeometry(path,pts.length*6,r,seg,false),mat);}
+function canvasTex(w,h,draw){const cv=document.createElement("canvas");cv.width=w;cv.height=h;const t=new THREE.CanvasTexture(cv);t.encoding=THREE.sRGBEncoding;t.anisotropy=renderer.capabilities.getMaxAnisotropy();const api={cv,ctx:cv.getContext("2d"),tex:t,redraw(){draw(api.ctx,w,h);t.needsUpdate=true;}};api.redraw();return api;}
+function topPlane(w,d,tex,x,y,z){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({map:tex,roughness:.75}));m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;return m;}
+
+/* Bo mạch cắm */
+const BW=32,BD=19.2,PX=48;
+const boardBody=new THREE.Mesh(new THREE.BoxGeometry(BW,0.8,BD),new THREE.MeshStandardMaterial({color:0xe9e7df,roughness:.8}));
+boardBody.position.y=-0.401;boardBody.receiveShadow=true;boardBody.castShadow=true;scene.add(boardBody);
+const boardTex=canvasTex(BW*PX,Math.round(BD*PX),(g,w,h)=>{
+  const U=x=>(x+BW/2)*PX,Vz=z=>(z+BD/2)*PX;
+  g.fillStyle="#f1efe8";g.fillRect(0,0,w,h);
+  g.fillStyle="#dcd9cf";g.fillRect(0,Vz(-0.55),w,1.1*PX);
+  g.fillStyle="#cfccc2";g.fillRect(0,Vz(-0.12),w,0.24*PX);
+  const line=(z,c)=>{g.fillStyle=c;g.fillRect(U(colX(1))-PX*.6,Vz(z)-2,(NC-1+1.2)*PX,4);};
+  line(-9.15,"#c62828");line(-6.85,"#1f5fbf");line(6.85,"#1f5fbf");line(9.15,"#6b3fa0");
+  g.fillStyle="#2d2c2a";
+  for(const h of HOLE_LIST){const s=0.36*PX;g.fillRect(U(h.x)-s/2,Vz(h.z)-s/2,s,s);}
+  g.font="600 20px 'Be Vietnam Pro', sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillStyle="#57544c";
+  for(const r in ROWS){g.fillText(r,U(-15.35),Vz(ROWS[r]));g.fillText(r,U(15.35),Vz(ROWS[r]));}
+  for(const c of [1,5,10,15,20,25,30]){g.fillText(String(c),U(colX(c)),Vz(-6.35));g.fillText(String(c),U(colX(c)),Vz(6.35));}
+  g.font="700 15px 'Be Vietnam Pro', sans-serif";
+  const rl=(z,t,c)=>{g.fillStyle=c;g.fillText(t,U(-15.35),Vz(z));g.fillText(t,U(15.35),Vz(z));};
+  rl(-8.5,"+12","#c62828");rl(-7.5,"–","#1f5fbf");rl(7.5,"GND","#1f5fbf");rl(8.5,"−12","#6b3fa0");
+  g.font="600 18px 'Be Vietnam Pro', sans-serif";g.fillStyle="#c26210";g.textAlign="left";g.fillText("Pin +",U(colX(3))-18,Vz(0.02));
+});
+scene.add(topPlane(BW,BD,boardTex.tex,0,0.002,0));
+
+/* Khối nguồn ±12 V */
+const supply=new THREE.Group();scene.add(supply);
+{const b=new THREE.Mesh(new THREE.BoxGeometry(14,2.4,4),MAT.module);b.position.set(SUP.x,0.4,SUP.z);supply.add(b);
+ const tx=canvasTex(700,200,(g,w,h)=>{g.fillStyle="#2f3539";g.fillRect(0,0,w,h);g.fillStyle="#e8ecea";g.font="700 26px 'Chakra Petch', sans-serif";g.textAlign="left";g.fillText("NGUỒN MỘT CHIỀU ±12 V",24,44);
+   g.font="600 24px 'Be Vietnam Pro', sans-serif";g.textAlign="center";const lab=[["+12 V",100,"#ff7a7a"],["GND",300,"#e8ecea"],["−12 V",500,"#8fb6ff"]];
+   for(const[t,x,c]of lab){g.fillStyle=c;g.fillText(t,x,175);}
+   g.fillStyle="#a9b2ad";g.font="500 18px 'Be Vietnam Pro', sans-serif";g.fillText("NGUỒN",640,175);});
+ supply.add(topPlane(14,4,tx.tex,SUP.x,1.602,SUP.z));
+ const post=(p,c)=>{const g=new THREE.Group();const base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.48,.5,20),colorMat(c));base.position.y=.25;const top=new THREE.Mesh(new THREE.CylinderGeometry(.18,.18,.4,12),MAT.lead);top.position.y=.65;g.add(base,top);g.position.set(p.x,1.6,p.z);return g;};
+ supply.add(post(SUPT.p,"#c62828"),post(SUPT.g,"#1f1f1f"),post(SUPT.n,"#1f5fbf"));}
+const pwrLed=new THREE.Mesh(new THREE.SphereGeometry(.28,16,12),new THREE.MeshStandardMaterial({color:0x3b2020,emissive:0x000000}));
+pwrLed.position.set(SUP.x+5.8,1.75,SUP.z-0.9);scene.add(pwrLed);
+
+/* Hộp pin 1,5 V × 3 */
+let srcTex;
+{const b=new THREE.Mesh(new THREE.BoxGeometry(6,1.4,7),MAT.module);b.position.set(SRC.x,-0.1,SRC.z);scene.add(shadowAll(b));
+ srcTex=canvasTex(360,420,(g,w,h)=>{g.fillStyle="#2f3539";g.fillRect(0,0,w,h);
+   g.fillStyle="#1d2124";for(let i=0;i<3;i++)g.fillRect(24+i*108,14,96,282);
+   g.fillStyle="#e8ecea";g.font="700 21px 'Chakra Petch', sans-serif";g.textAlign="left";g.fillText("HỘP PIN 1,5 V × 3",20,330);
+   g.font="600 17px 'Be Vietnam Pro', sans-serif";g.fillStyle="#a9b2ad";g.fillText("Số pin:",20,372);
+   for(let n=0;n<=3;n++){g.fillStyle=n===S.pins?"#ffd34d":"#d5dbd8";g.textAlign="center";g.fillText(String(n),96+n*33,404);}
+   g.textAlign="left";g.fillStyle=S.pol<0?"#ffd34d":"#a9b2ad";g.fillText(S.pol<0?"ĐẢO CỰC":"THUẬN",20,404-62);
+   g.textAlign="center";g.font="700 22px 'Be Vietnam Pro', sans-serif";g.fillStyle="#ff9c9c";g.fillText("+",318,350);g.fillStyle="#e8ecea";g.fillText("−",246,350);});
+ scene.add(topPlane(6,7,srcTex.tex,SRC.x,0.602,SRC.z));
+ const cellM=new THREE.MeshStandardMaterial({color:0x2b62b0,roughness:.4}),capM=new THREE.MeshStandardMaterial({color:0xc9a227,metalness:.6,roughness:.35});
+ for(let i=0;i<3;i++){const x=SRC.x-1.8+i*1.8;const c=new THREE.Mesh(new THREE.CylinderGeometry(.62,.62,4.2,24),cellM);c.rotation.x=Math.PI/2;c.position.set(x,.95,SRC.z-0.95);scene.add(shadowAll(c));
+   const nub=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.25,14),capM);nub.rotation.x=Math.PI/2;nub.position.set(x,.95,SRC.z-0.95+(i%2?-2.2:2.2));scene.add(nub);}
+ const post=(p,c)=>{const g=new THREE.Group();const base=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,.4,20),colorMat(c));base.position.y=.2;const top=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.3,12),MAT.lead);top.position.y=.5;g.add(base,top);g.position.set(p.x,.6,p.z);return shadowAll(g);};
+ scene.add(post(SRCT.p,"#c62828"),post(SRCT.g,"#1f1f1f"));
+ const sw=new THREE.Mesh(new THREE.BoxGeometry(.5,.35,.45),MAT.dark);sw.position.set(SRC.x-1.6,.78,SRC.z+3.0);scene.add(sw);
+ window.__sw=sw;}
+
+/* Dây cố định */
+function cableTo(from,hole,color,via,r=.13){
+  const end=hp(hole,0.35);const c=new THREE.CubicBezierCurve3(from.clone(),via.clone(),new V3(end.x,end.y+2.4,end.z),end);
+  const path=new THREE.CurvePath();path.add(c);path.add(new THREE.LineCurve3(end,hp(hole,-0.25)));
+  const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.TubeGeometry(c,48,r,10,false),colorMat(color)));
+  const tip=polyTube([end,hp(hole,-0.25)],.07,MAT.lead);g.add(tip);return shadowAll(g);
+}
+for(const f of FIXED)scene.add(cableTo(f.from,f.hole,f.color,f.via));
+/* Nhãn chữ nổi cho các khối và thanh nguồn */
+const labelTex=[];
+function makeLabel(text,bg,fg,h,pos,sub){
+  const api=canvasTex(512,sub?150:110,(g,w,hh)=>{g.clearRect(0,0,w,hh);g.fillStyle=bg;const r=26;g.beginPath();g.moveTo(r,4);g.arcTo(w-4,4,w-4,hh-4,r);g.arcTo(w-4,hh-4,4,hh-4,r);g.arcTo(4,hh-4,4,4,r);g.arcTo(4,4,w-4,4,r);g.fill();
+    g.strokeStyle="rgba(255,255,255,.85)";g.lineWidth=5;g.stroke();g.fillStyle=fg;g.textAlign="center";g.textBaseline="middle";
+    g.font="700 52px 'Chakra Petch', 'Be Vietnam Pro', sans-serif";g.fillText(text,w/2,sub?54:hh/2+2);
+    if(sub){g.font="600 30px 'Be Vietnam Pro', sans-serif";g.globalAlpha=.92;g.fillText(sub,w/2,112);g.globalAlpha=1;}});
+  labelTex.push(api);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:api.tex,transparent:true,depthWrite:false}));
+  const ar=512/(sub?150:110);sp.scale.set(h*ar,h,1);sp.position.copy(pos);sp.renderOrder=3;scene.add(sp);return sp;
+}
+makeLabel("NGUỒN ±12 V","#3d6cf2","#ffffff",1.7,new V3(SUP.x,4.2,SUP.z),"đỏ +12 · đen GND · xanh −12");
+makeLabel("HỘP PIN 1,5 V × 3","#ff8a1f","#ffffff",1.5,new V3(SRC.x,3.4,SRC.z-0.5),"đỏ (+) · đen (−) → GND");
+makeLabel("ĐỒNG HỒ VẠN NĂNG","#2f56ad","#ffffff",0.95,new V3(22.6,1.7,-2.6));
+makeLabel("+12 V","#d62828","#ffffff",0.75,new V3(17.9,0.55,RAILS.tv));
+makeLabel("trống","#8a94a6","#ffffff",0.62,new V3(17.9,0.5,RAILS.tg));
+makeLabel("GND","#1f5fbf","#ffffff",0.75,new V3(17.9,0.55,RAILS.bg));
+makeLabel("−12 V","#7b3fa0","#ffffff",0.75,new V3(17.9,0.55,RAILS.bm));
+
+/* Đồng hồ vạn năng */
+const MET={x:22.6,z:2,w:6,d:9};
+const DIALS=[["OFF","OFF",180],["ACV","~V",-152],["DCV","⎓V",-128],["AUTOV","AUTO V",-104],["CONT","•)))",-80],["OHM","Ω",-56],["CAP","⊣⊢",-28],["DIODE","▷|",2],["DCA","⎓A",32],["ACA","~A",58]];
+const JACK={com:new V3(MET.x-1.1,0.05,MET.z+3.3),v:new V3(MET.x+1.1,0.05,MET.z+3.3)};
+let meterTex;
+{const b=new THREE.Mesh(new THREE.BoxGeometry(MET.w,0.9,MET.d),MAT.meter);b.position.set(MET.x,-0.35,MET.z);scene.add(shadowAll(b));
+ meterTex=canvasTex(360,540,(g,w,h)=>{
+   g.fillStyle="#2b2f33";g.fillRect(14,14,w-28,h-28);
+   g.fillStyle="#c2cfa6";g.fillRect(36,34,w-72,112);
+   const rd=meterRead();g.fillStyle="#1e2a16";g.textAlign="right";g.font="700 64px 'JetBrains Mono', monospace";g.fillText(rd.main,w-80,118);
+   g.font="700 20px 'JetBrains Mono', monospace";g.fillText(rd.unit,w-44,118);
+   g.textAlign="center";g.fillStyle="#e8ecea";g.font="600 15px 'Be Vietnam Pro', sans-serif";g.fillText("ĐỒNG HỒ VẠN NĂNG SỐ",w/2,176);
+   const cx=w/2,cy=300;g.fillStyle="#1a1d20";g.beginPath();g.arc(cx,cy,66,0,Math.PI*2);g.fill();
+   g.font="700 13px 'JetBrains Mono', monospace";
+   for(const[k,t,a]of DIALS){const r=a*Math.PI/180;const x=cx+Math.cos(r)*104,y=cy+Math.sin(r)*104;g.fillStyle=k===S.dial?"#ffd34d":"#d5dbd8";g.fillText(t,x,y+5);}
+   const da=DIALS.find(d=>d[0]===S.dial)[2]*Math.PI/180;
+   g.strokeStyle="#f0f0f0";g.lineWidth=10;g.lineCap="round";g.beginPath();g.moveTo(cx-Math.cos(da)*40,cy-Math.sin(da)*40);g.lineTo(cx+Math.cos(da)*58,cy+Math.sin(da)*58);g.stroke();
+   const jy=(JACK.com.z-(MET.z-MET.d/2))*60;
+   const jx=x=>(x-(MET.x-MET.w/2))*60;
+   g.font="600 16px 'Be Vietnam Pro', sans-serif";g.fillStyle="#d5dbd8";g.fillText("COM",jx(JACK.com.x),jy+46);g.fillText("VΩ",jx(JACK.v.x),jy+46);
+   g.fillStyle="#111";g.beginPath();g.arc(jx(JACK.com.x),jy,18,0,7);g.arc(jx(JACK.v.x),jy,18,0,7);g.fill();
+ });
+ scene.add(topPlane(MET.w,MET.d,meterTex.tex,MET.x,0.102,MET.z));}
+
+/* Que đo */
+function makeProbe(color){
+  const g=new THREE.Group();
+  const tip=new THREE.Mesh(new THREE.CylinderGeometry(.05,.03,1,8),MAT.lead);tip.position.y=.5;
+  const guard=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,.12,16),colorMat(color));guard.position.y=1.05;
+  const handle=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,2.6,16),colorMat(color));handle.position.y=2.4;
+  g.add(tip,guard,handle);return shadowAll(g);
+}
+const probes={red:{g:makeProbe("#d62828"),jack:JACK.v,color:"#d62828",cable:null,rest:{p:new V3(MET.x+2.2,0.25,MET.z+6.4),d:new V3(0.4,0.15,1)}},
+              black:{g:makeProbe("#1f1f1f"),jack:JACK.com,color:"#1f1f1f",cable:null,rest:{p:new V3(MET.x-2.2,0.25,MET.z+6.4),d:new V3(-0.4,0.15,1)}}};
+for(const k in probes)scene.add(probes[k].g);
+function placeProbe(k){
+  const pr=probes[k];const hole=S.probe[k];let tip,dir;
+  if(hole){tip=hp(hole,0.02);dir=new V3(k==="red"?0.18:-0.18,0.86,0.48).normalize();}
+  else{tip=pr.rest.p.clone();dir=pr.rest.d.clone().normalize();}
+  pr.g.position.copy(tip);pr.g.quaternion.setFromUnitVectors(new V3(0,1,0),dir);
+  const back=tip.clone().add(dir.clone().multiplyScalar(3.7));
+  if(pr.cable){scene.remove(pr.cable);pr.cable.geometry.dispose();}
+  const j=pr.jack.clone().setY(0.2);
+  const curve=new THREE.CubicBezierCurve3(back,back.clone().add(dir.clone().multiplyScalar(2.5)),j.clone().add(new V3(0,3,2)),j);
+  pr.cable=new THREE.Mesh(new THREE.TubeGeometry(curve,40,.09,8,false),colorMat(pr.color));pr.cable.castShadow=true;scene.add(pr.cable);
+}
+
+/* Linh kiện đã cắm */
+const placed=new THREE.Group();scene.add(placed);
+function buildRes(o){
+  const A=hp(o.holes[0]),B=hp(o.holes[1]);const g=new THREE.Group();
+  const dx=B.x-A.x,dz=B.z-A.z,len=Math.hypot(dx,dz),ux=dx/len,uz=dz/len,h=.42,L=Math.min(2.0,len-0.9);
+  const mid=new V3((A.x+B.x)/2,h,(A.z+B.z)/2);
+  const e1=new V3(mid.x-ux*L/2,h,mid.z-uz*L/2),e2=new V3(mid.x+ux*L/2,h,mid.z+uz*L/2);
+  g.add(polyTube([A.clone().setY(-.25),A.clone().setY(h),e1],.045,MAT.lead,6));
+  g.add(polyTube([B.clone().setY(-.25),B.clone().setY(h),e2],.045,MAT.lead,6));
+  const bg=new THREE.Group();bg.position.copy(mid);bg.rotation.y=-Math.atan2(dz,dx);
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.26,.26,L*.82,20),MAT.resBody);body.rotation.z=Math.PI/2;bg.add(body);
+  for(const s of [-1,1]){const cap=new THREE.Mesh(new THREE.SphereGeometry(.3,16,12),MAT.resBody);cap.scale.set(.7,1,1);cap.position.x=s*L*.41;bg.add(cap);}
+  const pos=[-.3,-.16,-.02,.28];
+  LIB[o.key].bands.forEach((b,i)=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.272,.272,.11,20),bandMat[b]);m.rotation.z=Math.PI/2;m.position.x=pos[i]*L;bg.add(m);});
+  g.add(bg);return g;
+}
+function buildStand(o){
+  const A=hp(o.holes[0]),B=hp(o.holes[1]);const g=new THREE.Group();
+  const mid=new V3((A.x+B.x)/2,0,(A.z+B.z)/2);const d=new V3(B.x-A.x,0,B.z-A.z).normalize();
+  const isCap=o.type==="cap";const foot=isCap?.45:.35;
+  const fa=mid.clone().addScaledVector(d,-.16).setY(foot),fb=mid.clone().addScaledVector(d,.16).setY(foot);
+  g.add(polyTube([A.clone().setY(-.25),A.clone().setY(.2),fa],.04,MAT.lead,6));
+  g.add(polyTube([B.clone().setY(-.25),B.clone().setY(.2),fb],.04,MAT.lead,6));
+  if(isCap){const b=new THREE.Mesh(new THREE.CylinderGeometry(.48,.48,1.3,24),colorMat("#24407a"));b.position.set(mid.x,foot+.65,mid.z);g.add(b);
+    const s=new THREE.Mesh(new THREE.CylinderGeometry(.485,.485,1.2,24,1,true,-0.5,1),colorMat("#c9d0da"));s.position.copy(b.position);s.rotation.y=-Math.atan2(d.z,d.x)+Math.PI/2;g.add(s);
+    const t=new THREE.Mesh(new THREE.CylinderGeometry(.44,.44,.04,24),MAT.lead);t.position.set(mid.x,foot+1.31,mid.z);g.add(t);}
+  else{const m=new THREE.MeshStandardMaterial({color:0xd8261e,roughness:.2,transparent:true,opacity:.85});
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(.27,.3,.5,20),m);b.position.set(mid.x,foot+.25,mid.z);
+    const dm=new THREE.Mesh(new THREE.SphereGeometry(.27,20,12,0,Math.PI*2,0,Math.PI/2),m);dm.position.set(mid.x,foot+.5,mid.z);g.add(b,dm);}
+  return g;
+}
+const icLabel=canvasTex(256,128,(g,w,h)=>{g.fillStyle="#1d1d20";g.fillRect(0,0,w,h);g.fillStyle="#cfd2d6";g.font="600 34px 'JetBrains Mono', monospace";g.textAlign="center";g.fillText("LM741CN",w/2+10,62);g.font="500 22px 'JetBrains Mono', monospace";g.fillStyle="#9aa0a6";g.fillText("2241",w/2+10,98);});
+function buildIC(o){
+  const g=new THREE.Group();const x0=colX(o.col),x3=colX(o.col+3);const cx=(x0+x3)/2;
+  const body=new THREE.Mesh(new THREE.BoxGeometry(3.8,.55,2.1),MAT.icBody);body.position.set(cx,.62,0);g.add(body);
+  const lab=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.7),new THREE.MeshStandardMaterial({map:icLabel.tex,roughness:.7}));lab.rotation.x=-Math.PI/2;lab.position.set(cx,.902,0);g.add(lab);
+  const notch=new THREE.Mesh(new THREE.CircleGeometry(.28,20,-Math.PI/2,Math.PI),MAT.dark);notch.rotation.x=-Math.PI/2;notch.position.set(x0-1.9+0.001,.905,0);g.add(notch);
+  const dot=new THREE.Mesh(new THREE.CircleGeometry(.13,16),new THREE.MeshStandardMaterial({color:0x3a3a3e}));dot.rotation.x=-Math.PI/2;dot.position.set(x0-.15,.906,.62);g.add(dot);
+  for(let n=1;n<=8;n++){const h=HOLES.get(pinHole(o,n));const sz=Math.sign(h.z);
+    g.add(polyTube([new V3(h.x,.55,sz*1.0),new V3(h.x,.55,h.z),new V3(h.x,-.25,h.z)],.06,MAT.lead,4));}
+  return g;
+}
+function buildWire(o){
+  const A=hp(o.holes[0]),B=hp(o.holes[1]);const len=A.distanceTo(B);const g=new THREE.Group();
+  const a1=A.clone().setY(.25),b1=B.clone().setY(.25);
+  const ctrl=new V3((A.x+B.x)/2,.4+Math.min(3,.16*len+.3),(A.z+B.z)/2);
+  const c=new THREE.QuadraticBezierCurve3(a1,ctrl,b1);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(c,Math.max(16,Math.round(len*4)),.1,8,false),colorMat(o.color)));
+  g.add(polyTube([A.clone().setY(-.25),a1],.055,MAT.lead,6),polyTube([B.clone().setY(-.25),b1],.055,MAT.lead,6));
+  return g;
+}
+function buildObj(o){
+  const g=o.type==="res"?buildRes(o):o.type==="ic"?buildIC(o):o.type==="wire"?buildWire(o):buildStand(o);
+  g.userData.oid=o.id;shadowAll(g);o.mesh=g;placed.add(g);
+}
+function removeObj(o){
+  placed.remove(o.mesh);o.mesh.traverse(m=>{if(m.isMesh)m.geometry.dispose();});
+  S.objs=S.objs.filter(x=>x!==o);S.undo=S.undo.filter(x=>x!==o.id);if(S.sel===o)S.sel=null;S.ver=(S.ver||0)+1;
+}
+function occupied(id){if(fixedHoles.has(id))return "dây nguồn";for(const o of S.objs)if(o.holes.includes(id))return LIB[o.key].name;return null;}
+
+/* Đánh dấu */
+const ringGeo=new THREE.RingGeometry(.26,.4,24);
+function marker(color){const m=new THREE.Mesh(ringGeo,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.95,depthTest:false}));m.rotation.x=-Math.PI/2;m.renderOrder=5;m.visible=false;scene.add(m);return m;}
+const hoverM=marker(0x0d9b84),pendM=marker(0xef7d10);
+const netPool=[];const netGeo=new THREE.PlaneGeometry(.5,.5);const netMat=new THREE.MeshBasicMaterial({color:0x22b393,transparent:true,opacity:.45,depthTest:false});
+for(let i=0;i<32;i++){const m=new THREE.Mesh(netGeo,netMat);m.rotation.x=-Math.PI/2;m.visible=false;m.renderOrder=4;scene.add(m);netPool.push(m);}
+function showNet(id){
+  netPool.forEach(m=>m.visible=false);if(!id)return;const bn=baseNet(id);let i=0;
+  for(const h of HOLE_LIST)if(baseNet(h.id)===bn&&i<netPool.length){netPool[i].position.set(h.x,.01,h.z);netPool[i].visible=true;i++;}
+}
+
+/* ---------- Tương tác ---------- */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2(),plane=new THREE.Plane(new V3(0,1,0),0);
+function setMouse(e){const r=canvas.getBoundingClientRect();mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);ray.setFromCamera(mouse,camera);}
+function holeAtRay(){const p=new V3();if(!ray.ray.intersectPlane(plane,p))return null;let best=null,bd=.5;for(const h of HOLE_LIST){const d=Math.hypot(h.x-p.x,h.z-p.z);if(d<bd){bd=d;best=h;}}return best;}
+let down=null,hoverHole=null;
+canvas.addEventListener("pointerdown",e=>{down={x:e.clientX,y:e.clientY};});
+canvas.addEventListener("pointermove",e=>{
+  setMouse(e);const h=holeAtRay();hoverHole=h;
+  if(h){hoverM.position.set(h.x,.02,h.z);hoverM.visible=true;showNet(h.id);
+    const occ=occupied(h.id);
+    $("#hoverInfo").textContent=h.rail?`Thanh nguồn ${RAIL_NAME[h.row]}, cột ${h.col} · cả hàng nối thông nhau`+(occ?` · đang cắm: ${occ}`:""):
+      `Lỗ ${h.row}${h.col} · nối thông với các lỗ ${"abcde".includes(h.row)?"a–e":"f–j"} cùng cột ${h.col}`+(occ?` · đang cắm: ${occ}`:"");}
+  else{hoverM.visible=false;showNet(null);}
+});
+canvas.addEventListener("pointerleave",()=>{hoverM.visible=false;showNet(null);});
+canvas.addEventListener("pointerup",e=>{if(!down)return;const moved=Math.hypot(e.clientX-down.x,e.clientY-down.y);down=null;if(moved>6)return;setMouse(e);onClick();});
+
+function onClick(){
+  const h=holeAtRay();
+  if(S.locked&&S.tool!=="select"){setTool("select");toast("Đã hết giờ, không thể thao tác thêm.",true);return;}
+  if(S.tool==="probe-red"||S.tool==="probe-black"){
+    if(!h){toast("Đặt que đo vào một lỗ trên bo mạch.");return;}
+    const k=S.tool==="probe-red"?"red":"black";S.probe[k]=h.id;placeProbe(k);setTool("select");refresh();return;}
+  if(S.tool==="place"){
+    if(!h){toast("Bấm vào một lỗ trên bo mạch.");return;}
+    const it=LIB[S.lib];
+    if(it.type==="ic")return placeIC(h);
+    if(!S.pending){const occ=occupied(h.id);if(occ){toast(`Lỗ ${h.id} đã có ${occ}.`,true);return;}
+      S.pending=h;pendM.position.set(h.x,.03,h.z);pendM.visible=true;updMode();return;}
+    return placeTwo(S.pending,h);
+  }
+  const hits=ray.intersectObjects(placed.children,true);
+  if(hits.length){let o=hits[0].object;while(o&&o.userData.oid===undefined)o=o.parent;select(S.objs.find(x=>x.id===o.userData.oid));}
+  else select(null);
+}
+function select(o){
+  if(S.sel)S.sel.mesh.traverse(m=>{if(m.isMesh&&m.userData.orig){m.material=m.userData.orig;delete m.userData.orig;}});
+  S.sel=o||null;
+  if(S.sel){const hl=new THREE.MeshStandardMaterial({color:0x22b393,emissive:0x0d6b5b,emissiveIntensity:.6});S.sel.mesh.traverse(m=>{if(m.isMesh){m.userData.orig=m.material;m.material=hl;}});}
+  updMode();
+}
+function addObj(o){o.id=S.nid++;S.objs.push(o);S.undo.push(o.id);S.ver=(S.ver||0)+1;buildObj(o);refresh();}
+function placeIC(h){
+  if(h.rail||!(h.row==="e"||h.row==="f")){toast("IC phải cắm vắt qua rãnh giữa: bấm vào lỗ hàng e hoặc f nơi đặt chân 1.",true);return;}
+  const c=h.col;if(c+3>NC){toast("Không đủ chỗ cho 4 cặp chân IC, chọn cột nhỏ hơn.",true);return;}
+  for(let k=0;k<4;k++)for(const r of ["e","f"]){const occ=occupied(r+(c+k));if(occ){toast(`Lỗ ${r}${c+k} đã có ${occ}.`,true);return;}}
+  addObj({type:"ic",key:"ic",col:c,holes:["e","f"].flatMap(r=>[0,1,2,3].map(k=>r+(c+k)))});
+  toast(`Đã cắm IC: chân 1 ở f${c}, chân 8 ở e${c}.`);
+}
+function placeTwo(a,b){
+  const it=LIB[S.lib];const cancel=()=>{S.pending=null;pendM.visible=false;updMode();};
+  if(a.id===b.id){cancel();return;}
+  const occ=occupied(b.id);if(occ){toast(`Lỗ ${b.id} đã có ${occ}.`,true);return;}
+  const d=Math.hypot(a.x-b.x,a.z-b.z);
+  if(it.type==="res"&&(d<2.9||d>12)){toast("Hai chân điện trở nên cách nhau từ 3 đến 12 lỗ.",true);return;}
+  if((it.type==="cap"||it.type==="led")&&d>3.2){toast("Hai chân linh kiện này chỉ cách nhau 1–3 lỗ.",true);return;}
+  if(it.type!=="wire"&&baseNet(a.id)===baseNet(b.id))toast("Lưu ý: hai chân đang cùng một dải nối thông, linh kiện bị nối tắt.",true);
+  const o={type:it.type,key:S.lib,holes:[a.id,b.id]};
+  if(it.type==="res"){o.ohm=it.ohm;o.actual=it.ohm*(1+(Math.random()-.5)*0.018);}
+  if(it.type==="wire")o.color=S.wireColor;
+  S.pending=null;pendM.visible=false;addObj(o);updMode();
+  if(S.dragFlow){S.dragFlow=false;setTool("select");}
+}
+function setTool(t,lib){
+  if(t==="place"&&window.__autoStart)window.__autoStart();
+  if(t!=="place")S.dragFlow=false;
+  if(S.locked&&t!=="select"){toast("Đã hết giờ, không thể thao tác thêm.",true);t="select";lib=null;}
+  S.tool=t;S.lib=lib||null;S.pending=null;pendM.visible=false;
+  document.querySelectorAll("#lib button").forEach(b=>b.setAttribute("aria-pressed",String(t==="place"&&b.dataset.key===lib)));
+  $("#toolSelect").setAttribute("aria-pressed",String(t==="select"));
+  $("#probeRed").setAttribute("aria-pressed",String(t==="probe-red"));
+  $("#probeBlack").setAttribute("aria-pressed",String(t==="probe-black"));
+  $("#wireColors").hidden=!(t==="place"&&lib==="wire");
+  if(t!=="select")select(null);
+  updMode();
+}
+function updMode(){
+  let t="Chế độ chọn";
+  if(S.tool==="place"){const it=LIB[S.lib];t=it.type==="ic"?"Cắm IC: bấm lỗ hàng f (chân 1)":S.pending?`${it.name}: bấm lỗ thứ hai (đã chọn ${S.pending.id})`:`${it.name}: bấm lỗ thứ nhất`;}
+  else if(S.tool==="probe-red")t="Bấm lỗ để đặt que đỏ";
+  else if(S.tool==="probe-black")t="Bấm lỗ để đặt que đen";
+  else if(S.sel)t="Đang chọn: "+LIB[S.sel.key].name+" ("+S.sel.holes.filter((_,i)=>S.sel.type!=="ic"||i===4).join("–")+")";
+  $("#modeChip").textContent=t;
+}
+let tT;function toast(t,bad,ms){const el=$("#toast");el.textContent=t;el.className="toast show"+(bad?" bad":"");clearTimeout(tT);tT=setTimeout(()=>el.className="toast",ms||2800);}
+
+/* ---------- Đồng hồ ---------- */
+function meterRead(){
+  if(S.hold&&S.holdVal)return S.holdVal;
+  const d=S.dial;if(d==="OFF")return{main:"",unit:""};
+  const{red,black}=S.probe;const both=red&&black;
+  const fmtV=v=>{const a=Math.abs(v);if(a>=600)return null;const dec=a<6?3:a<60?2:1;let t=a.toFixed(dec);if(Number(t)!==0&&v<0)t="-"+t;return t;};
+  const fmtR=r=>{if(r<600)return{main:r.toFixed(1),unit:"Ω"};if(r<6e3)return{main:(r/1e3).toFixed(3),unit:"kΩ"};if(r<6e4)return{main:(r/1e3).toFixed(2),unit:"kΩ"};if(r<6e5)return{main:(r/1e3).toFixed(1),unit:"kΩ"};return{main:"O.L",unit:"MΩ"};};
+  if(d==="OHM"||d==="CONT"){
+    if(S.power)return{main:"Err",unit:"Ω"};if(!both)return{main:"O.L",unit:d==="CONT"?"Ω •)))":"MΩ"};
+    const r=ohms(red,black);if(d==="CONT")return r<50?{main:r.toFixed(1),unit:"Ω •)))"}:{main:"O.L",unit:"Ω •)))"};return fmtR(r);}
+  if(d==="CAP")return{main:"0.000",unit:"nF"};
+  if(d==="DIODE")return{main:"O.L",unit:"V ▷|"};
+  if(d==="DCA"||d==="ACA")return{main:"0.00",unit:d==="DCA"?"A ⎓":"A ~"};
+  if(d==="ACV")return{main:"0.0",unit:"V ~"};
+  let v=0;if(both){const sim=simulate(S.vin,S.power);v=sim.V(sim.R(red))-sim.V(sim.R(black));}
+  const t=fmtV(v);return{main:t===null?"O.L":t,unit:"V ⎓"};
+}
+function refresh(){
+  {const sim=simulate(S.vin,S.power);
+   if(sim.short&&S.power){S.power=false;toast("Ngắn mạch nguồn! Nguồn đã tự ngắt, hãy kiểm tra lại dây nối.",true);}
+   else if(sim.short&&!S.batShort)toast("Cực + của pin đang bị nối thẳng xuống GND (chập pin). Hãy gỡ dây đó.",true);
+   S.batShort=!!sim.short;}
+  $("#pwr").setAttribute("aria-checked",String(S.power));
+  $("#pwrChip").textContent="Nguồn: "+(S.power?"BẬT":"TẮT");$("#pwrChip").className="chip "+(S.power?"on":"off");
+  pwrLed.material.color.set(S.power?0xff3b2f:0x3b2020);pwrLed.material.emissive.set(S.power?0xff2a1a:0x000000);
+  srcTex.redraw();meterTex.redraw();
+  const r=meterRead();$("#mRead").textContent=r.main||" ";$("#mUnit").textContent=r.unit;
+  if(window.__fmUpd)window.__fmUpd(r);
+  const dn=DIALS.find(x=>x[0]===S.dial)[1];$("#meterChip").textContent="Đồng hồ: "+dn+(r.main?" · "+r.main+" "+r.unit:"");
+  document.querySelectorAll("#dial button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===S.dial)));
+  const lab=k=>S.probe[k]?(HOLES.get(S.probe[k]).rail?RAIL_NAME[HOLES.get(S.probe[k]).row]+" cột "+HOLES.get(S.probe[k]).col:"lỗ "+S.probe[k]):"chưa đặt";
+  $("#probeInfo").textContent="Que đỏ: "+lab("red")+" · Que đen: "+lab("black");
+  if(window.__sw)window.__sw.position.x=SRC.x-1.6+S.pins*0.55;
+  $("#polBtn").setAttribute("aria-pressed",String(S.pol<0));$("#polBtn").textContent="Đảo cực pin: "+(S.pol<0?"Đảo (−)":"Thuận (+)");
+  document.querySelectorAll("#pinSel button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.n===S.pins)));
+  updMode();
+  if(S.hintOn&&S.hintVer!==S.ver&&window.__runFix)window.__runFix(true);
+  else if(window.__verdictStale)window.__verdictStale();
+}
+
+/* ---------- Giao diện ---------- */
+function libIcon(k){
+  const it=LIB[k];
+  if(it.type==="res"){const b=it.bands.map((c,i)=>`<rect x="${10+i*5+(i===3?3:0)}" y="5" width="3" height="10" fill="${BAND[c]}"/>`).join("");return`<svg width="40" height="20" viewBox="0 0 40 20"><line x1="0" y1="10" x2="40" y2="10" stroke="#9aa0a6" stroke-width="2"/><rect x="7" y="4" width="26" height="12" rx="5" fill="#d8c39a"/>${b}</svg>`;}
+  if(it.type==="ic")return`<svg width="40" height="20" viewBox="0 0 40 20"><g fill="#9aa0a6">${[0,1,2,3].map(i=>`<rect x="${9+i*6}" y="0" width="3" height="20"/>`).join("")}</g><rect x="5" y="4" width="30" height="12" rx="1" fill="#1d1d20"/><circle cx="9" cy="12" r="1.6" fill="#555"/></svg>`;
+  if(it.type==="cap")return`<svg width="40" height="20" viewBox="0 0 40 20"><rect x="12" y="1" width="16" height="18" rx="3" fill="#24407a"/><rect x="24" y="1" width="3" height="18" fill="#c9d0da"/></svg>`;
+  if(it.type==="led")return`<svg width="40" height="20" viewBox="0 0 40 20"><path d="M14 18 V9 a6 6 0 0 1 12 0 V18 Z" fill="#d8261e"/></svg>`;
+  return`<svg width="40" height="20" viewBox="0 0 40 20"><path d="M2 16 C10 0 30 0 38 16" stroke="${S.wireColor}" stroke-width="3" fill="none"/></svg>`;
+}
+function renderLib(){const el=$("#lib");el.innerHTML="";for(const k in LIB){const b=document.createElement("button");b.dataset.key=k;b.setAttribute("aria-pressed","false");b.innerHTML=libIcon(k)+`<span>${LIB[k].name}</span>`;b.onclick=()=>setTool(S.tool==="place"&&S.lib===k?"select":"place",S.tool==="place"&&S.lib===k?null:k);el.appendChild(b);}}
+renderLib();
+{const wc=$("#wireColors");for(const[c,n]of WIRE_COLORS){const b=document.createElement("button");b.className="swatch";b.style.background=c;b.title="Dây "+n;b.setAttribute("aria-label","Dây "+n);b.setAttribute("aria-pressed",String(c===S.wireColor));
+  b.onclick=()=>{S.wireColor=c;wc.querySelectorAll(".swatch").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));const ic=document.querySelector('#lib button[data-key="wire"] svg');if(ic)ic.outerHTML=libIcon("wire");};wc.appendChild(b);}}
+{const d=$("#dial");for(const[k,t]of DIALS){const b=document.createElement("button");b.className="btn";b.dataset.k=k;b.textContent=t;b.onclick=()=>{S.dial=k;refresh();};d.appendChild(b);}}
+
+const SCHEM={
+1:`<svg viewBox="0 0 330 200" role="img" aria-label="Sơ đồ mạch khuếch đại đảo">
+ <path d="M150 50 L150 140 L232 95 Z" class="fillw"/>
+ <text x="156" y="78" class="lbl">−</text><text x="155" y="124" class="lbl">+</text>
+ <path class="str" d="M28 72 H52 M92 72 H150 M120 72 V24 H168 M208 24 H268 V95 M232 95 H300 M150 118 H120 V170 M190 72 V36 M190 118 V160"/>
+ <rect x="52" y="64" width="40" height="16" class="fillw"/><rect x="168" y="16" width="40" height="16" class="fillw"/>
+ <path class="str" d="M110 170 H130 M114 175 H126 M118 180 H122"/>
+ <circle cx="120" cy="72" r="3" class="dot"/><circle cx="268" cy="95" r="3" class="dot"/>
+ <circle cx="24" cy="72" r="4" class="fillw"/><circle cx="304" cy="95" r="4" class="fillw"/>
+ <circle cx="24" cy="140" r="4" class="fillw"/><path class="str" d="M24 144 V160 M14 160 H34 M18 165 H30 M22 170 H26"/><circle cx="304" cy="140" r="4" class="fillw"/><path class="str" d="M304 144 V160 M294 160 H314 M298 165 H310 M302 170 H306"/>
+ <text x="72" y="58" text-anchor="middle" class="lbl">R1 · 1 kΩ</text><text x="188" y="12" text-anchor="middle" class="lbl">R2 · 2,2 kΩ</text>
+ <text x="10" y="94" class="lbl">Uvào</text><text x="290" y="118" class="lbl">Ura</text>
+ <text x="196" y="44" class="lbl">+12 V</text><text x="196" y="160" class="lbl">−12 V</text>
+ <text x="140" y="68" class="pin">2</text><text x="140" y="114" class="pin">3</text><text x="236" y="90" class="pin">6</text><text x="194" y="68" class="pin">7</text><text x="194" y="132" class="pin">4</text>
+ <text x="12" y="192" class="lbl" style="fill:var(--muted)">Uvào, Ura đo so với GND</text>
+</svg>`,
+2:`<svg viewBox="0 0 330 200" role="img" aria-label="Sơ đồ mạch khuếch đại không đảo">
+ <path d="M150 50 L150 140 L232 95 Z" class="fillw"/>
+ <text x="156" y="78" class="lbl">−</text><text x="155" y="124" class="lbl">+</text>
+ <path class="str" d="M28 118 H150 M150 72 H120 M120 72 H100 M60 72 H44 V86 M120 72 V24 H168 M208 24 H268 V95 M232 95 H300 M190 72 V36 M190 118 V160"/>
+ <rect x="60" y="64" width="40" height="16" class="fillw"/><rect x="168" y="16" width="40" height="16" class="fillw"/>
+ <path class="str" d="M34 86 H54 M38 91 H50 M42 96 H46"/>
+ <circle cx="120" cy="72" r="3" class="dot"/><circle cx="268" cy="95" r="3" class="dot"/>
+ <circle cx="24" cy="118" r="4" class="fillw"/><circle cx="304" cy="95" r="4" class="fillw"/>
+ <circle cx="24" cy="156" r="4" class="fillw"/><path class="str" d="M24 160 V168 M14 168 H34 M18 173 H30 M22 178 H26"/><circle cx="304" cy="140" r="4" class="fillw"/><path class="str" d="M304 144 V160 M294 160 H314 M298 165 H310 M302 170 H306"/>
+ <text x="80" y="58" text-anchor="middle" class="lbl">R1 · 1 kΩ</text><text x="188" y="12" text-anchor="middle" class="lbl">R2 · 2,2 kΩ</text>
+ <text x="10" y="140" class="lbl">Uvào</text><text x="290" y="118" class="lbl">Ura</text>
+ <text x="196" y="44" class="lbl">+12 V</text><text x="196" y="160" class="lbl">−12 V</text>
+ <text x="140" y="68" class="pin">2</text><text x="140" y="114" class="pin">3</text><text x="236" y="90" class="pin">6</text><text x="194" y="68" class="pin">7</text><text x="194" y="132" class="pin">4</text>
+ <text x="12" y="192" class="lbl" style="fill:var(--muted)">Uvào, Ura đo so với GND</text>
+</svg>`};
+
+const vstr=v=>(v<0?"−":"")+String(Math.abs(v)).replace(".",",");
+function renderTables(){
+  const u=TASKS[1].uin,inp=(id,lab)=>`<input id="${id}" inputmode="decimal" aria-label="${lab}">`;
+  $("#tables").innerHTML=`<div class="tbl-wrap"><table class="res res2"><thead>
+    <tr><th rowspan="2">Thực<br>nghiệm</th><th rowspan="2">U<sub>vào</sub> (V)</th><th colspan="2" class="grp">U<sub>ra</sub> đo được (V)</th><th rowspan="2" class="calc">U<sub>ra</sub> tính theo<br>công thức (V)</th></tr>
+    <tr><th class="sub">Lần 1</th><th class="sub">Lần 2</th></tr></thead><tbody>`+
+    u.map((v,i)=>`<tr><td class="tn">${i+1}</td><td class="uv">${vstr(v)}</td><td>${inp(`r1_${i}_out`,`Thực nghiệm ${i+1}, Ura đo lần 1`)}</td><td>${inp(`r2_${i}_out`,`Thực nghiệm ${i+1}, Ura đo lần 2`)}</td><td class="calc">${inp(`r_${i}_calc`,`Thực nghiệm ${i+1}, Ura tính theo công thức`)}</td></tr>`).join("")+
+    `</tbody></table></div>
+    <label class="note-one" for="noteAll">Nhận xét kết quả đo<textarea id="noteAll" rows="2" placeholder="So sánh Ura đo được hai lần với Ura tính theo công thức…"></textarea></label>`;
+}
+renderTables();
+
+$("#steps").innerHTML=TASKS[1].steps.map(x=>`<li>${x}</li>`).join("");
+$("#schem").innerHTML=SCHEM[1];
+
+$("#toolSelect").onclick=()=>setTool("select");
+/* Kéo linh kiện từ khay thả lên bo, rồi chọn chân cắm */
+let DR=null;
+function overCanvas(e){const r=canvas.getBoundingClientRect();return e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom;}
+$("#lib").addEventListener("pointerdown",e=>{const b=e.target.closest("button[data-key]");if(!b||e.button>0)return;DR={key:b.dataset.key,x:e.clientX,y:e.clientY,on:false,g:null};});
+window.addEventListener("pointermove",e=>{
+  if(!DR)return;
+  if(!DR.on){if(Math.hypot(e.clientX-DR.x,e.clientY-DR.y)<7)return;
+    if(S.locked){DR=null;toast("Đã hết giờ, không thể thao tác thêm.",true);return;}
+    DR.on=true;if(window.__autoStart)window.__autoStart();DR.g=document.createElement("div");DR.g.className="drag-ghost";DR.g.innerHTML=libIcon(DR.key)+"<span>"+LIB[DR.key].name+"</span>";document.body.appendChild(DR.g);}
+  DR.g.style.left=e.clientX+"px";DR.g.style.top=e.clientY+"px";
+  const inside=overCanvas(e);wrap.classList.toggle("drop",inside);
+  if(inside){setMouse(e);const h=holeAtRay();if(h){hoverM.position.set(h.x,.02,h.z);hoverM.visible=true;showNet(h.id);}else{hoverM.visible=false;showNet(null);}}
+});
+window.addEventListener("pointerup",e=>{
+  if(!DR)return;const d=DR;DR=null;if(!d.on)return;
+  d.g.remove();wrap.classList.remove("drop");suppressClick=true;setTimeout(()=>suppressClick=false,0);
+  if(!overCanvas(e)){toast("Thả linh kiện lên bo mạch để cắm.");return;}
+  setMouse(e);const h=holeAtRay();
+  if(!h){toast("Thả đúng vào một lỗ trên bo mạch.",true);return;}
+  setTool("place",d.key);const it=LIB[d.key];
+  if(it.type==="ic"){placeIC(h);setTool("select");return;}
+  const occ=occupied(h.id);if(occ){toast(`Lỗ ${h.id} đã có ${occ}.`,true);setTool("select");return;}
+  S.dragFlow=true;S.pending=h;pendM.position.set(h.x,.03,h.z);pendM.visible=true;updMode();
+  toast(`Đã cắm chân thứ nhất vào ${h.id}. Bấm lỗ để cắm chân còn lại.`);
+});
+let suppressClick=false;
+document.querySelectorAll("#lib button").forEach(b=>b.addEventListener("click",ev=>{if(suppressClick){ev.stopImmediatePropagation();ev.preventDefault();}},true));
+/* Mạch mẫu gọn nhất (ẩn sẵn, hiện mờ khi bấm) */
+const SAMPLE=[
+ {type:"ic",key:"ic",col:5},
+ {type:"res",key:"r1k",holes:["h3","h6"]},
+ {type:"res",key:"r2k2",holes:["i6","i10"]},
+ {type:"wire",key:"wire",holes:["d3","g3"],color:"#1f5fbf"},
+ {type:"wire",key:"wire",holes:["a6","tv6"],color:"#d62828"},
+ {type:"wire",key:"wire",holes:["j8","bm8"],color:"#ef7d10"},
+ {type:"wire",key:"wire",holes:["j7","bg7"],color:"#222222"},
+ {type:"wire",key:"wire",holes:["g10","d10"],color:"#f2c40f"},
+ {type:"wire",key:"wire",holes:["c10","c7"],color:"#f2c40f"}
+];
+const sampleG=new THREE.Group();sampleG.visible=false;scene.add(sampleG);
+for(const o of SAMPLE){const g=o.type==="res"?buildRes(o):o.type==="ic"?buildIC(o):buildWire(o);
+  g.traverse(m=>{if(m.isMesh){m.material=m.material.clone();m.material.transparent=true;m.material.opacity=.5;m.material.depthWrite=false;m.castShadow=false;}});sampleG.add(g);}
+$("#sampleBtn").onclick=()=>{sampleG.visible=!sampleG.visible;$("#sampleBtn").setAttribute("aria-pressed",String(sampleG.visible));
+  $("#sampleBtn").textContent=sampleG.visible?"Ẩn mạch mẫu":"Xem mạch mẫu";
+  if(sampleG.visible)toast("Mạch mẫu (mờ): IC chân 1 ở f5 · R1 h3–h6 · R2 i6–i10 · dây d3–g3, a6–(+12), j7–GND, j8–(−12), g10–d10, c10–c7. Ura đo ở cột 7 hoặc 10.",false,9000);};
+/* Quy trình: link ẩn trên mạch */
+const procToggle=open=>{$("#procPanel").hidden=!open;$("#procBtn").setAttribute("aria-expanded",String(open));$("#procBtn").textContent=open?"Ẩn quy trình":"Quy trình thực hành";};
+const measToggle=open=>{$("#measPanel").hidden=!open;$("#measBtn").setAttribute("aria-expanded",String(open));$("#measBtn").textContent=open?"Ẩn cách đo":"Cách đo";if(open)procToggle(false);};
+$("#procBtn").onclick=()=>{const o=$("#procPanel").hidden;procToggle(o);if(o)measToggle(false);};$("#procClose").onclick=()=>procToggle(false);
+$("#measBtn").onclick=()=>measToggle($("#measPanel").hidden);$("#measClose").onclick=()=>measToggle(false);
+$("#btnDelete").onclick=()=>{if(S.locked)return toast("Đã hết giờ.",true);if(!S.sel){toast("Hãy bấm chọn một linh kiện trên bo trước.");return;}removeObj(S.sel);refresh();};
+$("#btnUndo").onclick=()=>{if(S.locked)return toast("Đã hết giờ.",true);const id=S.undo[S.undo.length-1];const o=S.objs.find(x=>x.id===id);if(o){removeObj(o);refresh();}else toast("Không còn thao tác để hoàn tác.");};
+let clearArm=0;$("#btnClear").onclick=e=>{if(S.locked)return toast("Đã hết giờ.",true);if(Date.now()-clearArm>3000){clearArm=Date.now();e.target.textContent="Bấm lần nữa để tháo hết";setTimeout(()=>e.target.textContent="Tháo hết",3000);return;}
+  [...S.objs].forEach(removeObj);S.power=false;e.target.textContent="Tháo hết";clearArm=0;refresh();toast("Đã tháo hết linh kiện và tắt nguồn.");};
+$("#pwr").onclick=()=>{if(S.locked)return toast("Đã hết giờ.",true);S.power=!S.power;refresh();if(S.power){const sim=simulate(S.vin,true);if(!sim.short)toast("Đã bật nguồn ±12 V.");}};
+document.querySelectorAll("#pinSel button").forEach(b=>b.onclick=()=>{if(S.locked)return toast("Đã hết giờ.",true);S.pins=+b.dataset.n;S.vin=S.pol*vinOf(S.pins);refresh();});
+$("#polBtn").onclick=()=>{if(S.locked)return toast("Đã hết giờ.",true);S.pol=-S.pol;S.vin=S.pol*vinOf(S.pins);refresh();};
+$("#probeRed").onclick=()=>setTool(S.tool==="probe-red"?"select":"probe-red");
+$("#probeBlack").onclick=()=>setTool(S.tool==="probe-black"?"select":"probe-black");
+$("#probeHome").onclick=()=>{S.probe.red=S.probe.black=null;placeProbe("red");placeProbe("black");refresh();};
+$("#viewTop").onclick=viewTop;$("#viewPersp").onclick=viewPersp;$("#zoomIn").onclick=()=>zoomBy(0.8);$("#zoomOut").onclick=()=>zoomBy(1.25);
+document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT")return;
+  if(e.key==="Escape")setTool("select");
+  if((e.key==="Delete"||e.key==="Backspace")&&S.sel&&!S.locked){e.preventDefault();removeObj(S.sel);refresh();}});
+
+function renderCheck(list,el){el.innerHTML=list.map(m=>`<li class="${m.ok?"ok":"no"}">${m.t}</li>`).join("");}
+/* ---------- Hướng dẫn cắm lại sau khi kiểm tra ---------- */
+const hintG=new THREE.Group();scene.add(hintG);const badG=new THREE.Group();scene.add(badG);
+const hintMat=new THREE.MeshStandardMaterial({color:0xff8a1f,emissive:0xff6a00,emissiveIntensity:.7,transparent:true,opacity:.55,depthWrite:false});
+function clearHints(){for(const g of [hintG,badG])while(g.children.length){const c=g.children.pop();c.traverse(m=>{if(m.geometry)m.geometry.dispose();});}}
+function planFixes(){
+  const Rn=buildNets(),src=srcMap(Rn);const has=(r,x)=>!!(src[r]&&src[r].has(x));
+  const fx=[],used=new Set();
+  const free=(col,rows)=>{if(col<1||col>NC)return null;for(const r of rows){const id=r+col;if(HOLES.get(id)&&!occupied(id)&&!used.has(id)){used.add(id);return id;}}return null;};
+  const freeRail=(rail,col)=>{for(let d=0;d<NC;d++)for(const cc of [col+d,col-d]){if(cc<1||cc>NC)continue;const id=rail+cc;if(!occupied(id)&&!used.has(id)){used.add(id);return id;}}return null;};
+  const W=(a,b,color)=>({type:"wire",key:"wire",holes:[a,b],color});
+  const RS=(a,b,key)=>({type:"res",key,holes:[a,b]});
+  const where=o=>o.type==="ic"?"chân 1 ở f"+o.col:o.holes.join("–");
+  const culprits=test=>S.objs.filter(w=>w.type==="wire"&&!test(buildNets(w.id)));
+  const nm={"V+":"+12 V","V-":"−12 V","VIN":"cực + pin","GND":"GND"};
+  // 1. chập nguồn
+  for(const r in src)if(src[r].size>1){
+    const names=[...src[r]];const test=Rx=>{const sx=srcMap(Rx);return Object.values(sx).some(st=>names.every(n=>st.has(n)));};
+    const cw=culprits(test);
+    fx.push({t:`Đang chập <b>${names.map(n=>nm[n]).join(" với ")}</b>. `+(cw.length?`Gỡ dây ở <b>${cw.map(where).join(", ")}</b>.`:"Kiểm tra lại các dây nối vào thanh nguồn."),bad:cw});
+  }
+  // 2. IC
+  const ics=S.objs.filter(o=>o.type==="ic");
+  if(!ics.length){const ok=[5,6,7,8].find(c=>[0,1,2,3].every(k=>!occupied("e"+(c+k))&&!occupied("f"+(c+k))))||10;
+    fx.push({t:`Kéo <b>IC LM741</b> thả vào lỗ <b>f${ok}</b> (chân 1, chấm tròn bên trái phía dưới), IC vắt qua rãnh giữa.`,ghost:[{type:"ic",key:"ic",col:ok}]});return fx;}
+  if(ics.length>1)fx.push({t:`Gỡ bớt IC thừa ở <b>${ics.slice(1).map(where).join(", ")}</b>.`,bad:ics.slice(1)});
+  const ic=ics[0],c=ic.col,p=[null];for(let n=1;n<=8;n++)p.push(Rn(pinHole(ic,n)));
+  // 3. nguồn cho IC
+  const swapTest=(pin,s1)=>Rx=>{const sx=srcMap(Rx);const r=Rx(pinHole(ic,pin));return !!(sx[r]&&sx[r].has(s1));};
+  for(const[pin,need,wrong,rows,rail,col,label]of[[7,"V+","V-",["a","b","c","d"],"tv",c+1,"+12 V"],[4,"V-","V+",["j","i","h","g"],"bm",c+3,"−12 V"]]){
+    if(has(p[pin],need))continue;
+    if(has(p[pin],wrong)){const cw=culprits(swapTest(pin,wrong));fx.push({t:`Chân ${pin} đang nối nhầm vào ${nm[wrong]}. Gỡ dây <b>${cw.map(where).join(", ")||"nối nhầm"}</b>.`,bad:cw});}
+    const a=free(col,rows),b=freeRail(rail,col);
+    if(a&&b)fx.push({t:`Nối chân ${pin} với <b>${label}</b>: kéo <b>dây nối</b> thả vào lỗ <b>${a}</b>, bấm lỗ <b>${b}</b> trên thanh ${label}.`,ghost:[W(a,b,pin===7?"#d62828":"#ef7d10")]});
+  }
+  // 4. chân 3 xuống GND
+  if(!has(p[3],"GND")){
+    if(has(p[3],"VIN")){const cw=culprits(Rx=>Rx(pinHole(ic,3))===Rx("e3"));fx.push({t:`Chân 3 đang nối với dây pin. Gỡ dây <b>${cw.map(where).join(", ")}</b>.`,bad:cw});}
+    const a=free(c+2,["j","i","h","g"]),b=freeRail("bg",c+2);
+    if(a&&b)fx.push({t:`Nối chân 3 xuống <b>GND</b>: kéo <b>dây nối</b> thả vào lỗ <b>${a}</b>, bấm lỗ <b>${b}</b> trên thanh GND.`,ghost:[W(a,b,"#222222")]});
+  }
+  if(src[p[6]]){const cw=culprits(Rx=>{const sx=srcMap(Rx);return !!sx[Rx(pinHole(ic,6))];});fx.push({t:`Chân 6 (đầu ra) đang nối thẳng vào nguồn/GND. Gỡ dây <b>${cw.map(where).join(", ")}</b>.`,bad:cw});}
+  // 5. điện trở
+  const vinR=Rn("e3");
+  const res=S.objs.filter(o=>o.type==="res").map(o=>({o,a:Rn(o.holes[0]),b:Rn(o.holes[1])}));
+  const betw=(x,y)=>res.filter(r=>(r.a===x&&r.b===y)||(r.a===y&&r.b===x));
+  const keep=new Set();
+  const COLORS={r1k:"nâu – đen – đỏ – nhũ vàng",r2k2:"đỏ – đỏ – đỏ – nhũ vàng"};
+  if(p[2]===vinR){const cw=culprits(Rx=>Rx(pinHole(ic,2))===Rx("e3"));fx.push({t:`Chân 2 đang nối thẳng với dây pin, bỏ qua R1. Gỡ dây <b>${cw.map(where).join(", ")}</b>.`,bad:cw});}
+  else{
+    const l1=betw(p[2],vinR),g1=l1.find(r=>r.o.ohm===1000);
+    if(g1)keep.add(g1.o);
+    else if(l1.length){keep.add(l1[0].o);fx.push({t:`R1 ở <b>${where(l1[0].o)}</b> sai giá trị. Gỡ ra, cắm <b>điện trở 1 kΩ</b> (${COLORS.r1k}) vào đúng hai lỗ đó.`,bad:[l1[0].o],ghost:[RS(l1[0].o.holes[0],l1[0].o.holes[1],"r1k")]});}
+    else if((()=>{const cand=res.find(r=>r.o.ohm===1000&&(r.a===p[2]||r.b===p[2])&&!src[r.a===p[2]?r.b:r.a]&&(r.a===p[2]?r.b:r.a)!==p[6]);if(!cand)return false;
+      const endH=cand.a===p[2]?cand.o.holes[1]:cand.o.holes[0],h=HOLES.get(endH),top="abcde".includes(h.row);
+      const d=free(3,["d","c","b","a"]),e=free(h.col,top?["a","b","c","d","e"]:["g","h","i","j","f"]);if(!d||!e)return false;
+      keep.add(cand.o);fx.push({t:`R1 đã cắm vào chân 2 nhưng đầu <b>${endH}</b> chưa nối với dây pin: kéo <b>dây nối</b> thả vào <b>${d}</b> (cột dây pin), bấm <b>${e}</b>.`,ghost:[W(d,e,"#1f5fbf")]});return true;})()){}
+    else if(c-2<3)fx.push({t:`IC cắm quá sát cột dây pin, không còn chỗ cho R1. Gỡ IC, cắm lại sao cho chân 1 ở <b>f5</b> trở sang phải.`,bad:[ic]});
+    else{
+      const a=c-2,gh=[];let txt="";
+      const vinBottom=a===3?Rn("g3")===vinR:false;
+      if(!(a===3&&vinBottom)){const d=free(3,["d","c","b","a"]),g=free(a,["g","h","i","j"]);if(d&&g){gh.push(W(d,g,"#1f5fbf"));txt+=`kéo <b>dây nối</b> từ <b>${d}</b> (cột dây pin) sang <b>${g}</b>, rồi `;}}
+      const r0=free(a,["h","i","j","g"]),r1=free(c+1,["h","i","j","g"]);
+      if(r0&&r1){gh.push(RS(r0,r1,"r1k"));fx.push({t:`Lắp R1: ${txt}kéo <b>điện trở 1 kΩ</b> (${COLORS.r1k}) thả vào <b>${r0}</b>, bấm <b>${r1}</b> (cột chân 2).`,ghost:gh});}
+    }
+  }
+  const l2=betw(p[2],p[6]),g2=l2.find(r=>r.o.ohm===2200);
+  if(g2)keep.add(g2.o);
+  else if(l2.length){keep.add(l2[0].o);fx.push({t:`R2 ở <b>${where(l2[0].o)}</b> sai giá trị. Gỡ ra, cắm <b>điện trở 2,2 kΩ</b> (${COLORS.r2k2}) vào đúng hai lỗ đó.`,bad:[l2[0].o],ghost:[RS(l2[0].o.holes[0],l2[0].o.holes[1],"r2k2")]});}
+  else if((()=>{const cand=res.find(r=>r.o.ohm===2200&&!keep.has(r.o)&&(r.a===p[2]||r.b===p[2])&&!src[r.a===p[2]?r.b:r.a]&&(r.a===p[2]?r.b:r.a)!==vinR);if(!cand)return false;
+      const endH=cand.a===p[2]?cand.o.holes[1]:cand.o.holes[0],h=HOLES.get(endH),top="abcde".includes(h.row);
+      const gh=[];let txt;
+      if(top){const a=free(h.col,["c","b","a","d"]),b=free(c+2,["c","b","a","d"]);if(!a||!b)return false;gh.push(W(a,b,"#f2c40f"));txt=`kéo <b>dây nối</b> thả vào <b>${a}</b>, bấm <b>${b}</b> (cột chân 6)`;}
+      else{const a=free(h.col,["g","h","j"]),b=free(h.col,["d","c","b"]),a2=free(h.col,["c","b","a"]),b2=free(c+2,["c","b","a","d"]);if(!a||!b||!a2||!b2)return false;
+        gh.push(W(a,b,"#f2c40f"),W(a2,b2,"#f2c40f"));txt=`thêm <b>dây nối</b> <b>${a}–${b}</b> và <b>${a2}–${b2}</b> (cột chân 6)`;}
+      keep.add(cand.o);fx.push({t:`R2 đã cắm vào chân 2 nhưng đầu <b>${endH}</b> chưa nối tới chân 6: ${txt}.`,ghost:gh});return true;})()){}
+  else if(p[2]!==p[6]){
+    const b=c+5<=NC?c+5:c-3,gh=[];
+    const r0=free(c+1,["i","j","h","g"]),r1=free(b,["i","j","h","g"]);
+    const w1=free(b,["g","h","j"]),w2=free(b,["d","c","b"]),w3=free(b,["c","b","a"]),w4=free(c+2,["c","b","a","d"]);
+    if(r0&&r1&&w1&&w2&&w3&&w4){gh.push(RS(r0,r1,"r2k2"),W(w1,w2,"#f2c40f"),W(w3,w4,"#f2c40f"));
+      fx.push({t:`Lắp R2: kéo <b>điện trở 2,2 kΩ</b> (${COLORS.r2k2}) thả vào <b>${r0}</b> (cột chân 2), bấm <b>${r1}</b>; thêm <b>dây nối</b> <b>${w1}–${w2}</b> và <b>${w3}–${w4}</b> (cột chân 6).`,ghost:gh});}
+  }
+  // 6. linh kiện thừa
+  const extra=S.objs.filter(o=>o.type!=="wire"&&o.type!=="ic"&&!keep.has(o));
+  for(const o of extra)fx.push({t:`Gỡ <b>${LIB[o.key].name}</b> ở <b>${where(o)}</b>: `+(o.type==="res"&&(o.ohm===1000||o.ohm===2200)?"cắm chưa đúng chỗ, gỡ ra rồi cắm lại theo gợi ý.":"linh kiện này không có trong mạch."),bad:[o]});
+  return fx;
+}
+function showHints(fx){
+  clearHints();
+  for(const f of fx){
+    for(const o of f.ghost||[]){const g=o.type==="res"?buildRes(o):o.type==="ic"?buildIC(o):buildWire(o);g.traverse(m=>{if(m.isMesh){m.material=hintMat;m.castShadow=false;}});hintG.add(g);}
+    for(const o of f.bad||[]){if(!o.mesh)continue;const bh=new THREE.BoxHelper(o.mesh,0xff2244);bh.material.depthTest=false;bh.renderOrder=6;badG.add(bh);}
+  }
+  hintG.visible=badG.visible=S.hintShow!==false;
+}
+function runFix(silent){
+  const r=checkCircuit(1);renderCheck(r.out,$("#checkList"));S.hintVer=S.ver;S.verdictVer=S.ver;
+  if(r.ok){S.hintOn=false;clearHints();$("#fixBox").hidden=true;setVerdict("ok","MẠCH ĐÚNG ✓ Có thể bật nguồn để đo");if(silent)toast("Mạch đã lắp đúng! Có thể bật nguồn để đo.");return r;}
+  const fx=planFixes();S.hintOn=true;$("#fixBox").hidden=false;
+  const head=`MẠCH CHƯA ĐÚNG ✗ Còn ${Math.max(1,fx.length)} việc cần sửa`;
+  setVerdict("no",head,fx.length?`${head}<ol>${fx.map(f=>`<li>${f.t}</li>`).join("")}</ol>`:null);
+  $("#fixList").innerHTML=fx.length?fx.map(f=>`<li>${f.t}</li>`).join(""):"<li>Xem lại các mục báo đỏ ở trên.</li>";
+  showHints(fx);return r;
+}
+function setVerdict(cls,txt,html){const v=$("#verdict");v.className="verdict "+cls+(html?" has-list":"");if(html)v.innerHTML=html;else v.textContent=txt;v.hidden=false;const l=$("#verdictLine");l.className="verdict-line "+cls;l.textContent=txt;}
+window.__runFix=runFix;
+window.__verdictStale=()=>{if(!$("#verdict").hidden&&S.verdictVer!==S.ver&&!S.hintOn)setVerdict("wait","Mạch vừa thay đổi, bấm “Kiểm tra mạch” lại");};
+$("#btnCheck2").onclick=()=>$("#btnCheck").click();
+/* ---------- Đồng hồ vạn năng nổi: kéo di chuyển, kéo que đo vào bo ---------- */
+(()=>{
+  const fm=$("#fmeter"),dial=$("#fmDial"),NS="http://www.w3.org/2000/svg";
+  const cx=115,cy=104;
+  let svg=`<circle cx="${cx}" cy="${cy}" r="62" fill="#2e3134"/><circle cx="${cx}" cy="${cy}" r="56" fill="url(#kg)"/>
+   <defs><radialGradient id="kg" cx="40%" cy="35%"><stop offset="0" stop-color="#5a5e62"/><stop offset="1" stop-color="#303336"/></radialGradient></defs>
+   <g id="fmPtr"><path d="M${cx-12} ${cy+58} L${cx-15} ${cy-50} Q${cx} ${cy-62} ${cx+15} ${cy-50} L${cx+12} ${cy+58} Q${cx} ${cy+64} ${cx-12} ${cy+58}Z" fill="#3c4044" stroke="#25282b" stroke-width="2"/>
+   <path d="M${cx-4} ${cy-48} L${cx+4} ${cy-48} L${cx+2} ${cy-30} L${cx-2} ${cy-30}Z" fill="#f4f4f4"/></g>`;
+  for(const[k,t,a]of DIALS){const r=a*Math.PI/180,x=cx+Math.cos(r)*86,y=cy+Math.sin(r)*84+4;svg+=`<text class="lb" data-k="${k}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="middle">${t}</text>`;}
+  dial.innerHTML=svg;
+  dial.querySelectorAll(".lb").forEach(el=>{el.addEventListener("pointerdown",e=>e.stopPropagation());el.addEventListener("click",()=>{S.dial=el.dataset.k;S.hold=false;refresh();});});
+  dial.addEventListener("pointerdown",e=>e.stopPropagation());
+  dial.addEventListener("click",e=>{if(e.target.classList.contains("lb"))return;const i=DIALS.findIndex(d=>d[0]===S.dial);S.dial=DIALS[(i+1)%DIALS.length][0];S.hold=false;refresh();});
+  $("#fmHold").onclick=()=>{if(S.dial==="OFF")return;if(S.hold){S.hold=false;S.holdVal=null;}else{S.holdVal=meterRead();S.hold=true;}refresh();};
+  fm.querySelectorAll(".fm-btns .k[data-x]").forEach(b=>b.onclick=()=>toast(b.dataset.x==="RANGE"?"Đồng hồ đang tự chọn thang đo (AUTO).":"Nút "+b.dataset.x+" không dùng trong bài này."));
+  window.__fmUpd=r=>{
+    $("#fmRead").textContent=r.main||"\u00a0";$("#fmUnit").textContent=r.unit;
+    $("#fmAuto").classList.toggle("on",S.dial!=="OFF");$("#fmHoldI").classList.toggle("on",S.hold);$("#fmHold").classList.toggle("on",S.hold);
+    const md={DCV:"DC",AUTOV:"DC",ACV:"AC",DCA:"DC",ACA:"AC"}[S.dial]||"";$("#fmMode").textContent=md;$("#fmMode").classList.toggle("on",!!md);
+    const a=DIALS.find(d=>d[0]===S.dial)[2]+90;$("#fmPtr").setAttribute("transform",`rotate(${a} ${cx} ${cy})`);
+    dial.querySelectorAll(".lb").forEach(el=>el.classList.toggle("on",el.dataset.k===S.dial));
+    fm.querySelectorAll(".probe-tok").forEach(el=>el.classList.toggle("set",!!S.probe[el.dataset.k]));
+    const lab=k=>{const id=S.probe[k];if(!id)return"chưa cắm";const h=HOLES.get(id);return h.rail?RAIL_NAME[h.row]:id;};
+    $("#fmInfo").textContent=`Đỏ: ${lab("red")} · Đen: ${lab("black")}`;
+  };
+  // kéo cả đồng hồ
+  let md=null;
+  fm.addEventListener("pointerdown",e=>{if(e.target.closest(".probe-tok,button,.lb"))return;const r=fm.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+    md={dx:e.clientX-r.left,dy:e.clientY-r.top};fm.style.left=(r.left-w.left)+"px";fm.style.top=(r.top-w.top)+"px";fm.style.right="auto";fm.setPointerCapture(e.pointerId);e.preventDefault();});
+  fm.addEventListener("pointermove",e=>{if(!md)return;const w=wrap.getBoundingClientRect();
+    fm.style.left=Math.min(Math.max(0,e.clientX-w.left-md.dx),w.width-fm.offsetWidth)+"px";fm.style.top=Math.min(Math.max(0,e.clientY-w.top-md.dy),w.height-fm.offsetHeight)+"px";});
+  const mend=()=>{md=null;};fm.addEventListener("pointerup",mend);fm.addEventListener("pointercancel",mend);
+  const showM=on=>{fm.hidden=!on;$("#meterBtn").setAttribute("aria-pressed",String(on));$("#meterBtn").textContent=on?"Cất đồng hồ":"Lấy đồng hồ đo";
+    if(on)toast("Vặn núm sang ⎓V, kéo que đỏ và que đen thả vào lỗ trên bo để đo.");};
+  $("#fmMin").onclick=()=>showM(false);$("#meterBtn").onclick=()=>showM(fm.hidden);
+  // kéo que đo
+  let pd=null;
+  fm.querySelectorAll(".probe-tok").forEach(tok=>tok.addEventListener("pointerdown",e=>{
+    e.stopPropagation();e.preventDefault();if(S.locked){toast("Đã hết giờ, không thể thao tác thêm.",true);return;}
+    const g=document.createElement("div");g.className="probe-ghost";g.innerHTML=tok.querySelector("svg").outerHTML;g.style.left=e.clientX+"px";g.style.top=e.clientY+"px";document.body.appendChild(g);
+    pd={k:tok.dataset.k,g};
+  }));
+  window.addEventListener("pointermove",e=>{if(!pd)return;pd.g.style.left=e.clientX+"px";pd.g.style.top=e.clientY+"px";
+    if(overCanvas(e)&&!e.target.closest?.(".fmeter")){setMouse(e);const h=holeAtRay();if(h){hoverM.position.set(h.x,.02,h.z);hoverM.visible=true;showNet(h.id);}else hoverM.visible=false;}});
+  window.addEventListener("pointerup",e=>{if(!pd)return;const d=pd;pd=null;d.g.remove();
+    const fr=fm.getBoundingClientRect();const onMeter=e.clientX>=fr.left&&e.clientX<=fr.right&&e.clientY>=fr.top&&e.clientY<=fr.bottom;
+    if(onMeter){S.probe[d.k]=null;placeProbe(d.k);refresh();toast("Đã thu que "+(d.k==="red"?"đỏ":"đen")+" về đồng hồ.");return;}
+    if(!overCanvas(e)){toast("Thả que đo vào một lỗ trên bo mạch.");return;}
+    setMouse(e);const h=holeAtRay();if(!h){toast("Thả que đo đúng vào một lỗ trên bo mạch.",true);return;}
+    S.probe[d.k]=h.id;placeProbe(d.k);refresh();
+    toast(`Que ${d.k==="red"?"đỏ":"đen"} đặt ở ${h.rail?RAIL_NAME[h.row]+" cột "+h.col:"lỗ "+h.id}.`);});
+})();
+refresh();
+/* Kéo dải kết luận tới chỗ khác trên bàn */
+(()=>{const v=$("#verdict");let d=null;
+  v.addEventListener("pointerdown",e=>{const r=v.getBoundingClientRect(),w=wrap.getBoundingClientRect();
+    d={dx:e.clientX-r.left,dy:e.clientY-r.top};v.style.left=(r.left-w.left)+"px";v.style.top=(r.top-w.top)+"px";v.style.bottom="auto";v.style.transform="none";
+    v.classList.add("dragging");v.setPointerCapture(e.pointerId);e.preventDefault();});
+  v.addEventListener("pointermove",e=>{if(!d)return;const w=wrap.getBoundingClientRect();
+    const x=Math.min(Math.max(0,e.clientX-w.left-d.dx),w.width-v.offsetWidth),y=Math.min(Math.max(0,e.clientY-w.top-d.dy),w.height-v.offsetHeight);
+    v.style.left=x+"px";v.style.top=y+"px";});
+  const end=()=>{d=null;v.classList.remove("dragging");};v.addEventListener("pointerup",end);v.addEventListener("pointercancel",end);
+  v.title="Kéo để di chuyển";})();
+$("#hintToggle").onclick=()=>{S.hintShow=S.hintShow===false;hintG.visible=badG.visible=S.hintShow;$("#hintToggle").textContent=S.hintShow?"Ẩn gợi ý trên bo":"Hiện gợi ý trên bo";};
+$("#btnCheck").onclick=()=>{const r=runFix(false);
+  toast(r.ok?"Mạch lắp đúng sơ đồ. Có thể bật nguồn để đo.":"Mạch chưa đúng. Làm theo “Hướng dẫn cắm lại” và bóng cam trên bo.",!r.ok);};
+
+const num=s=>{s=String(s||"").trim().replace(",",".").replace("−","-");if(s===""||isNaN(+s))return null;return +s;};
+$("#btnGrade").onclick=()=>{
+  const chk=checkCircuit(1);const list=[];
+  const s1=chk.ok?4:0;list.push({ok:chk.ok,t:chk.ok?"Lắp mạch đúng sơ đồ Hình 20.1 (4 điểm).":"Mạch chưa đúng sơ đồ, xem mục Kiểm tra mạch."});
+  let nO=0,nC=0;const u=TASKS[1].uin,G=-2.2;
+  u.forEach((uv,i)=>{
+    const np=Math.round(Math.abs(uv)/1.5),sim=simulate((uv<0?-1:1)*vinOf(np),true);
+    let to=null;if(!sim.short){const ic=sim.ics[0];to=ic?sim.V(ic.p[6]):0;}
+    const lab=`Thực nghiệm ${i+1} (Uvào = ${vstr(uv)} V)`;
+    for(const l of [1,2]){const eo=$(`#r${l}_${i}_out`);eo.classList.remove("ok","no");const vo=num(eo.value);
+      const okO=vo!==null&&to!==null&&Math.abs(vo-to)<=0.03+0.012*Math.abs(to);eo.classList.add(okO?"ok":"no");if(okO)nO++;
+      else list.push({ok:false,t:`${lab}, lần ${l}: Ura đo được chưa khớp với mạch. Đặt hộp pin đúng Uvào rồi đo lại tại chân 6.`});}
+    const ec=$(`#r_${i}_calc`);ec.classList.remove("ok","no");const vc=num(ec.value);const okC=vc!==null&&Math.abs(vc-G*uv)<=0.02;
+    ec.classList.add(okC?"ok":"no");if(okC)nC++;else list.push({ok:false,t:`${lab}: Ura tính theo công thức chưa đúng. Dùng Ura = −(R2/R1)·Uvào.`});
+  });
+  if(nO===10)list.push({ok:true,t:"Cả 10 giá trị Ura đo được (2 lần) đều đúng."});
+  if(nC===5)list.push({ok:true,t:"Cả 5 giá trị Ura tính theo công thức đều đúng."});
+  if(!$("#noteAll").value.trim())list.push({ok:false,t:"Chưa ghi nhận xét kết quả đo."});
+  {const nm=[...document.querySelectorAll(".grp-name")].filter(x=>x.value.trim()).length;if(!$("#grpNo").value.trim()||nm<3)list.push({ok:false,t:`Chưa ghi đủ số nhóm và tên thành viên (mới có ${nm} em).`});}
+  if(!$("#q1").value.trim()||!$("#q2").value.trim())list.push({ok:false,t:"Chưa trả lời đủ hai câu ở mục 2. Đánh giá kết quả và kết luận."});
+  const r1=x=>Math.round(x*10)/10,s2=r1(nO*0.3),s3=r1(nC*0.6),vn=x=>String(x).replace(".",",");
+  $("#sc1").textContent=s1;$("#sc2").textContent=vn(s2);$("#sc3").textContent=vn(s3);$("#sc4").textContent=vn(r1(s1+s2+s3));
+  $("#hdrScore").innerHTML=vn(r1(s1+s2+s3))+"<small>/10</small>";
+  renderCheck(list,$("#gradeList"));
+};
+/* ---------- Nhóm học sinh ---------- */
+$("#grpList").innerHTML=Array.from({length:6},(_,i)=>`<input class="grp-name" id="gName${i}" placeholder="${i+1}. Họ tên" aria-label="Họ tên thành viên ${i+1}">`).join("");
+$("#grpNo").addEventListener("input",e=>{const v=e.target.value.trim();$("#hdrLabel").textContent=v?"Điểm nhóm "+v:"Điểm nhóm";});
+const grpText=()=>[...document.querySelectorAll(".grp-name")].map((x,i)=>x.value.trim()?`  ${i+1}. ${x.value.trim()}`:"").filter(Boolean).join("\n")||"  …";
+$("#btnCopy").onclick=()=>{
+  const u=TASKS[1].uin,v=id=>($(id).value||"…").trim();
+  let t=`BÁO CÁO THỰC HÀNH
+MẠCH KHUẾCH ĐẠI ĐẢO
+Nhóm: ${v("#grpNo")}
+Lớp: ${v("#stClass")}\nThành viên:\n${grpText()}
+
+1. Đo điện áp lối ra Ura khi thay đổi điện áp lối vào Uvào
+`;
+  t+=`Thực nghiệm | Uvào (V) | Ura đo lần 1 (V) | Ura đo lần 2 (V) | Ura tính theo công thức (V)\n`;
+  u.forEach((uv,i)=>{t+=`${i+1} | ${vstr(uv)} | ${v(`#r1_${i}_out`)} | ${v(`#r2_${i}_out`)} | ${v(`#r_${i}_calc`)}\n`;});
+  t+=`Nhận xét: ${v("#noteAll")}\n\n`;
+  t+=`2. Đánh giá kết quả và kết luận
+- Mạch điện hoạt động có đúng yêu cầu không? ${v("#q1")}
+- Ura đo được có bị sai số so với tính bằng công thức không? ${v("#q2")}
+`;
+  const sc=$("#sc4").textContent;if(sc!=="–")t+=`
+Điểm: ${sc}/10
+`;
+  const done=()=>toast("Đã sao chép báo cáo, có thể dán vào Zalo hoặc Word để nộp.");
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand("copy");done();}catch(e){toast("Không sao chép được, hãy chụp màn hình báo cáo.",true);}ta.remove();};
+  try{navigator.clipboard.writeText(t).then(done,fallback);}catch(e){fallback();}
+};
+
+/* ---------- Đồng hồ đếm ngược 45 phút ---------- */
+const LIMIT=45*60;const T={left:LIMIT,run:false,end:0,id:null};
+const fmt=s=>String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");
+function drawTimer(){
+  $("#tClock").textContent=fmt(Math.max(0,T.left));
+  $("#timer").className="timer"+(T.left<=0?" over":T.left<=5*60?" warn":"");
+  $("#tStart").textContent=T.left<=0?"Hết giờ":T.run?"Tạm dừng":(T.left<LIMIT?"Tiếp tục":"Bắt đầu");
+  $("#tStart").disabled=T.left<=0;
+}
+function tick(){
+  T.left=Math.ceil((T.end-Date.now())/1000);
+  if(T.left===5*60)toast("Còn 5 phút! Hoàn thành phép đo và ghi kết quả.");
+  if(T.left<=0){T.left=0;T.run=false;clearInterval(T.id);S.locked=true;setTool("select");S.power=false;refresh();
+    $("#btnGrade").click();toast("Hết 45 phút! Bài đã được chấm, thao tác lắp ráp đã khoá.",true);}
+  drawTimer();
+}
+$("#tStart").onclick=()=>{
+  if(T.left<=0)return;
+  if(T.run){T.run=false;clearInterval(T.id);T.left=Math.ceil((T.end-Date.now())/1000);}
+  else{T.run=true;T.end=Date.now()+T.left*1000;T.id=setInterval(tick,250);}
+  drawTimer();
+};
+let resetArm=0;$("#tReset").onclick=e=>{
+  if(Date.now()-resetArm>3000){resetArm=Date.now();e.target.textContent="Bấm lần nữa";setTimeout(()=>e.target.textContent="Đặt lại",3000);return;}
+  clearInterval(T.id);T.run=false;T.left=LIMIT;S.locked=false;resetArm=0;e.target.textContent="Đặt lại";drawTimer();toast("Đã đặt lại thời gian 45 phút.");
+};
+window.__autoStart=()=>{if(!T.run&&T.left===LIMIT&&!S.locked){$("#tStart").click();toast("Bắt đầu tính giờ 45 phút.");}};
+drawTimer();
+
+/* ---------- Vòng vẽ ---------- */
+function resize(){const r=wrap.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(wrap);resize();
+placeProbe("red");placeProbe("black");refresh();
+const redrawAll=()=>{boardTex.redraw();icLabel.redraw();labelTex.forEach(l=>l.redraw());refresh();};
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(redrawAll);setTimeout(redrawAll,1500);
+(function loop(t){requestAnimationFrame(loop);if(hintG.children.length)hintMat.opacity=.35+.3*Math.abs(Math.sin((t||0)/450));controls.update();renderer.render(scene,camera);})();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Mạch ứng dụng khuếch đại thuật toán</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: phòng thí nghiệm hai cột — trái: sơ đồ + núm chỉnh; phải: màn dao động kí + đặc tuyến + công thức */
+:root{
+  --bg:#edf2fb; --panel:#ffffff; --panel2:#f6f8fd; --ink:#13203b; --muted:#5a6886; --line:#d5ddec;
+  --r1:#ff6a13; --r2:#e2237c; --vin:#0fb36a; --vout:#1d6bff; --amp:#bfeeff; --ampStroke:#1795c9;
+  --hot:#ff2d55; --rf:#7a3cff; --rg:#009e9e; --u2:#d98e00; --sun:#ffb300; --wire:#24324f; --band:#13203b; --bandInk:#ffffff;
+  --f-disp:"Lexend","Be Vietnam Pro",system-ui,sans-serif;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --scr:#051421; --grid:rgba(120,190,255,.13); --grid2:rgba(120,190,255,.32);
+  --tIn:#3dff9e; --tOut:#45a8ff;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1222; --panel:#131d33; --panel2:#18243f; --ink:#e7edfb; --muted:#97a6c6; --line:#27344f;
+  --r1:#ff8a3d; --r2:#ff4d9d; --vin:#2fe08e; --vout:#5592ff; --amp:#123c55; --ampStroke:#46c3f2;
+  --hot:#ff4d6d; --rf:#a98bff; --rg:#2fd3d3; --u2:#ffc23d; --sun:#ffc23d; --wire:#c9d5ee; --band:#060c19; --bandInk:#ffffff; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1222; --panel:#131d33; --panel2:#18243f; --ink:#e7edfb; --muted:#97a6c6; --line:#27344f;
+  --r1:#ff8a3d; --r2:#ff4d9d; --vin:#2fe08e; --vout:#5592ff; --amp:#123c55; --ampStroke:#46c3f2;
+  --hot:#ff4d6d; --rf:#a98bff; --rg:#2fd3d3; --u2:#ffc23d; --sun:#ffc23d; --wire:#c9d5ee; --band:#060c19; --bandInk:#ffffff; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* Header band */
+header{background:var(--band);color:var(--bandInk);position:relative;overflow:hidden}
+header .wrap{padding-block:22px 20px;display:flex;flex-wrap:wrap;gap:16px 28px;align-items:flex-end;justify-content:space-between;position:relative;z-index:1}
+header::after{content:"";position:absolute;inset:0;background:
+  radial-gradient(600px 160px at 85% 120%, rgba(255,106,19,.45), transparent 70%),
+  radial-gradient(500px 180px at 55% -40%, rgba(226,35,124,.40), transparent 70%),
+  radial-gradient(500px 200px at 10% 130%, rgba(29,107,255,.45), transparent 70%)}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#9fe9ff}
+h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(26px,3.6vw,40px);line-height:1.1;margin:4px 0 0;text-wrap:balance}
+h1 .a{color:#ffb300}
+h1 .b{color:#4dffb0}
+.sub{color:#c7d3ef;margin:6px 0 0;max-width:62ch}
+
+.seg{display:flex;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:4px;gap:4px}
+.seg button{all:unset;cursor:pointer;padding:10px 16px;border-radius:10px;font-weight:700;font-family:var(--f-disp);font-size:15px;color:#d8e2fb;display:flex;flex-direction:column;line-height:1.15}
+.seg button small{font-family:var(--f-mono);font-weight:500;font-size:11px;opacity:.75}
+.seg button[aria-pressed="true"]{background:linear-gradient(135deg,#ff6a13,#e2237c);color:#fff;box-shadow:0 6px 18px rgba(226,35,124,.35)}
+.seg button[data-mode="non"][aria-pressed="true"]{background:linear-gradient(135deg,#0fb36a,#1d6bff);box-shadow:0 6px 18px rgba(29,107,255,.35)}
+.seg button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+main.wrap{padding-block:20px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:20px;align-items:start}
+@media (max-width:700px){main.wrap{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;min-width:0}
+.card h2{font-family:var(--f-disp);font-size:17px;font-weight:700;margin:0;display:flex;align-items:center;gap:10px}
+.card h2 .tag{font-family:var(--f-mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-left:auto}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+
+/* Schematic */
+.schem{width:100%;height:auto;display:block;margin-top:8px;touch-action:none;user-select:none}
+.schem .w{stroke:var(--wire);stroke-width:2.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.schem .node{fill:var(--wire)}
+.schem .term{fill:var(--panel);stroke:var(--wire);stroke-width:2.2}
+.schem .lbl{font-family:var(--f-body);font-weight:700;font-size:16px;fill:var(--ink)}
+.schem .pin{font-family:var(--f-mono);font-size:12px;fill:var(--muted)}
+.schem .amp{fill:var(--amp);stroke:var(--ampStroke);stroke-width:2.4}
+.schem .sign{font-family:var(--f-mono);font-weight:700;font-size:20px;fill:var(--ink)}
+.schem .res{cursor:ns-resize}
+.schem .res path.z{fill:none;stroke-width:3.2;stroke-linejoin:round;stroke-linecap:round;transition:stroke-width .15s}
+.schem .res:hover path.z,.schem .res.on path.z{stroke-width:4.4}
+.schem .res rect.hit{fill:transparent}
+.schem .res .halo{opacity:0;transition:opacity .2s}
+.schem .res:hover .halo,.schem .res.on .halo{opacity:.18}
+.schem .chip rect{rx:8}
+.schem .chip text{font-family:var(--f-mono);font-weight:700;font-size:13px;fill:#fff}
+.schem .live{font-family:var(--f-mono);font-weight:700;font-size:13px}
+.schem .flow{fill:var(--sun);stroke:rgba(0,0,0,.25);stroke-width:.6}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.9}
+.hint kbd{font-family:var(--f-mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;background:var(--panel2);color:var(--ink)}
+
+/* Controls */
+.ctrls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 18px;margin-top:4px}
+@media (max-width:1000px){.ctrls{grid-template-columns:minmax(0,1fr)}}
+.ctl{display:flex;flex-direction:column;gap:6px;min-width:0;padding:12px 14px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);transition:box-shadow .25s,border-color .25s}
+.ctl.pulse{box-shadow:0 0 0 4px color-mix(in srgb,var(--c) 30%,transparent);border-color:var(--c)}
+.ctl .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ctl label{font-weight:600;font-size:14px}
+.ctl output{font-family:var(--f-mono);font-weight:700;font-size:17px;color:var(--c);font-variant-numeric:tabular-nums}
+.ctl .row{display:flex;gap:8px;align-items:center}
+.fnote{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.step{all:unset;cursor:pointer;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-weight:700;background:var(--panel);border:1px solid var(--line);color:var(--ink);flex:none}
+.step:hover{border-color:var(--c)}
+.step:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+input[type=range]{flex:1;min-width:0;accent-color:var(--c);height:28px;cursor:pointer}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opts button{all:unset;cursor:pointer;padding:5px 11px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--panel)}
+.opts button[aria-pressed="true"]{background:var(--c);border-color:var(--c);color:#fff}
+.opts button:focus-visible{outline:2px solid var(--c);outline-offset:1px}
+.quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
+.quick span{font-size:13px;color:var(--muted);font-weight:600}
+.pill{all:unset;cursor:pointer;padding:6px 12px;border-radius:999px;font-size:13px;font-weight:700;background:var(--panel2);border:1px solid var(--line)}
+.pill:hover{border-color:var(--vout);color:var(--vout)}
+.pill:focus-visible{outline:2px solid var(--vout);outline-offset:1px}
+
+/* Scope */
+.scope{background:#0b1b2b;border-radius:20px;padding:14px;border:1px solid #1d3550;box-shadow:inset 0 0 0 4px #0e2236, 0 14px 40px rgba(5,20,33,.25);color:#cfe3ff}
+.scope .bar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-bottom:10px}
+.scope h2{font-family:var(--f-disp);font-size:17px;margin:0;color:#fff;display:flex;gap:10px;align-items:center}
+.led{width:9px;height:9px;border-radius:50%;background:#3dff9e;box-shadow:0 0 10px #3dff9e}
+.led.off{background:#555;box-shadow:none}
+.ch{font-family:var(--f-mono);font-size:12px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid;white-space:nowrap}
+.ch.in{color:var(--tIn);border-color:rgba(61,255,158,.5);background:rgba(61,255,158,.08)}
+.ch.out{color:var(--tOut);border-color:rgba(69,168,255,.5);background:rgba(69,168,255,.08)}
+.screen{position:relative;border-radius:12px;overflow:hidden;background:var(--scr);aspect-ratio:10/8;max-width:100%}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%}
+.scope .foot{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;margin-top:10px;font-family:var(--f-mono);font-size:12px;color:#8fb0d6}
+.scope .foot .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sbtn{all:unset;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid #2a4a6c;color:#cfe3ff;font-family:var(--f-mono);font-size:12px;font-weight:700}
+.sbtn[aria-pressed="true"]{background:#1d6bff;border-color:#1d6bff;color:#fff}
+.sbtn:hover{border-color:#45a8ff}
+.sbtn:focus-visible{outline:2px solid #45a8ff;outline-offset:1px}
+
+/* Readouts */
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.rd{border-radius:14px;padding:10px 12px;background:var(--panel2);border:1px solid var(--line);min-width:0}
+.rd .k{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.rd .v{font-family:var(--f-mono);font-weight:700;font-size:20px;font-variant-numeric:tabular-nums;line-height:1.25;overflow-wrap:anywhere}
+.badge{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;margin-top:4px}
+.badge.ok{background:color-mix(in srgb,var(--vin) 18%,transparent);color:var(--vin)}
+.badge.bad{background:color-mix(in srgb,var(--hot) 18%,transparent);color:var(--hot)}
+
+.twin{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+@media (max-width:620px){.twin{grid-template-columns:minmax(0,1fr)}}
+
+/* Formula */
+.fx{font-family:var(--f-mono);font-size:16px;display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.eq{display:flex;align-items:center;gap:8px;flex-wrap:wrap;line-height:1}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 4px 3px}
+.fr>span:last-child{padding:3px 4px 0}
+.c1{color:var(--r1);font-weight:700}.c2{color:var(--r2);font-weight:700}.ci{color:var(--vin);font-weight:700}.co{color:var(--vout);font-weight:700}
+.eq .no{color:var(--muted);font-size:12px;margin-left:auto}
+.big{font-size:22px;font-weight:700}
+.note{font-size:13.5px;color:var(--muted);margin:10px 0 0;line-height:1.55}
+.note b{color:var(--ink)}
+
+.tc{width:100%;aspect-ratio:16/10;max-width:100%;display:block;margin-top:8px;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+
+/* Tasks */
+.tasks{list-style:none;padding:0;margin:12px 0 0;display:flex;flex-direction:column;gap:8px}
+.tasks li{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:14px;transition:background .3s,border-color .3s}
+.tasks li .ck{width:22px;height:22px;border-radius:7px;border:2px solid var(--line);flex:none;display:grid;place-items:center;font-weight:800;color:#fff;font-size:13px;transition:all .3s}
+.tasks li.done{border-color:var(--vin);background:color-mix(in srgb,var(--vin) 10%,var(--panel2))}
+.tasks li.done .ck{background:var(--vin);border-color:var(--vin)}
+.score{font-family:var(--f-mono);font-size:13px;font-weight:700;color:var(--vin);margin-left:auto}
+
+.grpT{font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
+.ch.u2{color:#ffc23d;border-color:rgba(255,194,61,.5);background:rgba(255,194,61,.08)}
+.seg{flex:1 1 100%;display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.seg button{justify-content:center;text-align:center;padding:10px 6px;gap:2px;min-width:0;overflow-wrap:anywhere}
+@media (max-width:640px){.seg button{font-size:12px;padding:8px 3px}.seg button small{font-size:9.5px}}
+.seg button[data-mode="sinv"][aria-pressed="true"]{background:linear-gradient(135deg,#ff9f1a,#e2237c);box-shadow:0 6px 18px rgba(255,159,26,.35)}
+.seg button[data-mode="snon"][aria-pressed="true"]{background:linear-gradient(135deg,#009e9e,#0fb36a);box-shadow:0 6px 18px rgba(0,158,158,.35)}
+.seg button[data-mode="sub"][aria-pressed="true"]{background:linear-gradient(135deg,#7a3cff,#1d6bff);box-shadow:0 6px 18px rgba(122,60,255,.35)}
+.seg button[data-mode^="cmp"][aria-pressed="true"]{background:linear-gradient(135deg,#ffb300,#ff2d55);box-shadow:0 6px 18px rgba(255,45,85,.35)}
+/* Bảng điều chỉnh gọn */
+.panel h2{margin-bottom:2px}
+.panel .ctrls{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:0!important}
+@media (max-width:520px){.panel .ctrls{grid-template-columns:minmax(0,1fr)}}
+.panel .ctl{padding:7px 10px;gap:2px;border-radius:10px}
+.panel .ctl label{font-size:13px}
+.panel .ctl output{font-size:14px}
+.panel .ctl .row{gap:6px}
+.panel .step{width:24px;height:24px;border-radius:6px}
+.panel input[type=range]{height:22px}
+.panel .opts{gap:4px}
+.panel .opts button{padding:3px 8px;font-size:12px}
+.panel .fnote{font-size:11px;line-height:1.3}
+.panel .grpT{margin:10px 0 5px;font-size:11px}
+.panel #resCtrls{margin-top:10px!important}
+.panel .sigs.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.panel .sigs.two .ctrls{grid-template-columns:minmax(0,1fr)}
+@media (max-width:520px){.panel .sigs.two{grid-template-columns:minmax(0,1fr)}}
+.panel .quick{margin-top:10px;gap:6px}
+.panel .pill{padding:4px 10px;font-size:12px}
+footer{color:var(--muted);font-size:12.5px;padding-block:0 30px}
+
+/* ===== Bố cục gọn một màn hình: tiêu đề một dòng; sơ đồ · bảng điều chỉnh · dao động kí cùng hàng ===== */
+header .wrap{padding-block:8px;gap:8px 18px;align-items:center}
+header .wrap>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.eyebrow{font-size:11px;white-space:nowrap}
+h1{font-size:clamp(18px,1.7vw,22px);margin:0;white-space:nowrap}
+header .sub{display:none}
+.seg{flex:1 1 560px;border-radius:12px;padding:3px;gap:3px}
+.seg button{padding:5px 6px;font-size:13.5px;flex-direction:row;align-items:baseline;gap:6px;border-radius:9px}
+.seg button{white-space:nowrap}
+.seg button small{font-size:10.5px}
+.panel .ctl:has(.opts){grid-column:1/-1}
+@media (max-width:1560px){.seg button small{display:none}.seg button{font-size:13px;padding:6px 4px}}
+.card{padding:14px}
+.card h2{font-size:16px}
+main.wrap{padding-block:14px 30px;gap:14px}
+.col{gap:14px}
+@media (min-width:1280px){
+  .wrap{max-width:1720px}
+  main.wrap{grid-template-columns:minmax(0,1.12fr) minmax(300px,.82fr) minmax(0,1.06fr);
+    grid-template-areas:"s p o" "r p o" "r p t";align-items:start}
+  main.wrap>.col{display:contents}
+  main.wrap>.col:first-child>.card:first-child{grid-area:s}
+  main.wrap>.col:first-child>.panel{grid-area:p}
+  main.wrap>.col:last-child>.scope{grid-area:o}
+  main.wrap>.col:last-child>.card:nth-child(2){grid-area:r}
+  main.wrap>.col:last-child>.card:nth-child(3){grid-area:t}
+  main.wrap>*>*{align-self:start}
+  .panel .ctrls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .scope{padding:12px}
+  .scope .bar{margin-bottom:8px}
+  .screen{aspect-ratio:10/7.4}
+  .reads{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rd .v{font-size:18px}
+}
+@media (max-width:640px){h1{white-space:normal}.seg button{flex-direction:column;align-items:center;gap:0}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <div class="eyebrow">Công nghệ 12 · Bài 19</div>
+      <h1>Ứng dụng của <span class="a">khuếch đại</span> <span class="b">thuật toán</span></h1>
+      <p class="sub">Chọn mạch, đổi giá trị linh kiện và quan sát ngay tín hiệu lối vào, lối ra trên màn dao động kí.</p>
+    </div>
+    <div class="seg" role="group" aria-label="Chọn mạch">
+      <button data-mode="inv" aria-pressed="true">KĐ đảo<small>19.5</small></button>
+      <button data-mode="non" aria-pressed="false">KĐ không đảo<small>19.7</small></button>
+      <button data-mode="sinv" aria-pressed="false">Cộng đảo<small>19.9</small></button>
+      <button data-mode="snon" aria-pressed="false">Cộng không đảo<small>19.10</small></button>
+      <button data-mode="sub" aria-pressed="false">Mạch trừ<small>19.11</small></button>
+      <button data-mode="cmpi" aria-pressed="false">So sánh đảo<small>19.12a</small></button>
+      <button data-mode="cmpn" aria-pressed="false">So sánh không đảo<small>19.12b</small></button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="col">
+    <section class="card">
+      <h2><span class="dot" style="background:var(--sun)"></span><span id="schemTitle">Sơ đồ mạch khuếch đại đảo</span><span class="tag">Sơ đồ nguyên lí</span></h2>
+      <svg class="schem" id="schem" viewBox="0 0 520 300" aria-label="Sơ đồ mạch"></svg>
+      <p class="hint" id="dragHint">Mẹo: <kbd>kéo lên/xuống</kbd> ngay trên điện trở, hoặc bấm vào điện trở rồi dùng <kbd>↑</kbd><kbd>↓</kbd>. Chấm vàng là dòng điện chạy qua các điện trở.</p>
+    </section>
+
+    <section class="card panel">
+      <h2><span class="dot" style="background:var(--r1)"></span>Bảng điều chỉnh<span class="tag">Giá trị chuẩn E12 (thêm 2 kΩ, 3 kΩ)</span></h2>
+      <div class="ctrls" id="resCtrls" style="margin-top:14px"></div>
+      <div class="sigs" id="sigs"><div class="sig1">
+      <div class="grpT" id="g1T">Tín hiệu vào U<sub>vào</sub></div>
+      <div class="ctrls">
+        <div class="ctl" style="--c:var(--vin)">
+          <div class="top"><label for="amp" id="ampL">Biên độ U<sub>vào</sub></label><output id="o-amp">0,5 V</output></div>
+          <input type="range" id="amp" min="0.1" max="5" step="0.1">
+        </div>
+        <div class="ctl" style="--c:var(--vin)">
+          <div class="top"><label for="freq" id="freqL">Tần số</label><output id="o-freq">1 kHz</output></div>
+          <input type="range" id="freq" min="0" max="4" step="1">
+          <div class="fnote" id="o-per"></div>
+        </div>
+        <div class="ctl" style="--c:var(--vin)">
+          <div class="top"><label id="waveL">Dạng tín hiệu vào</label></div>
+          <div class="opts" id="waves">
+            <button data-w="sin" aria-pressed="true">Hình sin</button>
+            <button data-w="tri" aria-pressed="false">Tam giác</button>
+            <button data-w="sq" aria-pressed="false">Xung vuông</button>
+            <button data-w="saw" aria-pressed="false">Răng cưa</button>
+            <button data-w="dc" aria-pressed="false">Một chiều</button>
+          </div>
+        </div>
+      </div>
+      </div>
+      <div id="u2box" hidden>
+        <div class="grpT">Tín hiệu vào U<sub>vào2</sub></div>
+        <div class="ctrls">
+          <div class="ctl" style="--c:var(--u2)">
+            <div class="top"><label for="amp2" id="amp2L">Giá trị U<sub>vào2</sub></label><output id="o-amp2"></output></div>
+            <input type="range" id="amp2" min="-5" max="5" step="0.1">
+          </div>
+          <div class="ctl" style="--c:var(--u2)">
+            <div class="top"><label for="freq2">Tần số U<sub>vào2</sub></label><output id="o-freq2"></output></div>
+            <input type="range" id="freq2" min="0" max="4" step="1">
+          </div>
+          <div class="ctl" style="--c:var(--u2)">
+            <div class="top"><label>Dạng U<sub>vào2</sub></label></div>
+            <div class="opts" id="waves2">
+              <button data-w="dc" aria-pressed="true">Một chiều</button>
+              <button data-w="sin" aria-pressed="false">Hình sin</button>
+              <button data-w="tri" aria-pressed="false">Tam giác</button>
+              <button data-w="sq" aria-pressed="false">Xung vuông</button>
+              <button data-w="saw" aria-pressed="false">Răng cưa</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      <div class="grpT">Nguồn cấp</div>
+      <div class="ctrls" style="grid-template-columns:minmax(0,1fr)">
+        <div class="ctl" style="--c:var(--hot)">
+          <div class="top"><label for="vcc">Nguồn cấp ±U<sub>cc</sub></label><output id="o-vcc">±12 V</output></div>
+          <input type="range" id="vcc" min="5" max="15" step="1">
+        </div>
+      </div>
+      <div id="cmpbox" hidden>
+        <div class="grpT">Mạch so sánh</div>
+        <div class="ctrls">
+          <div class="ctl" style="--c:var(--u2)">
+            <div class="top"><label for="th">Điện áp ngưỡng U<sub>ngưỡng</sub></label><output id="o-th"></output></div>
+            <input type="range" id="th" min="-5" max="5" step="0.1">
+          </div>
+        </div>
+      </div>
+      <div class="quick">
+        <span>Chọn nhanh:</span>
+        <span id="pills" style="display:contents"></span>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="col">
+    <section class="scope" aria-label="Màn dao động kí">
+      <div class="bar">
+        <h2><span class="led" id="led"></span>Dạng tín hiệu lối vào và lối ra</h2>
+        <div id="chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+      <div class="screen"><canvas id="scope" style="cursor:crosshair;touch-action:none"></canvas></div>
+      <div class="fnote" style="color:#8fb0d6;margin-top:6px">Rê chuột hoặc chạm vào màn hình để đo điện áp tại một điểm.</div>
+      <div class="foot">
+        <div class="grp"><span id="vdivLbl">1 V/ô</span><span>·</span><span id="tdivLbl">0,5 ms/ô</span></div>
+        <div class="grp">
+          <span>Biên độ:</span>
+          <button class="sbtn" id="vOut" aria-label="Thu nhỏ biên độ">− Thu nhỏ</button>
+          <button class="sbtn" id="vIn" aria-label="Phóng to biên độ">+ Phóng to</button>
+          <button class="sbtn" id="vAuto" aria-pressed="true">Tự động</button>
+        </div>
+        <div class="grp">
+          <span>Thời gian:</span>
+          <button class="sbtn" id="tOut" aria-label="Thu nhỏ thời gian">− Thu nhỏ</button>
+          <button class="sbtn" id="tIn" aria-label="Phóng to thời gian">+ Phóng to</button>
+          <button class="sbtn" id="pk" aria-pressed="true">Đo đỉnh</button>
+          <button class="sbtn" id="run" aria-pressed="false">⏸ Dừng</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="reads">
+        <div class="rd"><div class="k" id="k1"></div><div class="v" id="v1"></div></div>
+        <div class="rd"><div class="k" id="k2"></div><div class="v" id="v2"></div></div>
+        <div class="rd"><div class="k" id="k3"></div><div class="v" id="v3"></div></div>
+        <div class="rd"><div class="k" id="k4"></div><div class="v" id="v4"></div><div id="rSt"></div></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2><span class="dot" style="background:var(--r2)"></span><span id="tcTitle">Đặc tuyến U<sub>ra</sub> – U<sub>vào</sub></span></h2>
+      <canvas class="tc" id="tc"></canvas>
+    </section>
+
+  </div>
+</main>
+<footer class="wrap">Mô phỏng khuếch đại thuật toán lí tưởng (A → ∞) theo SGK Công nghệ 12 – Kết nối tri thức, Bài 19. Khi điện áp ra tính theo công thức vượt quá nguồn cấp, U<sub>ra</sub> bị giới hạn ở ±U<sub>cc</sub> (bão hòa). IC thật ra được thấp hơn ±U<sub>cc</sub> khoảng 1–3 V (ví dụ LM741: nguồn ±15 V, tải ≥ 10 kΩ thì U<sub>ra</sub> đạt ±12 V tối thiểu, ±14 V điển hình).</footer>
+
+<script>
+(function(){
+const E12=[1,1.2,1.5,1.8,2.2,2.7,3.3,3.9,4.7,5.6,6.8,8.2];
+const RV=[];[1e3,1e4].forEach(m=>E12.forEach(v=>RV.push(Math.round(v*m))));RV.push(1e5);RV.push(2000,3000);RV.sort((a,b)=>a-b);
+const FREQS=[100,200,500,1000,2000];
+const $=id=>document.getElementById(id);
+const ix=v=>RV.indexOf(v);
+const MODES={
+  inv:{t:'Sơ đồ mạch khuếch đại đảo (Hình 19.5)',res:['r1','r2'],two:false},
+  non:{t:'Sơ đồ mạch khuếch đại không đảo (Hình 19.7)',res:['r1','r2'],two:false},
+  sinv:{t:'Sơ đồ mạch cộng đảo (Hình 19.9)',res:['r1','r2','rf'],two:true},
+  snon:{t:'Sơ đồ mạch cộng không đảo (Hình 19.10)',res:['r1','r2','rg','rf'],two:true},
+  sub:{t:'Sơ đồ mạch trừ (Hình 19.11)',res:['r1','r2','r3','r4'],two:true},
+  cmp:{t:'Sơ đồ mạch so sánh (Hình 19.12)',res:[],two:false}};
+const RES={
+  r1:{s:'R₁',h:'R<sub>1</sub>',c:'var(--r1)'},
+  r2:{s:'R₂',h:'R<sub>2</sub>',c:'var(--r2)'},
+  rf:{s:'R<tspan font-size="11" dy="4">f</tspan>',h:'R<sub>f</sub>',c:'var(--rf)'},
+  rg:{s:'R<tspan font-size="11" dy="4">g</tspan>',h:'R<sub>g</sub>',c:'var(--rg)'},
+  r3:{s:'R₃',h:'R<sub>3</sub>',c:'var(--rf)'},
+  r4:{s:'R₄',h:'R<sub>4</sub>',c:'var(--rg)'}};
+const S={mode:'inv',
+  R:{inv:{r1:ix(1e4),r2:ix(47e3)},non:{r1:ix(1e4),r2:ix(39e3)},sinv:{r1:ix(1e4),r2:ix(1e4),rf:ix(22e3)},snon:{r1:ix(1e4),r2:ix(1e4),rg:ix(1e4),rf:ix(22e3)},sub:{r1:ix(1e4),r2:ix(22e3),r3:ix(1e4),r4:ix(22e3)},cmp:{}},
+  amp:0.5,fi:3,wave:'sin',amp2:1,fi2:1,wave2:'dc',th:0,ct:'inv',vcc:12,vdiv:'auto',ti:2,pkOn:true,run:true,st:null};
+const VST=[0.1,0.2,0.5,1,2,5,10],TST=[0.1e-3,0.2e-3,0.5e-3,1e-3,2e-3,5e-3];let CUR=null;
+const done={inv:new Set(),non:new Set(),sinv:new Set(),snon:new Set(),sub:new Set(),cmpinv:new Set(),cmpnon:new Set()};
+const dk=()=>S.mode==='cmp'?'cmp'+S.ct:S.mode;
+const satSeen={};const visited={};
+
+const rnd=(x,d)=>{const r=+(+x).toFixed(d);return r===0?0:r;};
+const num=(x,d=2)=>rnd(x,d).toFixed(d).replace('.',',').replace('-','−');
+const sgn=(x,d=2)=>(rnd(x,d)>=0?'+':'')+num(x,d);
+const fmtR=v=>v>=1000?String(v/1000).replace('.',',')+' kΩ':v+' Ω';
+const fmtF=f=>f>=1000?(f/1000)+' kHz':f+' Hz';
+const fmtT=s=>s>=1e-3?num(s*1e3,(s*1e3)%1?1:0)+' ms':num(s*1e6,0)+' µs';
+const rv=k=>RV[S.R[S.mode][k]];
+const clamp=(x,a)=>Math.max(-a,Math.min(a,x));
+const usat=()=>S.vcc;
+const two=()=>MODES[S.mode].two;
+function coef(){const m=S.mode;
+  if(m==='inv')return [-rv('r2')/rv('r1'),0];
+  if(m==='non')return [1+rv('r2')/rv('r1'),0];
+  if(m==='sinv')return [-rv('rf')/rv('r1'),-rv('rf')/rv('r2')];
+  if(m==='snon'){const g=1+rv('rf')/rv('rg'),a=rv('r1'),b=rv('r2');return [g*b/(a+b),g*a/(a+b)];}
+  if(m==='sub'){const k=rv('r2')/rv('r1');return [-k,(1+k)*rv('r4')/(rv('r3')+rv('r4'))];}
+  return [0,0];}
+function ideal(a,b){const c=coef();return c[0]*a+c[1]*b;}
+function out(a,b){if(S.mode==='cmp'){const hi=a>S.th;return (S.ct==='inv'?(hi?-1:1):(hi?1:-1))*usat();}return clamp(ideal(a,b),usat());}
+function shape(p,w){if(w==='dc')return 1;p-=Math.floor(p);if(w==='saw')return 2*p-1;
+  if(w==='sin')return Math.sin(2*Math.PI*p);if(w==='tri')return 1-4*Math.abs(((p+0.25)%1)-0.5);return p<0.5?1:-1;}
+const u1=t=>S.amp*shape(t*FREQS[S.fi],S.wave);
+const u2=t=>two()?S.amp2*shape(t*FREQS[S.fi2],S.wave2):0;
+const tdiv=()=>TST[S.ti];
+function stats(){const f=Math.min(FREQS[S.fi],two()?FREQS[S.fi2]:1e9);const T=Math.max(2/f,10*tdiv());const N=1200;
+  let imx=-1e9,imn=1e9,mx=-1e9,mn=1e9,sat=false,p1=0,p2=0,hi=0,lo1=1e9,hi1=-1e9;
+  for(let i=0;i<N;i++){const t=i/N*T,a=u1(t),b=u2(t),o=out(a,b);mx=Math.max(mx,o);mn=Math.min(mn,o);
+    p1=Math.max(p1,Math.abs(a));p2=Math.max(p2,Math.abs(b));lo1=Math.min(lo1,a);hi1=Math.max(hi1,a);
+    const id=ideal(a,b);imx=Math.max(imx,id);imn=Math.min(imn,id);if(S.mode!=='cmp'&&Math.abs(id)>usat()+1e-9)sat=true;if(o>0)hi++;}
+  return {imx,imn,mx,mn,sat,p1,p2,lo1,hi1,duty:hi/N};}
+
+/* ---------- Schematic ---------- */
+function zig(x1,x2,y){const lead=8,n=6,a=9,w=(x2-x1-2*lead)/n;let d=`M${x1} ${y} H${x1+lead}`;
+  for(let i=0;i<n;i++){d+=` L${x1+lead+w*(i+.25)} ${y-a} L${x1+lead+w*(i+.75)} ${y+a}`}return d+` L${x2-lead} ${y} H${x2}`;}
+const W=d=>`<path class="w" d="${d}"/>`;
+const gnd=(x,y)=>`<path class="w" d="M${x-12} ${y} H${x+12} M${x-7} ${y+5} H${x+7} M${x-2.5} ${y+10} H${x+2.5}"/>`;
+const gndT=(x,y)=>`<path class="w" d="M${x} ${y-14} V${y}"/><circle class="term" cx="${x}" cy="${y-17.5}" r="3.5"/>`+gnd(x,y);
+const term=(x,y)=>`<circle class="term" cx="${x}" cy="${y}" r="5"/>`;
+const node=(x,y)=>`<circle class="node" cx="${x}" cy="${y}" r="4.5"/>`;
+const tl=(x,y,sub,col,anc)=>`<text class="lbl" x="${x}" y="${y}" ${anc?`text-anchor="${anc}"`:''} style="fill:${col}">U<tspan font-size="11" dy="4">${sub}</tspan></text>`;
+function res(k,x1,x2,y){const r=RES[k],mid=(x1+x2)/2;
+  return `<g class="res" id="g-${k}" tabindex="0" role="slider" aria-label="Điện trở" data-t="${k}">
+    <rect class="halo" x="${x1-6}" y="${y-22}" width="${x2-x1+12}" height="44" rx="12" fill="${r.c}"/>
+    <path class="z" d="${zig(x1,x2,y)}" stroke="${r.c}"/>
+    <rect class="hit" x="${x1-6}" y="${y-26}" width="${x2-x1+12}" height="52"/>
+    <text class="lbl" x="${mid}" y="${y-18}" text-anchor="middle" style="fill:${r.c}">${r.s}</text>
+    <g class="chip"><rect x="${mid-34}" y="${y+16}" width="68" height="22" fill="${r.c}"/><text id="chip-${k}" x="${mid}" y="${y+32}" text-anchor="middle"></text></g></g>`;}
+function opamp(){return `<polygon class="amp" points="270,110 270,230 370,170"/>
+  <text class="sign" x="278" y="147">−</text><text class="sign" x="278" y="208">+</text>
+  <text class="pin" x="256" y="132">1</text><text class="pin" x="256" y="193">2</text><text class="pin" x="378" y="160">3</text>`;}
+const OUT=()=>W('M370 170 H465')+node(420,170)+term(470,170)+tl(458,152,'ra','var(--vout)')+gndT(470,214);
+const LOUT={x:508,y:238,a:'end',c:'var(--vout)',f:c=>'Ura = '+sgn(c.o)+' V'};
+function layout(){const m=S.mode;
+  if(m==='inv')return {vb:'0 0 520 300',
+    svg:W('M45 140 H90 M170 140 H270 M230 140 V60 H290 M370 60 H420 V170 M270 200 H240 V226')+gnd(240,226)+term(40,140)+tl(18,126,'vào','var(--vin)')+gndT(40,184)+node(230,140)+opamp()+OUT()+res('r1',90,170,140)+res('r2',290,370,60),
+    flows:['M45 140 H230 V60 H420 V170 H370'],
+    lives:[{x:14,y:210,c:'var(--vin)',f:c=>'Uvào = '+sgn(c.a)+' V'},LOUT,
+      {x:320,y:262,a:'middle',c:'var(--muted)',f:c=>'U₋ = '+sgn(c.vn)+' V'+(Math.abs(c.vn)<.01?' (đất ảo)':'')},
+      {x:320,y:288,a:'middle',c:'var(--ink)',f:c=>'I qua R₁, R₂ = '+sgn(c.I[0]*1000,3)+' mA'}]};
+  if(m==='non')return {vb:'0 0 520 300',
+    svg:W('M60 158 V140 H90 M170 140 H270 M230 140 V60 H290 M370 60 H420 V170 M270 200 H45')+gnd(60,158)+term(40,200)+tl(18,186,'vào','var(--vin)')+gndT(40,244)+node(230,140)+opamp()+OUT()+res('r1',90,170,140)+res('r2',290,370,60),
+    flows:['M60 158 V140 H230 V60 H420 V170 H370'],
+    lives:[{x:14,y:268,c:'var(--vin)',f:c=>'Uvào = '+sgn(c.a)+' V'},LOUT,
+      {x:320,y:262,a:'middle',c:'var(--muted)',f:c=>'U₋ = '+sgn(c.vn)+' V ≈ Uvào'},
+      {x:320,y:288,a:'middle',c:'var(--ink)',f:c=>'I qua R₁, R₂ = '+sgn(c.I[0]*1000,3)+' mA'}]};
+  if(m==='sinv')return {vb:'0 0 520 300',
+    svg:W('M45 95 H90 M170 95 H200 V175 M45 175 H90 M170 175 H200 M200 140 H270 M230 140 V45 H290 M370 45 H420 V170 M270 200 H240 V226')+gnd(240,226)
+      +term(40,95)+tl(14,81,'vào1','var(--vin)')+term(40,175)+tl(14,161,'vào2','var(--u2)')+gndT(40,219)+node(200,140)+node(230,140)+opamp()+OUT()
+      +res('r1',90,170,95)+res('r2',90,170,175)+res('rf',290,370,45),
+    flows:['M45 95 H200 V140 H230','M45 175 H200 V140 H230','M230 140 V45 H420 V170 H370'],
+    lives:[{x:14,y:262,c:'var(--vin)',f:c=>'Uvào1 = '+sgn(c.a)+' V'},{x:14,y:286,c:'var(--u2)',f:c=>'Uvào2 = '+sgn(c.b)+' V'},LOUT,
+      {x:340,y:262,a:'middle',c:'var(--muted)',f:c=>'U₋ = '+sgn(c.vn)+' V'+(Math.abs(c.vn)<.01?' (đất ảo)':'')},
+      {x:340,y:286,a:'middle',c:'var(--ink)',f:c=>'I qua Rf = '+sgn(c.I[2]*1000,3)+' mA'}]};
+  if(m==='snon')return {vb:'0 0 520 340',
+    svg:W('M60 158 V140 H90 M170 140 H270 M230 140 V60 H290 M370 60 H420 V170 M45 200 H150 M230 200 H270 M45 275 H150 M230 275 H248 V200')+gnd(60,158)
+      +term(40,200)+tl(14,186,'vào1','var(--vin)')+term(40,275)+tl(14,261,'vào2','var(--u2)')+gndT(40,319)+node(230,140)+node(248,200)+opamp()+OUT()
+      +res('rg',90,170,140)+res('rf',290,370,60)+res('r1',150,230,200)+res('r2',150,230,275),
+    flows:['M60 158 V140 H230 V60 H420 V170 H370','M45 200 H248','M45 275 H248 V200'],
+    lives:[LOUT,
+      {x:400,y:304,a:'middle',c:'var(--muted)',f:c=>'U₊ = '+sgn(c.vp)+' V · U₋ = '+sgn(c.vn)+' V'},
+      {x:400,y:328,a:'middle',c:'var(--ink)',f:c=>'U1 = '+sgn(c.a)+' V · U2 = '+sgn(c.b)+' V'}]};
+  if(m==='sub')return {vb:'0 0 520 360',
+    svg:W('M45 140 H90 M170 140 H270 M230 140 V60 H290 M370 60 H420 V170 M45 230 H90 M170 230 H200 V200 H270 M244 200 V280 H250 M330 280 H350 V292')+gnd(350,292)
+      +term(40,140)+tl(14,126,'vào1','var(--vin)')+term(40,230)+tl(14,216,'vào2','var(--u2)')+gndT(40,330)+node(230,140)+node(244,200)+opamp()+OUT()
+      +res('r1',90,170,140)+res('r2',290,370,60)+res('r3',90,170,230)+res('r4',250,330,280),
+    flows:['M45 140 H230 V60 H420 V170 H370','M45 230 H200 V200 H244 V280 H350 V292'],
+    lives:[LOUT,
+      {x:512,y:334,a:'end',c:'var(--muted)',f:c=>'U₊ = '+sgn(c.vp)+' V · U₋ = '+sgn(c.vn)+' V'},
+      {x:512,y:354,a:'end',c:'var(--ink)',f:c=>'U1 = '+sgn(c.a)+' V · U2 = '+sgn(c.b)+' V'}]};
+  // comparator
+  const top=S.ct==='inv'?['vào','var(--vin)']:['ngưỡng','var(--sun)'],bot=S.ct==='inv'?['ngưỡng','var(--sun)']:['vào','var(--vin)'];
+  return {vb:'0 0 520 300',
+    svg:W('M105 140 H270 M105 200 H270 M320 140 V95 M320 200 V245 M100 235 V250')+term(100,140)+tl(90,145,top[0],top[1],'end')+term(100,200)+tl(90,205,bot[0],bot[1],'end')
+      +term(100,230)+gnd(100,250)+opamp()+term(320,90)+term(320,250)
+      +`<text class="lbl" x="332" y="86" style="fill:var(--hot)">+U<tspan font-size="11" dy="4">CC</tspan></text><text class="lbl" x="332" y="272" style="fill:var(--hot)">−U<tspan font-size="11" dy="4">CC</tspan></text>`+OUT(),
+    flows:[],
+    lives:[LOUT,{x:14,y:290,c:'var(--vin)',f:c=>'Uvào = '+sgn(c.a)+' V'},{x:180,y:290,c:'var(--sun)',f:()=>'Ungưỡng = '+sgn(S.th)+' V'},
+      {x:14,y:34,c:'var(--ink)',f:c=>(c.a>S.th?'Uvào > Ungưỡng':'Uvào < Ungưỡng')+' ⇒ Ura ≈ '+(c.o>0?'+':'−')+'Ucc'}]};
+}
+let FLOWS=[],LIVES=[];
+function drawSchem(){
+  const L=layout();L.flows=L.flows.concat([S.mode==='cmp'?'M370 170 H465':'M420 170 H465']);const sv=$('schem');sv.setAttribute('viewBox',L.vb);
+  let s=L.svg+L.flows.map((d,i)=>`<path id="flow${i}" d="${d}" fill="none" stroke="none"/>`).join('');
+  s+=L.lives.map((v,i)=>`<text class="live" id="lv${i}" x="${v.x}" y="${v.y}" ${v.a?`text-anchor="${v.a}"`:''} style="fill:${v.c}" ${i>0&&v!==LOUT?'font-size="12"':''}></text>`).join('');
+  s+='<g id="dots"></g>';sv.innerHTML=s;
+  $('schemTitle').textContent=(S.mode==='cmp'?(S.ct==='inv'?'Sơ đồ mạch so sánh đảo (Hình 19.12a)':'Sơ đồ mạch so sánh không đảo (Hình 19.12b)'):MODES[S.mode].t);
+  const g=$('dots');FLOWS=L.flows.map((d,i)=>{const p=$('flow'+i),len=p.getTotalLength(),n=Math.max(len<60?2:4,Math.round(len/28));
+    const dots=[];for(let j=0;j<n;j++){const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('class','flow');c.setAttribute('r','3.6');g.appendChild(c);dots.push(c)}
+    return {p,len,off:0,pk:0,dots};});
+  LIVES=L.lives;
+  MODES[S.mode].res.forEach(bindRes);
+  $('dragHint').hidden=!MODES[S.mode].res.length;
+  updChips();
+}
+function bindRes(t){
+  const g=$('g-'+t);let y0=null,acc=0;
+  g.addEventListener('pointerdown',e=>{g.setPointerCapture(e.pointerId);y0=e.clientY;acc=0;select(t);e.preventDefault()});
+  g.addEventListener('pointermove',e=>{if(y0===null)return;const st=Math.trunc((y0-e.clientY)/14);if(st!==acc){bump(t,st-acc);acc=st}});
+  const end=()=>{y0=null};g.addEventListener('pointerup',end);g.addEventListener('pointercancel',end);
+  g.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowRight'){bump(t,1);e.preventDefault()}if(e.key==='ArrowDown'||e.key==='ArrowLeft'){bump(t,-1);e.preventDefault()}});
+  g.addEventListener('focus',()=>select(t));
+  g.addEventListener('wheel',e=>{e.preventDefault();bump(t,e.deltaY<0?1:-1)},{passive:false});
+}
+function select(t){document.querySelectorAll('.res').forEach(r=>r.classList.toggle('on',r.dataset.t===t));
+  const c=$('ctl-'+t);if(!c)return;c.classList.add('pulse');clearTimeout(c._t);c._t=setTimeout(()=>c.classList.remove('pulse'),900);}
+function bump(t,d){const R=S.R[S.mode];R[t]=Math.max(0,Math.min(RV.length-1,R[t]+d));FLOWS.forEach(f=>f.pk=0);sync();}
+function updChips(){MODES[S.mode].res.forEach(k=>{const c=$('chip-'+k);if(c)c.textContent=fmtR(rv(k));$('g-'+k)?.setAttribute('aria-valuetext',fmtR(rv(k)))});}
+function buildResCtrls(){const L=MODES[S.mode].res,box=$('resCtrls');box.hidden=!L.length;
+  box.innerHTML=L.map(k=>`<div class="ctl" id="ctl-${k}" style="--c:${RES[k].c}"><div class="top"><label for="sl-${k}">Điện trở ${RES[k].h}</label><output id="o-${k}"></output></div>
+    <div class="row"><button class="step" data-t="${k}" data-d="-1" aria-label="Giảm">−</button><input type="range" id="sl-${k}" min="0" max="${RV.length-1}" step="1"><button class="step" data-t="${k}" data-d="1" aria-label="Tăng">+</button></div></div>`).join('');
+  L.forEach(k=>$('sl-'+k).addEventListener('input',e=>{S.R[S.mode][k]=+e.target.value;FLOWS.forEach(f=>f.pk=0);select(k);sync()}));
+  box.querySelectorAll('.step').forEach(b=>b.addEventListener('click',()=>{select(b.dataset.t);bump(b.dataset.t,+b.dataset.d)}));}
+
+/* ---------- Scope ---------- */
+const cv=$('scope'),cx=cv.getContext('2d'),tc=$('tc'),tx=tc.getContext('2d');
+let tSim=0;
+function fit(c){const r=c.getBoundingClientRect(),d=window.devicePixelRatio||1;const w=Math.round(r.width*d),h=Math.round(r.height*d);
+  if(c.width!==w||c.height!==h){c.width=w;c.height=h}return {w,h,d};}
+function vdiv(){if(S.vdiv!=='auto')return VST[S.vdiv];return autoV();}
+function autoV(){const st=S.st;
+  const pk=Math.max(st.p1,st.p2,Math.abs(st.mx),Math.abs(st.mn),S.mode==='cmp'?Math.abs(S.th):0);
+  for(const v of [0.2,0.5,1,2,5])if(v*3.6>=pk)return v;return 10;}
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+const C_IN='#3dff9e',C_U2='#ffc23d',C_OUT='#45a8ff';
+function drawScope(){
+  const {w,h,d}=fit(cv);const X=10,Y=8,dx=w/X,dy=h/Y;
+  cx.fillStyle='#051421';cx.fillRect(0,0,w,h);cx.lineWidth=1*d;
+  for(let i=1;i<X;i++){cx.strokeStyle=i===5?'rgba(120,190,255,.32)':'rgba(120,190,255,.12)';cx.beginPath();cx.moveTo(i*dx,0);cx.lineTo(i*dx,h);cx.stroke()}
+  for(let j=1;j<Y;j++){cx.strokeStyle=j===4?'rgba(120,190,255,.32)':'rgba(120,190,255,.12)';cx.beginPath();cx.moveTo(0,j*dy);cx.lineTo(w,j*dy);cx.stroke()}
+  cx.strokeStyle='rgba(120,190,255,.35)';
+  for(let i=0;i<=X*5;i++){const x=i*dx/5;cx.beginPath();cx.moveTo(x,h/2-3*d);cx.lineTo(x,h/2+3*d);cx.stroke()}
+  for(let j=0;j<=Y*5;j++){const y=j*dy/5;cx.beginPath();cx.moveTo(w/2-3*d,y);cx.lineTo(w/2+3*d,y);cx.stroke()}
+  const vd=vdiv(),td=tdiv(),T=X*td;const yv=v=>h/2-v/vd*dy;
+  cx.font=`${11*d}px JetBrains Mono, monospace`;cx.fillStyle='rgba(160,200,240,.55)';cx.textAlign='left';
+  for(let j=-3;j<=3;j++){if(j)cx.fillText(num(j*vd,vd<0.2?2:vd<1?1:0),w/2+5*d,yv(j*vd)-3*d)}
+  cx.fillText('0',w/2+5*d,h/2-4*d);
+  const us=usat(),cmp=S.mode==='cmp';
+  if(us<vd*4){cx.setLineDash([6*d,5*d]);cx.strokeStyle='rgba(255,77,109,.75)';cx.lineWidth=1.3*d;
+    [us,-us].forEach(v=>{cx.beginPath();cx.moveTo(0,yv(v));cx.lineTo(w,yv(v));cx.stroke()});cx.setLineDash([]);
+    cx.fillStyle='rgba(255,120,140,.9)';cx.textAlign='right';cx.fillText(cmp?'≈ +Ucc':'+U bão hòa',w-6*d,yv(us)-5*d);cx.fillText(cmp?'≈ −Ucc':'−U bão hòa',w-6*d,yv(-us)+14*d);}
+  if(cmp){cx.setLineDash([10*d,6*d]);cx.strokeStyle=C_U2;cx.lineWidth=2*d;cx.beginPath();cx.moveTo(0,yv(S.th));cx.lineTo(w,yv(S.th));cx.stroke();cx.setLineDash([]);}
+  const trace=(fn,col,lw)=>{cx.save();cx.strokeStyle=col;cx.lineWidth=lw*d;cx.shadowColor=col;cx.shadowBlur=10*d;cx.lineJoin='round';cx.beginPath();
+    const N=Math.min(w,1400);for(let i=0;i<=N;i++){const x=i/N*w,t=tSim+i/N*T,y=Math.max(-4*d,Math.min(h+4*d,yv(fn(t))));i?cx.lineTo(x,y):cx.moveTo(x,y)}cx.stroke();cx.restore();};
+  trace(t=>out(u1(t),u2(t)),C_OUT,2.6);
+  if(two())trace(u2,C_U2,2);
+  trace(u1,C_IN,2.2);
+  cx.font=`700 ${13*d}px JetBrains Mono, monospace`;cx.textAlign='left';
+  const labs=two()?[['Uvào1',C_IN],['Uvào2',C_U2],['Ura',C_OUT]]:cmp?[['Uvào',C_IN],['Ungưỡng (nét đứt)',C_U2],['Ura',C_OUT]]:[['Uvào',C_IN],['Ura',C_OUT]];
+  labs.forEach(([t,c],i)=>{cx.fillStyle=c;cx.fillText(t,8*d,(18+18*i)*d)});
+  const fo=t=>out(u1(t),u2(t));
+  if(S.pkOn&&S.mode!=='cmp'){let mx=-1e9,mn=1e9;for(let i=0;i<=600;i++){const v=fo(tSim+i/600*T);mx=Math.max(mx,v);mn=Math.min(mn,v)}
+    cx.save();cx.setLineDash([3*d,4*d]);cx.strokeStyle='rgba(69,168,255,.85)';cx.lineWidth=1.2*d;cx.font=`700 ${11.5*d}px JetBrains Mono, monospace`;cx.textAlign='left';
+    const lab=(v,t,dy)=>{const yr=yv(v),y=Math.max(2*d,Math.min(h-2*d,yr));if(yr<0)t+=' ↑';if(yr>h)t+=' ↓';if(y+dy>h-4*d)dy=-5*d;if(y+dy<14*d)dy=15*d;cx.beginPath();cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke();const tw=cx.measureText(t).width;cx.fillStyle='rgba(5,20,33,.85)';cx.fillRect(w*0.62-4*d,y+dy-12*d,tw+8*d,16*d);cx.fillStyle=C_OUT;cx.fillText(t,w*0.62,y+dy);};
+    if(Math.abs(mx-mn)<1e-6)lab(mx,'Ura = '+sgn(mx)+' V',-5*d);else{lab(mx,'Ura lớn nhất '+sgn(mx)+' V',-5*d);lab(mn,'Ura nhỏ nhất '+sgn(mn)+' V',15*d);}
+    cx.restore();}
+  if(CUR){const x=CUR.x*w,y=CUR.y*h,t=tSim+CUR.x*T,vy=(h/2-y)/dy*vd;
+    cx.save();cx.strokeStyle='rgba(255,255,255,.55)';cx.lineWidth=1*d;cx.setLineDash([4*d,4*d]);
+    cx.beginPath();cx.moveTo(x,0);cx.lineTo(x,h);cx.moveTo(0,y);cx.lineTo(w,y);cx.stroke();cx.setLineDash([]);
+    const rows=[['Con trỏ',vy,'#ffffff'],[two()?'Uvào1':'Uvào',u1(t),C_IN]];if(two())rows.push(['Uvào2',u2(t),C_U2]);rows.push(['Ura',fo(t),C_OUT]);
+    rows.slice(1).forEach(([n,v,c])=>{cx.fillStyle=c;cx.beginPath();cx.arc(x,yv(v),4*d,0,7);cx.fill()});
+    cx.font=`700 ${12*d}px JetBrains Mono, monospace`;const lw=Math.max(...rows.map(r=>cx.measureText(r[0]+' = '+sgn(r[1])+' V').width))+16*d,lh=17*d,bh=rows.length*lh+8*d;
+    let bx=x+12*d,by=y+12*d;if(bx+lw>w)bx=x-12*d-lw;if(by+bh>h)by=y-12*d-bh;
+    cx.fillStyle='rgba(5,20,33,.92)';cx.strokeStyle='rgba(120,190,255,.5)';cx.fillRect(bx,by,lw,bh);cx.strokeRect(bx,by,lw,bh);
+    cx.textAlign='left';rows.forEach(([n,v,c],i)=>{cx.fillStyle=c;cx.fillText(n+' = '+sgn(v)+' V',bx+8*d,by+(i+1)*lh)});cx.restore();}
+  const tn=tSim+T,a=u1(tn),b=u2(tn),o=out(a,b);
+  const mk=[[a,C_IN],[o,C_OUT]];if(two())mk.push([b,C_U2]);
+  mk.forEach(([v,c])=>{cx.save();cx.fillStyle=c;cx.shadowColor=c;cx.shadowBlur=14*d;cx.beginPath();cx.arc(w-4*d,Math.max(4*d,Math.min(h-4*d,yv(v))),4.5*d,0,7);cx.fill();cx.restore()});
+  $('vdivLbl').textContent=num(vd,vd<0.2?2:vd<1?1:0)+' V/ô'+(S.vdiv==='auto'?' (tự động)':'');$('tdivLbl').textContent=fmtT(td)+'/ô';
+  return {a,b,o};
+}
+function drawTC(c){
+  const {w,h,d}=fit(tc);tx.clearRect(0,0,w,h);
+  const pad=30*d,xm=5.5,ym=S.vcc+1;const X=x=>pad+(x+xm)/(2*xm)*(w-2*pad),Y=y=>h-pad-(y+ym)/(2*ym)*(h-2*pad);
+  const ink=cssv('--muted'),line=cssv('--line'),m=S.mode;
+  tx.strokeStyle=line;tx.lineWidth=1*d;
+  for(let v=-5;v<=5;v++){tx.beginPath();tx.moveTo(X(v),Y(-ym));tx.lineTo(X(v),Y(ym));tx.stroke()}
+  const ys=ym>12?5:2;for(let v=-Math.floor(ym/ys)*ys;v<=ym;v+=ys){tx.beginPath();tx.moveTo(X(-xm),Y(v));tx.lineTo(X(xm),Y(v));tx.stroke()}
+  tx.strokeStyle=ink;tx.lineWidth=1.4*d;tx.beginPath();tx.moveTo(X(-xm),Y(0));tx.lineTo(X(xm),Y(0));tx.moveTo(X(0),Y(-ym));tx.lineTo(X(0),Y(ym));tx.stroke();
+  tx.fillStyle=ink;tx.font=`${10.5*d}px JetBrains Mono, monospace`;tx.textAlign='center';
+  [-5,-2.5,2.5,5].forEach(v=>tx.fillText(num(v,v%1?1:0),X(v),Y(0)+13*d));
+  tx.textAlign='right';for(let v=-Math.floor(ym/ys)*ys;v<=ym;v+=ys){if(v)tx.fillText(num(v,0),X(0)-5*d,Y(v)+4*d)}
+  tx.fillText(two()?'Uvào1 (V)':'Uvào (V)',w-6*d,Y(0)-6*d);tx.textAlign='left';tx.fillText('Ura (V)',X(0)+6*d,14*d);
+  const st=S.st;tx.fillStyle=cssv('--vin');tx.globalAlpha=.18;
+  const l=Math.max(-xm,st.lo1),r=Math.min(xm,st.hi1);tx.fillRect(X(l)-1*d,Y(ym),Math.max(2*d,X(r)-X(l)+2*d),Y(-ym)-Y(ym));tx.globalAlpha=1;
+  if(m==='cmp'){tx.setLineDash([6*d,5*d]);tx.strokeStyle=cssv('--sun');tx.lineWidth=2*d;tx.beginPath();tx.moveTo(X(S.th),Y(-ym));tx.lineTo(X(S.th),Y(ym));tx.stroke();tx.setLineDash([]);}
+  const col=m==='inv'||m==='sinv'?cssv('--r2'):m==='cmp'?cssv('--rf'):cssv('--vout');
+  tx.strokeStyle=col;tx.lineWidth=3*d;tx.lineJoin='round';tx.beginPath();
+  for(let i=0;i<=600;i++){const x=-xm+i/600*2*xm;const y=out(x,c.b);i?tx.lineTo(X(x),Y(y)):tx.moveTo(X(x),Y(y))}tx.stroke();
+  tx.fillStyle=cssv('--sun');tx.strokeStyle=cssv('--panel');tx.lineWidth=2*d;tx.beginPath();tx.arc(X(c.a),Y(c.o),6*d,0,7);tx.fill();tx.stroke();
+  tx.textAlign='left';tx.fillStyle=col;tx.font=`700 ${12*d}px JetBrains Mono, monospace`;
+  const k=coef()[0];
+  if(m==='cmp')tx.fillText('Ungưỡng = '+sgn(S.th,1)+' V',pad+4*d,pad-8*d);
+  else tx.fillText('độ dốc = '+sgn(k,2)+(two()?'   ·   Uvào2 = '+sgn(c.b)+' V':''),pad+4*d,pad-8*d);
+}
+
+/* ---------- Readouts & labels ---------- */
+const badge=sat=>{if(!sat)return '<span class="badge ok">● Khuếch đại tuyến tính</span>';const st=S.st,v=Math.abs(st.imx)>=Math.abs(st.imn)?st.imx:st.imn;
+  return `<span class="badge bad">● Bão hòa – méo</span><div class="fnote" style="margin-top:4px">Tính ra ${sgn(v)} V, vượt nguồn ±${S.vcc} V → U<sub>ra</sub> chỉ đạt ${v>0?'+':'−'}${S.vcc} V</div>`;};
+function setRd(i,k,v,col,fs){$('k'+i).innerHTML=k;const e=$('v'+i);e.innerHTML=v;e.style.color=col;e.style.fontSize=fs||'';}
+function updText(){
+  const m=S.mode,st=S.st=stats(),c=coef();
+  MODES[m].res.forEach(k=>{$('o-'+k).textContent=fmtR(rv(k));$('sl-'+k).value=S.R[m][k];});
+  const T=1/FREQS[S.fi],n=10*tdiv()/T;
+  $('o-freq').textContent=fmtF(FREQS[S.fi]);$('o-per').textContent=S.wave==='dc'?'Điện áp một chiều: không có chu kì':'Chu kì T = '+fmtT(T)+' · màn hình hiện '+num(n,n%1?1:0)+' chu kì';
+  $('ampL').innerHTML=(S.wave==='dc'?'Giá trị U':'Biên độ U')+`<sub>${two()?'vào1':'vào'}</sub>`;
+  $('o-amp').textContent=num(S.amp,1)+' V';
+  $('g1T').innerHTML='Tín hiệu vào U<sub>'+(two()?'vào1':'vào')+'</sub>';
+  $('amp2L').innerHTML=(S.wave2==='dc'?'Giá trị U':'Biên độ U')+'<sub>vào2</sub>';
+  $('o-amp2').textContent=sgn(S.amp2,1)+' V';$('o-freq2').textContent=S.wave2==='dc'?'—':fmtF(FREQS[S.fi2]);
+  $('o-th').textContent=sgn(S.th,1)+' V';$('o-vcc').textContent='±'+S.vcc+' V';
+  $('freqL').innerHTML=two()?'Tần số U<sub>vào1</sub>':'Tần số';$('waveL').innerHTML=two()?'Dạng U<sub>vào1</sub>':'Dạng tín hiệu vào';$('u2box').hidden=!two();$('sigs').classList.toggle('two',two());$('cmpbox').hidden=m!=='cmp';
+  const pk=Math.max(Math.abs(st.mx),Math.abs(st.mn));
+  if(m==='inv'||m==='non'){const G=Math.abs(c[0]);
+    setRd(1,'Hệ số khuếch đại G',num(G,G<10?2:1),'var(--sun)');
+    setRd(2,(S.wave==='dc'?'U<sub>vào</sub>':'U<sub>vào</sub> đỉnh'),num(st.p1,2)+' V','var(--vin)');
+    setRd(3,(S.wave==='dc'?'U<sub>ra</sub>':'U<sub>ra</sub> đỉnh'),(S.wave==='dc'?sgn(st.mx):num(pk,2))+' V','var(--vout)');
+    setRd(4,'Quan hệ pha',m==='inv'?'Ngược pha 180°':'Cùng pha 0°',m==='inv'?'var(--r2)':'var(--vin)','16px');$('rSt').innerHTML=badge(st.sat);}
+  else if(two()){
+    setRd(1,'Trọng số U<sub>vào1</sub>',sgn(c[0],2),'var(--vin)');
+    setRd(2,'Trọng số U<sub>vào2</sub>',sgn(c[1],2),'var(--u2)');
+    setRd(3,Math.abs(st.mx-st.mn)<1e-6?'U<sub>ra</sub>':'U<sub>ra</sub> lớn nhất / nhỏ nhất',Math.abs(st.mx-st.mn)<1e-6?sgn(st.mx)+' V':sgn(st.mx,1)+' / '+sgn(st.mn,1)+' V','var(--vout)',Math.abs(st.mx-st.mn)<1e-6?'':'16px');
+    setRd(4,'Trạng thái','', 'var(--ink)');$('rSt').innerHTML=badge(st.sat);}
+  else{
+    setRd(1,'U<sub>ngưỡng</sub>',sgn(S.th,1)+' V','var(--sun)');
+    setRd(2,'Mức ra',`±${num(usat(),0)} V`,'var(--hot)');
+    setRd(3,'Thời gian U<sub>ra</sub> ở mức cao',num(st.duty*100,0)+' %','var(--vout)');
+    setRd(4,'Lúc này','','var(--ink)','15px');$('rSt').innerHTML='';}
+  $('tcTitle').innerHTML=m==='cmp'?'Đặc tuyến so sánh U<sub>ra</sub> – U<sub>vào</sub>':two()?'Đặc tuyến U<sub>ra</sub> – U<sub>vào1</sub>':'Đặc tuyến U<sub>ra</sub> – U<sub>vào</sub>';
+  $('chips').innerHTML=(two()?'<span class="ch in">CH1 · U<sub>vào1</sub></span><span class="ch u2">CH2 · U<sub>vào2</sub></span><span class="ch out">CH3 · U<sub>ra</sub></span>'
+    :'<span class="ch in">CH1 · U<sub>vào</sub></span><span class="ch out">CH2 · U<sub>ra</sub></span>');
+  updChips();
+  if(st.sat)satSeen[m]=true;
+  checkTasks(st);
+}
+
+/* ---------- Tasks ---------- */
+const eqR=(a,b)=>S.R[S.mode][a]===S.R[S.mode][b];
+const isR=(k,v)=>rv(k)===v;
+const TASKS={
+  inv:[
+    {t:'Chọn R₁, R₂ để mạch khuếch đại đảo có G = 10.',ok:()=>Math.abs(Math.abs(coef()[0])-10)<0.05},
+    {t:'Tạo mạch “đảo dấu”: U<sub>ra</sub> = −U<sub>vào</sub> (G = 1).',ok:()=>Math.abs(Math.abs(coef()[0])-1)<0.01},
+    {t:'Làm U<sub>ra</sub> bị bão hòa (đỉnh sóng bị xén phẳng).',ok:st=>st.sat},
+    {t:'Sau khi bão hòa, chỉnh lại để U<sub>ra</sub> đỉnh ≈ 10 V mà không bị méo.',ok:st=>satSeen.inv&&!st.sat&&Math.abs(Math.abs(coef()[0])*S.amp-10)<=0.6}],
+  non:[
+    {t:'Chọn R₁ = R₂ và quan sát: G bằng bao nhiêu?',ok:()=>eqR('r1','r2')},
+    {t:'Chọn R₁, R₂ để mạch khuếch đại không đảo có G = 11.',ok:()=>Math.abs(coef()[0]-11)<0.05},
+    {t:'Làm G nhỏ nhất có thể (gần 1 nhất). Có thể làm G < 1 không?',ok:()=>coef()[0]<1.02},
+    {t:'Với U<sub>vào</sub> = 1 V và nguồn ±12 V, làm U<sub>ra</sub> đỉnh lớn hơn 9 V mà chưa bị méo.',ok:st=>S.vcc===12&&Math.abs(S.amp-1)<0.01&&!st.sat&&coef()[0]>=9.2}],
+  sinv:[
+    {t:'Chọn R₁ = R₂ = R<sub>f</sub> để có U<sub>ra</sub> = −(U<sub>vào1</sub> + U<sub>vào2</sub>).',ok:()=>eqR('r1','r2')&&eqR('r1','rf')},
+    {t:'Đặt U<sub>vào2</sub> là điện áp một chiều +2 V. Quan sát sóng U<sub>ra</sub> bị dịch xuống.',ok:()=>S.wave2==='dc'&&Math.abs(S.amp2-2)<0.05},
+    {t:'Làm U<sub>vào1</sub> có trọng số lớn gấp 10 lần U<sub>vào2</sub>.',ok:()=>Math.abs(rv('r2')/rv('r1')-10)<0.05},
+    {t:'Làm U<sub>ra</sub> bị bão hòa.',ok:st=>st.sat}],
+  snon:[
+    {t:'Chọn R₁ = R₂ và R<sub>f</sub> = R<sub>g</sub> để có U<sub>ra</sub> = U<sub>vào1</sub> + U<sub>vào2</sub>.',ok:()=>eqR('r1','r2')&&eqR('rf','rg')},
+    {t:'Làm bài Luyện tập 3 (trang 105): R₁ = R₂ = 1 kΩ, R<sub>f</sub> = R<sub>g</sub> = 10 kΩ, U<sub>vào1</sub> = 1 V, U<sub>vào2</sub> = 5 V (một chiều). Đọc U<sub>ra</sub>.',
+      ok:()=>isR('r1',1e3)&&isR('r2',1e3)&&isR('rf',1e4)&&isR('rg',1e4)&&S.wave==='dc'&&S.wave2==='dc'&&Math.abs(S.amp-1)<.01&&Math.abs(S.amp2-5)<.01},
+    {t:'Tăng R<sub>f</sub> để U<sub>ra</sub> bị bão hòa.',ok:st=>st.sat},
+    {t:'Cho U<sub>vào2</sub> = 0 V: mạch thành khuếch đại không đảo cho U<sub>vào1</sub>, hệ số G = (1 + R<sub>f</sub>/R<sub>g</sub>)·R<sub>2</sub>/(R<sub>1</sub> + R<sub>2</sub>).',ok:()=>Math.abs(S.amp2)<0.01}],
+  sub:[
+    {t:'Chọn R₁ = R₃ và R₂ = R₄ để có U<sub>ra</sub> = (R₂/R₁)·(U<sub>vào2</sub> − U<sub>vào1</sub>).',ok:()=>eqR('r1','r3')&&eqR('r2','r4')},
+    {t:'Chọn bốn điện trở bằng nhau để có U<sub>ra</sub> = U<sub>vào2</sub> − U<sub>vào1</sub>.',ok:()=>eqR('r1','r2')&&eqR('r1','r3')&&eqR('r1','r4')},
+    {t:'Đặt U<sub>vào1</sub>, U<sub>vào2</sub> là hai điện áp một chiều bằng nhau (với R₁ = R₃, R₂ = R₄): U<sub>ra</sub> = 0 V.',ok:()=>eqR('r1','r3')&&eqR('r2','r4')&&S.wave==='dc'&&S.wave2==='dc'&&Math.abs(S.amp-S.amp2)<.01},
+    {t:'Làm bài Luyện tập 2 (trang 105): R₁ = R₃ = 2 kΩ, R₂ = R₄ = 10 kΩ, U<sub>vào1</sub> = 1 V, U<sub>vào2</sub> = 5 V. Công thức cho U<sub>ra</sub> = 5·(5 − 1) = 20 V, vượt nguồn ±12 V nên U<sub>ra</sub> bão hòa ở +12 V.',
+      ok:()=>isR('r1',2e3)&&isR('r3',2e3)&&isR('r2',1e4)&&isR('r4',1e4)&&S.wave==='dc'&&S.wave2==='dc'&&Math.abs(S.amp-1)<.01&&Math.abs(S.amp2-5)<.01}],
+  cmp:[
+    {t:'Cho U<sub>vào</sub> hình sin biên độ 3 V, U<sub>ngưỡng</sub> = 0 V: U<sub>ra</sub> thành xung vuông đều.',ok:()=>S.th===0&&S.wave==='sin'&&Math.abs(S.amp-3)<.01},
+    {t:'Đặt U<sub>ngưỡng</sub> lớn hơn biên độ U<sub>vào</sub>: U<sub>ra</sub> đứng yên ở một mức.',ok:()=>S.wave!=='dc'&&S.th>S.amp},
+    {t:'Đặt U<sub>ngưỡng</sub> âm và xem thời gian U<sub>ra</sub> ở mức cao thay đổi thế nào.',ok:()=>S.wave!=='dc'&&S.th<0&&Math.abs(S.th)<S.amp},
+    {t:'Dùng tín hiệu tam giác và ngưỡng khác 0 để tạo xung vuông có độ rộng không đều.',ok:st=>S.wave==='tri'&&S.th!==0&&Math.abs(S.th)<S.amp}]};
+function renderTasks(){if(!$('tasks'))return;const L=TASKS[S.mode];$('tasks').innerHTML=L.map((x,i)=>`<li class="${done[dk()].has(i)?'done':''}"><span class="ck">✓</span><span>${x.t}</span></li>`).join('');
+  $('score').textContent=done[dk()].size+'/'+L.length;}
+function checkTasks(st){if(!$('tasks'))return;const L=TASKS[S.mode];let ch=false;L.forEach((x,i)=>{if(!done[dk()].has(i)&&x.ok(st)){done[dk()].add(i);ch=true}});if(ch)renderTasks();}
+
+/* ---------- Presets ---------- */
+const PRE={
+  inv:[{r:{r1:1e4,r2:1e4}},{r:{r1:3900,r2:8200}},{r:{r1:1e4,r2:47e3}},{r:{r1:1e4,r2:1e5}},{l:'Như hình SGK',r:{r1:1e4,r2:47e3},s:{amp:.5,wave:'sin',vcc:12}},{l:'Luyện tập 1 (tr. 105)',r:{r1:1e3,r2:1e4},s:{amp:.5,wave:'sin',vcc:12}}],
+  non:[{r:{r1:1e5,r2:1e3}},{r:{r1:1e4,r2:1e4}},{r:{r1:1e4,r2:39e3}},{r:{r1:1e4,r2:1e5}},{l:'Như hình SGK',r:{r1:1e4,r2:39e3},s:{amp:.5,wave:'sin',vcc:12}}],
+  sinv:[{l:'R₁ = R₂ = R<sub>f</sub>',r:{r1:1e4,r2:1e4,rf:1e4}},
+        {l:'Sin + một chiều',r:{r1:1e4,r2:1e4,rf:22e3},s:{wave:'sin',amp:1,wave2:'dc',amp2:1}},
+        {l:'Trộn hai sóng sin',r:{r1:1e4,r2:1e4,rf:22e3},s:{wave:'sin',amp:1,fi:1,wave2:'sin',amp2:.5,fi2:4}},
+        {l:'Luyện tập 4 (tr. 105)',r:{r1:1e3,r2:1500,rf:3e3},s:{wave:'dc',amp:1,wave2:'dc',amp2:1,vcc:12}}],
+  snon:[{l:'R₁ = R₂, R<sub>f</sub> = R<sub>g</sub>',r:{r1:1e4,r2:1e4,rg:1e4,rf:1e4}},
+        {l:'Luyện tập 3 (tr. 105)',r:{r1:1e3,r2:1e3,rg:1e4,rf:1e4},s:{wave:'dc',amp:1,wave2:'dc',amp2:5,vcc:12}},
+        {l:'Trộn hai sóng sin',r:{r1:1e4,r2:1e4,rg:1e4,rf:22e3},s:{wave:'sin',amp:1,fi:1,wave2:'sin',amp2:.5,fi2:4}}],
+  sub:[{l:'R₁ = R₃, R₂ = R₄',r:{r1:1e4,r2:22e3,r3:1e4,r4:22e3}},
+        {l:'Bốn điện trở bằng nhau',r:{r1:1e4,r2:1e4,r3:1e4,r4:1e4},s:{wave:'sin',amp:2,wave2:'dc',amp2:1}},
+        {l:'Luyện tập 2 (tr. 105)',r:{r1:2e3,r2:1e4,r3:2e3,r4:1e4},s:{wave:'dc',amp:1,wave2:'dc',amp2:5,vcc:12}}],
+  cmp:[{l:'Ngưỡng 0 V',s:{th:0,wave:'sin',amp:2}},{l:'Ngưỡng +1 V',s:{th:1,wave:'sin',amp:2}},{l:'Tam giác, ngưỡng −1 V',s:{th:-1,wave:'tri',amp:2}},{l:'Luyện tập 5 (tr. 105)',s:{ct:'inv',th:.5,wave:'dc',amp:1,vcc:12}}]};
+function renderPills(){const q=$('pills'),L=PRE[S.mode];
+  q.innerHTML=L.map((p,i)=>{let l=p.l;if(!l){const G=S.mode==='inv'?p.r.r2/p.r.r1:1+p.r.r2/p.r.r1;const ex=Math.abs(G-Math.round(G))<0.005;l=`G ${ex?'=':'≈'} ${num(G,ex?0:2)}`}
+    return `<button class="pill" data-i="${i}">${l}</button>`}).join('');
+  q.querySelectorAll('.pill').forEach(b=>b.addEventListener('click',()=>{const p=L[+b.dataset.i];
+    if(p.r)Object.entries(p.r).forEach(([k,v])=>S.R[S.mode][k]=ix(v));
+    if(p.s)Object.assign(S,p.s);if(p.s&&p.s.ct)setPressed('.seg button','mode',S.ct==='inv'?'cmpi':'cmpn');FLOWS.forEach(f=>f.pk=0);if(S.mode==='cmp')drawSchem();sync();}));}
+
+/* ---------- Wiring ---------- */
+function setPressed(sel,attr,val){document.querySelectorAll(sel).forEach(x=>x.setAttribute('aria-pressed',x.dataset[attr]===val));}
+function sync(){
+  $('amp').value=S.amp;$('freq').value=S.fi;$('vcc').value=S.vcc;$('amp2').value=S.amp2;$('freq2').value=S.fi2;$('th').value=S.th;
+  setPressed('#waves button','w',S.wave);setPressed('#waves2 button','w',S.wave2);
+  updText();if(!S.run)frame(performance.now(),true);
+}
+$('amp').addEventListener('input',e=>{S.amp=+e.target.value;sync()});
+$('freq').addEventListener('input',e=>{S.fi=+e.target.value;sync()});
+$('vcc').addEventListener('input',e=>{S.vcc=+e.target.value;sync()});
+$('amp2').addEventListener('input',e=>{S.amp2=+e.target.value;sync()});
+$('freq2').addEventListener('input',e=>{S.fi2=+e.target.value;sync()});
+$('th').addEventListener('input',e=>{S.th=Math.round(+e.target.value*10)/10;sync()});
+document.querySelectorAll('#waves button').forEach(b=>b.addEventListener('click',()=>{S.wave=b.dataset.w;sync()}));
+document.querySelectorAll('#waves2 button').forEach(b=>b.addEventListener('click',()=>{S.wave2=b.dataset.w;sync()}));
+function vStep(d){let i=S.vdiv==='auto'?VST.indexOf(autoV()):S.vdiv;i=Math.max(0,Math.min(VST.length-1,i+d));S.vdiv=i;$('vAuto').setAttribute('aria-pressed','false');sync();}
+$('vIn').addEventListener('click',()=>vStep(-1));$('vOut').addEventListener('click',()=>vStep(1));
+$('vAuto').addEventListener('click',()=>{S.vdiv='auto';$('vAuto').setAttribute('aria-pressed','true');sync()});
+$('tIn').addEventListener('click',()=>{S.ti=Math.max(0,S.ti-1);sync()});$('tOut').addEventListener('click',()=>{S.ti=Math.min(TST.length-1,S.ti+1);sync()});
+$('pk').addEventListener('click',()=>{S.pkOn=!S.pkOn;$('pk').setAttribute('aria-pressed',S.pkOn);sync()});
+cv.addEventListener('pointermove',e=>{const r=cv.getBoundingClientRect();CUR={x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height};if(!S.run)frame(performance.now(),true)});
+cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect();CUR={x:(e.clientX-r.left)/r.width,y:(e.clientY-r.top)/r.height};if(!S.run)frame(performance.now(),true)});
+cv.addEventListener('pointerleave',()=>{CUR=null;if(!S.run)frame(performance.now(),true)});
+$('run').addEventListener('click',()=>{S.run=!S.run;$('run').textContent=S.run?'⏸ Dừng':'▶ Chạy';$('run').setAttribute('aria-pressed',!S.run);$('led').classList.toggle('off',!S.run)});
+function setMode(key){const m=key.startsWith('cmp')?'cmp':key;if(m==='cmp')S.ct=key==='cmpi'?'inv':'non';S.mode=m;setPressed('.seg button','mode',key);
+  if(m==='cmp'&&!visited.cmp&&S.amp<1)S.amp=2;visited[m]=true;
+  buildResCtrls();drawSchem();renderTasks();renderPills();sync();}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+
+/* ---------- Animation loop ---------- */
+function circ(a,b,o){const m=S.mode,c={a,b,o,I:[],vn:0,vp:0};
+  if(m==='inv'){const R=rv('r1')+rv('r2');c.I=[(a-o)/R];c.vn=a-c.I[0]*rv('r1');}
+  else if(m==='non'){const R=rv('r1')+rv('r2');c.I=[-o/R];c.vn=o*rv('r1')/R;c.vp=a;}
+  else if(m==='sinv'){const g1=1/rv('r1'),g2=1/rv('r2'),gf=1/rv('rf');c.vn=(a*g1+b*g2+o*gf)/(g1+g2+gf);c.I=[(a-c.vn)*g1,(b-c.vn)*g2,(c.vn-o)*gf];}
+  else if(m==='sub'){const r1=rv('r1'),r2=rv('r2');c.vp=b*rv('r4')/(rv('r3')+rv('r4'));c.vn=(a*r2+o*r1)/(r1+r2);c.I=[(a-c.vn)/r1,b/(rv('r3')+rv('r4'))];}
+  else if(m==='snon'){const g1=1/rv('r1'),g2=1/rv('r2');c.vp=(a*g1+b*g2)/(g1+g2);const R=rv('rg')+rv('rf');c.vn=o*rv('rg')/R;c.I=[-o/R,(a-c.vp)*g1,(b-c.vp)*g2];}
+  c.I.push(o/1e4); /* dòng ra cực U_ra: cùng chiều với dấu U_ra */
+  return c;}
+let last=performance.now(),lastLive='';
+function frame(now,once){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  if(S.run&&!once)tSim+=dt*0.35/FREQS[S.fi];
+  const r=drawScope();const c=circ(r.a,r.b,r.o);drawTC(c);
+  LIVES.forEach((v,i)=>{const e=$('lv'+i);if(e)e.textContent=v.f(c)});
+  FLOWS.forEach((f,i)=>{const I=c.I[i]||0;f.pk=Math.max(Math.abs(I),f.pk*Math.pow(0.5,dt/1.5));
+    const on=f.pk>1e-7;if(S.run&&!once&&on){f.off=(f.off+I/f.pk*110*dt)%f.len;if(f.off<0)f.off+=f.len;}
+    const op=on?0.35+0.65*Math.min(1,Math.abs(I)/f.pk):0.12,gap=f.len/f.dots.length;
+    f.dots.forEach((d,j)=>{const p=f.p.getPointAtLength((f.off+j*gap)%f.len);d.setAttribute('cx',p.x);d.setAttribute('cy',p.y);d.style.opacity=op});});
+  if(S.mode==='cmp'){const s=(c.a>S.th?'U<sub>vào</sub> > U<sub>ngưỡng</sub>':'U<sub>vào</sub> < U<sub>ngưỡng</sub>')+'|'+(c.o>0?'+':'−');
+    if(s!==lastLive){lastLive=s;const [k,v]=s.split('|');$('v4').innerHTML=k;$('rSt').innerHTML=`<span class="badge ${v==='+'?'ok':'bad'}"><span>U<sub>ra</sub> ≈ ${v}U<sub>cc</sub></span></span>`;}}
+  else lastLive='';
+  if(!once)requestAnimationFrame(frame);
+}
+const rm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+setMode('inv');
+if(rm){S.run=false;$('run').textContent='▶ Chạy';$('run').setAttribute('aria-pressed','true');$('led').classList.add('off');}
+requestAnimationFrame(frame);
+window.addEventListener('resize',()=>{if(!S.run)frame(performance.now(),true)});
+})();
+</script>
+
+</body>
+</html>

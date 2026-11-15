@@ -305,8 +305,8 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|dientuso|dientutuongtu|htdien|linhkien)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|dientuso|dientutuongtu|htdien|linhkien|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -769,14 +769,21 @@ const K12_TOPICS = {
   tien: { file: 'cn11_bai8.html', hash: '#tien', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
   phay: { file: 'cn11_bai8.html', hash: '#phay', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
   quytrinh: { file: 'cn11_quytrinh.html', name: 'Bài 9. Quy trình công nghệ gia công chi tiết', k: '11' },
-  htdien: { file: 'htdien.html', name: 'Chủ đề Hệ thống điện gia đình' },
-  linhkien: { file: 'linhkien.html', name: 'Chủ đề Linh kiện điện tử' },
-  dientutuongtu: { file: 'dientutuongtu.html', name: 'Chủ đề Điện tử tương tự', bai: ['19', '20'] },
-  dientuso: { file: 'dientuso.html', name: 'Chủ đề Điện tử số', bai: ['21', '22', '23'] }
+  k12b8: { file: 'cn12_bai8.html', name: 'Bài 8. Hệ thống điện trong gia đình', k: '12' },
+  k12b9: { file: 'cn12_bai9.html', name: 'Bài 9. Thiết bị điện trong gia đình', k: '12' },
+  k12b10: { file: 'cn12_bai10.html', name: 'Bài 10. Thực hành lắp mạch điện trong gia đình', k: '12' },
+  k12b15: { file: 'cn12_bai15.html', name: 'Bài 15. Điện trở, tụ điện và cuộn cảm', k: '12' },
+  k12b16: { file: 'cn12_bai16.html', name: 'Bài 16. Diode, transistor và mạch tích hợp IC', k: '12' },
+  k12b17: { file: 'cn12_bai17.html', name: 'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn', k: '12' },
+  k12b19: { file: 'cn12_bai19.html', name: 'Bài 19. Khuếch đại thuật toán', k: '12' },
+  k12b20: { file: 'cn12_bai20.html', name: 'Bài 20. Thực hành khuếch đại thuật toán', k: '12' },
+  k12b21: { file: 'cn12_bai21.html', name: 'Bài 21. Tín hiệu số và các cổng logic cơ bản', k: '12' },
+  k12b22: { file: 'cn12_bai22.html', name: 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', k: '12' },
+  k12b23: { file: 'cn12_bai23.html', name: 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', k: '12' }
 };
-const LESSON_V = '20261113b';
+const LESSON_V = '20261115a';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
-route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|htdien|linhkien|dientutuongtu|dientuso)$/, (params, key) => {
+route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
   const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : (T.hash || ''));
   const khoi = T.k || ((key === 'hcat' || key === 'hctd') ? '10' : '12');
@@ -827,10 +834,17 @@ route(/^\/onluyen$/, () => {
       ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập')}
     </div>` : ''}
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
-      ${row('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Sơ đồ hệ thống điện, thiết bị điện, lắp mạch điện trong nhà')}
-      ${row('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Điện trở, tụ điện, cuộn cảm, diode, transistor và IC')}
-      ${row('#/dientutuongtu', '📈', 'green', 'Chủ đề Điện tử tương tự', 'Bài 19 khuếch đại thuật toán, Bài 20 thực hành mạch khuếch đại đảo LM741')}
-      ${row('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21 cổng logic, Bài 22 mạch xử lí tín hiệu số, Bài 23 thực hành mạch báo cháy (mô hình 3D)')}
+      ${row('#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', 'Sơ đồ, cấu trúc hệ thống điện trong gia đình')}
+      ${row('#/k12b9', '💡', '', 'Bài 9. Thiết bị điện trong gia đình', 'Aptomat, cầu dao, công tơ, dây dẫn, ổ cắm, công tắc…')}
+      ${row('#/k12b10', '🛠️', 'amber', 'Bài 10. Thực hành lắp mạch điện trong gia đình', 'Thiết kế và lắp đặt mạch điện điều khiển trong gia đình')}
+      ${row('#/k12b15', '🔋', '', 'Bài 15. Điện trở, tụ điện và cuộn cảm', 'Cấu tạo, kí hiệu, số liệu kĩ thuật, công dụng')}
+      ${row('#/k12b16', '🔬', 'green', 'Bài 16. Diode, transistor và mạch tích hợp IC', 'Cấu tạo, nguyên lí, phân loại, ứng dụng')}
+      ${row('#/k12b17', '🧲', 'amber', 'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn', 'Lắp mạch phát hiện dòng điện')}
+      ${row('#/k12b19', '📈', 'green', 'Bài 19. Khuếch đại thuật toán', 'Mạch ứng dụng khuếch đại thuật toán')}
+      ${row('#/k12b20', '🎛️', '', 'Bài 20. Thực hành khuếch đại thuật toán', 'Thực hành mạch khuếch đại')}
+      ${row('#/k12b21', '🔌', 'amber', 'Bài 21. Tín hiệu số và các cổng logic cơ bản', 'Tín hiệu số, cổng logic cơ bản')}
+      ${row('#/k12b22', '🧮', '', 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', 'Mạch xử lí tín hiệu số')}
+      ${row('#/k12b23', '🔥', 'red', 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', 'Lắp ráp, kiểm tra mạch báo cháy')}
     </div>` : ''}
     <h2>Theo nội dung</h2><div class="rows">
       ${row('#/chude?by=bai', '📖', '', 'Theo bài học', 'Chọn bài trong SGK Lớp ' + (is12 ? '10, 11, 12' : g))}
@@ -1638,10 +1652,17 @@ const GV_APPS = k => {
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
     '11': [A('#/bai8', '🔩', 'blue', 'Bài 8. Một số phương pháp gia công cơ khí', 'Phương pháp tiện và phương pháp phay: mô hình 3D máy, dao cắt, chuyển động cắt, sản phẩm', 'GV·HS'),
       A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập', 'GV·HS')],
-    '12': [A('#/htdien', '🏠', 'green', 'Chủ đề Hệ thống điện gia đình', 'Bài 8, 9, 10: sơ đồ, thiết bị điện, lắp mạch điện trong nhà', 'GV·HS'),
-      A('#/linhkien', '🔋', '', 'Chủ đề Linh kiện điện tử', 'Bài 15, 16, 17: điện trở, tụ, cuộn cảm, diode, transistor, IC', 'GV·HS'),
-      A('#/dientutuongtu', '📈', 'green', 'Chủ đề Điện tử tương tự', 'Bài 19, 20: khuếch đại thuật toán, thực hành mạch khuếch đại đảo', 'GV·HS'),
-      A('#/dientuso', '🔌', 'amber', 'Chủ đề Điện tử số', 'Bài 21, 22, 23: cổng logic, mạch xử lí tín hiệu, mạch báo cháy 3D', 'GV·HS')]
+    '12': [A('#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', 'Sơ đồ, cấu trúc hệ thống điện trong gia đình', 'GV·HS'),
+      A('#/k12b9', '💡', '', 'Bài 9. Thiết bị điện trong gia đình', 'Aptomat, cầu dao, công tơ, dây dẫn, ổ cắm, công tắc…', 'GV·HS'),
+      A('#/k12b10', '🛠️', 'amber', 'Bài 10. Thực hành lắp mạch điện trong gia đình', 'Thiết kế và lắp đặt mạch điện điều khiển trong gia đình', 'GV·HS'),
+      A('#/k12b15', '🔋', '', 'Bài 15. Điện trở, tụ điện và cuộn cảm', 'Cấu tạo, kí hiệu, số liệu kĩ thuật, công dụng', 'GV·HS'),
+      A('#/k12b16', '🔬', 'green', 'Bài 16. Diode, transistor và mạch tích hợp IC', 'Cấu tạo, nguyên lí, phân loại, ứng dụng', 'GV·HS'),
+      A('#/k12b17', '🧲', 'amber', 'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn', 'Lắp mạch phát hiện dòng điện', 'GV·HS'),
+      A('#/k12b19', '📈', 'green', 'Bài 19. Khuếch đại thuật toán', 'Mạch ứng dụng khuếch đại thuật toán', 'GV·HS'),
+      A('#/k12b20', '🎛️', '', 'Bài 20. Thực hành khuếch đại thuật toán', 'Thực hành mạch khuếch đại', 'GV·HS'),
+      A('#/k12b21', '🔌', 'amber', 'Bài 21. Tín hiệu số và các cổng logic cơ bản', 'Tín hiệu số, cổng logic cơ bản', 'GV·HS'),
+      A('#/k12b22', '🧮', '', 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', 'Mạch xử lí tín hiệu số', 'GV·HS'),
+      A('#/k12b23', '🔥', 'red', 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', 'Lắp ráp, kiểm tra mạch báo cháy', 'GV·HS')]
   }[k];
   const hs = [
     ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
