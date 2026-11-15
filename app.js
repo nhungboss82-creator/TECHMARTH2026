@@ -783,7 +783,7 @@ const K12_TOPICS = {
   k12b22: { file: 'cn12_bai22.html', name: 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', k: '12' },
   k12b23: { file: 'cn12_bai23.html', name: 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', k: '12' }
 };
-const LESSON_V = '20261115b';
+const LESSON_V = '20261115c';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
@@ -826,10 +826,10 @@ route(/^\/onluyen$/, () => {
   setView(`<h1>Ôn luyện</h1><p class="sub">Chọn cách ôn phù hợp với em. Mọi bài đều chấm ngay và có giải thích.</p>
     ${g === '10' || is12 ? `<h2>Thư mục Khối 10</h2><div class="rows">
       ${row('#/tuluyenve', '📷', 'amber', 'Bài vẽ – AI chấm', 'Vẽ tay, chụp ảnh gửi lên – AI khoanh chỗ sai và hướng dẫn sửa')}
-      ${row('#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: chiếu góc thứ nhất, góc thứ ba, so sánh và luyện tập Hình 1, 2, 3, 4')}
-      ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D: hình cắt toàn bộ, một nửa, mặt cắt rời, mặt cắt chập')}
-      ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Vẽ từng bước: vuông góc đều, xiên góc cân; luyện tập đọc bản vẽ')}
-      ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
+      ${row('#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', '')}
+      ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', '')}
+      ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', '')}
+      ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', '')}
     </div>` : ''}
     ${g === '11' || is12 ? `<h2>Thư mục Khối 11</h2><div class="rows">
       ${row('#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', '')}
@@ -1649,10 +1649,10 @@ const GV_APPS = k => {
   const A = (href, ic, c, t, d, who) => ({ href, ic, c, t, d, who });
   const sgk = window.STC_SGK ? [A('#/sgk?k=' + k, '📘', '', 'Sách giáo khoa ' + k, 'Mở đúng bài để trình chiếu', 'GV·HS')] : [];
   const show = {
-    '10': [A('#/hcvg', '📐', 'amber', 'Bài 9. Hình chiếu vuông góc', 'Mô hình 3D: góc chiếu 1, góc chiếu 3, lật mặt phẳng', 'GV·HS'),
-      A('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', 'Cắt vật thể 3D, mặt cắt rời, mặt cắt chập', 'GV·HS'),
-      A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
-      A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
+    '10': [A('#/hcvg', '📐', 'amber', 'Bài 9. Hình chiếu vuông góc', '', 'GV·HS'),
+      A('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', '', 'GV·HS'),
+      A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', '', 'GV·HS'),
+      A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', '', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
     '11': [A('#/bai8', '🔩', 'blue', 'Bài 8. Một số phương pháp gia công cơ khí', '', 'GV·HS'),
       A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', '', 'GV·HS'),
