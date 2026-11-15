@@ -1667,6 +1667,8 @@ const GV_APPS = k => {
   const hs = [
     ...(k === '12' ? [A('#/thitn', '🎓', 'green', 'Bộ đề luyện thi TN THPT', 'Mỗi lần mở đảo câu và đáp án', 'HS')] : []),
     A('#/chude?by=bai&k=' + k, '📖', '', 'Ôn theo bài học', 'Câu hỏi từng bài SGK Lớp ' + k + ', chấm ngay', 'HS'),
+    ...(k === '12' ? [A('#/chude?by=bai&k=10', '📗', 'green', 'Ôn tập Khối 10', 'Trắc nghiệm theo từng bài SGK Lớp 10', 'HS'),
+      A('#/chude?by=bai&k=11', '📙', 'amber', 'Ôn tập Khối 11', 'Trắc nghiệm theo từng bài SGK Lớp 11', 'HS')] : []),
     ...(k === '10' ? [A('#/tuluyenve', '📷', 'violet', 'Bài vẽ – AI chấm (HS tự luyện)', 'Vẽ tay, chụp ảnh – AI khoanh lỗi, hướng dẫn sửa', 'HS'),
       A('#/gocchieu', '🎯', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết, xếp hình chiếu nhiều vật thể', 'HS')] : [])
   ];
