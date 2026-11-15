@@ -1289,7 +1289,7 @@ function qHtml(q, a, i, review) {
       let cls = '';
       if (review && v) cls = v === ans[k] ? ' right' : ' wrong';
       return `<div class="tfi${cls}"><div class="tx"><b class="k">${'abcd'[k]})</b>${sanitize(q.o[k])}</div>
-        <div class="tfb"><button class="d${v === 'Đ' ? ' on' : ''}" data-k="${k}" data-v="Đ" ${review ? 'disabled' : ''}>Đúng</button><button class="s${v === 'S' ? ' on' : ''}" data-k="${k}" data-v="S" ${review ? 'disabled' : ''}>Sai</button></div>
+        <div class="tfb"><button class="d${v === 'Đ' ? ' on' : ''}" data-k="${k}" data-v="Đ" ${review ? 'disabled' : ''} title="Đúng" aria-label="Đúng">Đ</button><button class="s${v === 'S' ? ' on' : ''}" data-k="${k}" data-v="S" ${review ? 'disabled' : ''} title="Sai" aria-label="Sai">S</button></div>
         ${review && review.showAns && v !== ans[k] ? `<div class="hint">Đáp án: <b>${ans[k] === 'Đ' ? 'Đúng' : 'Sai'}</b></div>` : ''}</div>`;
     }).join('') + '</div>';
   }

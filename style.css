@@ -218,6 +218,13 @@ img.f{display:inline-block;vertical-align:middle;margin:0 2px;background:#fff;bo
 .tf{display:flex;flex-direction:column;gap:9px;margin-top:16px}
 .tfi{border:1.5px solid var(--line2);border-radius:14px;padding:12px 14px}
 .tfi .tx{margin-bottom:8px;overflow-wrap:anywhere}
+/* Đúng/Sai gọn: nội dung bên trái, 2 ô Đ – S nhỏ bên phải */
+.tf{gap:7px}
+.tfi{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;padding:9px 10px 9px 14px}
+.tfi .tx{margin-bottom:0}
+.tfi .tfb{gap:6px}
+.tfi .tfb button{flex:0 0 auto;width:44px;min-height:38px;padding:0;font-size:16px}
+.tfi .hint{grid-column:1/-1;margin-top:4px}
 .tfi .tx b.k{color:var(--brand2);margin-right:4px}
 .tfb{display:flex;gap:8px}
 .tfb button{flex:1;border:1.5px solid var(--line2);background:var(--card);border-radius:10px;padding:8px;cursor:pointer;font-weight:700;min-height:42px}
