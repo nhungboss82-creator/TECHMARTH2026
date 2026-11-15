@@ -820,7 +820,7 @@ route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k12b8|k12b9|k12b10|k12b15|k12b16|k1
 /* ================= Trang Ôn luyện (gom mọi cách tự ôn) ================= */
 route(/^\/onluyen$/, () => {
   const g = getStudentGrade(), is12 = g === '12' || isGV();
-  const row = (href, ic, c, t, d, attrs = '') => `<${href ? `a href="${href}"` : `button ${attrs}`}><span class="ic ${c}">${ic}</span><span class="tx"><b>${t}</b><span>${d}</span></span><span class="chev">›</span></${href ? 'a' : 'button'}>`;
+  const row = (href, ic, c, t, d, attrs = '') => `<${href ? `a href="${href}"` : `button ${attrs}`}><span class="ic ${c}">${ic}</span><span class="tx"><b>${t}</b>${d ? `<span>${d}</span>` : ''}</span><span class="chev">›</span></${href ? 'a' : 'button'}>`;
   setView(`<h1>Ôn luyện</h1><p class="sub">Chọn cách ôn phù hợp với em. Mọi bài đều chấm ngay và có giải thích.</p>
     ${g === '10' || is12 ? `<h2>Thư mục Khối 10</h2><div class="rows">
       ${row('#/tuluyenve', '📷', 'amber', 'Bài vẽ – AI chấm', 'Vẽ tay, chụp ảnh gửi lên – AI khoanh chỗ sai và hướng dẫn sửa')}
@@ -1680,7 +1680,7 @@ const GV_APPS = k => {
   return [['🖥️ Trình chiếu trên lớp', k === '10' ? [...show, ...sgk, game] : k === '11' ? [game, ...show, ...sgk] : [game, ...show]],
     ['📚 Học sinh tự ôn luyện', hs], ['🧰 Công cụ cho giáo viên', gv]];
 };
-const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
+const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span><span class="tx"><b>${a.t}</b>${a.d ? `<span>${a.d}</span>` : ''}</span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}<span class="chev">›</span></a>`;
 /* lọc lớp theo trường (Quản trị viên thấy nhiều trường; chọn trường nào chỉ hiện lớp trường đó) */
 const schKey = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').replace(/^trường\s+/, '').replace(/^(thpt|thcs|ptdtnt|th)\s+/, '').trim();
 function gvSchool(cls) {
@@ -1699,7 +1699,7 @@ const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('m
 
 /* ================= Trang chủ Giáo viên (thiết kế lại 08/11/2026) ================= */
 const KHOI_INFO = { '10': { t: 'Khối 10', d: 'Thiết kế & vẽ kĩ thuật', ic: '📐', c: 'k10' }, '11': { t: 'Khối 11', d: 'Công nghệ cơ khí', ic: '⚙️', c: 'k11' }, '12': { t: 'Khối 12', d: 'Điện – điện tử', ic: '⚡', c: 'k12' } };
-const ghApp = a => `<a class="gh-app ${a.c || 'blue'}" href="${a.href}"><span class="gh-ic">${a.ic}</span><span class="gh-tx"><b>${a.t}</b><span>${a.d}</span></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}</a>`;
+const ghApp = a => `<a class="gh-app ${a.c || 'blue'}" href="${a.href}"><span class="gh-ic">${a.ic}</span><span class="gh-tx"><b>${a.t}</b>${a.d ? `<span>${a.d}</span>` : ''}</span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}</a>`;
 route(/^\/gv$/, async params => {
   if (!needGV()) return;
   const u = session.user;
