@@ -305,8 +305,8 @@ function renderNav(path) {
   const focus = /^\/(lambai|dangnhap|dangky|dangkygv|quenmk|doimk|cham\/)/.test(path) || (!session && !DEMO);
   document.body.classList.toggle('focus', focus);
   const items = isGV()
-    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -769,6 +769,8 @@ const K12_TOPICS = {
   tien: { file: 'cn11_bai8.html', hash: '#tien', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
   phay: { file: 'cn11_bai8.html', hash: '#phay', name: 'Bài 8. Một số phương pháp gia công cơ khí', k: '11' },
   quytrinh: { file: 'cn11_quytrinh.html', name: 'Bài 9. Quy trình công nghệ gia công chi tiết', k: '11' },
+  k11b18: { file: 'cn11_bai18.html', name: 'Bài 18. Nguyên lí làm việc của động cơ đốt trong', k: '11' },
+  k11b19: { file: 'cn11_bai19.html', name: 'Bài 19. Các cơ cấu trong động cơ đốt trong', k: '11' },
   k12b8: { file: 'cn12_bai8.html', name: 'Bài 8. Hệ thống điện trong gia đình', k: '12' },
   k12b9: { file: 'cn12_bai9.html', name: 'Bài 9. Thiết bị điện trong gia đình', k: '12' },
   k12b10: { file: 'cn12_bai10.html', name: 'Bài 10. Thực hành lắp mạch điện trong gia đình', k: '12' },
@@ -781,9 +783,9 @@ const K12_TOPICS = {
   k12b22: { file: 'cn12_bai22.html', name: 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', k: '12' },
   k12b23: { file: 'cn12_bai23.html', name: 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', k: '12' }
 };
-const LESSON_V = '20261115a';
+const LESSON_V = '20261115b';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
-route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$/, (params, key) => {
+route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
   const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : (T.hash || ''));
   const khoi = T.k || ((key === 'hcat' || key === 'hctd') ? '10' : '12');
@@ -830,8 +832,10 @@ route(/^\/onluyen$/, () => {
       ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: phối cảnh 1 điểm tụ, 2 điểm tụ, kéo đường chân trời')}
     </div>` : ''}
     ${g === '11' || is12 ? `<h2>Thư mục Khối 11</h2><div class="rows">
-      ${row('#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', 'Phương pháp tiện và phương pháp phay: mô hình 3D máy, dao cắt, chuyển động cắt, sản phẩm')}
-      ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập')}
+      ${row('#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', '')}
+      ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', '')}
+      ${row('#/k11b18', '🔥', 'red', 'Bài 18. Nguyên lí làm việc của động cơ đốt trong', '')}
+      ${row('#/k11b19', '⚙️', 'green', 'Bài 19. Các cơ cấu trong động cơ đốt trong', '')}
     </div>` : ''}
     ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
       ${row('#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', '')}
@@ -1650,8 +1654,10 @@ const GV_APPS = k => {
       A('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', 'Dựng hình từng bước: vuông góc đều, xiên góc cân', 'GV·HS'),
       A('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', 'Hiệu ứng điểm tụ: 1 điểm tụ, 2 điểm tụ', 'GV·HS'),
       A('#/hinhchieu', '🔄', '', 'Hình chiếu 3D', 'Xoay vật thể 360°, tìm hình chiếu đúng', 'GV·HS')],
-    '11': [A('#/bai8', '🔩', 'blue', 'Bài 8. Một số phương pháp gia công cơ khí', 'Phương pháp tiện và phương pháp phay: mô hình 3D máy, dao cắt, chuyển động cắt, sản phẩm', 'GV·HS'),
-      A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', 'Xưởng 3D: mặt bích (ví dụ mẫu), chốt (thực hành), phiếu quy trình, câu hỏi ôn tập', 'GV·HS')],
+    '11': [A('#/bai8', '🔩', 'blue', 'Bài 8. Một số phương pháp gia công cơ khí', '', 'GV·HS'),
+      A('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', '', 'GV·HS'),
+      A('#/k11b18', '🔥', 'red', 'Bài 18. Nguyên lí làm việc của động cơ đốt trong', '', 'GV·HS'),
+      A('#/k11b19', '⚙️', 'green', 'Bài 19. Các cơ cấu trong động cơ đốt trong', '', 'GV·HS')],
     '12': [A('#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', '', 'GV·HS'),
       A('#/k12b9', '💡', '', 'Bài 9. Thiết bị điện trong gia đình', '', 'GV·HS'),
       A('#/k12b10', '🛠️', 'amber', 'Bài 10. Thực hành lắp mạch điện trong gia đình', '', 'GV·HS'),
