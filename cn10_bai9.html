@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bài 9. Hình chiếu vuông góc – SmarttechCN 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* SmarttechCN 2026 – giao diện "giấy bản vẽ": xanh bản vẽ kĩ thuật + vàng an toàn xưởng cơ khí */
+:root{
+  --bg:#f3f6fa; --card:#ffffff; --ink:#132033; --muted:#5a6a80; --line:#e0e6ef; --line2:#cfd8e5;
+  --brand:#123a86; --brand2:#1f5bd6; --brand-ink:#ffffff; --info-soft:#e9f0fe;
+  --accent:#f2a516; --accent-soft:#fff3d6; --accent-ink:#3d2700;
+  --ok:#11845a; --ok-soft:#e3f5ec; --bad:#cf3f36; --bad-soft:#fdeceb;
+  --r:16px; --r-sm:12px; --r-lg:22px;
+  --shadow:0 1px 2px rgba(19,32,51,.05),0 6px 18px -8px rgba(19,32,51,.12);
+  --grid:rgba(255,255,255,.09);
+  --top:56px; --tab:66px;
+  --font:'Be Vietnam Pro',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1420; --card:#151f2e; --ink:#e7edf6; --muted:#97a6bb; --line:#243145; --line2:#2f3e55;
+  --brand:#0f2c66; --brand2:#6b9bff; --brand-ink:#0b1424; --info-soft:#18284a;
+  --accent:#f5b53b; --accent-soft:#3a2d12; --accent-ink:#2b1c00;
+  --ok:#3ec98f; --ok-soft:#123326; --bad:#ff7a70; --bad-soft:#3a1c1b;
+  --shadow:none; --grid:rgba(255,255,255,.07);
+ color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0d1420; --card:#151f2e; --ink:#e7edf6; --muted:#97a6bb; --line:#243145; --line2:#2f3e55;
+  --brand:#0f2c66; --brand2:#6b9bff; --brand-ink:#0b1424; --info-soft:#18284a;
+  --accent:#f5b53b; --accent-soft:#3a2d12; --accent-ink:#2b1c00;
+  --ok:#3ec98f; --ok-soft:#123326; --bad:#ff7a70; --bad-soft:#3a1c1b;
+  --shadow:none; --grid:rgba(255,255,255,.07);
+ color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.55}
+body{min-height:100vh;-webkit-tap-highlight-color:transparent}
+img{max-width:100%;height:auto}
+a{color:var(--brand2)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2.5px solid var(--brand2);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- Khung app: thanh trên + thanh điều hướng ---------- */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;height:calc(var(--top) + env(safe-area-inset-top));
+  padding:env(safe-area-inset-top) 16px 0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none;font-weight:800;font-size:17px;letter-spacing:-.2px}
+.brand img{width:30px;height:30px;border-radius:9px}
+.brand b{color:var(--brand2);font-weight:800;margin-left:2px}
+.top-right{display:flex;align-items:center;gap:10px}
+.net{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);font-weight:600}
+.net::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.net.off{color:#8a5a00}
+.net.off::before{background:var(--accent)}
+@media (prefers-color-scheme:dark){.net.off{color:var(--accent)}}
+.icon-btn{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--line2);background:var(--card);color:var(--brand2);font-weight:800;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.menu{position:fixed;right:12px;top:calc(var(--top) + env(safe-area-inset-top) + 6px);z-index:40;background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:0 18px 40px -12px rgba(19,32,51,.28);min-width:250px;padding:6px}
+.menu .who{padding:12px;border-bottom:1px solid var(--line);font-size:13.5px;color:var(--muted);margin-bottom:4px}
+.menu .who b{display:block;color:var(--ink);font-size:15.5px}
+.menu a,.menu button{display:block;width:100%;text-align:left;padding:10px 12px;border:0;background:none;border-radius:10px;text-decoration:none;color:var(--ink);cursor:pointer;font-size:15px}
+.menu a:hover,.menu button:hover{background:var(--info-soft)}
+.menu [data-out]{color:var(--bad)}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(4,1fr);height:calc(var(--tab) + env(safe-area-inset-bottom));
+  padding:4px 6px env(safe-area-inset-bottom);background:var(--card);border-top:1px solid var(--line)}
+.tabbar a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:11.5px;font-weight:600;border-radius:14px}
+.tabbar svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabbar a.on{color:var(--brand2)}
+.tabbar a.on .tico{background:var(--info-soft)}
+.tabbar .tico{display:flex;align-items:center;justify-content:center;width:52px;height:30px;border-radius:15px;transition:background .2s}
+.tabbar .dot{position:absolute;top:4px;left:calc(50% + 10px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--bad);color:#fff;font-size:10.5px;line-height:17px;text-align:center}
+body.focus .tabbar{display:none}
+body.focus .view{padding-bottom:28px}
+
+.view{max-width:880px;margin:0 auto;padding:16px 16px calc(var(--tab) + 34px)}
+@media (min-width:980px){
+  .tabbar{top:calc(var(--top) + env(safe-area-inset-top));bottom:0;right:auto;width:96px;height:auto;grid-template-columns:1fr;grid-auto-rows:78px;align-content:start;
+    padding:14px 8px;border-top:0;border-right:1px solid var(--line);background:transparent}
+  body:not(.focus) .view,body:not(.focus) .menu-shift{margin-left:max(112px,calc((100vw - 880px) / 2))}
+  .view{padding-bottom:40px}
+}
+.loading{padding:60px 0;text-align:center;color:var(--muted)}
+
+/* ---------- Chữ ---------- */
+h1{font-size:24px;margin:4px 0 6px;line-height:1.25;letter-spacing:-.4px;font-weight:800}
+h2{font-size:18px;margin:26px 0 10px;letter-spacing:-.2px;font-weight:700}
+h3{font-size:16px;margin:14px 0 6px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:14.5px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:26px 0 10px}
+.sechead h2{margin:0}
+.sechead a{font-size:14px;font-weight:600;text-decoration:none}
+
+/* ---------- Khối nội dung ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);margin-bottom:12px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.tile{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px;box-shadow:var(--shadow);cursor:pointer;text-align:left;width:100%;transition:border-color .15s,transform .15s}
+.tile:hover{border-color:var(--brand2)}
+.tile:active{transform:scale(.985)}
+.tile .ic{font-size:24px;width:44px;height:44px;border-radius:13px;background:var(--info-soft);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
+.tile b{font-size:15.5px}
+.tile span{color:var(--muted);font-size:13.5px}
+
+/* Thẻ chào – nền lưới giấy vẽ kĩ thuật (điểm nhấn của app) */
+.hero{position:relative;overflow:hidden;background-color:var(--brand);color:#fff;border-radius:var(--r-lg);padding:20px;margin-bottom:16px;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:40px 40px,40px 40px,8px 8px,8px 8px;background-position:-1px -1px}
+.hero h1{color:#fff}
+.hero .sub{color:rgba(255,255,255,.82);margin:0}
+.hero a{color:#fff}
+.stats{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.stat{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 12px;min-width:92px}
+.stat b{display:block;font-size:20px}
+.stat span{font-size:12px;opacity:.85}
+/* Đường kích thước: tiến độ mục tiêu trong ngày */
+.dim{margin-top:18px}
+.dim .lbl{display:flex;justify-content:space-between;font-size:12.5px;color:rgba(255,255,255,.85);margin-bottom:6px}
+.dim .lbl b{color:#fff;font-size:13.5px}
+.dim .line{position:relative;height:14px}
+.dim .line::before{content:"";position:absolute;left:0;right:0;top:6px;height:1.5px;background:rgba(255,255,255,.45)}
+.dim .line::after{content:"";position:absolute;left:0;right:0;top:0;bottom:0;border-left:1.5px solid rgba(255,255,255,.6);border-right:1.5px solid rgba(255,255,255,.6)}
+.dim .fill{position:absolute;left:0;top:4px;height:6px;border-radius:3px;background:var(--accent);max-width:100%;transition:width .6s}
+.greet{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.streak{flex:none;display:flex;align-items:center;gap:6px;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:6px 12px;font-weight:800;font-size:14px}
+
+/* Lối tắt trang chủ */
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (min-width:640px){.quick{grid-template-columns:repeat(6,1fr)}}
+.qa{display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 6px 12px;border-radius:var(--r);background:var(--card);border:1px solid var(--line);
+  text-decoration:none;color:var(--ink);font-size:13px;font-weight:600;text-align:center;line-height:1.25;cursor:pointer;transition:border-color .15s,transform .15s}
+.qa:hover{border-color:var(--brand2)}
+.qa:active{transform:scale(.97)}
+.qa .ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:23px;background:var(--info-soft)}
+.qa.amber .ic{background:var(--accent-soft)}
+.qa.green .ic{background:var(--ok-soft)}
+.qa.red .ic{background:var(--bad-soft)}
+
+/* Danh sách dạng hàng (trang Ôn luyện, Việc cần làm) */
+.rows{background:var(--card);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow)}
+.rows > a,.rows > button,.rows > .r{display:flex;align-items:center;gap:14px;width:100%;padding:13px 14px;text-decoration:none;color:var(--ink);background:none;border:0;
+  border-top:1px solid var(--line);text-align:left;cursor:pointer;font-size:15px}
+.rows > :first-child{border-top:0}
+.rows > a:hover,.rows > button:hover{background:var(--info-soft)}
+.rows .ic{flex:none;width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:21px;background:var(--info-soft)}
+.rows .ic.amber{background:var(--accent-soft)}
+.rows .ic.green{background:var(--ok-soft)}
+.rows .ic.red{background:var(--bad-soft)}
+.rows .tx{flex:1;min-width:0}
+.rows .tx b{display:block;font-weight:700}
+.rows .tx span{display:block;font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.rows .chev{color:var(--line2);font-size:22px;flex:none}
+.rows .go{flex:none}
+
+/* ---------- Nút & biểu mẫu ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:var(--r-sm);padding:11px 18px;cursor:pointer;
+  background:var(--brand2);color:#fff;font-weight:700;text-decoration:none;min-height:46px;transition:filter .15s,transform .1s}
+@media (prefers-color-scheme:dark){.btn{color:var(--brand-ink)}}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:var(--card);color:var(--brand2);border:1.5px solid var(--line2)}
+.btn.accent{background:var(--accent);color:var(--accent-ink)}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.sm{padding:6px 12px;min-height:36px;font-size:14px;border-radius:10px}
+.btn.block{width:100%}
+.btn.sm.on{background:var(--brand2);color:#fff;border-color:var(--brand2)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.end{justify-content:flex-end}
+.spacer{flex:1}
+label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+input[type=text],input[type=password],input[type=email],input[type=number],input[type=datetime-local],select,textarea{
+  width:100%;padding:11px 13px;border:1.5px solid var(--line2);border-radius:var(--r-sm);background:var(--card);min-height:46px}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px var(--info-soft)}
+.hint{font-size:13px;color:var(--muted);margin-top:4px}
+.tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--line);padding:4px;border-radius:14px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:1;border:0;background:transparent;padding:9px 12px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap;font-size:14.5px}
+.tabs button.on{background:var(--info-soft);color:var(--brand2)}
+.auth{max-width:440px;margin:8px auto}
+.err{background:var(--bad-soft);color:var(--bad);padding:10px 12px;border-radius:10px;font-size:14px;margin-top:10px}
+.okmsg{background:var(--ok-soft);color:var(--ok);padding:10px 12px;border-radius:10px;font-size:14px;margin-top:10px}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:999px;background:var(--info-soft);color:var(--brand2);font-weight:700}
+.pill.warn{background:var(--accent-soft);color:#7a4c00}
+@media (prefers-color-scheme:dark){.pill.warn{color:var(--accent)}}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;text-decoration:none;color:var(--ink)}
+a.item:hover{border-color:var(--brand2)}
+.item .meta{font-size:13px;color:var(--muted)}
+.item .grow{flex:1;min-width:0}
+.checks{display:flex;flex-wrap:wrap;gap:8px}
+.chk{display:flex;align-items:center;gap:8px;border:1.5px solid var(--line2);border-radius:var(--r-sm);padding:8px 12px;cursor:pointer;font-weight:500;font-size:14px;margin:0;background:var(--card)}
+.chk input{width:18px;height:18px;accent-color:var(--brand2)}
+.chk:has(input:checked){border-color:var(--brand2);background:var(--info-soft)}
+
+/* ---------- Làm bài ---------- */
+.qbar{position:sticky;top:calc(var(--top) + env(safe-area-inset-top));z-index:10;background:var(--bg);padding:10px 0;display:flex;align-items:center;gap:10px}
+.qbar .title{font-weight:700;font-size:15px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer{font-variant-numeric:tabular-nums;font-weight:800;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.timer.low{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.progress{height:6px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:12px}
+.progress i{display:block;height:100%;background:var(--brand2);transition:width .25s}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--shadow)}
+.qhead{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.qnum{font-weight:800;color:var(--brand2);font-size:15px}
+.stem{font-size:17px;line-height:1.6}
+.stem img.pic,.opt img.pic,.expl img.pic{display:block;margin:10px auto;border-radius:6px;background:#fff}
+img.f{display:inline-block;vertical-align:middle;margin:0 2px;background:#fff;border-radius:3px;max-width:100%}
+@media (prefers-color-scheme:dark){img.pic,img.f{filter:invert(.92) hue-rotate(180deg)}}
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.opt{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;background:var(--card);border:1.5px solid var(--line2);
+  border-radius:14px;padding:12px 14px;cursor:pointer;min-height:52px;transition:border-color .12s,background .12s}
+.opt:hover{border-color:var(--brand2)}
+.opt .L{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;background:var(--info-soft);color:var(--brand2)}
+.opt .tx{flex:1;padding-top:3px;min-width:0;overflow-wrap:anywhere}
+.opt.sel{border-color:var(--brand2);background:var(--info-soft)}
+.opt.sel .L{background:var(--brand2);color:#fff}
+.opt.right{border-color:var(--ok);background:var(--ok-soft)}
+.opt.right .L{background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .L{background:var(--bad);color:#fff}
+.tf{display:flex;flex-direction:column;gap:9px;margin-top:16px}
+.tfi{border:1.5px solid var(--line2);border-radius:14px;padding:12px 14px}
+.tfi .tx{margin-bottom:8px;overflow-wrap:anywhere}
+/* Đúng/Sai gọn: nội dung bên trái, 2 ô Đ – S nhỏ bên phải */
+.tf{gap:7px}
+.tfi{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;column-gap:12px;padding:9px 10px 9px 14px}
+.tfi .tx{margin-bottom:0}
+.tfi .tfb{gap:6px}
+.tfi .tfb button{flex:0 0 auto;width:44px;min-height:38px;padding:0;font-size:16px}
+.tfi .hint{grid-column:1/-1;margin-top:4px}
+.tfi .tx b.k{color:var(--brand2);margin-right:4px}
+.tfb{display:flex;gap:8px}
+.tfb button{flex:1;border:1.5px solid var(--line2);background:var(--card);border-radius:10px;padding:8px;cursor:pointer;font-weight:700;min-height:42px}
+.tfb button.on.d{background:var(--ok);border-color:var(--ok);color:#fff}
+.tfb button.on.s{background:var(--bad);border-color:var(--bad);color:#fff}
+.tfi.right{border-color:var(--ok);background:var(--ok-soft)}
+.tfi.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.nav{display:flex;gap:10px;margin-top:14px}
+.nav .btn{flex:1}
+.pal{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px;margin-top:16px}
+.pal button{border:1.5px solid var(--line2);background:var(--card);border-radius:10px;height:40px;cursor:pointer;font-weight:700;font-size:14px}
+.pal button.done{background:var(--info-soft);border-color:var(--brand2);color:var(--brand2)}
+.pal button.cur{outline:2.5px solid var(--accent);outline-offset:1px}
+.pal button.flag{background:var(--accent-soft);border-color:var(--accent)}
+.pal button.r{background:var(--ok-soft);border-color:var(--ok);color:var(--ok)}
+.pal button.w{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.secttl{font-size:14px;font-weight:700;color:var(--brand2);margin:16px 0 0}
+.expl{margin-top:12px;border-left:4px solid var(--accent);background:var(--accent-soft);padding:10px 12px;border-radius:0 12px 12px 0;font-size:15px}
+.expl.ans{border-color:var(--ok);background:var(--ok-soft)}
+.expl.ai{border-left-color:var(--brand2);background:var(--info-soft)}
+.expl b.t{display:block;margin-bottom:2px}
+
+/* ---------- Kết quả ---------- */
+.score{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.ring{--p:0;width:118px;height:118px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+  background:conic-gradient(var(--accent) calc(var(--p)*1%),rgba(255,255,255,.18) 0)}
+.ring div{width:94px;height:94px;border-radius:50%;background:var(--brand);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+.ring b{font-size:28px;line-height:1}
+.ring span{font-size:12px;opacity:.85}
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{font-size:12.5px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tr.me td{background:var(--accent-soft);font-weight:700}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.medal{font-size:18px}
+.empty{text-align:center;color:var(--muted);padding:28px 10px}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bar{display:grid;grid-template-columns:minmax(120px,40%) 1fr 44px;gap:10px;align-items:center;font-size:14px}
+.bar .tr{height:10px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar .tr i{display:block;height:100%;background:var(--bad)}
+.bar .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+.kpi b{display:block;font-size:22px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:22px;font-weight:800;letter-spacing:3px;color:var(--brand2)}
+.toast{position:fixed;left:50%;bottom:calc(var(--tab) + 18px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(200px);background:#132033;color:#fff;padding:11px 18px;
+  border-radius:12px;z-index:50;transition:transform .25s;max-width:calc(100% - 32px);font-size:14.5px;box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.preview{border:1px dashed var(--line2);border-radius:12px;padding:12px;margin-top:8px}
+.demo{background:var(--accent-soft);border:1px solid var(--accent);border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:14px}
+@media (max-width:520px){
+  .view{padding:12px 14px calc(var(--tab) + 30px)}
+  h1{font-size:22px}
+  .stem{font-size:16.5px}
+}
+
+/* ---------- Tự luận, chọn dạng câu, bài được giao ---------- */
+textarea.essay{width:100%;min-height:170px;margin-top:12px;line-height:1.6;font-size:16px}
+.essay-ans{margin-top:10px;padding:10px 12px;border:1px dashed var(--line2);border-radius:12px;white-space:pre-wrap;background:var(--bg)}
+.essay-ans .lbl{font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:4px;white-space:normal}
+.ok-list{margin-top:6px;color:var(--ok);font-size:14.5px}
+.miss-list{margin-top:4px;color:var(--bad);font-size:14.5px}
+.card.note{background:var(--accent-soft);border-color:transparent;font-size:15px;box-shadow:none}
+.typegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:4px}
+.tycard{display:flex;flex-direction:column;gap:2px;padding:12px;border:1.5px solid var(--line2);border-radius:14px;cursor:pointer;background:var(--card);position:relative}
+.tycard input{position:absolute;opacity:0;pointer-events:none}
+.tycard .ic{font-size:22px}
+.tycard.on{border-color:var(--brand2);background:var(--info-soft)}
+.tycard.none{opacity:.6}
+.tycard:focus-within{outline:2px solid var(--brand2);outline-offset:2px}
+.pickinfo{margin-top:12px;padding:9px 12px;border-radius:12px;background:var(--info-soft);font-size:14.5px}
+.asgtabs button{display:flex;align-items:center;justify-content:center;gap:6px}
+.asgtabs .badge{background:var(--bad);color:#fff;border-radius:20px;font-size:12px;padding:0 7px;line-height:18px}
+.asgtabs .cnt{font-size:12px;color:var(--muted);font-weight:500}
+.sgklink{display:inline-block;margin-top:8px;font-size:14.5px;font-weight:600;text-decoration:none}
+.sgklink:hover{text-decoration:underline}
+.pdfbar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.pdfbar select{min-width:0;flex:1}
+.pdfbar .pg{display:flex;align-items:center;gap:6px;font-size:14.5px}
+.pdfbar .pg input{width:64px;padding:6px 8px}
+.pdfwrap{background:#e6ebf2;border-radius:var(--r);overflow:auto;min-height:60vh;text-align:center;padding:6px;touch-action:pan-y pinch-zoom}
+.pdfwrap canvas{display:block;margin:0 auto;background:#fff;box-shadow:var(--shadow)}
+.pdfwrap .hint{padding:10px}
+@media (prefers-color-scheme:dark){.pdfwrap{background:#0a111c}}
+.pdfwrap.drive{padding:0;min-height:0;height:72vh}
+.pdfwrap.drive iframe{width:100%;height:100%;border:0;border-radius:var(--r);background:#fff}
+.pagehint{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.pagehint .btn{margin-left:auto}
+@media (max-width:520px){.asgtabs button{font-size:13px;padding:8px 6px}}
+
+/* Trang tự chọn ôn luyện: nút bắt đầu ở trên, danh sách bài gọn */
+.startbar{position:sticky;top:calc(var(--top) + env(safe-area-inset-top));z-index:9;display:flex;gap:10px;align-items:center;background:var(--bg);padding:8px 0 10px;margin-bottom:6px}
+.startbar .pickinfo{margin:0;font-size:13px;padding:8px 10px;line-height:1.35}
+.startbar .btn{white-space:nowrap;flex:none}
+.lessonlist{display:flex;flex-direction:column;gap:3px;margin-top:6px;max-height:min(46vh,420px);overflow:auto;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--card)}
+.lchk{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;line-height:1.3;margin:0}
+.lchk input{width:16px;height:16px;flex:none;accent-color:var(--brand2)}
+.lchk .n{font-size:11.5px;color:var(--muted);flex:none}
+.lchk:has(input:checked){background:var(--info-soft);color:var(--brand2)}
+.lchk:hover{background:var(--info-soft)}
+.list.compact .item{padding:8px 12px;gap:8px}
+.list.compact .item b{font-size:14px}
+.list.compact .item .meta{font-size:12px}
+.list.compact .item{flex-wrap:wrap;row-gap:6px}
+.list.compact .item .grow{flex:1 1 220px;min-width:0}
+.list.compact .item>.row{margin-left:auto;gap:6px;flex-wrap:nowrap}
+.list.compact .item .btn.sm{padding:6px 10px;font-size:13px}
+/* Bảng điểm lớp */
+.bdgrp{margin-top:10px}
+.bdhead{background:var(--info-soft);font-size:13.5px}
+.bdtable th,.bdtable td{font-size:13px;padding:6px 8px;white-space:nowrap}
+.bdtable td:nth-child(2),.bdtable th:nth-child(2){position:sticky;left:0;background:var(--card);z-index:1}
+/* Giao bài: số câu theo mức, bảng ma trận theo bài */
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:6px}
+.lvgrid label{margin-top:6px}
+.lvgrid .hint{display:block;margin-top:2px}
+.mttable{font-size:13.5px}
+.mttable td,.mttable th{padding:4px 6px;vertical-align:middle}
+.mttable td:first-child{min-width:180px;line-height:1.3}
+.mttable input{width:52px;padding:5px 4px;text-align:center;font-size:14px;min-height:0}
+.mttable input.over{border-color:var(--bad);background:var(--bad-soft)}
+.mttable small{display:block;color:var(--muted);font-size:11px}
+.mttable tr.on td{background:var(--info-soft)}
+.mttable tfoot th{border-top:2px solid var(--line2);font-size:14px}
+@media (max-width:560px){.mttable td:first-child{min-width:130px}.mttable input{width:42px}}
+/* Xem trước đề + mã QR bài giao */
+.pvq{padding:8px 0;border-bottom:1px solid var(--line)}
+.pvq:last-child{border-bottom:0}
+.pvq .q{margin:0}
+.pvq .ops{display:grid;grid-template-columns:1fr 1fr;gap:2px 16px;margin-top:4px}
+.pvq img{max-width:100%;max-height:260px}
+.pvact{display:flex;gap:4px;flex-shrink:0}
+.sec{margin:12px 0 4px}
+.qrbox{width:190px;flex-shrink:0;background:#fff;padding:6px;border-radius:10px;border:1px solid var(--line)}
+.qrbox svg{width:100%;height:auto;display:block}
+.qrcard.fresh{border-color:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)}
+.qrfull{position:fixed;inset:0;z-index:999;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px}
+.qrfull h2{font-size:clamp(20px,4vw,40px);margin:0 0 4px}.qrfull p{font-size:clamp(14px,2.4vw,24px);margin:0 0 10px;color:#333}
+.qrfull .qrbig svg{width:min(78vh,90vw);height:min(78vh,90vw)}
+@media (max-width:560px){.pvq .ops{grid-template-columns:1fr}.qrbox{width:150px}}
+.pvq>.row{flex-wrap:nowrap}.pvq .grow{min-width:0}
+.qrcard>.row{flex-wrap:nowrap}.qrcard .grow{min-width:0;flex:1}@media (max-width:560px){.qrcard>.row{flex-wrap:wrap}}
+/* AI soạn câu hỏi + AI phân tích kết quả */
+.aiq textarea,.aiq input[type=text]{width:100%}
+.aiq.saved{opacity:.65;border-color:var(--ok)}
+.aio{margin-top:6px}
+.aicard{border-color:var(--brand2);background:linear-gradient(0deg,var(--card),var(--info-soft))}
+.airep h3{margin:14px 0 6px}
+.airep ul,.airep ol{margin:4px 0 8px;padding-left:22px}
+.aigrp{padding:8px 10px;border-radius:10px;margin:6px 0;border:1px solid var(--line)}
+.aigrp.bad{background:var(--bad-soft)}.aigrp.ok{background:var(--ok-soft)}.aigrp.mid{background:var(--info-soft)}
+.aigrp .hint span{opacity:.75;font-size:12px}
+.aisai li{margin:6px 0}
+.aio label.row,.aio .row{display:flex;flex-wrap:nowrap;margin:3px 0}.aio .row input{min-width:0}
+.herosub{font-size:14px;line-height:1.45}.herosub b{display:block;font-size:15px}.herosub span{display:block;font-size:12.5px;opacity:.85;margin-top:2px}
+/* Bộ đề luyện thi TN THPT */
+.degrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.decard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;border-left:5px solid var(--line2)}
+.decard.good{border-left-color:var(--ok)}.decard.ok{border-left-color:#e0a800}.decard.low{border-left-color:var(--bad)}
+.deno{min-width:44px;height:44px;border-radius:12px;background:var(--info-soft);color:var(--brand2);font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;margin-right:10px}
+.decard>.row:first-child{flex-wrap:nowrap}.decard .grow{min-width:0}
+/* GV quản lý đề luyện thi TN */
+.detable tr.click{cursor:pointer}.detable tr.click:hover td{background:var(--info-soft)}.detable tr.muted td{color:var(--muted)}
+.stuans{display:flex;flex-wrap:wrap;gap:6px}
+.stuans .sa{font-size:13px;padding:4px 8px;border-radius:8px;border:1px solid var(--line);background:var(--card)}
+.stuans .sa.ok{border-color:var(--ok);background:var(--ok-soft)}.stuans .sa.bad{border-color:var(--bad);background:var(--bad-soft)}.stuans .sa.skip{opacity:.6}
+.stuans .sa i{font-style:normal;color:var(--muted)}
+/* Trò chơi góc chiếu */
+.gcwrap{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.gcgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:520px;margin:12px auto 0;align-items:center}
+.gcslot{min-height:110px;border:2px dashed var(--line2);border-radius:12px;background:var(--card);display:flex;align-items:center;justify-content:center;padding:6px;cursor:pointer}
+.gcslot.can{border-color:var(--brand2);background:var(--info-soft)}
+.gcslot.ok{border:3px solid var(--ok);background:var(--ok-soft)}.gcslot.bad{border:3px solid var(--bad);background:var(--bad-soft)}
+.gcfront{display:flex;flex-direction:column;align-items:center;gap:4px;border:2px solid #e53935;border-radius:12px;padding:6px;background:#fff}
+.gcfront span{font-size:12px;font-weight:700;color:#e53935}
+.gccard{border:2px solid var(--line);border-radius:12px;background:#fff;padding:6px;cursor:pointer}
+.gccard.on{border-color:var(--brand2);box-shadow:0 0 0 3px var(--info-soft)}
+.gcslot svg,.gccard svg,.gcfront svg{max-width:100%;height:auto}
+.gcpick{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.gcpick button{border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13.5px;cursor:pointer}
+.gcpick button.on{background:var(--brand2);border-color:var(--brand2);color:#fff}
+.gcbig{max-width:100%;height:auto;border-radius:10px;background:#fff}
+.gcimgs{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:flex-end}
+.gcimgs figure{margin:0;text-align:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px}
+.gcimgs img{max-height:170px;max-width:220px;height:auto;width:auto;display:block}
+.gcimgs figcaption{font-weight:700;font-size:13px;margin-top:4px;color:#334}
+/* ---- Khối 10 · Hình chiếu vuông góc ---- */
+.hc3d{display:block;width:100%;height:380px;border-radius:14px;background:radial-gradient(circle at 50% 35%,#ffffff 0%,#eef3fb 60%,#dfe8f5 100%);border:1px solid var(--line);touch-action:none;cursor:grab;margin-top:10px}
+.hc3d:active{cursor:grabbing}
+.hc3d:fullscreen{height:100vh;border-radius:0}
+.hcsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.hcsteps button{border:2px solid var(--line);background:var(--card);border-radius:10px;padding:8px 6px;font-weight:700;font-size:13px;cursor:pointer;color:var(--muted);line-height:1.25}
+.hcsteps button.on{border-color:#e89a2c;background:#fff4e2;color:#9a5b00}
+.hclayout{display:grid;grid-template-columns:repeat(2,auto);gap:10px;justify-content:center;align-items:end;margin-top:10px}
+.hclayout>div:nth-child(odd){justify-self:end}.hclayout>div:nth-child(even){justify-self:start}
+.hclayout.m1>div:nth-child(1),.hclayout.m1>div:nth-child(2){align-self:end}.hclayout.m1>div:nth-child(3){align-self:start}
+.hclayout.m3>div:nth-child(2){align-self:end}.hclayout.m3>div:nth-child(3),.hclayout.m3>div:nth-child(4){align-self:start}
+.hccell{position:relative;background:#fff;border:2px solid #cbd5e1;border-radius:12px;padding:20px 6px 6px}
+.hccell.hc-front{border-color:#e53935}.hccell.hc-top{border-color:#1e63d6}.hccell.hc-side{border-color:#c026d3}
+.hctag{position:absolute;top:-11px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff;font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px}
+.hctag.hc-front{background:#e53935}.hctag.hc-top{background:#1e63d6}.hctag.hc-side{background:#c026d3}
+.hccell svg{display:block;max-width:100%;height:auto}
+.hccompare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.hcpractice{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:10px}
+@media (max-width:720px){.hccompare,.hcpractice{grid-template-columns:1fr}.hcsteps{grid-template-columns:repeat(2,minmax(0,1fr))}.hc3d{height:320px}}
+.k10nav{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
+.k10nav a{font-size:13px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);text-decoration:none}
+.k10nav a.on{background:#fff4e2;border-color:#e89a2c;color:#9a5b00}
+.hcfigs{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:12px}
+.hcfig{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px;max-width:100%}
+.hcfig figcaption{font-size:13px;color:#334155;text-align:center}
+.hcopts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.hcopts.td{grid-template-columns:repeat(3,minmax(0,1fr))}
+.hcopts.txt{grid-template-columns:1fr 1fr}
+.hcopt{position:relative;border:2px solid var(--line);border-radius:12px;background:#fff;padding:22px 6px 6px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:60px;font-size:15px;color:#0f172a;text-align:left}
+.hcopt svg{max-width:100%;height:auto}
+.hcopt:hover:not([disabled]){border-color:var(--brand2)}
+.hcopt.ok{border:3px solid var(--ok);background:var(--ok-soft)}.hcopt.bad{border:3px solid var(--bad);background:var(--bad-soft)}
+.hcoptl{position:absolute;top:4px;left:8px;font-weight:800;color:var(--muted);font-size:13px}
+@media (max-width:720px){.hcopts{grid-template-columns:1fr 1fr}.hcopts.td{grid-template-columns:1fr}.hcopts.txt{grid-template-columns:1fr}}
+/* ---- Trang chủ GV ---- */
+.gvbig{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gvbig a{display:flex;flex-direction:column;gap:4px;border:1px solid var(--line);background:var(--card);border-radius:var(--r);padding:16px;text-decoration:none;color:var(--text)}
+.gvbig a:hover{border-color:var(--brand2)}
+.gvbig a .ic{font-size:30px;line-height:1}
+.gvbig a b{font-size:19px}
+.gvbig a span:not(.ic){color:var(--muted);font-size:13.5px}
+.gvbig a.big{background:linear-gradient(135deg,#e8f1ff,#fff);border-color:#bcd3f5}
+.gvbig a.big.green{background:linear-gradient(135deg,#e5f6ee,#fff);border-color:#b6e2cb}
+.gvbig a.sm{flex-direction:row;align-items:center;gap:10px;padding:12px 16px}
+.gvbig a.sm .ic{font-size:22px}.gvbig a.sm b{font-size:15.5px}
+.appgrp h3{margin:14px 0 8px;font-size:15px;color:var(--muted)}
+.apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.app{position:relative;display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--card);border-radius:var(--r);padding:12px 12px;text-decoration:none;color:var(--text)}
+.app:hover{border-color:var(--brand2)}
+.app .ic{flex:none;width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--info-soft)}
+.app .ic.green{background:var(--ok-soft)}.app .ic.amber{background:#fff4e2}.app .ic.red{background:var(--bad-soft)}
+.app .tx{display:flex;flex-direction:column;min-width:0;padding-right:38px}
+.app .tx b{font-size:14.5px}.app .tx span{font-size:12.5px;color:var(--muted)}
+.who{display:inline-block;font-size:10.5px;font-weight:800;padding:2px 6px;border-radius:6px;background:#ede9fe;color:#6d28d9;white-space:nowrap}
+.app .who{position:absolute;top:8px;right:8px}
+.who.gv{background:#dbeafe;color:#1d4ed8}.who.hs{background:#dcfce7;color:#15803d}
+@media (max-width:520px){.gvbig a.big b{font-size:17px}}
+.applist a .who{margin-left:6px;flex:none}
+.applist a .ic.red{background:var(--bad-soft)}
+.pcdefs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pcdefs>div{background:var(--bg,#f8fafc);border:1px solid var(--line);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.5}
+@media (max-width:720px){.pcdefs{grid-template-columns:1fr}}
+/* gọn cho thư mục Khối 10 */
+.k10nav{display:flex;flex-wrap:nowrap;gap:6px;margin:0 0 8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.k10nav::-webkit-scrollbar{display:none}
+.k10nav a{flex:none;font-size:13px;font-weight:600;padding:5px 11px;white-space:nowrap}
+.k10nav a b{font-weight:800}
+.k10nav a.k10back{font-size:16px;padding:3px 11px;color:var(--brand2)}
+.gcpick.compact{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 8px}
+.gcpick.compact button{padding:5px 11px;font-size:13px;border-radius:999px}
+.gcpick.compact .pill{align-self:center;margin-left:auto}
+.gvhello{display:flex;flex-direction:column;gap:2px;margin:2px 2px 12px}
+.gvhello b{font-size:19px}.gvhello span{color:var(--muted);font-size:13.5px}
+.gvsec{border:1px solid var(--line);background:var(--card);border-radius:var(--r);margin-bottom:10px;overflow:hidden}
+.gvsech{display:flex;align-items:center;gap:12px;width:100%;border:0;background:transparent;padding:14px 16px;cursor:pointer;text-align:left;color:var(--text)}
+.gvsech .ic{flex:none;width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--info-soft)}
+.gvsech .tx{display:flex;flex-direction:column;flex:1;min-width:0}
+.gvsech .tx b{font-size:17px}.gvsech .tx span{font-size:13px;color:var(--muted)}
+.gvsech .chev{font-size:18px;color:var(--muted)}
+.gvsec.open .gvsech{border-bottom:1px solid var(--line)}
+.gvsecb{padding:10px 12px 12px}
+.gvsecb .rows{margin:0}
+.gvkhoi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.gvkhoi button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:12px 6px;font-weight:800;font-size:15.5px;cursor:pointer;color:var(--text)}
+.gvkhoi button.on{border-color:var(--brand2);background:var(--info-soft);color:var(--brand2)}
+.gvsecb .appgrp .applist a{padding-top:9px;padding-bottom:9px}
+.gvsecb .appgrp .applist a .tx>span{display:none}
+.gvsecb .appgrp .applist a .ic{width:36px;height:36px;font-size:19px}
+.gvsecb .appgrp h3{margin:12px 2px 6px}
+/* danh sách hình ở cột trái */
+.k10wrap{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px;align-items:start}
+.k10side{position:sticky;top:70px;max-height:calc(100vh - 150px);overflow-y:auto;scrollbar-width:thin}
+.k10side .gcpick.compact{flex-direction:column;flex-wrap:nowrap;gap:4px;margin:0}
+.k10side .gcpick.compact button{width:100%;text-align:left;border-radius:10px;padding:6px 10px;white-space:normal;line-height:1.3}
+.k10side .gcpick.compact .pill{margin:4px 0 0}
+.k10main>.card:first-child,.k10main>.qbar:first-child{margin-top:0}
+@media (max-width:760px){
+  .k10wrap{grid-template-columns:1fr;gap:6px}
+  .k10side{position:static;max-height:none;overflow-x:auto;overflow-y:hidden}
+  .k10side .gcpick.compact{flex-direction:row;flex-wrap:nowrap}
+  .k10side .gcpick.compact button{width:auto;white-space:nowrap}
+}
+.hczw{position:relative}
+.hczb{position:absolute;right:10px;bottom:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+.hczb button{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.92);font-size:20px;font-weight:800;color:#1e3a8a;cursor:pointer;box-shadow:0 2px 6px rgba(15,23,42,.12)}
+.hczb button:hover{background:#fff;border-color:var(--brand2)}
+.knlist{margin:4px 0 8px;padding-left:22px;line-height:1.6}
+.kndef{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kndef>div{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:9px 12px;line-height:1.5}
+@media (max-width:640px){.kndef{grid-template-columns:1fr}}
+.gcpick.compact .pkh{font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:6px 2px 0}
+@media (max-width:760px){.gcpick.compact .pkh{align-self:center;margin:0 2px}}
+.hcpractice.tdgrid{grid-template-columns:minmax(0,5fr) minmax(0,7fr)}
+.k10main .hcsteps button{font-size:12.5px;padding:7px 4px}
+@media (max-width:1100px){.k10main .hcpractice.tdgrid{grid-template-columns:1fr}}
+.gvtop{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}
+.gvtop .gvhello{flex:1;margin-bottom:0}
+.gvvisit{flex:none;text-align:right;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:7px 12px;font-size:13.5px;line-height:1.3}
+.gvvisit b{font-size:16px;color:var(--brand2)}
+.gvvisit small{display:block;color:var(--muted);font-size:12px}
+.modal-ov{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal-box{background:var(--card);border-radius:16px;padding:16px;max-width:620px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal-box .item{gap:6px;align-items:center}
+tr.duprow td{background:#fff7ed}
+.warnbtn{background:#f59e0b;border-color:#f59e0b}
+.bdnames{margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.bdnames summary{cursor:pointer}
+.bdngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-top:8px}
+.bdngrid label{display:flex;flex-direction:column;gap:2px;margin:0}
+.bdngrid .hint{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+a.bdcell{font-weight:600;text-decoration:none;border-bottom:1px dashed var(--brand2)}
+.hsstat{display:flex;flex-wrap:wrap;gap:6px 14px;margin:10px 0 4px;font-size:13.5px;color:rgba(255,255,255,.9)}
+.hsstat b{color:#fff;font-size:15px}
+
+/* Khối 12 · Chủ đề Điện tử số: trang rộng, bài học chiếm hết phần còn lại */
+.view.wide{max-width:none;padding-bottom:0}
+@media (min-width:980px){body:not(.focus) .view.wide{margin-left:112px;margin-right:12px}}
+.dtsnav{margin:0 0 8px}
+.dtsframe{display:block;width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+
+/* Hỗ trợ dạy học: các nhóm con thu gọn được */
+.gvsecb .appgrp.fold{border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden;background:var(--card)}
+.appgrph{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:11px 14px;cursor:pointer;text-align:left;color:var(--text);font:inherit}
+.appgrph .t{flex:1;min-width:0;font-weight:800;font-size:15px}
+.appgrph .n{flex:none;font-size:12px;font-weight:800;min-width:24px;padding:2px 8px;border-radius:999px;background:var(--info-soft);color:var(--brand2);text-align:center}
+.appgrph .chev{flex:none;font-size:16px;color:var(--muted);width:14px;text-align:center}
+.appgrph:hover{background:var(--info-soft)}
+.appgrph:focus-visible{outline:2px solid var(--brand2);outline-offset:-2px}
+.appgrp.fold.open .appgrph{border-bottom:1px solid var(--line)}
+.gvsecb .appgrp.fold .rows{margin:0;border:0;border-radius:0;box-shadow:none}
+
+/* Chủ đề bài học: mở toàn màn hình, không khoảng trắng; chỉ còn nút quay lại nhỏ ở góc dưới trái */
+body.immersive .top,body.immersive .tabbar,body.immersive #menu{display:none!important}
+body.immersive{overflow:hidden}
+body.immersive .view{position:fixed;inset:0;max-width:none;margin:0!important;padding:0!important;z-index:30;background:var(--bg)}
+.lessonfull{position:absolute;inset:0;width:100%;height:100%;border:0;display:block;background:#fff}
+.lessonback{position:fixed;left:env(safe-area-inset-left,0px);top:50%;transform:translateY(-50%);z-index:40;width:18px;height:64px;border-radius:0 10px 10px 0;
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;text-decoration:none;color:#fff;background:rgba(18,58,134,.78);
+  box-shadow:0 2px 10px rgba(0,0,0,.2);opacity:.45;transition:opacity .15s,width .15s}
+.lessonback:hover,.lessonback:focus-visible{opacity:1;width:34px;outline:none}
+
+/* ===== Cập nhật 08/11/2026 ===== */
+.lessonhint{position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:41;background:rgba(11,20,36,.82);color:#fff;font-size:13.5px;padding:7px 14px;border-radius:999px;pointer-events:none;transition:opacity .6s}
+.lessonhint kbd{font:600 12px ui-monospace,Consolas,monospace;border:1px solid rgba(255,255,255,.5);border-radius:4px;padding:0 5px;margin:0 2px}
+.lessonhint.off{opacity:0}
+.kbd{font:600 11.5px/1.4 ui-monospace,Consolas,monospace;border:1px solid var(--line2,#cbd5e1);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--card,#fff)}
+.auth.auth-wide{max-width:640px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.school-k{margin-top:6px}
+.roster{margin-top:10px}
+.roster-tools{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.roster-tools .grow{flex:1}
+.roster-wrap{max-height:380px;overflow:auto;border:1px solid var(--line2,#cbd5e1);border-radius:12px}
+.roster-t{width:100%;border-collapse:collapse}
+.roster-t th{position:sticky;top:0;background:var(--info-soft,#e9f0fe);color:var(--brand2,#1f5bd6);font-size:13px;text-align:left;padding:8px 10px;z-index:1}
+.roster-t th.n,.roster-t td.n{width:56px;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.roster-t td{border-top:1px solid var(--line2,#cbd5e1);padding:0}
+.roster-t td.n{padding:0 6px;font-size:13px}
+.roster-t input{border:0;border-radius:0;margin:0;width:100%;min-height:38px;padding:6px 10px;background:transparent;box-shadow:none}
+.roster-t input:focus{background:var(--info-soft,#e9f0fe);box-shadow:none}
+.brand .noibo{font-size:11px;font-weight:600;color:var(--muted);margin-left:8px;align-self:center;white-space:nowrap;letter-spacing:.01em}
+@media (max-width:480px){.brand .noibo{font-size:9.5px;margin-left:6px;white-space:normal;flex:none;width:50px;line-height:1.15}.net:not(.off){font-size:0;gap:0}}
+
+/* ===== Bài vẽ – AI chấm (08/11/2026): đề | bài làm | nhận xét ===== */
+body.wide .view{max-width:1360px}
+.imgdrop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:120px;border:2px dashed var(--line2);border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:var(--card);position:relative;margin:4px 0 8px}
+.imgdrop:hover,.imgdrop:focus-visible,.imgdrop.over{border-color:var(--brand2);background:var(--info-soft);outline:none}
+.imgdrop .imgdrop-ic{font-size:26px}
+.imgdrop.has{padding:6px;border-style:solid}
+.imgdrop img{max-width:100%;max-height:320px;border-radius:8px;display:block}
+.imgdrop-x{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;border:0;background:rgba(15,23,42,.75);color:#fff;cursor:pointer;font-size:14px}
+.imgdrop-lite{min-height:70px}
+.imgdrop-lite img{max-height:360px}
+.de-img{max-width:100%;max-height:340px;border-radius:10px;border:1px solid var(--line);display:block;margin:6px 0 8px}
+@media (min-width:900px){.hs-draw{display:grid;grid-template-columns:1.2fr 1fr;gap:14px;align-items:start}.hs-draw>.card{margin:0}}
+.rv{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) minmax(220px,.75fr);gap:12px;align-items:start}
+.rv-col{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+.rv-h{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rv-de img{width:100%;border-radius:8px;border:1px solid var(--line);display:block;margin-bottom:6px}
+.rv-txt{white-space:pre-wrap;font-size:14px}
+.rv-stage{position:relative;line-height:0}
+.rv-stage img{width:100%;border-radius:8px;display:block}
+.rv-stage.marking{cursor:crosshair}
+.mk{position:absolute;line-height:1;pointer-events:auto}
+.mk.ai{border:2.5px solid #e11d48;border-radius:8px;box-shadow:0 0 0 2px rgba(255,255,255,.7)}
+.mk.ai span,.mk.gv span{position:absolute;top:-11px;left:-11px;min-width:22px;height:22px;border-radius:11px;background:#e11d48;color:#fff;font:800 12px/22px system-ui,sans-serif;text-align:center;padding:0 4px}
+.mk.gv{width:0;height:0}
+.mk.gv span{background:#7c3aed;top:-11px;left:-11px;box-shadow:0 0 0 2px #fff}
+.rv-nx{font-size:13.5px;max-height:78vh;overflow:auto}
+.rv-score{font-size:13px;color:var(--muted);margin-bottom:6px}
+.rv-score b{font-size:18px;color:var(--ink,inherit)}
+.rv-score.ok b{color:var(--ok)}
+.rv-verdict{font-weight:800;padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:14px}
+.rv-verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.rv-verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.rv-p{margin:4px 0;line-height:1.45}
+.rv-sec{font-weight:800;font-size:12.5px;margin:10px 0 4px}
+.rv-errs{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.rv-errs li{display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.rv-n{flex:none;min-width:20px;height:20px;border-radius:10px;background:#e11d48;color:#fff;font:800 11.5px/20px system-ui,sans-serif;text-align:center;padding:0 4px}
+.rv-n.gv{background:#7c3aed}
+.rv-fix{color:var(--ok);font-weight:600;margin-top:2px}
+.rv-minus{color:var(--bad)}
+.rv-det summary{cursor:pointer;font-weight:700;font-size:12.5px;margin-top:8px}
+.rv-det ul{margin:4px 0;padding-left:18px}
+.rv-mk{display:flex;gap:6px;align-items:center;margin:4px 0}
+.rv-mk input{margin:0;padding:6px 8px;font-size:13px}
+@media (max-width:1000px){.rv{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}.rv-nx{grid-column:1/-1;max-height:none}}
+@media (max-width:640px){.rv{grid-template-columns:1fr}}
+@media (min-width:980px){body.wide:not(.focus) .view{margin-left:max(112px,calc((100vw - 1360px) / 2));margin-right:16px}}
+
+/* ===== Trang chủ giáo viên – thiết kế lại (08/11/2026) ===== */
+.gh-hero{position:relative;overflow:hidden;border-radius:22px;padding:20px 20px 16px;color:#fff;margin:4px 0 18px;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(45,212,191,.55) 0%,rgba(45,212,191,0) 55%),radial-gradient(90% 120% at 0% 100%,rgba(250,204,21,.28) 0%,rgba(250,204,21,0) 60%),linear-gradient(135deg,#0b2e74 0%,#1d4ed8 55%,#0891b2 100%);
+  box-shadow:0 18px 40px -18px rgba(29,78,216,.55)}
+.gh-hero::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:22px 22px;mask-image:linear-gradient(120deg,#000 10%,transparent 75%);-webkit-mask-image:linear-gradient(120deg,#000 10%,transparent 75%);pointer-events:none}
+.gh-hero::after{content:"";position:absolute;right:-40px;top:-40px;width:180px;height:180px;border-radius:50%;border:2px dashed rgba(255,255,255,.18);pointer-events:none}
+.gh-hi{position:relative}
+.gh-date{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.02em;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);padding:3px 10px;border-radius:999px;backdrop-filter:blur(4px)}
+.gh-hero h1{margin:10px 0 2px;font-size:clamp(22px,5.6vw,30px);line-height:1.2;letter-spacing:-.01em;color:#fff}
+.gh-hero p{margin:0;opacity:.92;font-size:14.5px}
+.gh-hero .wave{display:inline-block;animation:ghwave 2.4s ease-in-out 1}
+@keyframes ghwave{0%,100%{transform:rotate(0)}15%,45%{transform:rotate(16deg)}30%{transform:rotate(-8deg)}}
+.gh-stats{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+.gh-stat{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:10px 10px 8px;backdrop-filter:blur(6px);min-width:0}
+.gh-stat b{display:block;font-size:clamp(19px,5vw,26px);line-height:1.1;font-variant-numeric:tabular-nums}
+.gh-stat span{font-size:11.5px;opacity:.9;line-height:1.3;display:block}
+.gh-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:20px 2px 10px}
+.gh-head h2{margin:0;font-size:18px;display:flex;align-items:center;gap:8px}
+.gh-head h2::before{content:"";width:5px;height:18px;border-radius:3px;background:linear-gradient(#1d4ed8,#14b8a6)}
+.gh-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:700px){.gh-tiles{grid-template-columns:repeat(2,1fr)}}
+.gh-tile{position:relative;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s,border-color .15s;overflow:hidden;min-height:118px}
+.gh-tile:hover{transform:translateY(-2px);border-color:var(--brand2);box-shadow:0 14px 28px -16px rgba(29,78,216,.45)}
+.gh-tile:active{transform:scale(.98)}
+.gh-tile b{font-size:16px;margin-top:6px}
+.gh-tile>span:last-child{font-size:12.5px;color:var(--muted);line-height:1.35}
+.gh-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:23px;flex:none;color:#fff}
+.gh-tile.blue .gh-ic,.gh-app.blue .gh-ic,.gh-app:not(.amber):not(.green):not(.red):not(.violet) .gh-ic{background:linear-gradient(135deg,#60a5fa,#1d4ed8)}
+.gh-tile.green .gh-ic,.gh-app.green .gh-ic{background:linear-gradient(135deg,#34d399,#0f9f6e)}
+.gh-tile.violet .gh-ic,.gh-app.violet .gh-ic{background:linear-gradient(135deg,#c084fc,#7c3aed)}
+.gh-tile.amber .gh-ic,.gh-app.amber .gh-ic{background:linear-gradient(135deg,#fcd34d,#f59e0b)}
+.gh-app.red .gh-ic{background:linear-gradient(135deg,#fda4af,#e11d48)}
+.gh-tile::after{content:"";position:absolute;right:-26px;bottom:-26px;width:80px;height:80px;border-radius:50%;opacity:.12;background:currentColor;pointer-events:none}
+.gh-tile.blue::after{color:#1d4ed8}.gh-tile.green::after{color:#0f9f6e}.gh-tile.violet::after{color:#7c3aed}.gh-tile.amber::after{color:#f59e0b}
+.gh-khoi{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gh-khoi button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px;border-radius:18px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;cursor:pointer;transition:all .15s}
+.gh-khoi button b{font-size:16px}
+.gh-khoi button>span:last-child{font-size:11.5px;color:var(--muted);line-height:1.25;text-align:center}
+.gh-kic{font-size:24px;line-height:1}
+.gh-khoi button.k10.on{border-color:#f59e0b;background:linear-gradient(160deg,rgba(252,211,77,.28),rgba(245,158,11,.08));box-shadow:0 10px 22px -14px #f59e0b}
+.gh-khoi button.k11.on{border-color:#10b981;background:linear-gradient(160deg,rgba(52,211,153,.25),rgba(16,185,129,.06));box-shadow:0 10px 22px -14px #10b981}
+.gh-khoi button.k12.on{border-color:#2563eb;background:linear-gradient(160deg,rgba(96,165,250,.28),rgba(37,99,235,.07));box-shadow:0 10px 22px -14px #2563eb}
+.gh-khoi button.on>span:last-child{color:var(--ink)}
+.gh-feature{display:flex;align-items:center;gap:12px;margin:14px 0 4px;padding:14px;border-radius:18px;text-decoration:none;color:#fff;background:linear-gradient(120deg,#7c3aed,#c026d3 60%,#f59e0b);box-shadow:0 14px 30px -16px rgba(124,58,237,.7)}
+.gh-fic{width:48px;height:48px;border-radius:14px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:24px;flex:none}
+.gh-ftx{flex:1;min-width:0;display:flex;flex-direction:column}
+.gh-ftx b{font-size:16px}
+.gh-ftx span{font-size:12.5px;opacity:.92;line-height:1.35}
+.gh-fgo{font-weight:700;font-size:13px;background:rgba(255,255,255,.22);padding:6px 10px;border-radius:999px;white-space:nowrap}
+.gh-grp{margin-top:16px}
+.gh-grph{display:flex;align-items:center;justify-content:space-between;margin:0 2px 8px;font-weight:800;font-size:15px}
+.gh-grph small{font-weight:600;color:var(--muted);font-size:12px;background:var(--info-soft);padding:2px 8px;border-radius:999px}
+.gh-apps{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.gh-app{position:relative;display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--card);border:1px solid var(--line);text-decoration:none;color:var(--ink);box-shadow:var(--shadow);transition:transform .15s,border-color .15s}
+.gh-app:hover{transform:translateY(-2px);border-color:var(--brand2)}
+.gh-app .gh-ic{width:42px;height:42px;font-size:21px;border-radius:12px}
+.gh-tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.gh-tx b{font-size:14.5px;line-height:1.3}
+.gh-tx span{font-size:12.5px;color:var(--muted);line-height:1.35}
+.gh-app .who{position:absolute;top:8px;right:8px;font-size:10px}
+.gh-legend{margin-top:14px}
+.gh-foot{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+@media (max-width:420px){.gh-hero{padding:16px 14px 12px;border-radius:18px}.gh-stat{padding:8px 8px 6px}.gh-khoi button{padding:10px 4px}.gh-apps{grid-template-columns:1fr}}
+.qa.violet .ic{background:linear-gradient(135deg,#ede9fe,#f5d0fe)}
+.rows .ic.violet{background:#efe7ff}
+/* ===== HS tự luyện vẽ ===== */
+.tl-hero{display:flex;gap:14px;align-items:center;padding:16px;border-radius:20px;color:#fff;margin:8px 0 6px;background:linear-gradient(120deg,#5b21b6,#7c3aed 45%,#db2777);box-shadow:0 14px 30px -18px rgba(124,58,237,.8)}
+.tl-hero h1{margin:0;color:#fff;font-size:22px}
+.tl-hero p{margin:2px 0 0;font-size:14px;opacity:.95}
+.tl-ic{width:54px;height:54px;border-radius:16px;background:rgba(255,255,255,.2);display:grid;place-items:center;font-size:28px;flex:none}
+.tl-types{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;scrollbar-width:none}
+.tl-types button{flex:none;font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:999px;border:1.5px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer}
+.tl-types button.on{background:#7c3aed;border-color:#7c3aed;color:#fff}
+.tl-grid{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;align-items:start}
+.tl-grid>.card{margin:0}
+@media (max-width:820px){.tl-grid{grid-template-columns:1fr}}
+.tl-de{display:grid;gap:8px}
+.tl-de label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;cursor:pointer;font-weight:500;font-size:14px;line-height:1.45;margin:0}
+.tl-de label.on{border-color:#7c3aed;background:rgba(124,58,237,.07)}
+.tl-de input{margin-top:3px;accent-color:#7c3aed;width:auto}
+.gh-app:has(.who) .gh-tx{padding-right:40px}
+/* nhóm nội dung tự thu gọn (10/11/2026) */
+.gh-grp{border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--card) 70%,transparent);padding:4px 10px;margin-top:12px}
+.gh-grp.open{padding-bottom:12px}
+button.gh-grph{width:100%;display:flex;align-items:center;gap:8px;margin:0;padding:10px 2px;background:none;border:0;font:inherit;font-weight:800;font-size:15px;color:var(--ink);cursor:pointer;text-align:left}
+button.gh-grph>span:first-child{flex:1}
+.gh-chev{transition:transform .2s;color:var(--muted);font-size:13px}
+.gh-grp:not(.open) .gh-chev{transform:rotate(-90deg)}
+.gh-grp.k10.open{border-color:rgba(245,158,11,.45)}
+.gh-grp.k11.open{border-color:rgba(16,185,129,.45)}
+.gh-grp.k12.open{border-color:rgba(37,99,235,.4)}
+
+/* Quản lý lớp: chọn nhiều HS bằng ô tích, xoá cùng lúc (10/11/2026) */
+.hsbulk{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:2px 2px 10px;border-bottom:1px solid var(--line,#e2e8f0);margin-bottom:6px}
+.hsbulk .chk{padding:5px 10px;margin:0}
+.hstable th.ck,.hstable td.ck{width:34px;text-align:center;padding-left:4px;padding-right:4px}
+.hstable input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer;accent-color:var(--brand,#1d4ed8);vertical-align:middle}
+.hstable tr.hssel td{background:color-mix(in srgb,var(--brand,#1d4ed8) 8%,transparent)}
+.hstable td.hsact{white-space:nowrap;text-align:right}
+.hstable td.hsact .btn{margin-left:4px;padding-left:9px;padding-right:9px}
+.hstable td.hsact .delbtn:hover{border-color:#dc2626;color:#dc2626}
+
+/* ===== Bài 9 – Hình chiếu vuông góc: toàn màn hình, không cuộn, màu sắc sinh động (10/11/2026) ===== */
+body.hvfs .view{display:flex;flex-direction:column;overflow:hidden;
+  background:radial-gradient(1200px 500px at 0% 0%,rgba(255,196,87,.22),transparent 60%),radial-gradient(900px 500px at 100% 100%,rgba(139,92,246,.18),transparent 60%),radial-gradient(800px 400px at 100% 0%,rgba(14,165,233,.16),transparent 60%),var(--bg)}
+.hvbar{flex:none;display:flex;align-items:center;gap:14px;padding:10px 16px;color:#fff;
+  background:linear-gradient(100deg,#f59e0b 0%,#ef4444 30%,#d946ef 62%,#6366f1 100%);box-shadow:0 6px 22px -10px rgba(99,102,241,.7)}
+.hvback{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;font-weight:800;color:#fff;text-decoration:none;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35)}
+.hvback:hover{background:rgba(255,255,255,.3)}
+.hvttl{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.hvttl small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;opacity:.85;white-space:nowrap}
+.hvttl b{font-size:19px;font-weight:800;white-space:nowrap;text-shadow:0 1px 8px rgba(0,0,0,.18)}
+.hvtabs{display:flex;gap:6px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.hvtabs button{display:flex;align-items:center;gap:7px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:700;font-size:14px;padding:7px 14px 7px 8px;border-radius:999px;cursor:pointer;transition:.15s}
+.hvtabs button i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.25);font-size:13px}
+.hvtabs button:hover{background:rgba(255,255,255,.26)}
+.hvtabs button.on{background:#fff;color:#9d174d;border-color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.hvtabs button.on i{background:linear-gradient(135deg,#f59e0b,#ec4899);color:#fff}
+.hvfsbtn{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer}
+body.hvfs .k10wrap{flex:1;min-height:0;grid-template-columns:210px minmax(0,1fr);gap:14px;padding:14px 16px 16px;align-items:stretch}
+body.hvfs .k10side{position:static;top:auto;max-height:none;height:100%;overflow-y:auto;padding:10px;border-radius:18px;background:color-mix(in srgb,var(--card) 82%,transparent);border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(6px)}
+body.hvfs .k10side .gcpick.compact button{border:1px solid transparent;background:transparent;font-weight:600;padding:7px 10px;transition:.12s}
+body.hvfs .k10side .gcpick.compact button:hover{background:color-mix(in srgb,#f59e0b 12%,transparent)}
+body.hvfs .k10side .gcpick.compact button.on{color:#fff;border-color:transparent;background:linear-gradient(110deg,#f59e0b,#ec4899 60%,#8b5cf6);box-shadow:0 6px 16px -6px rgba(236,72,153,.7)}
+body.hvfs .k10main{min-height:0;height:100%;overflow-y:auto;scrollbar-width:thin}
+.hvstage{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,25vw,380px);gap:14px;min-height:0}
+.hvcanvas,.hvinfo{min-height:0;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:0 10px 30px -18px rgba(30,41,59,.45)}
+.hvcanvas{display:flex;flex-direction:column;padding:12px;gap:10px}
+.hvcanvas .hczw{flex:1;min-height:0}
+.hvcanvas .hc3d{height:100%;margin:0;border-radius:16px;border:0;
+  background:radial-gradient(circle at 50% 40%,#ffffff 0%,#f1f5ff 45%,#e3e9fb 100%)}
+.hvcanvas .hcsteps{gap:8px}
+.hvcanvas .hcsteps button{display:flex;align-items:center;gap:9px;text-align:left;border:2px solid transparent;border-radius:14px;padding:8px 10px;font-size:13.5px;color:var(--ink);background:var(--bg);transition:.15s}
+.hvcanvas .hcsteps button i{flex:none;font-style:normal;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px}
+.hvcanvas .hcsteps .s1 i{background:#0ea5e9}.hvcanvas .hcsteps .s2 i{background:#10b981}.hvcanvas .hcsteps .s3 i{background:#f59e0b}.hvcanvas .hcsteps .s4 i{background:#8b5cf6}
+.hvcanvas .hcsteps button.done{opacity:.85}
+.hvcanvas .hcsteps .s1.on{border-color:#0ea5e9;background:#e0f2fe;color:#075985}
+.hvcanvas .hcsteps .s2.on{border-color:#10b981;background:#d1fae5;color:#065f46}
+.hvcanvas .hcsteps .s3.on{border-color:#f59e0b;background:#fef3c7;color:#92400e}
+.hvcanvas .hcsteps .s4.on{border-color:#8b5cf6;background:#ede9fe;color:#5b21b6}
+.hvcanvas .hcsteps button.on{box-shadow:0 6px 16px -8px currentColor;transform:translateY(-1px)}
+.hvctl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hvhint{font-size:13px;color:var(--muted)}
+.hvrange{display:flex;align-items:center;gap:8px;font-weight:700;margin:0;min-width:220px}
+.hvrange input{flex:1;accent-color:#8b5cf6}
+.hvinfo{display:flex;flex-direction:column;gap:12px;padding:14px;overflow-y:auto}
+.hvmeth{border-radius:14px;padding:10px 14px;color:#fff;display:flex;flex-direction:column;gap:2px}
+.hvmeth span{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.9}
+.hvmeth b{font-size:17px}
+.hvstage.m1 .hvmeth{background:linear-gradient(120deg,#0d9488,#0ea5e9)}
+.hvstage.m3 .hvmeth{background:linear-gradient(120deg,#7c3aed,#db2777)}
+.hvresult{border-radius:14px;padding:10px;background:linear-gradient(180deg,#fffaf0,#fff);border:1.5px dashed #f59e0b}
+.hvrt{font-weight:800;font-size:13px;color:#b45309;text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.hvresult .hclayout{margin-top:6px;gap:8px}
+.hvresult .hccell{padding:6px;border-width:0;background:transparent}
+.hvresult .hccell svg{max-height:15vh;width:auto;max-width:100%}
+.hccell.notag{padding-top:6px}
+.hvexpl{margin:0;line-height:1.55;font-size:14.5px}
+.hvnext{margin-top:auto;background:linear-gradient(110deg,#f59e0b,#ec4899 55%,#8b5cf6);border:0;box-shadow:0 10px 22px -10px rgba(236,72,153,.8)}
+.hvnext:hover{filter:brightness(1.06)}
+body.hvfs .hccompare,body.hvfs .qcard,body.hvfs .qbar,body.hvfs .k10main>.card,body.hvfs .k10main>.hero{margin-top:0}
+@media (prefers-color-scheme:dark){
+  .hvcanvas .hc3d{background:radial-gradient(circle at 50% 40%,#ffffff 0%,#eef2fb 60%,#dfe6f6 100%)}
+  .hvresult{background:var(--card)}
+}
+@media (max-width:1100px){.hvttl small{display:none}.hvtabs button{font-size:13px;padding:6px 10px 6px 6px}}
+@media (max-width:900px){
+  .hvbar{flex-wrap:wrap}.hvtabs{margin-left:0;width:100%;justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap}
+  body.hvfs .k10wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:8px}
+  body.hvfs .k10side{height:auto;overflow-x:auto;overflow-y:hidden;padding:6px}
+  .hvstage{grid-template-columns:1fr;height:auto}
+  .hvcanvas{height:62vh}
+  body.hvfs .k10main{overflow-y:auto}
+}
+body.hvfs .qbar{top:0;margin-bottom:10px}
+.hvnext{position:sticky;bottom:0;flex:none}
+.hvctl{flex-wrap:nowrap}.hvctl .btn{white-space:nowrap}
+.hvrange{min-width:120px;flex:1;max-width:280px}
+@media (max-height:800px){
+  .hvbar{padding:7px 14px}.hvttl b{font-size:17px}
+  body.hvfs .k10wrap{padding:10px 12px 12px;gap:10px}.hvstage{gap:10px}
+  .hvinfo{gap:8px;padding:10px}.hvmeth{padding:8px 12px}.hvmeth b{font-size:15.5px}
+  .hvresult .hccell svg{max-height:11vh}.hvresult{padding:8px}
+  .hvexpl{font-size:13.5px;line-height:1.45;padding:9px 12px}
+  .hvcanvas{padding:10px;gap:8px}.hvcanvas .hcsteps button{padding:6px 8px;font-size:13px}.hvcanvas .hcsteps button i{width:24px;height:24px;font-size:12.5px}
+}
+@media (max-width:1300px){.hvctl #iso,.hvctl #fr{font-size:0;padding:6px 10px}.hvctl #iso::before{content:'↺ Ban đầu';font-size:13px}.hvctl #fr::before{content:'👁 Từ trước';font-size:13px}}
+
+.hvsheet{margin-top:6px;background:#fff;border-radius:10px;padding:10px;display:flex;justify-content:center}
+.hvsheet svg{display:block;width:100%;height:auto;max-height:34vh}
+@media (max-height:800px){.hvsheet svg{max-height:28vh}}
+
+</style>
+</head>
+<body>
+<main id="view" class="view"><div class="loading">Đang tải…</div></main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
+/* Bài 9. Hình chiếu vuông góc (Công nghệ 10) – tách nguyên vẹn từ SmarttechCN 2026 (app.js) */
+(() => {
+'use strict';
+const V = document.getElementById('view');
+
+/* ================= Lưu trữ an toàn ================= */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('stc_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('stc_' + k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem('stc_' + k); } catch (e) {} }
+};
+let session = store.get('session', null);
+const uid = () => (session && session.user && (session.user.MaHS || session.user.MaGV)) || 'demo';
+/** lưu kết quả bài vừa làm + giữ lại 20 bài gần nhất trên máy để em xem lại bất cứ lúc nào */
+
+function isGV() { return Boolean(session && (session.role === 'gv' || session.role === 'admin')); }
+
+/* ================= Tiện ích ================= */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function rnd(n) { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0] % n; }
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function math(el) {
+  if (window.renderMathInElement) {
+    try { window.renderMathInElement(el, { delimiters: [{ left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true }], throwOnError: false, strict: false }); } catch (e) {}
+  } else if (!math._wait) { math._wait = 1; window.addEventListener('load', () => { math._wait = 0; math(V); }, { once: true }); }
+}
+
+let cleanup = null;
+const routes = [];
+const route = (re, fn) => routes.push([re, fn]);
+
+function setView(html) {
+  V.innerHTML = html; math(V);
+  // thư mục Khối 10: đưa danh sách hình sang cột trái cho gọn
+  const pk = V.querySelector('.gcpick.compact');
+  if (pk) {
+    const wrap = document.createElement('div'), side = document.createElement('aside'), main = document.createElement('div');
+    wrap.className = 'k10wrap'; side.className = 'k10side'; main.className = 'k10main';
+    pk.parentNode.insertBefore(wrap, pk);
+    while (wrap.nextSibling) main.appendChild(wrap.nextSibling);
+    side.appendChild(pk); wrap.append(side, main);
+  }
+  // nút phóng to / thu nhỏ cho các mô hình 3D (gửi sự kiện cuộn chuột cho khung vẽ)
+  V.querySelectorAll('canvas.hc3d, canvas#cv').forEach(cv => {
+    if (cv.id === 'td' || cv.id === 'pc' || cv.id === 'road' || cv.closest('.hczw')) return;
+    const w = document.createElement('div'); w.className = 'hczw'; cv.parentNode.insertBefore(w, cv); w.appendChild(cv);
+    const bar = document.createElement('div'); bar.className = 'hczb';
+    bar.innerHTML = '<button type="button" data-z="-1" title="Phóng to">＋</button><button type="button" data-z="1" title="Thu nhỏ">－</button>';
+    bar.querySelectorAll('button').forEach(b => b.onclick = e => { e.preventDefault(); for (let k = 0; k < 2; k++) cv.dispatchEvent(new WheelEvent('wheel', { deltaY: +b.dataset.z * 100, bubbles: true, cancelable: true })); });
+    w.appendChild(bar);
+  });
+}
+
+const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+
+/* ================= KHỐI 10 – HÌNH CHIẾU VUÔNG GÓC: xây dựng PPCG thứ nhất & thứ ba bằng mô hình 3D =================
+ * Vật thể dựng từ khối hộp / khối đùn (có lỗ tròn, mặt cong). Ba hình chiếu vẽ theo đúng quy ước (nét thấy, nét khuất, đường tâm).
+ * Góc thứ nhất: MP đứng sau vật, MP bằng dưới, MP cạnh bên phải → lật: HCB xuống dưới, HCC sang phải.
+ * Góc thứ ba: MP đứng trước vật, MP bằng trên, MP cạnh bên trái → lật: HCB lên trên, HCC sang trái. */
+const HC = (() => {
+  const area = L => { let a = 0; L.forEach((p, i) => { const q = L[(i + 1) % L.length]; a += p[0] * q[1] - q[0] * p[1]; }); return a / 2; };
+  const circ = (cx, cy, r, n = 28) => Array.from({ length: n }, (_, i) => { const t = i / n * Math.PI * 2; return [cx + r * Math.cos(t), cy + r * Math.sin(t), 1]; });
+  const arcPts = (cx, cy, r, a0, a1, n) => Array.from({ length: n + 1 }, (_, i) => { const t = (a0 + (a1 - a0) * i / n) * Math.PI / 180; return [cx + r * Math.cos(t), cy + r * Math.sin(t), 1]; });
+  const AX = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] };
+  const to3 = (ax, p, q, c) => ax === 'z' ? [p, q, c] : ax === 'x' ? [c, p, q] : [q, c, p];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = a => { const l = Math.hypot(...a) || 1; return a.map(v => v / l); };
+  const orient = (L, ccw) => { if ((area(L) > 0) === ccw) return L; const n = L.length; return L.map((_, j) => { const v = L[n - 1 - j]; return [v[0], v[1], L[(n - 2 - j + n) % n][2] || 0]; }); };
+  /** đùn đa giác (p,q) dọc trục ax từ c0 đến c1; mỗi điểm [p,q,s], s=1: cạnh tới điểm sau thuộc mặt cong */
+  function extrude(ax, outer, holes, c0, c1, keep = 'tbsh') {
+    const O = orient(outer.map(v => [v[0], v[1], v[2] || 0]), true), H = (holes || []).map(h => orient(h.map(v => [v[0], v[1], v[2] || 0]), false));
+    const A = AX[ax], F = [];
+    F.push({ pts: O.map(v => to3(ax, v[0], v[1], c1)), holes: H.map(h => h.map(v => to3(ax, v[0], v[1], c1))), n: A, t: 't' });
+    F.push({ pts: O.map(v => to3(ax, v[0], v[1], c0)).reverse(), holes: H.map(h => h.map(v => to3(ax, v[0], v[1], c0)).reverse()), n: A.map(x => -x), t: 'b' });
+    [O, ...H].forEach((L, li) => L.forEach((a, i) => {
+      const b = L[(i + 1) % L.length], a0 = to3(ax, a[0], a[1], c0), b0 = to3(ax, b[0], b[1], c0);
+      F.push({ pts: [a0, b0, to3(ax, b[0], b[1], c1), to3(ax, a[0], a[1], c1)], holes: [], n: norm(cross(sub(b0, a0), A)), smooth: !!a[2], t: li ? 'h' : 's' });
+    }));
+    return F.filter(f => keep.indexOf(f.t) >= 0 && (f.t === 't' || f.t === 'b' || c1 !== c0));
+  }
+  const xz = L => L.map(v => [v[1], v[0], v[2] || 0]);       // đùn theo y: đổi (x,z) → (z,x)
+  const box = (x0, x1, y0, y1, z0, z1) => extrude('z', [[x0, y0], [x1, y0], [x1, y1], [x0, y1]], [], z0, z1);
+  /** chuẩn bị cạnh: bỏ đường ghép giữa các mặt đồng phẳng liền nhau */
+  function prep(faces) {
+    const fx = v => (Math.abs(v) < 5e-4 ? 0 : v).toFixed(3);
+    const key = (f, s = 1) => { const d = f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2]; return f.n.map(v => fx(v * s)).join(',') + '|' + fx(d * s); };
+    faces.forEach(f => { f.k = key(f); f.ko = key(f, -1); f.loops = [f.pts, ...f.holes]; });
+    /** điểm m nằm trong mặt g (cùng mặt phẳng) */
+    const inside = (g, m) => { const ax = [0, 1, 2].sort((i, j) => Math.abs(g.n[j]) - Math.abs(g.n[i]))[0], u = (ax + 1) % 3, w = (ax + 2) % 3; let c = false; g.loops.forEach(L => L.forEach((a, i) => { const b = L[(i + 1) % L.length]; if ((a[w] > m[w]) !== (b[w] > m[w]) && m[u] < (b[u] - a[u]) * (m[w] - a[w]) / (b[w] - a[w]) + a[u]) c = !c; })); return c; };
+    const onB = (g, m) => g.loops.some(L => L.some((a, i) => { const b = L[(i + 1) % L.length], ab = sub(b, a), am = sub(m, a), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); const d = sub(am, ab.map(v => v * t)); return Math.hypot(...d) < 1e-4; }));
+    faces.forEach(f => {
+      f.edges = [];
+      if (f.smooth) return;
+      const mates = faces.filter(g => g !== f && g.k === f.k);
+      // mặt áp sát nhau (cùng mặt phẳng, ngược chiều) là chỗ hai khối liền nhau: cạnh nằm trên đó không phải cạnh thật
+      const opp = faces.filter(g => g !== f && g.k === f.ko);
+      f.loops.forEach(L => L.forEach((a, i) => {
+        const b = L[(i + 1) % L.length], len = Math.hypot(...sub(b, a)), n = Math.max(1, Math.ceil(len / 0.05));
+        let st = null;
+        for (let j = 0; j < n; j++) {
+          const p0 = a.map((v, k) => v + (b[k] - v) * j / n), p1 = a.map((v, k) => v + (b[k] - v) * (j + 1) / n), m = p0.map((v, k) => (v + p1[k]) / 2);
+          const seam = mates.some(g => onB(g, m)) || opp.some(g => onB(g, m) || inside(g, m));
+          if (!seam) { if (!st) st = p0; } else if (st) { f.edges.push([st, p0]); st = null; }
+          if (j === n - 1 && st) f.edges.push([st, p1]);
+        }
+      }));
+    });
+    // đường bao (silhouette) của mặt cong: cạnh chung giữa hai dải mặt cong liền nhau
+    const sk = (p, q) => [p, q].map(v => v.map(x => x.toFixed(3)).join(',')).sort().join('|'), mp = {};
+    faces.forEach(f => { if (!f.smooth) return; f.sil = []; const P = f.pts; [[P[0], P[1]], [P[1], P[2]], [P[2], P[3]], [P[3], P[0]]].forEach(([p, q]) => { const kk = sk(p, q); (mp[kk] = mp[kk] || []).push({ f, p, q }); }); });
+    Object.values(mp).forEach(v => { if (v.length === 2) v[0].f.sil.push({ a: v[0].p, b: v[0].q, g: v[1].f }); });
+    // cạnh giữa mặt phẳng và mặt cong: tiếp tuyến (góc nhỏ) thì không vẽ cạnh, chỉ vẽ khi là đường bao
+    const onSeg = (m, p, q) => { const ab = sub(q, p), am = sub(m, p), l2 = ab[0] ** 2 + ab[1] ** 2 + ab[2] ** 2; if (!l2) return false; const t = Math.max(0, Math.min(1, (am[0] * ab[0] + am[1] * ab[1] + am[2] * ab[2]) / l2)); return Math.hypot(...sub(am, ab.map(v => v * t))) < 1e-4; };
+    faces.forEach(f => {
+      if (f.smooth) return;
+      f.loops.forEach(Lp => Lp.forEach((p, i) => {
+        const q = Lp[(i + 1) % Lp.length], v = mp[sk(p, q)];
+        if (!v || v.length !== 1) return;
+        const g = v[0].f;
+        if (f.n[0] * g.n[0] + f.n[1] * g.n[1] + f.n[2] * g.n[2] > 0.9) f.edges = f.edges.filter(([s, e]) => !onSeg(s.map((x, j) => (x + e[j]) / 2), p, q));
+        g.sil.push({ a: p, b: q, g: f });
+      }));
+    });
+    return faces;
+  }
+  /* ---------- các vật thể: mô hình 3D + 3 hình chiếu vẽ theo quy ước (đơn vị lưới) ----------
+   * item: {p:[[u,v]...], k:'v'|'h'|'c', z:đóng} đường gấp khúc · {c:[u,v,r],k} đường tròn · {a:[u,v,r,a0,a1],k} cung (độ) · k: v=nét thấy, h=nét khuất, c=đường tâm */
+  const L = (x1, y1, x2, y2, k = 'v') => ({ p: [[x1, y1], [x2, y2]], k });
+  const OBJ = [
+    { id: 'bacvat', ten: 'Khối bậc có vát', anh: 'data:image/webp;base64,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', W: 4, D: 3, H: 3,
+      faces: () => [...extrude('x', [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], [], 0, 2.4), ...box(2.4, 4, 0, 3, 0, 1)],
+      views: {
+        front: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 1], [2.4, 1], [2.4, 3], [0, 3]], z: 1, k: 'v' }, L(0, 2.2, 2.4, 2.2)] },
+        top: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [0, 3]], z: 1, k: 'v' }, L(2.4, 0, 2.4, 3), L(0, 0.8, 2.4, 0.8)] },
+        side: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 2.2], [2.2, 3], [0, 3]], z: 1, k: 'v' }, L(0, 1, 3, 1, 'h')] },
+        right: { W: 3, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0.8, 3], [0, 2.2]], z: 1, k: 'v' }, L(0, 1, 3, 1)], why: 'Đây là hình nhìn từ phải (bậc thấp ở gần nên thấy rõ, phần vát ở bên trái).' },
+        back: { W: 4, H: 3, it: [{ p: [[0, 0], [4, 0], [4, 3], [1.6, 3], [1.6, 1], [0, 1]], z: 1, k: 'v' }, L(1.6, 2.2, 4, 2.2, 'h')], why: 'Đây là hình nhìn từ phía sau.' }
+      }, dis: ['right', 'back'] },
+    { id: 'giado', ten: 'Gối đỡ (SGK H.9.9)', anh: 'data:image/webp;base64,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', W: 4, D: 3, H: 4.2,
+      faces: () => [
+        ...extrude('z', [[1, 0], [3.3, 0], [3.3, 3], [1, 3], ...arcPts(1, 2, 1, 90, 180, 8).slice(1, 8), [0, 2, 0], [0, 1, 1], ...arcPts(1, 1, 1, 180, 270, 8).slice(1, 8)], [circ(0.8, 0.85, 0.3, 20), circ(0.8, 2.15, 0.3, 20)], 0, 0.8),
+        ...extrude('x', [[0, 0], [3, 0], [3, 2.7, 1], ...arcPts(1.5, 2.7, 1.5, 0, 180, 16).slice(1, 16), [0, 2.7]], [circ(1.5, 2.75, 0.65, 24)], 3.3, 4),
+        ...extrude('y', xz([[1.6, 0.8], [3.3, 0.8], [3.3, 2.0]]), [], 1.25, 1.75)],
+      views: {
+        front: { W: 4, H: 4.2, it: [{ p: [[0, 0], [4, 0], [4, 4.2], [3.3, 4.2], [3.3, 0.8], [0, 0.8]], z: 1, k: 'v' }, L(1.6, 0.8, 3.3, 2.0), L(0.5, 0, 0.5, 0.8, 'h'), L(1.1, 0, 1.1, 0.8, 'h'), L(3.3, 2.1, 4, 2.1, 'h'), L(3.3, 3.4, 4, 3.4, 'h'), L(0.8, -0.35, 0.8, 1.15, 'c'), L(2.95, 2.75, 4.35, 2.75, 'c')] },
+        top: { W: 4, H: 3, it: [{ p: [[1, 0], [4, 0], [4, 3], [1, 3]], k: 'v' }, { a: [1, 2, 1, 90, 180], k: 'v' }, L(0, 2, 0, 1), { a: [1, 1, 1, 180, 270], k: 'v' }, L(3.3, 0, 3.3, 3), L(3.3, 0.85, 4, 0.85, 'h'), L(3.3, 2.15, 4, 2.15, 'h'), L(1.6, 1.25, 3.3, 1.25), L(1.6, 1.75, 3.3, 1.75), L(1.6, 1.25, 1.6, 1.75), { c: [0.8, 0.85, 0.3], k: 'v' }, { c: [0.8, 2.15, 0.3], k: 'v' }, L(0.8, 0.3, 0.8, 2.7, 'c'), L(0.3, 0.85, 1.3, 0.85, 'c'), L(0.3, 2.15, 1.3, 2.15, 'c')] },
+        side: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'v' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c'), L(0.85, -0.35, 0.85, 1.15, 'c'), L(2.15, -0.35, 2.15, 1.15, 'c')] },
+        right: { W: 3, H: 4.2, it: [{ p: [[0, 2.7], [0, 0], [3, 0], [3, 2.7]], k: 'v' }, { a: [1.5, 2.7, 1.5, 0, 180], k: 'v' }, L(0, 0.8, 3, 0.8, 'h'), { c: [1.5, 2.75, 0.65], k: 'v' }, { p: [[1.25, 0.8], [1.25, 2.0], [1.75, 2.0], [1.75, 0.8]], k: 'h' }, L(0.55, 0, 0.55, 0.8, 'h'), L(1.15, 0, 1.15, 0.8, 'h'), L(1.85, 0, 1.85, 0.8, 'h'), L(2.45, 0, 2.45, 0.8, 'h'), L(1.5, -0.35, 1.5, 3.6, 'c'), L(0.65, 2.75, 2.35, 2.75, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che mất gân và đế nên gân, đế vẽ nét đứt.' },
+        top2: { W: 4, H: 3, it: [{ p: [[0, 0], [3, 0], [3, 3], [0, 3]], k: 'v' }, { a: [3, 2, 1, 0, 90], k: 'v' }, L(4, 2, 4, 1), { a: [3, 1, 1, 270, 360], k: 'v' }, L(0.7, 0, 0.7, 3), L(0, 0.85, 0.7, 0.85, 'h'), L(0, 2.15, 0.7, 2.15, 'h'), L(0.7, 1.25, 2.4, 1.25), L(0.7, 1.75, 2.4, 1.75), L(2.4, 1.25, 2.4, 1.75), { c: [3.2, 0.85, 0.3], k: 'v' }, { c: [3.2, 2.15, 0.3], k: 'v' }, L(3.2, 0.3, 3.2, 2.7, 'c')], why: 'Hình này bị lật ngược trái – phải so với hình chiếu bằng.' }
+      }, dis: ['right', 'top2'] },
+    { id: 'chuL91', ten: 'Khối chữ L có hai lỗ (SGK H.9.1)', W: 5, D: 4, H: 6,
+      faces: () => [...extrude('x', [[0, 0], [4, 0], [4, 6], [0, 6]], [circ(2, 4, 0.75, 24)], 0, 1.5), ...extrude('z', [[1.5, 0], [5, 0], [5, 4], [1.5, 4]], [circ(3.25, 2, 1, 28)], 0, 2)],
+      views: {
+        front: { W: 5, H: 6, it: [{ p: [[0, 0], [5, 0], [5, 2], [1.5, 2], [1.5, 6], [0, 6]], z: 1, k: 'v' }, L(2.25, 0, 2.25, 2, 'h'), L(4.25, 0, 4.25, 2, 'h'), L(0, 3.25, 1.5, 3.25, 'h'), L(0, 4.75, 1.5, 4.75, 'h'), L(3.25, -0.35, 3.25, 2.35, 'c'), L(-0.35, 4, 1.85, 4, 'c')] },
+        top: { W: 5, H: 4, it: [{ p: [[0, 0], [5, 0], [5, 4], [0, 4]], z: 1, k: 'v' }, L(1.5, 0, 1.5, 4), { c: [3.25, 2, 1], k: 'v' }, L(0, 1.25, 1.5, 1.25, 'h'), L(0, 2.75, 1.5, 2.75, 'h'), L(3.25, 0.65, 3.25, 3.35, 'c'), L(-0.35, 2, 4.6, 2, 'c')] },
+        side: { W: 4, H: 6, it: [{ p: [[0, 0], [4, 0], [4, 6], [0, 6]], z: 1, k: 'v' }, { c: [2, 4, 0.75], k: 'v' }, L(0, 2, 4, 2, 'h'), L(1, 0, 1, 2, 'h'), L(3, 0, 3, 2, 'h'), L(2, -0.35, 2, 5.1, 'c'), L(0.9, 4, 3.1, 4, 'c')] },
+        right: { W: 4, H: 6, it: [{ p: [[0, 0], [4, 0], [4, 6], [0, 6]], z: 1, k: 'v' }, L(0, 2, 4, 2), { c: [2, 4, 0.75], k: 'v' }, L(1, 0, 1, 2, 'h'), L(3, 0, 3, 2, 'h'), L(2, -0.35, 2, 5.1, 'c')], why: 'Đây là hình nhìn từ phải: mặt trên của đế ở gần nên thấy rõ (nét liền).' },
+        topX: { W: 5, H: 4, it: [{ p: [[0, 0], [5, 0], [5, 4], [0, 4]], z: 1, k: 'v' }, L(1.5, 0, 1.5, 4), { c: [3.25, 2, 1], k: 'v' }, L(0, 1.25, 1.5, 1.25), L(0, 2.75, 1.5, 2.75), L(3.25, 0.65, 3.25, 3.35, 'c')], why: 'Lỗ trên tấm đứng bị che khi nhìn từ trên nên phải vẽ nét đứt.' }
+      }, dis: ['right', 'topX'] },
+    { id: 'giado910', ten: 'Giá đỡ (SGK H.9.10)', W: 6, D: 3.6, H: 6.6,
+      faces: () => [...extrude('z', [[0, 0], [4.2, 0], [4.2, 3.6], [0, 3.6], [0, 2.4], [1.8, 2.4], [1.8, 1.2], [0, 1.2]], [], 0, 2.4), ...extrude('x', [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], [circ(1.8, 4.5, 1.2, 28)], 4.2, 6)],
+      views: {
+        front: { W: 6, H: 6.6, it: [{ p: [[0, 0], [6, 0], [6, 6.6], [4.2, 6.6], [4.2, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.8, 0, 1.8, 2.4, 'h'), L(4.2, 3.3, 6, 3.3, 'h'), L(4.2, 5.7, 6, 5.7, 'h'), L(3.8, 4.5, 6.4, 4.5, 'c')] },
+        top: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6], [0, 2.4], [1.8, 2.4], [1.8, 1.2], [0, 1.2]], z: 1, k: 'v' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h'), L(3.8, 1.8, 6.4, 1.8, 'c')] },
+        side: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4), L(1.2, 0, 1.2, 2.4), L(2.4, 0, 2.4, 2.4), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c'), L(0.25, 4.5, 3.35, 4.5, 'c')] },
+        right: { W: 3.6, H: 6.6, it: [{ p: [[0, 0], [3.6, 0], [3.6, 6.6], [0, 6.6]], z: 1, k: 'v' }, L(0, 2.4, 3.6, 2.4, 'h'), L(1.2, 0, 1.2, 2.4, 'h'), L(2.4, 0, 2.4, 2.4, 'h'), { c: [1.8, 4.5, 1.2], k: 'v' }, L(1.8, 2.95, 1.8, 6.05, 'c')], why: 'Đây là hình nhìn từ phải: tấm đứng che hết phần đế nên đế và rãnh phải vẽ nét đứt.' },
+        topX: { W: 6, H: 3.6, it: [{ p: [[0, 0], [6, 0], [6, 3.6], [0, 3.6]], z: 1, k: 'v' }, { p: [[0, 1.2], [1.8, 1.2], [1.8, 2.4], [0, 2.4]], k: 'h' }, L(4.2, 0, 4.2, 3.6), L(4.2, 0.6, 6, 0.6, 'h'), L(4.2, 3, 6, 3, 'h')], why: 'Nhìn từ trên thấy rõ rãnh ở đầu đế nên phải vẽ nét liền.' }
+      }, dis: ['right', 'topX'] },
+    { id: 'vat1114', ten: 'Khối hộp vát góc có lỗ (SGK H.11.14)', W: 5, D: 2.4, H: 3.2,
+      faces: () => extrude('y', xz([[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]]), [xz(circ(2.9, 1.6, 0.8, 28))], 0, 2.4),
+      views: {
+        front: { W: 5, H: 3.2, it: [{ p: [[0, 0], [5, 0], [5, 3.2], [1.4, 3.2], [0, 2]], z: 1, k: 'v' }, { c: [2.9, 1.6, 0.8], k: 'v' }, L(2.9, 0.45, 2.9, 2.75, 'c'), L(1.75, 1.6, 4.05, 1.6, 'c')] },
+        top: { W: 5, H: 2.4, it: [{ p: [[0, 0], [5, 0], [5, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.4, 0, 1.4, 2.4), L(2.1, 0, 2.1, 2.4, 'h'), L(3.7, 0, 3.7, 2.4, 'h'), L(2.9, -0.35, 2.9, 2.75, 'c')] },
+        side: { W: 2.4, H: 3.2, it: [{ p: [[0, 0], [2.4, 0], [2.4, 3.2], [0, 3.2]], z: 1, k: 'v' }, L(0, 2, 2.4, 2), L(0, 0.8, 2.4, 0.8, 'h'), L(0, 2.4, 2.4, 2.4, 'h'), L(-0.35, 1.6, 2.75, 1.6, 'c')] },
+        right: { W: 2.4, H: 3.2, it: [{ p: [[0, 0], [2.4, 0], [2.4, 3.2], [0, 3.2]], z: 1, k: 'v' }, L(0, 0.8, 2.4, 0.8, 'h'), L(0, 2.4, 2.4, 2.4, 'h'), L(-0.35, 1.6, 2.75, 1.6, 'c')], why: 'Đây là hình nhìn từ phải: mặt vát ở phía trái nên không thấy cạnh vát.' },
+        topX: { W: 5, H: 2.4, it: [{ p: [[0, 0], [5, 0], [5, 2.4], [0, 2.4]], z: 1, k: 'v' }, L(1.4, 0, 1.4, 2.4), L(2.1, 0, 2.1, 2.4), L(3.7, 0, 3.7, 2.4)], why: 'Lỗ trụ nằm bên trong, nhìn từ trên bị che nên phải vẽ nét đứt.' }
+      }, dis: ['right', 'topX'] }
+  ];
+  OBJ.forEach(o => { o.F = prep(o.faces()); });
+  /* ---------- vẽ hình chiếu (SVG) ---------- */
+  let hpN = 0;
+  const ST = { g: 'stroke="#0f766e" stroke-width="1.6"', n: 'stroke="#0f172a" stroke-width="1.2"', m: 'stroke="#0f172a" stroke-width="4.2"', v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"' };
+  function svg(v, cell = 34, o = {}) {
+    const u0 = v.u0 || 0, v0 = v.v0 || 0, pad = cell * 0.55, W = v.W * cell + pad * 2, H = v.H * cell + pad * 2, X = u => pad + (u - u0) * cell, Y = w => pad + (v0 + v.H - w) * cell;
+    const hp = 'hp' + (++hpN);
+    const el = it => {
+      if (it.f) return `<path d="${it.f.map(L => 'M' + L.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L') + 'Z').join(' ')}" fill="url(#${hp})" fill-rule="evenodd" stroke="none"/>`;
+      if (it.tx) return `<text x="${X(it.tx[0]).toFixed(1)}" y="${Y(it.tx[1]).toFixed(1)}" font-size="${(it.fs || 0.42) * cell}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="${it.col || '#0f172a'}" font-family="system-ui,sans-serif">${it.tx[2]}</text>`;
+      if (it.ar) { const [x, y, dx, dy] = it.ar, x1 = X(x), y1 = Y(y), x2 = X(x + dx), y2 = Y(y + dy), an = Math.atan2(y2 - y1, x2 - x1), h = cell * 0.28;
+        return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${it.col || '#0f172a'}" stroke-width="1.4"/><path d="M${x2} ${y2} L${x2 - h * Math.cos(an - 0.4)} ${y2 - h * Math.sin(an - 0.4)} L${x2 - h * Math.cos(an + 0.4)} ${y2 - h * Math.sin(an + 0.4)}Z" fill="${it.col || '#0f172a'}"/>`; }
+      const st = ST[it.k] + ' fill="none" stroke-linecap="round" stroke-linejoin="round"';
+      if (it.p) return `<path d="M${it.p.map(q => X(q[0]).toFixed(1) + ' ' + Y(q[1]).toFixed(1)).join(' L')}${it.z ? 'Z' : ''}" ${st}/>`;
+      if (it.c) return `<circle cx="${X(it.c[0])}" cy="${Y(it.c[1])}" r="${it.c[2] * cell}" ${st}/>`;
+      const [cx, cy, r, a0, a1] = it.a, P = a => [X(cx + r * Math.cos(a * Math.PI / 180)), Y(cy + r * Math.sin(a * Math.PI / 180))], [x0, y0] = P(a0), [x1, y1] = P(a1);
+      return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r * cell} ${r * cell} 0 ${a1 - a0 > 180 ? 1 : 0} 0 ${x1.toFixed(1)} ${y1.toFixed(1)}" ${st}/>`;
+    };
+    return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" width="${W.toFixed(0)}" height="${H.toFixed(0)}" style="max-width:100%;height:auto;background:#fff;border-radius:8px" role="img" aria-label="Hình chiếu"><defs><pattern id="${hp}" patternUnits="userSpaceOnUse" width="${(cell * 0.22).toFixed(1)}" height="${(cell * 0.22).toFixed(1)}" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="${(cell * 0.22).toFixed(1)}" stroke="#334155" stroke-width="1.1"/></pattern></defs>${v.it.filter(i => i.f).map(el).join('')}${v.it.filter(i => !i.f).map(el).join('')}</svg>`;
+  }
+  /** đổi item hình chiếu thành các đoạn thẳng (để vẽ lên mặt phẳng 3D) */
+  function segs(v) {
+    const out = [];
+    v.it.forEach(it => {
+      if (it.f || it.tx || it.ar) return;
+      let P = it.p ? it.p.slice() : it.c ? Array.from({ length: 33 }, (_, i) => [it.c[0] + it.c[2] * Math.cos(i / 32 * 2 * Math.PI), it.c[1] + it.c[2] * Math.sin(i / 32 * 2 * Math.PI)])
+        : Array.from({ length: 17 }, (_, i) => { const a = (it.a[3] + (it.a[4] - it.a[3]) * i / 16) * Math.PI / 180; return [it.a[0] + it.a[2] * Math.cos(a), it.a[1] + it.a[2] * Math.sin(a)]; });
+      if (it.z) P.push(P[0]);
+      for (let i = 0; i < P.length - 1; i++) out.push({ a: P[i], b: P[i + 1], k: it.k });
+    });
+    return out;
+  }
+  return { OBJ, svg, segs, G: { extrude, box, prep, circ, arcPts, xz } };
+})();
+
+/* ---------- cảnh 3D: vật thể, 3 mặt phẳng chiếu, chiếu và lật mặt phẳng ---------- */
+function HCScene(canvas, opt) {
+  const ctx = canvas.getContext('2d');
+  const st = { yaw: 0.62, pitch: 0.42, zoom: 1, t: 0, p: 1, show: opt.show || 'object' };   // show: object | planes | project | unfold; p: tiến trình chiếu (0→1)
+  let praf = 0, phase = 0;
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const PIDX = { front: 0, top: 1, side: 2 };
+  /* tia chiếu: mỗi đỉnh (góc gãy) của hình chiếu ↔ đỉnh thật của vật thể có cùng toạ độ; điểm nào vật thể không có thì bỏ qua.
+     Chọn đỉnh nằm gần mặt phẳng chiếu nhất để tia không xuyên qua vật thể. */
+  let rpKey = null, rpVal = null;
+  const rayPts = () => {
+    if (rpKey === O && rpVal && rpVal.m === m) return rpVal;
+    const { D } = O, eps = 0.012, vs = [], seen = {};
+    (O.F || []).forEach(f => [f.pts, ...(f.holes || [])].forEach(L => (L || []).forEach(p => { const k = p.map(v => v.toFixed(3)).join(','); if (!seen[k]) { seen[k] = 1; vs.push(p); } })));
+    const spec = {   // (u,w) của hình chiếu ↔ toạ độ 3D; hướng chọn đỉnh gần mặt phẳng
+      front: { mt: (p, u, w) => Math.abs(p[0] - u) < eps && Math.abs(p[2] - w) < eps, sc: p => m === 1 ? p[1] : -p[1] },
+      top: { mt: (p, u, w) => Math.abs(p[0] - u) < eps && Math.abs(p[1] - w) < eps, sc: p => m === 1 ? -p[2] : p[2] },
+      side: { mt: (p, u, w) => Math.abs(p[1] - (D - u)) < eps && Math.abs(p[2] - w) < eps, sc: p => m === 1 ? p[0] : -p[0] } };
+    const out = { m };
+    ['front', 'top', 'side'].forEach(kk => {
+      const pts = {}, res = [];
+      ((O.views[kk] || {}).it || []).forEach(it => { if (it.p && (it.k === 'v' || it.k === 'h')) it.p.forEach(q => { pts[q[0].toFixed(3) + ',' + q[1].toFixed(3)] = q; }); });
+      Object.values(pts).forEach(([u, w]) => {
+        const c = vs.filter(p => spec[kk].mt(p, u, w)); if (!c.length) return;
+        const best = c.reduce((a, b) => spec[kk].sc(b) > spec[kk].sc(a) ? b : a);
+        res.push([best, G.map[kk](u, w)]);
+      });
+      out[kk] = res;
+    });
+    rpKey = O; rpVal = out; return out;
+  };
+  // bước "Chiếu": lần lượt đứng → bằng → cạnh; tia chiếu chấm chạy tới mặt phẳng rồi hình chiếu hiện dần
+  const qOf = kk => st.show === 'project' ? clamp01((st.p - PIDX[kk] * 0.27) / 0.46) : 1;
+  let O = opt.obj, m = opt.m || 1, fitR = 1, fitC = [0, 0, 0], fitB = null, fitP = [], raf = 0, zb = null;
+  const g = 1.4;
+  const COL = { front: '#e53935', top: '#1e63d6', side: '#c026d3' };
+  const geo = () => {
+    const { W, D, H } = O;
+    if (m === 1) return {
+      planes: { front: { c: [[-g, D + g, -g], [W + g, D + g, -g], [W + g, D + g, H + g], [-g, D + g, H + g]] }, top: { c: [[-g, -g, -g], [W + g, -g, -g], [W + g, D + g, -g], [-g, D + g, -g]], piv: [0, D + g, -g], ax: 'x' }, side: { c: [[W + g, -g, -g], [W + g, D + g, -g], [W + g, D + g, H + g], [W + g, -g, H + g]], piv: [W + g, D + g, 0], ax: 'z' } },
+      map: { front: (u, v) => [u, D + g, v], top: (u, v) => [u, v, -g], side: (u, v) => [W + g, D - u, v] } };
+    return {
+      planes: { front: { c: [[-g, -g, -g], [W + g, -g, -g], [W + g, -g, H + g], [-g, -g, H + g]] }, top: { c: [[-g, -g, H + g], [W + g, -g, H + g], [W + g, D + g, H + g], [-g, D + g, H + g]], piv: [0, -g, H + g], ax: 'x' }, side: { c: [[-g, -g, -g], [-g, D + g, -g], [-g, D + g, H + g], [-g, -g, H + g]], piv: [-g, -g, 0], ax: 'z' } },
+      map: { front: (u, v) => [u, -g, v], top: (u, v) => [u, v, H + g], side: (u, v) => [-g, D - u, v] } };
+  };
+  let G = geo();
+  const turn = (p, k, t) => {        // lật mặt phẳng k quanh bản lề một góc t·90°
+    const pl = G.planes[k]; if (!pl.piv || !t) return p;
+    const th = t * Math.PI / 2, c = Math.cos(th), s = Math.sin(th), r = sub3(p, pl.piv);
+    const q = pl.ax === 'x' ? [r[0], r[1] * c - r[2] * s, r[1] * s + r[2] * c] : [r[0] * c - r[1] * s, r[0] * s + r[1] * c, r[2]];
+    return [q[0] + pl.piv[0], q[1] + pl.piv[1], q[2] + pl.piv[2]];
+  };
+  function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+  const refit = () => {
+    const pts = [], fl = [];
+    ['front', 'top', 'side'].forEach(k => G.planes[k].c.forEach(p => { pts.push(p); fl.push(turn(p, k, 1)); }));
+    const mn = [0, 1, 2].map(i => Math.min(...pts.map(p => p[i]))), mx = [0, 1, 2].map(i => Math.max(...pts.map(p => p[i])));
+    fitC = mn.map((v, i) => (v + mx[i]) / 2); fitR = Math.max(...pts.map(p => Math.hypot(p[0] - fitC[0], p[1] - fitC[1], p[2] - fitC[2])));
+    const x0 = Math.min(...fl.map(p => p[0])), x1 = Math.max(...fl.map(p => p[0])), z0 = Math.min(...fl.map(p => p[2])), z1 = Math.max(...fl.map(p => p[2]));
+    fitB = { c: [(x0 + x1) / 2, fl[0][1], (z0 + z1) / 2], w: x1 - x0, h: z1 - z0 };
+    fitP = pts;
+    if (st.show === 'object') { const { W, D, H } = O; fitC = [W / 2, D / 2, H / 2]; fitR = Math.hypot(W, D, H) * 0.62; fitP = [0, 1].flatMap(i => [0, 1].flatMap(j => [0, 1].map(l => [i * W, j * D, l * H]))).concat([[W * 0.5, -2.6, H * 0.45]]); }
+  };
+  let cC = fitC;
+  const rot = p => {
+    let [x, y, z] = [p[0] - cC[0], p[1] - cC[1], p[2] - cC[2]];
+    const cy = Math.cos(st.yaw), sy = Math.sin(st.yaw); [x, y] = [x * cy - y * sy, x * sy + y * cy];
+    const cp = Math.cos(st.pitch), sp = Math.sin(st.pitch); [y, z] = [y * cp - z * sp, y * sp + z * cp];
+    return [x, y, z];
+  };
+  const draw = () => {
+    const Wc = canvas.width, Hc = canvas.height, dp = window.devicePixelRatio || 1;
+    // tỉ lệ vừa khung, tính ở góc nhìn trục đo mặc định (không đổi khi xoay)
+    const cy_ = Math.cos(0.62), sy_ = Math.sin(0.62), cp_ = Math.cos(0.42), sp_ = Math.sin(0.42);
+    let ex = 0.1, ez = 0.1;
+    fitP.forEach(p => { const x = p[0] - fitC[0], y = p[1] - fitC[1], z = p[2] - fitC[2], X = x * cy_ - y * sy_, Y = x * sy_ + y * cy_, Z = Y * sp_ + z * cp_; ex = Math.max(ex, Math.abs(X)); ez = Math.max(ez, Math.abs(Z)); });
+    const kA = Math.min(Wc / (ex * 2.25), (Hc - 30 * dp) / (ez * 2.25));
+    let k = kA; cC = fitC;
+    if (st.show === 'unfold' && fitB) { const e = st.t * st.t * (3 - 2 * st.t), kB = Math.min(Wc / (fitB.w * 1.12), Hc / (fitB.h * 1.18 + 1.2)); k = kA + (kB - kA) * e; cC = fitC.map((v, i) => v + (fitB.c[i] - v) * e); }
+    k *= st.zoom;
+    const P = p => { const r = rot(p); return [Wc / 2 + r[0] * k, Hc / 2 - r[2] * k, r[1]]; };
+    ctx.clearRect(0, 0, Wc, Hc);
+    const poly = (loops, fill, alpha, stroke, lw) => { ctx.beginPath(); loops.forEach(L => { L.forEach((p, i) => { const q = P(p); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath(); }); if (fill) { ctx.globalAlpha = alpha; ctx.fillStyle = fill; ctx.fill('evenodd'); ctx.globalAlpha = 1; } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw * dp; ctx.stroke(); } };
+    const line = (a, b, col, lw, dash, alpha = 1, off = 0) => { const A = P(a), B = P(b); ctx.globalAlpha = alpha; ctx.strokeStyle = col; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.lineDashOffset = off * dp; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1; };
+    const t = st.t, showPl = st.show !== 'object', showV = st.show === 'project' || st.show === 'unfold';
+    const objA = st.show === 'unfold' ? Math.max(0, 1 - t * 1.6) : 1;
+    const drawPlanes = () => {
+      const ks = ['front', 'top', 'side'].map(kk => ({ kk, d: G.planes[kk].c.map(p => P(turn(p, kk, t))[2]).reduce((a, b) => a + b, 0) / 4 })).sort((a, b) => b.d - a.d);
+      ks.forEach(({ kk }) => {
+        const C = G.planes[kk].c.map(p => turn(p, kk, t));
+        poly([C], COL[kk], m === 3 && t < 0.98 ? 0.10 : 0.13, COL[kk], 2.6);
+        const fv = st.show === 'project' ? clamp01((qOf(kk) - 0.42) / 0.5) : 1;   // hình chiếu "vẽ dần" sau khi tia chiếu chạm mặt phẳng
+        if (showV && fv > 0) HC.segs(O.views[kk]).forEach(sg => { const mp = G.map[kk], a = turn(mp(...sg.a), kk, t), b0 = turn(mp(...sg.b), kk, t), b = fv < 1 ? a.map((v, i) => v + (b0[i] - v) * fv) : b0; line(a, b, sg.k === 'c' ? '#dc2626' : '#0f172a', sg.k === 'v' ? 2.6 : sg.k === 'h' ? 1.5 : 1, sg.k === 'h' ? [5, 3.5] : sg.k === 'c' ? [10, 3, 2, 3] : null, 0.35 + 0.65 * fv); });
+      });
+    };
+    const drawObj = () => {
+      if (objA <= 0) return;
+      const V = [Math.sin(st.yaw) * Math.cos(st.pitch), Math.cos(st.yaw) * Math.cos(st.pitch), -Math.sin(st.pitch)];
+      hcPaint(ctx, Wc | 0, Hc | 0, O.F, P, V, dp, { alpha: objA, k });
+    };
+    const drawRays = () => {
+      if (st.show !== 'project' && !(st.show === 'unfold' && t < 0.05)) return;
+      const RP = rayPts();
+      ['front', 'top', 'side'].forEach(kk => {
+        const reach = clamp01(qOf(kk) / 0.5); if (reach <= 0) return;
+        const active = st.show === 'project' && qOf(kk) < 1;
+        RP[kk].forEach(([p, e]) => { const q = reach < 1 ? p.map((v, i) => v + (e[i] - v) * reach) : e;
+          line(p, q, active ? COL[kk] : '#64748b', active ? 2 : 1.2, [0.1, 5], active ? 0.95 : 0.75, -phase);
+          if (reach < 1) { const Q = P(q); ctx.globalAlpha = 1; ctx.fillStyle = COL[kk]; ctx.beginPath(); ctx.arc(Q[0], Q[1], 3.2 * dp, 0, 7); ctx.fill(); } });
+      });
+    };
+    const arrow = (a, b, col, label) => {
+      const A = P(a), B = P(b), ang = Math.atan2(B[1] - A[1], B[0] - A[0]);
+      ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 8 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0], B[1]); ctx.stroke();   // viền sáng cho nổi trên vật thể
+      ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = 4.5 * dp; ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(B[0] - 10 * dp * Math.cos(ang), B[1] - 10 * dp * Math.sin(ang)); ctx.stroke();
+      const hl = 19 * dp; ctx.beginPath(); ctx.moveTo(B[0], B[1]); ctx.lineTo(B[0] - hl * Math.cos(ang - 0.42), B[1] - hl * Math.sin(ang - 0.42)); ctx.lineTo(B[0] - hl * Math.cos(ang + 0.42), B[1] - hl * Math.sin(ang + 0.42)); ctx.closePath();
+      ctx.lineWidth = 3 * dp; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.stroke(); ctx.fill();
+      if (label) { ctx.font = `800 ${Math.round(13.5 * dp)}px system-ui,sans-serif`; ctx.lineJoin = 'round'; ctx.lineWidth = 4 * dp; ctx.strokeStyle = '#fff'; ctx.strokeText(label, A[0] + 6 * dp, A[1] - 9 * dp); ctx.fillText(label, A[0] + 6 * dp, A[1] - 9 * dp); }
+    };
+    const labels = () => {
+      ctx.font = `700 ${Math.round(12.5 * dp)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+      if (t > 0.95 && opt.cleanEnd) return;   // kết quả sau cùng: chỉ còn bản vẽ, không ghi chữ
+      const NAME = t > 0.95 ? { front: 'Hình chiếu đứng', top: 'Hình chiếu bằng', side: 'Hình chiếu cạnh' } : { front: 'MP chiếu đứng', top: 'MP chiếu bằng', side: 'MP chiếu cạnh' };
+      const PL = ['front', 'top', 'side'].map(kk => { const C = G.planes[kk].c.map(p => turn(p, kk, t)).map(P); return { kk, C, c: [C.reduce((a, b) => a + b[0], 0) / 4, C.reduce((a, b) => a + b[1], 0) / 4] }; });
+      const sc0 = [PL.reduce((a, b) => a + b.c[0], 0) / 3, PL.reduce((a, b) => a + b.c[1], 0) / 3];
+      PL.forEach(({ kk, C, c }) => {
+        const far = C.reduce((a, b) => Math.hypot(b[0] - sc0[0], b[1] - sc0[1]) > Math.hypot(a[0] - sc0[0], a[1] - sc0[1]) ? b : a);
+        const tw = ctx.measureText(NAME[kk]).width + 14 * dp;
+        let x = c[0] + (far[0] - c[0]) * 0.62, y = c[1] + (far[1] - c[1]) * 0.78 + 5 * dp;
+        x = Math.max(tw / 2 + 4, Math.min(Wc - tw / 2 - 4, x)); y = Math.max(18 * dp, Math.min(Hc - 6 * dp, y));
+        ctx.globalAlpha = 0.95; ctx.fillStyle = COL[kk]; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - tw / 2, y - 15 * dp, tw, 20 * dp, 10 * dp) : ctx.rect(x - tw / 2, y - 15 * dp, tw, 20 * dp); ctx.fill(); ctx.globalAlpha = 1;
+        ctx.fillStyle = '#fff'; ctx.fillText(NAME[kk], x, y);
+      });
+      ctx.textAlign = 'left';
+    };
+    if (showPl && m === 1) drawPlanes();
+    if (showPl) drawRays();
+    drawObj();
+    if (st.show === 'object' || (showPl && t < 0.05)) { const { W, D, H } = O; arrow([W * 0.5, -2.6, H * 0.45], [W * 0.5, -0.4, H * 0.45], '#6b2f0a', st.show === 'object' ? 'Hướng chiếu từ trước' : ''); }
+    if (showPl && m === 3) drawPlanes();
+    if (showPl) labels();
+  };
+  const fit = () => { const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1; canvas.width = Math.max(200, r.width * d); canvas.height = Math.max(200, r.height * d); draw(); };
+  let drag = null; const pts = new Map();
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); drag = { x: e.clientX, y: e.clientY, d: null }; cancelAnimationFrame(raf); });
+  canvas.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [p, q] = [...pts.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (drag.d) st.zoom = Math.max(0.5, Math.min(3, st.zoom * d / drag.d)); drag.d = d; draw(); return; }
+    st.yaw += (e.clientX - drag.x) * 0.01; st.pitch = Math.max(-1.55, Math.min(1.55, st.pitch + (e.clientY - drag.y) * 0.01)); drag.x = e.clientX; drag.y = e.clientY; draw();
+  });
+  const up = e => { pts.delete(e.pointerId); if (!pts.size) drag = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * (e.deltaY < 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+  const anim = (to, ms, done) => {
+    cancelAnimationFrame(raf);
+    const from = { yaw: st.yaw, pitch: st.pitch, t: st.t }, t0 = performance.now();
+    let dy = (to.yaw ?? from.yaw) - from.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy));
+    const step = now => { const k = Math.min(1, (now - t0) / ms), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      st.yaw = from.yaw + dy * e; if (to.pitch != null) st.pitch = from.pitch + (to.pitch - from.pitch) * e; if (to.t != null) st.t = from.t + (to.t - from.t) * e;
+      if (opt.onT) opt.onT(st.t); draw(); if (k < 1) raf = requestAnimationFrame(step); else if (done) done(); };
+    raf = requestAnimationFrame(step);
+  };
+  window.addEventListener('resize', fit);
+  refit(); setTimeout(fit, 0);
+  return {
+    set(o) { if (o.obj) O = o.obj; if (o.m) m = o.m; if (o.show) st.show = o.show; if (o.t != null) st.t = o.t; G = geo(); refit(); draw(); },
+    unfold(ms = 2600) { cancelAnimationFrame(praf); st.p = 1; st.show = 'unfold'; refit(); anim({ t: 1, yaw: 0, pitch: 0 }, ms); },
+    /** chiếu dần: tia chấm chạy từ vật thể tới từng mặt phẳng, hình chiếu hiện ra; các chấm tiếp tục chạy để thấy "đang chiếu" */
+    project(ms = 4800) {
+      cancelAnimationFrame(praf); st.show = 'project'; st.p = 0; const t0 = performance.now(); let last = t0;
+      const step = now => { if (st.show !== 'project') return; st.p = Math.min(1, (now - t0) / ms); phase += (now - last) * 0.02; last = now; draw(); praf = requestAnimationFrame(step); };
+      praf = requestAnimationFrame(step);
+    },
+    view(yaw, pitch) { anim({ yaw, pitch }, 600); },
+    setT(t) { st.t = t; if (t > 0) st.show = 'unfold'; draw(); },
+    iso() { anim({ yaw: 0.62, pitch: 0.42 }, 600); },
+    destroy() { cancelAnimationFrame(raf); cancelAnimationFrame(praf); window.removeEventListener('resize', fit); }
+  };
+}
+
+/** bản vẽ ba hình chiếu trên một tờ: các hình chiếu dóng thẳng hàng, khoảng cách đều (giống kết quả sau khi lật mặt phẳng) */
+function hcSheetSvg(O, m, o = {}) {
+  const V = O.views, cell = o.cell || 40;
+  const gap = o.gap != null ? o.gap : Math.max(0.9, Math.min(1.6, Math.max(O.W, O.D, O.H) * 0.28));
+  const off = m === 1 ? { front: [0, 0], top: [0, -O.D - gap], side: [O.W + gap, 0] } : { front: [0, 0], top: [0, O.H + gap], side: [-O.D - gap, 0] };
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+  ['front', 'top', 'side'].forEach(k => { const v = V[k], [ox, oy] = off[k], u0 = v.u0 || 0, w0 = v.v0 || 0; x0 = Math.min(x0, ox + u0); x1 = Math.max(x1, ox + u0 + v.W); y0 = Math.min(y0, oy + w0); y1 = Math.max(y1, oy + w0 + v.H); });
+  const pad = 0.45; x0 -= pad; x1 += pad; y0 -= pad; y1 += pad;
+  const ST = { v: 'stroke="#0f172a" stroke-width="2.8"', h: 'stroke="#0f172a" stroke-width="1.6" stroke-dasharray="6 4"', c: 'stroke="#dc2626" stroke-width="1.1" stroke-dasharray="12 3 2 3"', n: 'stroke="#0f172a" stroke-width="1.2"', g: 'stroke="#0f766e" stroke-width="1.6"', m: 'stroke="#0f172a" stroke-width="4.2"' };
+  let body = '';
+  ['front', 'top', 'side'].forEach(k => {
+    const [ox, oy] = off[k], X = u => ((ox + u - x0) * cell).toFixed(1), Y = w => ((y1 - (oy + w)) * cell).toFixed(1);
+    V[k].it.forEach(it => {
+      if (it.f || it.tx || it.ar) return;
+      const st = (ST[it.k] || ST.v) + ' fill="none" stroke-linecap="round" stroke-linejoin="round"';
+      if (it.p) body += `<path d="M${it.p.map(q => X(q[0]) + ' ' + Y(q[1])).join(' L')}${it.z ? 'Z' : ''}" ${st}/>`;
+      else if (it.c) body += `<circle cx="${X(it.c[0])}" cy="${Y(it.c[1])}" r="${(it.c[2] * cell).toFixed(1)}" ${st}/>`;
+      else if (it.a) { const [cx, cy, r, a0, a1] = it.a, Pt = a => [X(cx + r * Math.cos(a * Math.PI / 180)), Y(cy + r * Math.sin(a * Math.PI / 180))], [ax, ay] = Pt(a0), [bx, by] = Pt(a1);
+        body += `<path d="M${ax} ${ay} A${(r * cell).toFixed(1)} ${(r * cell).toFixed(1)} 0 ${a1 - a0 > 180 ? 1 : 0} 0 ${bx} ${by}" ${st}/>`; }
+    });
+  });
+  const W = (x1 - x0) * cell, H = (y1 - y0) * cell;
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Bản vẽ ba hình chiếu">${body}</svg>`;
+}
+/** ô 3×3 đặt ba hình chiếu theo phương pháp m (1 hoặc 3) */
+function hcLayoutHtml(O, m, o = {}) {
+  const c = o.cell || 30, V = O.views, card = (k, t) => `<div class="hccell hc-${k}${o.noTag ? ' notag' : ''}">${o.noTag ? '' : `<span class="hctag hc-${k}">${t}</span>`}${HC.svg(V[k], c)}</div>`;
+  const F = card('front', 'Hình chiếu đứng'), T = card('top', 'Hình chiếu bằng'), S = card('side', 'Hình chiếu cạnh'), E = '<div></div>';
+  return `<div class="hclayout m${m}">${m === 1 ? F + S + T + E : E + T + S + F}</div>`;
+}
+
+route(/^\/hcvg$/, params => {
+  const OBJ = HC.OBJ;
+  let tab = (params && params.get('tab')) || 'g1', oi = 0, sc = null, step = 'object';
+  let qs = [], qi = 0, qm = 1, slots = {}, held = null, done = false, score = 0, cards = [];
+  const TABS = [['g1', '①', 'Góc chiếu thứ nhất'], ['g3', '②', 'Góc chiếu thứ ba'], ['ss', '③', 'So sánh'], ['lt', '④', 'Luyện tập']];
+  // giao diện toàn màn hình, không cuộn (cập nhật 10/11/2026)
+  const back = isGV() ? '#/gv?khoi=10' : '#/onluyen';
+  document.body.classList.add('immersive', 'hvfs');
+  const head = () => `<header class="hvbar"><a class="hvback" href="${back}" title="Quay lại (Esc)" aria-label="Quay lại">←</a>
+      <div class="hvttl"><small>Công nghệ 10 · Thiết kế và vẽ kĩ thuật</small><b>Bài 9. Hình chiếu vuông góc</b></div>
+      <nav class="hvtabs">${TABS.map(([k, n, t]) => `<button data-tab="${k}" class="t-${k}${tab === k ? ' on' : ''}"><i>${n}</i>${t}</button>`).join('')}</nav>
+      <button class="hvfsbtn" id="hvfs" title="Bật / tắt toàn màn hình">⛶</button></header>`;
+  let wasFs = false, gone = false;
+  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/hcvg') location.hash = back; };
+  const onFs = () => { if (fsEl()) wasFs = true; else if (wasFs) leave(); };
+  const onKey = e => { if (e.key === 'Escape' && !fsEl()) leave(); };
+  document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs); document.addEventListener('keydown', onKey);
+  { const el = document.documentElement, rq = el.requestFullscreen || el.webkitRequestFullscreen; if (rq && !fsEl()) { try { const pr = rq.call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } catch (e) {} } }
+  const toggleFs = () => { if (fsEl()) { wasFs = false; (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else { const el = document.documentElement, pr = (el.requestFullscreen || el.webkitRequestFullscreen).call(el); if (pr && pr.then) pr.then(() => { wasFs = true; }).catch(() => {}); } };
+  const pickObj = () => `<div class="gcpick compact">${OBJ.map((o, i) => hcBtn(i === oi, `data-o="${i}"`, i, o.ten)).join('')}</div>`;
+  const bindTop = () => {
+    if ($('#hvfs')) $('#hvfs').onclick = toggleFs;
+    $$('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; step = 'object'; if (tab === 'lt') startLT(); else draw(); });
+    $$('[data-o]').forEach(b => b.onclick = () => { oi = +b.dataset.o; step = 'object'; if (tab === 'lt') startLT(); else draw(); });
+  };
+  const kill = () => { if (sc) { sc.destroy(); sc = null; } };
+  const draw = () => {
+    kill();
+    if (tab === 'ss') return drawSS();
+    const m = tab === 'g1' ? 1 : 3, O = OBJ[oi];
+    const STEPS = [['object', '1. Quan sát vật thể'], ['planes', '2. Đặt vào 3 mặt phẳng chiếu'], ['project', '3. Chiếu lên các mặt phẳng'], ['unfold', '4. Lật thành một mặt phẳng']];
+    const txt = {
+      object: 'Xoay vật thể (kéo chuột hoặc vuốt) để quan sát. Mũi tên <b style="color:#6b2f0a">màu nâu</b> là <b>hướng chiếu từ trước</b>.',
+      planes: m === 1 ? 'Đặt vật thể vào góc tạo bởi 3 mặt phẳng vuông góc từng đôi: <b style="color:#e53935">mặt phẳng chiếu đứng</b> ở <b>phía sau</b>, <b style="color:#1e63d6">mặt phẳng chiếu bằng</b> ở <b>phía dưới</b>, <b style="color:#c026d3">mặt phẳng chiếu cạnh</b> ở <b>bên phải</b> vật thể. <b>Vật thể nằm giữa người quan sát và mặt phẳng chiếu.</b>'
+        : 'Đặt 3 mặt phẳng chiếu <b>giữa người quan sát và vật thể</b>: <b style="color:#e53935">mặt phẳng chiếu đứng</b> ở <b>phía trước</b>, <b style="color:#1e63d6">mặt phẳng chiếu bằng</b> ở <b>phía trên</b>, <b style="color:#c026d3">mặt phẳng chiếu cạnh</b> ở <b>bên trái</b> vật thể (các mặt phẳng coi như trong suốt).',
+      project: 'Chiếu vuông góc vật thể lên từng mặt phẳng: nhìn <b>từ trước</b> được hình chiếu đứng, nhìn <b>từ trên</b> được hình chiếu bằng, nhìn <b>từ trái</b> được hình chiếu cạnh. Cạnh thấy vẽ nét liền đậm, cạnh khuất vẽ nét đứt, đường tâm vẽ nét gạch chấm.',
+      unfold: m === 1 ? 'Giữ nguyên mặt phẳng chiếu đứng; <b>lật mặt phẳng chiếu bằng xuống dưới</b> và <b>mặt phẳng chiếu cạnh sang phải</b> 90° cho trùng với mặt phẳng chiếu đứng. Kết quả: <b>hình chiếu bằng ở dưới</b>, <b>hình chiếu cạnh ở bên phải</b> hình chiếu đứng.'
+        : 'Giữ nguyên mặt phẳng chiếu đứng; <b>lật mặt phẳng chiếu bằng lên trên</b> và <b>mặt phẳng chiếu cạnh sang trái</b> 90° cho trùng với mặt phẳng chiếu đứng. Kết quả: <b>hình chiếu bằng ở trên</b>, <b>hình chiếu cạnh ở bên trái</b> hình chiếu đứng.'
+    };
+    const si = STEPS.findIndex(x => x[0] === step), mc = m === 1 ? 'm1' : 'm3';
+    setView(`${head()}
+      ${pickObj()}
+      <div class="hvstage ${mc}">
+        <section class="hvcanvas">
+          <div class="hcsteps">${STEPS.map(([k, t], i) => `<button data-step="${k}" class="s${i + 1}${step === k ? ' on' : ''}${i < si ? ' done' : ''}"><i>${i < si ? '✓' : i + 1}</i><span>${t.replace(/^\d\.\s*/, '')}</span></button>`).join('')}</div>
+          <canvas id="hc3d" class="hc3d"></canvas>
+          <div class="hvctl">
+            ${step === 'unfold' ? `<label class="hvrange">Lật <input id="tt" type="range" min="0" max="100" value="100"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : step === 'project' ? '<button class="btn ghost sm" id="reproj">▶ Chiếu lại</button><span class="hvhint">Lần lượt: đứng → bằng → cạnh</span>' : '<span class="hvhint">🖱️ Kéo để xoay · cuộn để phóng to</span>'}
+            <span class="grow"></span><button class="btn ghost sm" id="iso">↺ Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">👁 Nhìn thẳng từ trước</button></div>
+        </section>
+        <aside class="hvinfo">
+          <div class="hvmeth"><span>${m === 1 ? 'Phương pháp chiếu góc thứ nhất' : 'Phương pháp chiếu góc thứ ba'}</span><b>Hình ${oi + 1}. ${esc(hcShort(O.ten))}</b></div>
+          ${step === 'unfold' ? `<div class="hvresult"><div class="hvrt">Bản vẽ ba hình chiếu</div><div class="hvsheet">${hcSheetSvg(O, m)}</div></div>` : ''}
+          <div class="expl hvexpl"><b class="t">${STEPS[si][1]}</b>${txt[step]}</div>
+          ${step !== 'unfold' ? `<button class="btn block hvnext" id="next">${step === 'object' ? 'Tiếp: Đặt vào 3 mặt phẳng →' : step === 'planes' ? 'Tiếp: Chiếu lên các mặt phẳng →' : 'Tiếp: Lật thành một mặt phẳng →'}</button>`
+            : `<button class="btn block hvnext" data-tab="${m === 1 ? 'g3' : 'ss'}">${m === 1 ? 'Tiếp: Phương pháp chiếu góc thứ ba →' : 'Tiếp: So sánh hai phương pháp →'}</button>`}
+        </aside>
+      </div>`);
+    bindTop();
+    sc = HCScene($('#hc3d'), { obj: O, m, show: step === 'unfold' ? 'planes' : step, onT: t => { const r = $('#tt'); if (r) r.value = Math.round(t * 100); } });
+    if (step === 'unfold') setTimeout(() => sc && sc.unfold(), 350);
+    if (step === 'project') { sc.project(); if ($('#reproj')) $('#reproj').onclick = () => sc.project(); }
+    $$('[data-step]').forEach(b => b.onclick = () => { step = b.dataset.step; draw(); });
+    if ($('#next')) $('#next').onclick = () => { step = step === 'object' ? 'planes' : step === 'planes' ? 'project' : 'unfold'; draw(); };
+    if ($('#tt')) $('#tt').oninput = e => sc.setT(+e.target.value / 100);
+    if ($('#replay')) $('#replay').onclick = () => { sc.set({ show: 'planes', t: 0 }); sc.iso(); setTimeout(() => sc.unfold(), 700); };
+    $('#iso').onclick = () => sc.iso(); $('#fr').onclick = () => sc.view(0, 0);
+  };
+  /* ---- So sánh ---- */
+  const drawSS = () => {
+    const O = OBJ[oi];
+    setView(`${head()}${pickObj()}
+      <div class="hccompare"><div class="card"><h3 style="margin-top:0;color:#0f766e">Phương pháp chiếu góc thứ nhất</h3>${hcLayoutHtml(O, 1, { cell: 26 })}</div>
+        <div class="card"><h3 style="margin-top:0;color:#7c3aed">Phương pháp chiếu góc thứ ba</h3>${hcLayoutHtml(O, 3, { cell: 26 })}</div></div>
+      <div class="card"><div class="tablewrap"><table><thead><tr><th></th><th>Góc chiếu thứ nhất</th><th>Góc chiếu thứ ba</th></tr></thead><tbody>
+        <tr><td><b>Vị trí vật thể</b></td><td>Vật thể nằm <b>giữa</b> người quan sát và mặt phẳng chiếu</td><td>Mặt phẳng chiếu nằm <b>giữa</b> người quan sát và vật thể</td></tr>
+        <tr><td><b>Mặt phẳng chiếu đứng</b></td><td>Phía sau vật thể</td><td>Phía trước vật thể</td></tr>
+        <tr><td><b>Mặt phẳng chiếu bằng</b></td><td>Phía dưới vật thể → lật xuống</td><td>Phía trên vật thể → lật lên</td></tr>
+        <tr><td><b>Mặt phẳng chiếu cạnh</b></td><td>Bên phải vật thể → lật sang phải</td><td>Bên trái vật thể → lật sang trái</td></tr>
+        <tr><td><b>Hình chiếu bằng</b></td><td>Đặt <b>dưới</b> hình chiếu đứng</td><td>Đặt <b>trên</b> hình chiếu đứng</td></tr>
+        <tr><td><b>Hình chiếu cạnh</b></td><td>Đặt bên <b>phải</b> hình chiếu đứng</td><td>Đặt bên <b>trái</b> hình chiếu đứng</td></tr>
+        <tr><td><b>Giống nhau</b></td><td colspan="2">Ba hình chiếu giống hệt nhau (cùng nhìn từ trước, từ trên, từ trái); chỉ <b>khác vị trí đặt</b>. Các hình chiếu luôn dóng thẳng hàng; cạnh khuất vẽ nét đứt.</td></tr>
+        <tr><td><b>Nơi sử dụng</b></td><td>Việt Nam (TCVN) và nhiều nước châu Âu</td><td>Mỹ và một số nước khác</td></tr></tbody></table></div>
+        <p class="hint">Mẹo nhớ: <b>Góc thứ nhất</b> – hình nằm ở phía <b>đối diện</b> hướng nhìn (nhìn từ trên → vẽ ở dưới; nhìn từ trái → vẽ bên phải). <b>Góc thứ ba</b> – hình nằm ở <b>cùng phía</b> hướng nhìn (nhìn từ trên → vẽ ở trên; nhìn từ trái → vẽ bên trái).</p></div>
+      <div class="card"><button class="btn block" data-tab="lt">Tiếp: Luyện tập tìm hình chiếu →</button></div>`);
+    bindTop();
+  };
+  /* ---- Luyện tập: mỗi hình làm theo 2 phương pháp ---- */
+  /* ---- Luyện tập: mỗi hình 5 câu – xếp 3 hình chiếu theo góc 1, góc 3; chọn hình chiếu đứng, bằng, cạnh đúng ---- */
+  const startLT = () => {
+    const O = OBJ[oi];
+    qs = ['g1', 'g3', 'pf', 'pt', 'ps'].map(kd => {
+      if (kd === 'g1' || kd === 'g3') return { kd, m: kd === 'g1' ? 1 : 3, slots: {}, held: null, cards: shuffle(['front', 'top', 'side', ...(O.dis || []).slice(0, 2)]) };
+      const k = { pf: 'front', pt: 'top', ps: 'side' }[kd];
+      return { kd, k, opts: shuffle([{ v: O.views[k], ok: true }, ...HCQ.variants(O, k)]) };
+    });
+    qi = 0; score = 0; done = false; ans9 = null; drawLT();
+  };
+  let ans9 = null;
+  const drawLT = () => {
+    kill();
+    const O = OBJ[oi];
+    if (qi >= qs.length) {
+      const hk = 'hist_' + uid(), hist = store.get(hk, []); hist.push({ t: Date.now(), title: 'Hình chiếu vuông góc – ' + hcShort(O.ten), key: '', loai: 'game', diem: Math.round(score / qs.length * 1000) / 100, dung: score, tong: qs.length, giay: 0 }); store.set(hk, hist.slice(-300));
+      setView(`${head()}${pickObj()}<div class="hero"><h1>Xong Hình ${oi + 1}! 🎉</h1><p class="sub">Em làm đúng <b>${score}/${qs.length}</b> câu.</p></div><div class="row"><button class="btn ghost" id="again">↺ Làm lại</button><button class="btn" id="nxo">Hình tiếp →</button></div>`);
+      bindTop(); $('#again').onclick = startLT; $('#nxo').onclick = () => { oi = (oi + 1) % OBJ.length; startLT(); }; return;
+    }
+    const q = qs[qi], nx = `<button class="btn block" id="nx" style="margin-top:10px">${qi < qs.length - 1 ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+    const model = `<div><canvas id="hc3d" class="hc3d" style="height:260px"></canvas><div class="row" style="gap:6px;margin-top:6px;flex-wrap:wrap"><button class="btn ghost sm" data-v="iso">Trục đo</button><button class="btn ghost sm" data-v="fr">Từ trước</button><button class="btn ghost sm" data-v="tp">Từ trên</button><button class="btn ghost sm" data-v="lf">Từ trái</button></div>
+      </div>`;
+    let body;
+    if (q.kd === 'g1' || q.kd === 'g3') {
+      const need = HCQ.NEED(q.m);
+      const slot = pos => { const id = q.slots[pos], st = done ? (need[pos] ? (id === need[pos] ? 'ok' : 'bad') : (id ? 'bad' : '')) : '';
+        return `<button class="gcslot ${st} ${q.held ? 'can' : ''}" data-slot="${pos}">${id ? HC.svg(O.views[id], 18) : `<span class="hint">${{ mid: 'Ô giữa', above: 'Ô trên', below: 'Ô dưới', left: 'Ô trái', right: 'Ô phải' }[pos]}</span>`}</button>`; };
+      body = `<div class="stem">Tìm vị trí đặt các hình chiếu theo <b style="color:${q.m === 1 ? '#0f766e' : '#7c3aed'}">phương pháp chiếu góc thứ ${q.m === 1 ? 'nhất' : 'ba'}</b>: chọn đúng <b>hình chiếu đứng, hình chiếu bằng, hình chiếu cạnh</b> rồi đặt vào đúng ô. <span class="hint">Bấm thẻ, rồi bấm ô. Có thẻ thừa gây nhiễu.</span></div>
+        <div class="hcpractice">${model}<div><div class="gcgrid"><div></div>${slot('above')}<div></div>${slot('left')}${slot('mid')}${slot('right')}<div></div>${slot('below')}<div></div></div>
+          <div class="row" style="justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px">${q.cards.filter(c => !Object.values(q.slots).includes(c)).map(c => `<button class="gccard ${q.held === c ? 'on' : ''}" data-card="${c}" ${done ? 'disabled' : ''}>${HC.svg(O.views[c], 15)}</button>`).join('') || '<span class="hint">Đã đặt hết thẻ</span>'}</div></div></div>
+        ${done ? `<div class="expl ${q.ok ? 'ans' : ''}"><b class="t">${q.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>Góc chiếu thứ ${q.m === 1 ? 'nhất' : 'ba'}: hình chiếu đứng ở giữa, hình chiếu bằng đặt <b>${q.m === 1 ? 'dưới' : 'trên'}</b>, hình chiếu cạnh đặt bên <b>${q.m === 1 ? 'phải' : 'trái'}</b> hình chiếu đứng. ${(O.dis || []).map(d => O.views[d] && O.views[d].why ? '<br><span class="hint">Thẻ thừa: ' + O.views[d].why + '</span>' : '').join('')}</div><div style="margin-top:8px"><b>Đáp án</b>${hcLayoutHtml(O, q.m, { cell: 18 })}</div>${nx}`
+          : `<button class="btn block" id="ck" style="margin-top:12px" ${Object.keys(q.slots).length ? '' : 'disabled'}>Kiểm tra</button>`}`;
+    } else {
+      const ch = ans9 != null ? q.opts[ans9] : null;
+      body = `<div class="stem">Quan sát vật thể (xoay được). Trong 4 hình dưới đây, đâu là <b>${HCQ.VN[q.k]}</b> đúng (${HCQ.VDIR[q.k]})?</div>
+        <div class="hcpractice">${model}<div class="hcopts" style="grid-template-columns:1fr 1fr;margin-top:0">${q.opts.map((o, i) => `<button class="hcopt ${ch ? (o.ok ? 'ok' : i === ans9 ? 'bad' : '') : ''}" data-a="${i}" ${ch ? 'disabled' : ''}><span class="hcoptl">${'ABCD'[i]}</span>${HC.svg(o.v, 22)}</button>`).join('')}</div></div>
+        ${ch ? `<div class="expl ${ch.ok ? 'ans' : ''}"><b class="t">${ch.ok ? '✔ Chính xác!' : '✘ Chưa đúng.'}</b>${ch.ok ? 'Đúng ' + HCQ.VN[q.k] + ' – ' + HCQ.VDIR[q.k] + '.' : (ch.why || '') + ' Đáp án đúng là ' + 'ABCD'[q.opts.findIndex(o => o.ok)] + '.'}</div>${nx}` : ''}`;
+    }
+    setView(`${head()}${pickObj()}
+      <div class="qbar"><div class="title">Câu ${qi + 1}/${qs.length} · ${{ g1: 'Xếp hình chiếu – góc thứ nhất', g3: 'Xếp hình chiếu – góc thứ ba', pf: 'Chọn hình chiếu đứng', pt: 'Chọn hình chiếu bằng', ps: 'Chọn hình chiếu cạnh' }[q.kd]}</div><span class="timer">✔ ${score}</span></div>
+      <div class="qcard">${body}</div>`);
+    bindTop();
+    sc = HCScene($('#hc3d'), { obj: O, m: q.m || 1, show: 'object' });
+    $$('[data-v]').forEach(b => b.onclick = () => ({ iso: () => sc.iso(), fr: () => sc.view(0, 0), tp: () => sc.view(0, 1.5707), lf: () => sc.view(Math.PI / 2, 0) })[b.dataset.v]());
+    $$('[data-card]').forEach(b => b.onclick = () => { q.held = q.held === b.dataset.card ? null : b.dataset.card; drawLT(); });
+    $$('[data-slot]').forEach(b => b.onclick = () => { if (done) return; const p = b.dataset.slot; if (q.held) { q.slots[p] = q.held; q.held = null; } else if (q.slots[p]) delete q.slots[p]; drawLT(); });
+    if ($('#ck')) $('#ck').onclick = () => { const need = HCQ.NEED(q.m); q.ok = ['mid', 'above', 'below', 'left', 'right'].every(p => (q.slots[p] || null) === (need[p] || null)); if (q.ok) score++; done = true; drawLT(); };
+    $$('[data-a]').forEach(b => b.onclick = () => { ans9 = +b.dataset.a; if (q.opts[ans9].ok) score++; drawLT(); });
+    if ($('#nx')) $('#nx').onclick = () => { qi++; done = false; ans9 = null; drawLT(); };
+  };
+  cleanup = () => {
+    kill(); gone = true;
+    document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs); document.removeEventListener('keydown', onKey);
+    if (fsEl()) { try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {} }
+    document.body.classList.remove('immersive', 'hvfs');
+  };
+  if (tab === 'lt') startLT(); else draw();
+});
+
+/** tên ngắn gọn của vật thể trên nút chọn (tên đầy đủ, số hình SGK hiện khi rê chuột) */
+const HC_SHORT = { 'Khối bậc có vát': 'Khối bậc vát', 'Gối đỡ (SGK H.9.9)': 'Gối đỡ', 'Khối chữ L có hai lỗ (SGK H.9.1)': 'Chữ L hai lỗ', 'Giá đỡ (SGK H.9.10)': 'Giá đỡ',
+  'Gối đỡ chữ U': 'Chữ U', 'Khối chữ L có lỗ': 'Chữ L có lỗ', 'Khối hộp vát góc có lỗ (SGK H.11.14)': 'Khối vát có lỗ', 'Tấm có lỗ bậc': 'Tấm lỗ bậc', 'Ống lót có vai': 'Ống lót', 'Vật thể có rãnh và lỗ (SGK H.10.16)': 'Khối có rãnh',
+  'Giá đỡ (SGK H.10.10)': 'Giá đỡ', 'Khay (SGK H.10.6)': 'Khay', 'Gối đỡ (SGK H.10.17)': 'Gối đỡ', 'Trục có rãnh then (SGK H.10.9)': 'Trục', 'Giá chữ L (SGK H.12.5)': 'Giá chữ L', 'Ngôi nhà (SGK H.12.7a)': 'Ngôi nhà', 'Khối chữ T ngược': 'Chữ T ngược', 'Gối đỡ có vát': 'Gối vát', 'Khối ghép có rãnh': 'Khối ghép', 'Tai treo có lỗ': 'Tai treo', 'Khối chữ L': 'Chữ L', 'Khối bậc thang': 'Bậc thang' };
+const hcShort = t => HC_SHORT[t] || String(t).replace(/\s*\(.*\)\s*$/, '');
+const hcBtn = (on, attr, i, ten, extra = '') => `<button class="${on ? 'on' : ''}" ${attr} title="${esc(ten)}">${extra}Hình ${i + 1}. ${esc(hcShort(ten))}</button>`;
+
+/* ================= KHỐI 10 – BỘ VẼ 3D CHUNG (z-buffer) ================= */
+/** vẽ các mặt bằng bộ đệm độ sâu rồi vẽ cạnh thấy và đường bao mặt cong.
+ * P: điểm 3D → [x, y, độ sâu] (pixel); V: hướng nhìn (đơn vị); o: {alpha, k (pixel/đơn vị), color:[r,g,b]} */
+function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
+  let B = hcPaint.buf;
+  if (!B || B.w !== w || B.h !== h) B = hcPaint.buf = { w, h, img: ctx.createImageData(w, h), dep: new Float32Array(w * h), ids: new Int32Array(w * h), cv: Object.assign(document.createElement('canvas'), { width: w, height: h }) };
+  const { img, dep, ids } = B, px = img.data; dep.fill(Infinity); px.fill(0); ids.fill(0);
+  const Lt = [0.35, -0.6, 0.72], ln = Math.hypot(...Lt), base = o.color || [1, 0.85, 0.52];
+  const hs = Math.max(6, Math.round(7 * dp)), hw = Math.max(1, Math.round(1.3 * dp));
+  const front = o.front || (f => f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2] < -1e-3);
+  const vis = [];
+  faces.forEach((f, fi) => {
+    if (!front(f)) return;
+    const loops = f.loops.map(L => L.map(P)), Q = loops[0];
+    let best = 0, i1 = 1, i2 = 2;
+    for (let i = 1; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) { const ar = Math.abs((Q[i][0] - Q[0][0]) * (Q[j][1] - Q[0][1]) - (Q[j][0] - Q[0][0]) * (Q[i][1] - Q[0][1])); if (ar > best) { best = ar; i1 = i; i2 = j; } }
+    if (best < 1e-6) return;
+    const A = Q[0], Bq = Q[i1], C = Q[i2], bx = Bq[0] - A[0], by = Bq[1] - A[1], cx = C[0] - A[0], cy = C[1] - A[1], det = bx * cy - cx * by;
+    const ga = ((Bq[2] - A[2]) * cy - (C[2] - A[2]) * by) / det, gb = (bx * (C[2] - A[2]) - cx * (Bq[2] - A[2])) / det;
+    const dAt = (x, y) => A[2] + ga * (x - A[0]) + gb * (y - A[1]);
+    const lam = Math.max(0, (f.n[0] * Lt[0] + f.n[1] * Lt[1] + f.n[2] * Lt[2]) / ln), cc = 178 + 70 * lam;
+    const R = o.draft ? 255 : f.cut ? 252 : cc * base[0], G = o.draft ? 255 : f.cut ? 214 : cc * base[1], Bc = o.draft ? 255 : f.cut ? 200 : cc * base[2], HC0 = o.draft ? 30 : 150, HC1 = o.draft ? 41 : 36, HC2 = o.draft ? 59 : 36;
+    let y0 = Infinity, y1 = -Infinity; Q.forEach(q => { y0 = Math.min(y0, q[1]); y1 = Math.max(y1, q[1]); });
+    y0 = Math.max(0, Math.floor(y0)); y1 = Math.min(h - 1, Math.ceil(y1));
+    for (let y = y0; y <= y1; y++) {
+      const yc = y + 0.5, xs = [];
+      loops.forEach(Lp => { for (let q = 0; q < Lp.length; q++) { const a = Lp[q], b = Lp[(q + 1) % Lp.length]; if ((a[1] <= yc) !== (b[1] <= yc)) xs.push(a[0] + (yc - a[1]) / (b[1] - a[1]) * (b[0] - a[0])); } });
+      xs.sort((u, v) => u - v);
+      for (let s = 0; s + 1 < xs.length; s += 2) {
+        const xa = Math.max(0, Math.round(xs[s])), xb = Math.min(w, Math.round(xs[s + 1]));
+        if (xb <= xa) continue;
+        let d = dAt(xa + 0.5, yc);
+        for (let x = xa; x < xb; x++, d += ga) {
+          const id = y * w + x;
+          if (d < dep[id]) { dep[id] = d; ids[id] = fi + 1; const p4 = id * 4; if (f.cut && (x + y) % hs < hw) { px[p4] = HC0; px[p4 + 1] = HC1; px[p4 + 2] = HC2; } else { px[p4] = R; px[p4 + 1] = G; px[p4 + 2] = Bc; } px[p4 + 3] = 255; }
+        }
+      }
+    }
+    vis.push(f);
+  });
+  B.cv.getContext('2d').putImageData(img, 0, 0);
+  const al = o.alpha == null ? 1 : o.alpha;
+  ctx.globalAlpha = al; ctx.drawImage(B.cv, 0, 0); ctx.globalAlpha = 1;
+  const bias = o.bias != null ? o.bias : Math.max(0.15, 5 * dp / (o.k || 40));
+  let own1 = 0, own2 = 0;
+  const seen = (sx, sy, d) => { const x = sx | 0, y = sy | 0; let mn = Infinity; for (let yy = y - 1; yy <= y + 1; yy++) for (let xx = x - 1; xx <= x + 1; xx++) if (xx >= 0 && yy >= 0 && xx < w && yy < h) { const id = yy * w + xx, fid = ids[id]; if (fid && (fid === own1 || fid === own2)) return true; mn = Math.min(mn, dep[id]); } return d <= mn + bias; };
+  ctx.globalAlpha = al; ctx.strokeStyle = o.edge || '#3b2a0c'; ctx.lineWidth = (o.lw || 2.3) * dp; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+  const HID = [];
+  const seg = (a, b, onlyHid) => {
+    const A = P(a), Bp = P(b), n = Math.max(2, Math.ceil(Math.hypot(Bp[0] - A[0], Bp[1] - A[1]) / (2 * dp)));
+    let on = false, hs0 = null, last = null;
+    for (let s = 0; s <= n; s++) {
+      const t = s / n, x = A[0] + (Bp[0] - A[0]) * t, y = A[1] + (Bp[1] - A[1]) * t, v = seen(x, y, A[2] + (Bp[2] - A[2]) * t);
+      if (!onlyHid) { if (v && !on) { ctx.moveTo(x, y); on = true; } else if (v) ctx.lineTo(x, y); else on = false; }
+      if (o.hidden) { if (!v) { if (!hs0) hs0 = [x, y]; last = [x, y]; } else if (hs0) { HID.push([hs0, last]); hs0 = null; } }
+    }
+    if (hs0) HID.push([hs0, last]);
+  };
+  const idx = new Map(faces.map((f, i) => [f, i + 1]));
+  vis.forEach(f => { own1 = idx.get(f); own2 = 0; f.edges.forEach(([a, b]) => seg(a, b)); });
+  if (!o.front) { own1 = own2 = 0; faces.forEach(f => { if (Math.abs(f.n[0] * V[0] + f.n[1] * V[1] + f.n[2] * V[2]) <= 1e-3) f.edges.forEach(([a, b]) => seg(a, b)); }); }
+  faces.forEach(f => f.sil && f.sil.forEach(s => { if (front(f) !== front(s.g)) { own1 = idx.get(f); own2 = idx.get(s.g) || 0; seg(s.a, s.b); } }));
+  if (o.hidden) { own1 = own2 = 0; faces.forEach(f => { if (!vis.includes(f)) f.edges.forEach(([a, b]) => seg(a, b, true)); }); }
+  ctx.stroke();
+  if (HID.length) {
+    ctx.lineWidth = 1.3 * dp; ctx.setLineDash([5 * dp, 3.5 * dp]); ctx.beginPath();
+    HID.forEach(([p, q]) => { if (Math.hypot(q[0] - p[0], q[1] - p[1]) > 3 * dp) { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); } });
+    ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.globalAlpha = 1;
+  return vis;
+}
+
+const HCQ = (() => {
+  const flipIt = (it, W, H, fu, fv) => it.map(x => {
+    const U = u => fu ? W - u : u, Vv = v => fv ? H - v : v;
+    if (x.p) return { ...x, p: x.p.map(q => [U(q[0]), Vv(q[1])]) };
+    if (x.c) return { ...x, c: [U(x.c[0]), Vv(x.c[1]), x.c[2]] };
+    if (x.a) { let [cx, cy, r, a0, a1] = x.a; if (fu) [a0, a1] = [180 - a1, 180 - a0]; if (fv) [a0, a1] = [-a1, -a0]; return { ...x, a: [U(cx), Vv(cy), r, a0, a1] }; }
+    return x;
+  });
+  const vsig = v => JSON.stringify(v.it.map(x => x.k + JSON.stringify(x.p ? x.p.map(q => q.map(n => n.toFixed(2))).sort() : x.c || x.a || '')).sort());
+  const variants = (T, k) => {
+    const v = T.views[k], C = [];
+    const add = (it, why) => C.push({ v: { W: v.W, H: v.H, it }, why });
+    add(flipIt(v.it, v.W, v.H, true, false), 'Hình này bị lật trái – phải.');
+    add(flipIt(v.it, v.W, v.H, false, true), 'Hình này bị lật ngược trên – dưới.');
+    if (v.it.some(x => x.k === 'h')) { add(v.it.map(x => x.k === 'h' ? { ...x, k: 'v' } : x), 'Cạnh bị che khuất phải vẽ bằng nét đứt, không vẽ nét liền.'); add(v.it.filter(x => x.k !== 'h'), 'Hình này thiếu các cạnh khuất (nét đứt).'); }
+    Object.keys(T.views).filter(n => !['front', 'top', 'side', k].includes(n)).forEach(n => C.push({ v: T.views[n], why: T.views[n].why || 'Đây không phải hình chiếu cần tìm.' }));
+    ['front', 'top', 'side'].filter(n => n !== k).forEach(n => C.push({ v: T.views[n], why: n === 'front' ? 'Đây là hình chiếu đứng (nhìn từ trước).' : n === 'top' ? 'Đây là hình chiếu bằng (nhìn từ trên).' : 'Đây là hình chiếu cạnh (nhìn từ trái).' }));
+    const seen = new Set([vsig(v)]), out = [];
+    shuffle(C.slice(0, 4)).concat(C.slice(4)).forEach(c => { const s = vsig(c.v); if (out.length < 3 && !seen.has(s)) { seen.add(s); out.push(c); } });
+    return out;
+  };
+  const VN = { front: 'hình chiếu đứng', top: 'hình chiếu bằng', side: 'hình chiếu cạnh' }, VDIR = { front: 'nhìn từ trước', top: 'nhìn từ trên xuống', side: 'nhìn từ trái sang' };
+  const NEED = m => m === 1 ? { mid: 'front', below: 'top', right: 'side' } : { mid: 'front', above: 'top', left: 'side' };
+  return { variants, VN, VDIR, NEED };
+})();
+
+/* khởi động: mở thẳng Bài 9 (giữ ?tab=g1|g3|ss|lt nếu có) */
+function render() {
+  if (cleanup) { try { cleanup(); } catch (e) {} cleanup = null; }
+  const qs = (location.hash.split('?')[1]) || '';
+  const params = new URLSearchParams(qs);
+  routes[0][1](params);
+}
+render();
+
+})();
+</script>
+</body>
+</html>
