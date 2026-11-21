@@ -1277,15 +1277,13 @@ route(/^\/gv\/thitn$/, async params => {
   };
   /* bài làm lần gần nhất của 1 HS: từng câu đúng/sai, phương án em chọn */
   const studentView = (x, r) => {
-    const ct = r.ct || {};
+    /* 21/11/2026: hiện nguyên bộ đề – câu sai đánh ✘ đỏ (phương án em chọn), đáp án đúng tích ✔ xanh */
+    const ct = r.ct || {}, a = { ids: order.map(q => q.id), perm: {}, resp: {} };
+    order.forEach(q => { const v = ct[q.id]; if (!v) return; a.resp[q.id] = q.t === 'T' ? String(v).split('').map(c => c === '-' ? '' : c) : v; });
     const wrongQ = order.filter(q => r.sai.includes(q.id));
-    return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · ${fmt(r.diem)} điểm · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}</div>
-      ${wrongQ.length ? `<div class="err" style="margin-bottom:8px"><b>Câu chọn sai (${wrongQ.length}):</b> ${wrongQ.map(q => { const a = ct[q.id]; return `${posOf(q)}${a ? ' – chọn ' + esc(q.t === 'M' ? a : String(a).split('').map((v, i) => 'abcd'[i] + ')' + (v === '-' ? '–' : v)).join(' ')) : ' – bỏ trống'}`; }).join(' · ')}</div>` : '<div class="okmsg" style="margin-bottom:8px">Không có câu sai.</div>'}
-      <div class="stuans">${order.map(q => {
-      const a = ct[q.id], ok = !r.sai.includes(q.id), ans = normAns(q);
-      const txt = q.t === 'M' ? (a ? a : '–') : (a ? String(a).split('').map((v, i) => 'abcd'[i] + ')' + (v === '-' ? '–' : v)).join(' ') : '–');
-      return `<span class="sa ${a ? (ok ? 'ok' : 'bad') : 'skip'}" title="${esc(plainQ(q.s).slice(0, 140))}"><b>${posOf(q)}</b> ${esc(txt)}${!ok ? ` <i>(đúng: ${esc(q.t === 'M' ? ans : ans.split('').map((v, i) => 'abcd'[i] + ')' + v).join(' '))})</i>` : ''}</span>`;
-    }).join('')}</div><p class="hint">Xanh: đúng · Đỏ: sai · Xám: bỏ trống. Chữ cái là phương án theo đề gốc.</p>`;
+    return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · <b>${fmt(r.diem)} điểm</b> · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}${wrongQ.length ? ` · <b class="tn-bad">${wrongQ.length} câu sai</b>` : ''}</div>
+      <div class="stufull">${order.map((q, i) => { const ok = !r.sai.includes(q.id), has = !!ct[q.id];
+        return `<div class="stq ${!has ? 'skip' : ok ? 'ok' : 'bad'}"><div class="stmark">${!has ? '⚪ Bỏ trống' : ok ? '✔ Đúng' : '✘ Sai'} · ${posOf(q)}</div>${qHtml(q, a, i, { showAns: true })}</div>`; }).join('')}</div>`;
   };
   if (who && !hs[who]) who = '';
   draw();

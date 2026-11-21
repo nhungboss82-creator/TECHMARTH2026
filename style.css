@@ -922,3 +922,20 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .ontn{display:flex;gap:12px;align-items:center;cursor:pointer;border:2px solid var(--brand2)}
 .ontn input{width:22px;height:22px;flex:none;margin:0}
 .ontn>span{display:flex;flex-direction:column}
+/* GV xem bài làm đề luyện thi: nguyên bộ đề, câu sai ✘ đỏ, đáp án đúng ✔ xanh */
+.stufull{display:flex;flex-direction:column;gap:10px;max-height:none}
+.stq{border:2px solid var(--line);border-radius:12px;padding:6px 8px;background:var(--card)}
+.stq.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.stq.bad{border-color:var(--bad)}
+.stq .stmark{font-weight:700;font-size:.9em;margin:2px 4px 4px}
+.stq.ok .stmark{color:var(--ok)}.stq.bad .stmark{color:var(--bad)}.stq.skip .stmark{color:var(--muted)}
+.stq .qcard{margin:0;box-shadow:none;border:0;padding:4px}
+.stq .qhead .qnum{display:none}
+.stq .opt.right{border-color:var(--ok)!important;background:var(--ok-soft)!important}
+.stq .opt.wrong{border-color:var(--bad)!important;background:var(--bad-soft)!important}
+.stq .opt.right .tx::after{content:" ✔";color:var(--ok);font-weight:800}
+.stq .opt.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
+.stq .tfi.right{background:var(--ok-soft)}
+.stq .tfi.wrong{background:var(--bad-soft)}
+.stq .tfi.right .tx::after{content:" ✔";color:var(--ok);font-weight:800}
+.stq .tfi.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
