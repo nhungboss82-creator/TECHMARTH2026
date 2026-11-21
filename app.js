@@ -666,7 +666,7 @@ function registerByClassCode(params) {
 }
 
 route(/^\/dangkygv$/, () => {
-  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Thầy/cô ở bất kỳ trường nào cũng tự đăng ký được. Sau khi gửi, tài khoản cần <b>Quản trị viên duyệt</b> mới dùng được; mỗi trường quản lý riêng lớp và học sinh của mình.</p>
+  setView(`<div class="auth"><h1>Đăng ký giáo viên</h1><p class="sub">Thầy/cô ở bất kỳ trường nào cũng tự đăng ký được. Sau khi gửi, tài khoản cần <b>giáo viên cùng trường</b> hoặc <b>Quản trị viên</b> duyệt mới dùng được; mỗi trường quản lý riêng lớp và học sinh của mình.</p>
     <form class="card" id="f">
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60">
       ${schoolField('s', CFG.SCHOOL_DEFAULT || SCHOOLS[0])}
@@ -682,7 +682,7 @@ route(/^\/dangkygv$/, () => {
         const s = await api('register_gv', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#e').value, password: $('#p').value });
         addSchools([schoolVal('s')]);
         if (s && s.token) { setSession(s); toast('Đăng ký thành công!'); location.hash = '#/'; }
-        else ($('#f') || {}).innerHTML = '<div class="okmsg">✅ Đã gửi đăng ký. Tài khoản sẽ dùng được sau khi <b>Quản trị viên duyệt</b>. Khi được duyệt, thầy/cô đăng nhập bằng email và mật khẩu vừa tạo.</div>';
+        else ($('#f') || {}).innerHTML = '<div class="okmsg">✅ Đã gửi đăng ký. Tài khoản sẽ dùng được sau khi <b>giáo viên cùng trường</b> hoặc <b>Quản trị viên</b> duyệt. Khi được duyệt, thầy/cô đăng nhập bằng email và mật khẩu vừa tạo.</div>';
       } catch (err) { errBox($('#msg'), err); }
     });
   };
@@ -1835,14 +1835,14 @@ route(/^\/gv$/, async params => {
       ${groups.map(([t, xs], i) => { const id = k + '_' + i, on = fold[id] === undefined ? i === 0 : !!fold[id];
         return `<section class="gh-grp ${KI.c} ${on ? 'open' : ''}"><button type="button" class="gh-grph" data-fold="${id}" aria-expanded="${on}"><span>${t}</span><small>${xs.length} mục</small><span class="gh-chev" aria-hidden="true">▾</span></button>${on ? `<div class="gh-apps">${xs.map(ghApp).join('')}</div>` : ''}</section>`; }).join('') || `<div class="card empty">Nội dung ${KI.t} đang được bổ sung.</div>`}
       <p class="hint gh-legend"><span class="who">GV·HS</span> trình chiếu, HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>
-      <div class="gh-foot"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : ''}</div>`);
+      <div class="gh-foot"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : '<a class="btn ghost sm" href="#/gv/giaovien">👥 Giáo viên trường</a>'}</div>`);
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
     $$('[data-fold]').forEach(b => b.onclick = () => { const id = b.dataset.fold, cur = fold[id] === undefined ? id.endsWith('_0') : !!fold[id]; fold[id] = cur ? 0 : 1; store.set('gh_fold', fold); draw(); });
   };
   const fold = store.get('gh_fold', {});
   draw();
   api('visit_stats').then(r => { window._vs = r; if (location.hash.replace(/\?.*/, '') === '#/gv') draw(); }).catch(() => {});
-  if (session.role === 'admin' && !window._pendShown) api('list_gv').then(l => { const p = l.filter(g => g.TrangThai === 'cho_duyet'); if (p.length && location.hash.replace(/\?.*/, '') === '#/gv') pendingModal(p); }).catch(() => {});
+  if (!window._pendShown) api('list_gv').then(l => { const p = l.filter(g => g.TrangThai === 'cho_duyet'); if (p.length && location.hash.replace(/\?.*/, '') === '#/gv') pendingModal(p); }).catch(() => {});
   try { window._gvCls = null; classes = await gvClasses(); } catch (e) {}
   if (location.hash.replace(/\?.*/, '') === '#/gv') draw();
 });
@@ -1864,7 +1864,36 @@ function pendingModal(list) {
     });
   };
   draw(); document.body.appendChild(ov);
+  window.addEventListener('hashchange', () => ov.remove(), { once: true });
 }
+
+/* ---- Cập nhật 21/11/2026: giáo viên cùng trường tự duyệt / khoá tài khoản GV mới của trường mình ---- */
+route(/^\/gv\/giaovien$/, async () => {
+  if (!needGV()) return;
+  const ST = { cho_duyet: '<span class="pill warn">Chờ duyệt</span>', hoat_dong: '<span class="pill ok">Hoạt động</span>', khoa: '<span class="pill bad">Đã khoá</span>', tu_choi: '<span class="pill bad">Đã từ chối</span>' };
+  let list = null, err = '';
+  const draw = () => {
+    const l = (list || []).slice().sort((x, y) => (y.TrangThai === 'cho_duyet') - (x.TrangThai === 'cho_duyet') || viNameCmp(x.HoTen, y.HoTen));
+    setView(`<a href="#/gv">← Trang chủ</a><h1>👥 Giáo viên ${esc(session.role === 'admin' ? '(tất cả trường)' : session.user.Truong || '')}</h1>
+      <p class="sub">Giáo viên mới đăng ký cùng trường cần được duyệt mới dùng được. Thầy/cô cùng trường duyệt, từ chối hoặc khoá tài khoản tại đây; mỗi trường tự quản lý lớp và học sinh của mình.</p>
+      ${!list ? `<div class="card empty">${esc(err || 'Đang tải…')}</div>` : !l.length ? '<div class="card empty">Chưa có giáo viên nào khác cùng trường.</div>'
+        : `<div class="list">${l.map(g => `<div class="item"><div class="grow"><b>${esc(g.HoTen)}</b> ${ST[g.TrangThai] || ''}<div class="meta">${esc(g.Email)}${session.role === 'admin' ? ' · ' + esc(g.Truong) : ''}</div></div>
+          ${g.MaGV === session.user.MaGV || g.VaiTro === 'admin' ? '' : g.TrangThai === 'hoat_dong' ? `<button class="btn ghost sm" data-g="${g.MaGV}" data-s="khoa">Khoá</button>`
+            : g.TrangThai === 'cho_duyet' ? `<button class="btn sm" data-g="${g.MaGV}" data-s="hoat_dong">✔ Duyệt</button><button class="btn ghost sm" data-g="${g.MaGV}" data-s="tu_choi">✘ Từ chối</button>`
+            : `<button class="btn ghost sm" data-g="${g.MaGV}" data-s="hoat_dong">Mở khoá</button>`}</div>`).join('')}</div>`}`);
+    $$('[data-g]').forEach(b => b.onclick = async () => {
+      const g = list.find(x => x.MaGV === b.dataset.g), s = b.dataset.s;
+      if (s !== 'hoat_dong' && !confirm((s === 'khoa' ? 'Khoá' : 'Từ chối') + ' tài khoản của ' + g.HoTen + '?')) return;
+      await busy(b, async () => {
+        try { await api('approve_gv', { maGV: g.MaGV, status: s, approve: s === 'hoat_dong' }); g.TrangThai = s; toast((s === 'hoat_dong' ? 'Đã duyệt ' : s === 'khoa' ? 'Đã khoá ' : 'Đã từ chối ') + g.HoTen); draw(); }
+        catch (e) { toast(/Admin/.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs – hiện chỉ Quản trị viên duyệt được.' : e.message, 6000); }
+      });
+    });
+  };
+  draw();
+  try { list = await api('list_gv'); } catch (e) { err = /Admin/.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs – hiện chỉ Quản trị viên duyệt được giáo viên.' : e.message; }
+  if (location.hash === '#/gv/giaovien') draw();
+});
 
 /* ---- Các lớp ---- */
 route(/^\/gv\/lop$/, async () => {
