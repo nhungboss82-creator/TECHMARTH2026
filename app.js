@@ -1171,7 +1171,7 @@ route(/^\/gv\/thitn$/, async params => {
     setView(`<a href="#/gv">← Trang giáo viên</a>
       <div class="row" style="align-items:center"><h1 class="grow">🎓 Quản lý đề luyện thi TN THPT</h1><a class="btn ghost sm" href="#/thitn">👁 Xem bộ đề như HS</a></div>
       <div class="row" style="margin:6px 0 10px;gap:8px;flex-wrap:wrap">${schSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
-      <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><h2 style="margin:0">👩‍🎓 Học sinh ôn thi tốt nghiệp</h2><span id="hsselwrap"></span></div><div class="card" id="tnmxbox"></div>
+      <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px"><h2 style="margin:0">👩‍🎓 Học sinh ôn thi tốt nghiệp</h2><span id="hsselwrap"></span><button type="button" class="btn sm" id="tnadd">+ Thêm học sinh</button></div><div class="card" id="tnmxbox"></div>
       <h2>📁 Kết quả từng đề</h2>
       <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
         ${exams.map(d => { const rs = by['DE:' + d] || [], ds = rs.map(r => r.diem);
@@ -1245,6 +1245,35 @@ route(/^\/gv\/thitn$/, async params => {
         });
       };
       drawMx();
+      /* + Thêm học sinh: chọn HS lớp 12 của trường đưa vào danh sách ôn thi (bỏ tích để rút ra) */
+      $('#tnadd').onclick = async () => {
+        let cand; try { cand = await api('ontn_candidates', isAdm && truong != null ? { school: truong } : {}); } catch (e) { toast(/không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp CapNhat_21_11.gs bản mới nhất.' : e.message, 6000); return; }
+        cand.sort((a, b) => String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }) || viNameCmp(a.hoTen, b.hoTen));
+        const pick = new Set(cand.filter(c => c.ontn).map(c => c.maHS)), orig = new Set(pick);
+        let q = '', lopF = '';
+        const ov = document.createElement('div'); ov.className = 'modal-ov';
+        const lops = [...new Set(cand.map(c => c.lop))];
+        const dr = () => {
+          const list = cand.filter(c => (!lopF || c.lop === lopF) && (!q || skNorm(c.hoTen).includes(skNorm(q))));
+          ov.innerHTML = `<div class="modal-box"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">+ Thêm học sinh ôn thi TN</h2><button class="btn ghost sm" data-x>Đóng</button></div>
+            <div class="row" style="gap:8px;margin:10px 0;flex-wrap:wrap"><input id="tnq" placeholder="🔍 Tìm tên học sinh" value="${esc(q)}" style="flex:1;min-width:160px"><select id="tnl"><option value="">Tất cả lớp 12</option>${lops.map(l => `<option ${l === lopF ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
+            <div class="lessonlist" style="max-height:50vh">${list.map(c => `<label class="lchk"><input type="checkbox" data-c="${esc(c.maHS)}" ${pick.has(c.maHS) ? 'checked' : ''}><span class="grow">${esc(c.hoTen)}</span><span class="n">${esc(c.lop)}</span></label>`).join('') || '<div class="empty">Không có học sinh lớp 12 nào.</div>'}</div>
+            <div class="row" style="margin-top:10px;align-items:center"><span class="grow hint">Đã chọn <b>${pick.size}</b> học sinh</span><button class="btn" id="tnsave">Lưu danh sách</button></div></div>`;
+          ov.querySelector('[data-x]').onclick = () => ov.remove();
+          const qi = ov.querySelector('#tnq'); qi.oninput = () => { q = qi.value; const pos = qi.selectionStart; dr(); const n = ov.querySelector('#tnq'); n.focus(); n.setSelectionRange(pos, pos); };
+          ov.querySelector('#tnl').onchange = e => { lopF = e.target.value; dr(); };
+          ov.querySelectorAll('[data-c]').forEach(i => i.onchange = () => { i.checked ? pick.add(i.dataset.c) : pick.delete(i.dataset.c); ov.querySelector('.grow.hint b').textContent = pick.size; });
+          ov.querySelector('#tnsave').onclick = async e => {
+            const add = [...pick].filter(x => !orig.has(x)), del = [...orig].filter(x => !pick.has(x));
+            await busy(e.target, async () => {
+              try { if (add.length) await api('set_ontn_gv', { ids: add, on: true }); if (del.length) await api('set_ontn_gv', { ids: del, on: false }); toast(`Đã cập nhật: thêm ${add.length}, bớt ${del.length} học sinh`); ov.remove(); window.dispatchEvent(new HashChangeEvent('hashchange')); }
+              catch (err) { toast(err.message, 6000); }
+            });
+          };
+        };
+        dr(); document.body.appendChild(ov);
+        window.addEventListener('hashchange', () => ov.remove(), { once: true });
+      };
     }
     if ($('#lsel')) $('#lsel').onchange = e => go('', e.target.value);
     if ($('#tsel')) $('#tsel').onchange = e => go('', '', e.target.value);
