@@ -1179,7 +1179,8 @@ route(/^\/gv\/thitn$/, async params => {
           const pos = top ? (/_(C|DS)(\d+)$/.exec(top.q.id) || []) : [];
           return `<tr class="${rs.length ? 'click' : 'muted'}" data-de="${esc(d)}"><td><b>Đề ${esc(nm(d))}</b></td><td class="n">${new Set(rs.map(r => r.maHS)).size || '–'}</td><td class="n">${rs.length || '–'}</td>
             <td class="n"><b>${rs.length ? fmt(ds.reduce((a, b) => a + b, 0) / ds.length) : '–'}</b></td><td class="n">${rs.length ? fmt(Math.max(...ds)) : '–'}</td><td class="n">${rs.length ? fmt(Math.min(...ds)) : '–'}</td>
-            <td>${top && top.sai ? `${pos[1] === 'DS' ? 'Đ/S câu ' + +pos[2] : 'Câu ' + +pos[2]} – sai ${pct(top.sai, top.lam)}%` : '<span class="hint">–</span>'}</td><td>${rs.length ? '<span class="btn ghost sm">Xem ›</span>' : ''}</td></tr>`; }).join('')}
+            <td>${top && top.sai ? `${pos[1] === 'DS' ? 'Đ/S câu ' + +pos[2] : 'Câu ' + +pos[2]} – sai ${pct(top.sai, top.lam)}%` : '<span class="hint">–</span>'}</td><td style="white-space:nowrap">${rs.length ? `<button type="button" class="btn sm" data-dx="${esc(d)}">Xem câu sai &gt;50%</button> <span class="btn ghost sm">Chi tiết ›</span>` : ''}</td></tr>
+            ${rs.length ? `<tr class="dex" data-dex="${esc(d)}" hidden><td colspan="8"></td></tr>` : ''}`; }).join('')}
       </tbody></table></div></div>
       <h2>📉 Bài học HS hay sai nhất (toàn bộ đề đã làm)</h2><div class="card">${lessonTable(ls)}<p class="hint">Tỉ lệ sai = số lần trả lời sai / số lần gặp câu của bài đó. Bài đỏ (≥ 60%) nên dạy lại; vàng (35–60%) cần ôn thêm.</p></div>
       ${allQ.length ? `<h2>❗ Câu sai nhiều nhất</h2><div class="card"><div class="list compact">${allQ.map(s => `<a class="item" href="#/gv/thitn?de=${encodeURIComponent(s.q.de)}${code ? '&lop=' + code : ''}"><div class="grow"><b>Đề ${esc(nm(s.q.de))}</b> · ${esc(plainQ(s.q.s).slice(0, 110))}…<div class="meta">${esc((s.q.bai || '').replace(/^Lớp \d+ – /, ''))} · ${esc(s.q.md)}</div></div><span>${bar(pct(s.sai, s.lam))}</span></a>`).join('')}</div></div>` : ''}`);
@@ -1225,7 +1226,7 @@ route(/^\/gv\/thitn$/, async params => {
           h = `${pager}<div class="tablewrap tnmx"><table><thead>
               <tr><th class="n" rowspan="2">STT</th><th class="tnmx-name" rowspan="2">Tên học sinh</th><th rowspan="2">Lớp</th>${vis.map(d => `<th class="n tnmx-de" colspan="2">Đề ${esc(nm(d))}</th>`).join('')}</tr>
               <tr>${vis.map(() => '<th class="n tnmx-sub tnmx-l">Số lượt làm</th><th class="n tnmx-sub">Điểm</th>').join('')}</tr></thead><tbody>
-              ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b>${x.ontn ? ' <span class="hint" title="Đã đăng kí ôn thi TN">✓</span>' : ''} <button type="button" class="tn-ren" data-del="${esc(x.id)}" title="Bỏ khỏi danh sách / xoá tài khoản" aria-label="Xoá ${esc(x.ten)}">🗑</button></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">0</span></td><td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
+              ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b>${x.ontn ? ' <span class="hint" title="Đã đăng kí ôn thi TN">✓</span>' : ''} <button type="button" class="tn-del" data-del="${esc(x.id)}" title="Bỏ khỏi danh sách / xoá tài khoản" aria-label="Xoá ${esc(x.ten)}">🗑 Xoá</button></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">0</span></td><td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
                 return `<td class="n tnmx-l">${rs.length}</td><td class="n"><a class="${best >= 8 ? 'tn-ok' : best < 5 ? 'tn-bad' : ''}" href="${hsLink(d, x.id)}" title="Điểm cao nhất · bấm để xem bài làm"><b>${fmt(best)}</b></a></td>`; }).join('')}</tr>`).join('')}
             </tbody></table></div><p class="hint" style="margin:6px 0 0">Điểm = điểm cao nhất của em ở đề đó · bấm vào điểm để xem bài làm.</p>
             <details class="tnstat" ${statOpen ? 'open' : ''}><summary><b>📉 Thống kê câu sai (${qs.length} câu)</b> <span class="hint">– bấm Xem để biết em nào sai câu đó</span></summary>`
@@ -1323,6 +1324,27 @@ route(/^\/gv\/thitn$/, async params => {
     if ($('#lsel')) $('#lsel').onchange = e => go('', e.target.value);
     if ($('#tsel')) $('#tsel').onchange = e => go('', '', e.target.value);
     $$('tr.click[data-de]').forEach(tr => tr.onclick = () => go(tr.dataset.de, code));
+    /* 21/11/2026: Xem câu sai > 50% của đề ngay tại chỗ – nội dung câu, đáp án đúng (✔ xanh), tỉ lệ sai, tên HS sai */
+    $$('[data-dx]').forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const d = b.dataset.dx, tr = $(`tr[data-dex="${CSS.escape(d)}"]`); if (!tr) return;
+      if (!tr.hidden) { tr.hidden = true; b.textContent = 'Xem câu sai >50%'; return; }
+      const rs = by['DE:' + d] || [];
+      // lần làm gần nhất của mỗi HS
+      const last = {}; rs.forEach(r => { if (!last[r.maHS] || new Date(r.t) > new Date(last[r.maHS].t)) last[r.maHS] = r; });
+      const L = Object.values(last);
+      const posQ = q => { const mm = /_(C|DS)(\d+)$/.exec(q.id) || []; return mm[1] === 'DS' ? 'Đ/S ' + +mm[2] : 'Câu ' + +mm[2]; };
+      const qs = bank.q.filter(q => q.de === d).map(q => ({ q, sai: L.filter(r => (r.sai || []).includes(q.id)) })).filter(z => L.length && z.sai.length / L.length > 0.5)
+        .sort((a, c) => c.sai.length - a.sai.length);
+      tr.firstElementChild.innerHTML = !qs.length ? '<div class="okmsg">Đề này không có câu nào sai trên 50%.</div>'
+        : `<div class="hint" style="margin-bottom:8px">${qs.length} câu có trên 50% học sinh làm sai (tính lần làm gần nhất của ${L.length} em). Đáp án đúng tô xanh ✔.</div><div class="stufull">${qs.map(z => `<div class="stq bad"><div class="stmark">✘ ${posQ(z.q)} · sai ${Math.round(z.sai.length / L.length * 100)}% (${z.sai.length}/${L.length} em)</div>
+          ${qHtml(z.q, { ids: [z.q.id], perm: { [z.q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}
+          ${z.q.e ? `<div class="expl ans" style="margin:6px 4px"><b class="t">Lời giải</b>${z.q.t === 'T' ? (z.q.e || []).map((x, k) => x ? `<div><b>${'abcd'[k]})</b> ${sanitize(x)}</div>` : '').join('') : sanitize(z.q.e)}</div>` : ''}
+          <div class="th-sc" style="margin:6px 4px"><span class="hint">HS sai:</span>${z.sai.map(r => `<span class="pill bad">${esc(r.hoTen)} – ${esc(r.lop)}</span>`).join('')}</div></div>`).join('')}</div>`;
+      // câu Đúng/Sai: tô xanh ý đúng theo đáp án
+      tr.querySelectorAll('.stq').forEach((el, i) => { const q = qs[i] && qs[i].q; if (q && q.t === 'T') { const ans = normAns(q); el.querySelectorAll('.tfi').forEach((t, k) => { t.classList.add('right'); const btn = t.querySelector(ans[k] === 'Đ' ? '.d' : '.s'); if (btn) btn.classList.add('on'); }); } });
+      tr.hidden = false; b.textContent = 'Ẩn'; math(tr);
+    });
     $('#ex').onclick = () => csv('LuyenThiTN_' + (code ? classes[code] : 'tat_ca') + '.csv', [['Họ tên', 'Lớp', 'Đề', 'Lần', 'Điểm', 'Số câu đúng', 'Thời gian (phút)', 'Thời điểm'],
       ...rows.slice().sort((a, b) => viNameCmp(a.hoTen, b.hoTen) || a.key.localeCompare(b.key, 'vi', { numeric: true })).map(r => [r.hoTen, r.lop, r.key.slice(3), r.lan, r.diem, r.dung + '/' + r.tong, Math.round(r.giay / 60), dt(r.t)])]);
     return;

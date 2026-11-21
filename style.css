@@ -941,3 +941,6 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .stq .tfi.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
 .tnstat{margin-top:12px}.tnstat>summary{cursor:pointer;margin-bottom:6px}
 .tnmx td a{text-decoration:none}
+.tn-del{all:unset;cursor:pointer;font-size:.78em;font-weight:600;color:var(--bad);border:1px solid var(--bad);border-radius:6px;padding:1px 6px;margin-left:6px;background:var(--bad-soft)}
+.tn-del:hover,.tn-del:focus-visible{background:var(--bad);color:#fff}
+tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
