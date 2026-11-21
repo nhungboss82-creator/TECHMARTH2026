@@ -912,3 +912,8 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .tncell.ok{background:var(--ok-soft)}
 .tncell.bad{background:var(--bad-soft)}
 .tncell:hover{outline:2px solid var(--brand2)}
+.tnmx th{vertical-align:middle}
+.tnmx .tnmx-de{border-left:2px solid var(--line);text-align:center}
+.tnmx .tnmx-sub{font-weight:500;font-size:.85em}
+.tnmx thead tr:nth-child(2) th:nth-child(3n+1),.tnmx td.tnmx-l{border-left:2px solid var(--line)}
+.tn-ok{color:var(--ok)}.tn-bad{color:var(--bad)}

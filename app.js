@@ -1163,19 +1163,7 @@ route(/^\/gv\/thitn$/, async params => {
       <div class="row" style="margin:6px 0 10px;gap:8px;flex-wrap:wrap">${lopSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
       <div class="kpis"><div class="kpi"><b>${new Set(rows.map(r => r.maHS)).size}</b><span>HS đã luyện</span></div><div class="kpi"><b>${rows.length}</b><span>lượt làm đề</span></div>
         <div class="kpi"><b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b><span>điểm TB mọi lượt</span></div><div class="kpi"><b>${Object.keys(by).length}/${exams.length}</b><span>đề đã có HS làm</span></div></div>
-      ${(() => {
-        /* 21/11/2026: bảng HS × đề – hàng: học sinh (A–B), cột: các đề đã có HS làm; mỗi ô: điểm cao nhất + số lượt; bấm ô xem câu chọn sai */
-        const lt = res.lt || [], m = {};
-        const add = r => m[r.maHS] = m[r.maHS] || { id: r.maHS, ten: r.hoTen, lop: r.lop, de: {}, lt: 0 };
-        rows.forEach(r => { const x = add(r); (x.de[r.key] = x.de[r.key] || []).push(r); });
-        lt.forEach(r => { add(r).lt++; });
-        const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
-        const des = exams.filter(d => rows.some(r => r.key === 'DE:' + d));
-        return `<h2>👩‍🎓 Học sinh ôn thi tốt nghiệp (${L.length})</h2><div class="card">${L.length ? `<div class="tablewrap tnmx"><table><thead><tr><th class="n">STT</th><th class="tnmx-name">Họ và tên</th><th>Lớp</th>${des.map(d => `<th class="n">Đề ${esc(nm(d))}</th>`).join('')}<th class="n">Luyện theo bài</th></tr></thead><tbody>
-          ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td>${des.map(d => { const rs = (x.de['DE:' + d] || []).slice().sort((a, b) => new Date(a.t) - new Date(b.t)); if (!rs.length) return '<td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
-            return `<td class="n"><button type="button" class="tncell ${best >= 8 ? 'ok' : best >= 5 ? '' : 'bad'}" data-hsde="${esc(d)}" data-hs="${esc(x.id)}" title="Các lần: ${rs.map(r => fmt(r.diem)).join(' · ')} – bấm để xem câu chọn sai"><b>${fmt(best)}</b><small>${rs.length} lượt</small></button></td>`; }).join('')}<td class="n">${x.lt || '–'}</td></tr>`).join('')}
-          </tbody></table></div><p class="hint" style="margin:6px 0 0">Mỗi ô: điểm cao nhất · số lượt làm đề. Bấm vào ô để xem câu em chọn sai.</p>` : '<div class="empty">Chưa có học sinh nào luyện đề.</div>'}</div>`;
-      })()}
+      <h2>👩‍🎓 Học sinh ôn thi tốt nghiệp</h2><div class="card" id="tnmxbox"></div>
       <h2>📁 Kết quả từng đề</h2>
       <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
         ${exams.map(d => { const rs = by['DE:' + d] || [], ds = rs.map(r => r.diem);
@@ -1187,10 +1175,35 @@ route(/^\/gv\/thitn$/, async params => {
       </tbody></table></div></div>
       <h2>📉 Bài học HS hay sai nhất (toàn bộ đề đã làm)</h2><div class="card">${lessonTable(ls)}<p class="hint">Tỉ lệ sai = số lần trả lời sai / số lần gặp câu của bài đó. Bài đỏ (≥ 60%) nên dạy lại; vàng (35–60%) cần ôn thêm.</p></div>
       ${allQ.length ? `<h2>❗ Câu sai nhiều nhất</h2><div class="card"><div class="list compact">${allQ.map(s => `<a class="item" href="#/gv/thitn?de=${encodeURIComponent(s.q.de)}${code ? '&lop=' + code : ''}"><div class="grow"><b>Đề ${esc(nm(s.q.de))}</b> · ${esc(plainQ(s.q.s).slice(0, 110))}…<div class="meta">${esc((s.q.bai || '').replace(/^Lớp \d+ – /, ''))} · ${esc(s.q.md)}</div></div><span>${bar(pct(s.sai, s.lam))}</span></a>`).join('')}</div></div>` : ''}`);
+    /* 21/11/2026: bảng HS × đề – mỗi đề 3 cột: Số lượt làm · Điểm (cao nhất) · Xem; các đề còn lại thu gọn, bấm để hiện */
+    {
+      const lt = res.lt || [], m = {};
+      const add = r => m[r.maHS] = m[r.maHS] || { id: r.maHS, ten: r.hoTen, lop: r.lop, de: {}, lt: 0 };
+      rows.forEach(r => { const x = add(r); (x.de[r.key] = x.de[r.key] || []).push(r); });
+      lt.forEach(r => { add(r).lt++; });
+      const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
+      const des = exams.filter(d => rows.some(r => r.key === 'DE:' + d));
+      const shown = new Set(store.get('tnmx_show', null) || des.slice(0, 2));
+      const drawMx = () => {
+        const vis = des.filter(d => shown.has(d)), hid = des.filter(d => !shown.has(d));
+        $('#tnmxbox').innerHTML = !L.length ? '<div class="empty">Chưa có học sinh nào luyện đề.</div>' : `
+          <div class="row tnmx-bar" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><span class="hint">${L.length} học sinh · bấm tên đề để hiện / ẩn:</span>
+            ${des.map(d => `<button type="button" class="btn sm ${shown.has(d) ? '' : 'ghost'}" data-tg="${esc(d)}">Đề ${esc(nm(d))}${shown.has(d) ? ' ✕' : ''}</button>`).join('')}
+            ${hid.length ? '<button type="button" class="btn ghost sm" data-tg="__all">Hiện tất cả</button>' : des.length > 2 ? '<button type="button" class="btn ghost sm" data-tg="__none">Ẩn bớt</button>' : ''}</div>
+          <div class="tablewrap tnmx"><table><thead>
+            <tr><th class="n" rowspan="2">STT</th><th class="tnmx-name" rowspan="2">Tên học sinh</th><th rowspan="2">Lớp</th>${vis.map(d => `<th class="n tnmx-de" colspan="3">Đề ${esc(nm(d))}</th>`).join('')}<th class="n" rowspan="2">Luyện<br>theo bài</th></tr>
+            <tr>${vis.map(() => '<th class="n tnmx-sub">Số lượt làm</th><th class="n tnmx-sub">Điểm</th><th class="n tnmx-sub">Xem</th>').join('')}</tr></thead><tbody>
+            ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">–</span></td><td class="n"><span class="hint">–</span></td><td class="n"></td>'; const best = Math.max(...rs.map(r => r.diem));
+              return `<td class="n tnmx-l">${rs.length}</td><td class="n"><b class="${best >= 8 ? 'tn-ok' : best < 5 ? 'tn-bad' : ''}" title="Các lần: ${rs.slice().sort((a, b) => new Date(a.t) - new Date(b.t)).map(r => fmt(r.diem)).join(' · ')}">${fmt(best)}</b></td><td class="n"><button type="button" class="btn ghost sm" data-hsde="${esc(d)}" data-hs="${esc(x.id)}" title="Xem câu chọn sai">Xem</button></td>`; }).join('')}<td class="n">${x.lt || '–'}</td></tr>`).join('')}
+          </tbody></table></div>`;
+        $$('[data-tg]', $('#tnmxbox')).forEach(b => b.onclick = () => { const d = b.dataset.tg; if (d === '__all') des.forEach(x => shown.add(x)); else if (d === '__none') { shown.clear(); des.slice(0, 2).forEach(x => shown.add(x)); } else shown.has(d) ? shown.delete(d) : shown.add(d); store.set('tnmx_show', [...shown]); drawMx(); });
+        $$('[data-hsde]', $('#tnmxbox')).forEach(b => b.onclick = () => { location.hash = '#/gv/thitn?' + ['de=' + encodeURIComponent(b.dataset.hsde), code ? 'lop=' + encodeURIComponent(code) : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : '', 'hs=' + encodeURIComponent(b.dataset.hs)].filter(Boolean).join('&'); });
+      };
+      drawMx();
+    }
     $('#lsel').onchange = e => go('', e.target.value);
     if ($('#tsel')) $('#tsel').onchange = e => go('', '', e.target.value);
     $$('tr.click[data-de]').forEach(tr => tr.onclick = () => go(tr.dataset.de, code));
-    $$('[data-hsde]').forEach(b => b.onclick = () => { location.hash = '#/gv/thitn?' + ['de=' + encodeURIComponent(b.dataset.hsde), code ? 'lop=' + encodeURIComponent(code) : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : '', 'hs=' + encodeURIComponent(b.dataset.hs)].filter(Boolean).join('&'); });
     $('#ex').onclick = () => csv('LuyenThiTN_' + (code ? classes[code] : 'tat_ca') + '.csv', [['Họ tên', 'Lớp', 'Đề', 'Lần', 'Điểm', 'Số câu đúng', 'Thời gian (phút)', 'Thời điểm'],
       ...rows.slice().sort((a, b) => viNameCmp(a.hoTen, b.hoTen) || a.key.localeCompare(b.key, 'vi', { numeric: true })).map(r => [r.hoTen, r.lop, r.key.slice(3), r.lan, r.diem, r.dung + '/' + r.tong, Math.round(r.giay / 60), dt(r.t)])]);
     return;
