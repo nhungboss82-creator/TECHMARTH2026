@@ -891,3 +891,5 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 /* AI chấm bài vẽ tự luyện: 2 cột – bài làm có khoanh lỗi | chỗ sai cần vẽ lại */
 .rv.rv-tl{grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr)}
 @media (max-width:1000px){.rv.rv-tl{grid-template-columns:1fr}.rv.rv-tl .rv-nx{order:-1;grid-column:auto}}
+.gv-hd summary{cursor:pointer}
+.gv-hd-l{margin:8px 0 0;padding-left:20px;line-height:1.6}

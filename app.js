@@ -3143,7 +3143,8 @@ route(/^\/tuluyenve$/, async () => {
   /* Cập nhật 21/11/2026: gọn 3 bước – 1. Đề bài · 2. Bài làm · 3. Kết quả; các mục thu gọn, mở mục nào hiện mục đó, ✕ để về như ban đầu */
   if (!session) { location.hash = '#/dangnhap'; return; }
   let loai = store.get('tlv_loai', 'hinhchieu'); if (!DRAW_TYPES[loai]) loai = 'hinhchieu';
-  let pick = -2, own = '', deImg = null, baiImg = null, result = null, busyNow = false, open = '', err = '';
+  let pick = -2, own = '', deImg = null, baiImg = null, result = null, busyNow = false, open = '', err = '', lanNop = 0;
+  const hist = () => store.get('thuchanh', []).filter(r => /^Bài vẽ AI chấm/.test(r.bai) && thNorm(r.ten).toLowerCase() === thNorm(session.user.HoTen).toLowerCase());
   let tasks = session.role === 'hs' ? store.get('drw_' + uid(), null) : [];
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('tlbai');
@@ -3177,8 +3178,9 @@ route(/^\/tuluyenve$/, async () => {
             <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
             <button class="btn block" id="go" style="margin-top:10px" ${baiImg && !busyNow ? '' : 'disabled'}>${busyNow ? '🤖 AI đang chấm…' : !de ? 'Chọn đề ở bước 1' : '🤖 Chấm bài'}</button>
           </div>` : ''}</section>
-        <section class="acc-sec ${open === 'kq' ? 'open' : ''}">${head('kq', 3, 'Kết quả', busyNow ? '🤖 AI đang chấm…' : result ? (result.doc_duoc === false ? 'Ảnh chưa rõ – chụp lại' : (result.loi || []).filter(Boolean).length ? (result.loi || []).filter(Boolean).length + ' chỗ sai cần vẽ lại' : 'Bài vẽ đúng') : '—', !!result)}
+        <section class="acc-sec ${open === 'kq' ? 'open' : ''}">${head('kq', 3, 'Kết quả', busyNow ? '🤖 AI đang chấm…' : result ? (result.doc_duoc === false ? 'Ảnh chưa rõ – chụp lại' : ((result.loi || []).filter(Boolean).length ? (result.loi || []).filter(Boolean).length + ' chỗ sai cần vẽ lại' : 'Bài vẽ đúng') + (lanNop ? ` · lần nộp thứ ${lanNop}${lanNop > 1 ? ' (đã sửa ' + (lanNop - 1) + ' lần)' : ''}` : '')) : '—', !!result)}
           ${open === 'kq' ? `<div class="acc-b">${result ? '<div id="tlrv"></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost grow" id="again">📷 Chụp lại</button><button class="btn ghost grow" id="newde">📄 Đề khác</button></div>' : `<div class="card empty">${busyNow ? '<span class="tl-spin"></span> AI đang chấm, em chờ chút…' : 'Chưa có kết quả.'}</div>`}</div>` : ''}</section>
+        ${hist().length ? `<section class="acc-sec ${open === 'ls' ? 'open' : ''}">${head('ls', '🕘', 'Các lần em đã nộp', hist().length + ' lượt · số lần sửa từng đề', false)}${open === 'ls' ? `<div class="acc-b">${drawPracticeTable(hist(), false)}</div>` : ''}</section>` : ''}
       </div>`);
     $$('[data-op]').forEach(b => b.onclick = () => { open = open === b.dataset.op ? '' : b.dataset.op; draw(); });
     $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); pick = -2; result = null; draw(); });
@@ -3203,7 +3205,7 @@ route(/^\/tuluyenve$/, async () => {
       try { result = await api('practice_drawing', { loai, deBai: deBai(), tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: pick === -1 ? deImg : null }); }
       catch (e) { busyNow = false; err = /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang được cập nhật chức năng tự luyện. Em thử lại sau ít phút nhé.' : (e.message || String(e)); open = 'bai'; draw(); return; }
       busyNow = false; open = 'kq'; draw();
-      try { const lg = { bai: 'Bài vẽ AI chấm – ' + DRAW_TYPES[loai], phan: short(deBai()), diem: result.doc_duoc === false ? 0 : result.diem, max: 10, ten: session.user.HoTen, lop: session.user.TenLop || '' }; window.STC_LOG && window.STC_LOG(lg); } catch (e) {}
+      try { if (result.doc_duoc !== false) { const rec = window.STC_LOG && window.STC_LOG({ bai: 'Bài vẽ AI chấm – ' + DRAW_TYPES[loai], phan: short(deBai()), diem: result.diem, max: 10, soLoi: (result.loi || []).filter(Boolean).length, ten: session.user.HoTen, lop: session.user.TenLop || '' }); lanNop = rec ? rec.lan : 0; draw(); } } catch (e) {}
     };
     if (open === 'kq' && result && $('#tlrv')) {
       const t = { MaBV: 'TL', DeBai: deBai(), DiemToiDa: 10, CoAnhDe: false };
@@ -3216,10 +3218,26 @@ route(/^\/tuluyenve$/, async () => {
   if (session.role === 'hs') api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (location.hash === '#/tuluyenve' && !busyNow) draw(); }).catch(() => {});
 });
 
-route(/^\/gv\/baive$/, async () => {
+route(/^\/gv\/baive$/, async params => {
   if (!needGV()) return;
+  /* 21/11/2026: hướng dẫn chấm để trong mục thu gọn; thêm tab "HS tự luyện" – mọi lượt HS nhờ AI chấm, số lần sửa bài */
+  let tab = (params && params.get('tab')) || 'giao';
   setView(`<div class="row"><h1 class="grow">📷 Bài vẽ – AI chấm <span class="pill">Khối 10</span></h1><a class="btn sm" href="#/gv/baive/moi">+ Tạo bài vẽ</a></div>
-    <p class="sub">HS khối 10 vẽ tay hình chiếu vuông góc, hình chiếu trục đo, hình cắt – mặt cắt, bản vẽ xây dựng, hình chiếu phối cảnh; chụp ảnh hoặc gửi tệp nộp bài. AI nhận xét, khoanh chỗ sai và hướng dẫn sửa; thầy cô xem lại, đánh dấu thêm và xác nhận điểm.</p><div id="l"><div class="card empty">Đang tải…</div></div>`);
+    <details class="card gv-hd"><summary><b>📘 Hướng dẫn chấm</b></summary><ol class="gv-hd-l">
+      <li>Bấm <b>+ Tạo bài vẽ</b>: chọn loại bản vẽ, chép đề, (nếu có) ảnh đề và ảnh đáp án mẫu, chọn lớp giao.</li>
+      <li>HS vẽ tay, chụp ảnh nộp bài. AI khoanh chỗ sai, ghi cách sửa và đề xuất điểm theo tiêu chí.</li>
+      <li>Mở bài vẽ → xem từng bài: bấm lên ảnh để đánh dấu thêm lỗi, sửa điểm, bấm <b>Xác nhận điểm</b>.</li>
+      <li>Tab <b>HS tự luyện</b>: xem các lượt HS tự nhờ AI chấm – số lần nộp, số lần sửa, số lỗi từng lần.</li></ol></details>
+    <div class="tabs" style="margin:8px 0"><button data-t="giao" class="${tab === 'giao' ? 'on' : ''}">📋 Bài thầy cô giao</button><button data-t="tl" class="${tab === 'tl' ? 'on' : ''}">✏️ HS tự luyện</button></div>
+    <div id="l"><div class="card empty">Đang tải…</div></div>`);
+  $$('[data-t]').forEach(b => b.onclick = () => { location.hash = '#/gv/baive?tab=' + b.dataset.t; });
+  if (tab === 'tl') {
+    try {
+      const l = await api('practice_logs', { bai: 'Bài vẽ AI chấm' });
+      ($('#l') || {}).innerHTML = drawPracticeTable(l.map(r => ({ t: new Date(r.ThoiDiem).getTime(), bai: r.Bai, phan: r.Phan, ten: r.HoTen, lop: r.TenLop, soLoi: r.SoLoi === '' || r.SoLoi == null ? null : +r.SoLoi })), true);
+    } catch (e) { errBox($('#l'), /không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs (bản mới nhất).' : e); }
+    return;
+  }
   try {
     const l = await api('list_drawing_tasks');
     ($('#l') || {}).innerHTML = l.length ? '<div class="list">' + l.map(t => `<a class="item" href="#/gv/baive/${t.MaBV}"><div class="grow"><b>${esc(t.TieuDe)}</b>
@@ -3227,6 +3245,19 @@ route(/^\/gv\/baive$/, async () => {
       : '<div class="card empty">Chưa có bài vẽ nào.</div>';
   } catch (e) { errBox($('#l'), e); }
 });
+/** bảng lượt HS tự luyện bài vẽ: mỗi HS – mỗi đề: số lần nộp, số lần sửa, số lỗi từng lần */
+function drawPracticeTable(rows, showName) {
+  const rs = rows.filter(r => /^Bài vẽ AI chấm/.test(r.bai || ''));
+  if (!rs.length) return '<div class="card empty">Chưa có lượt tự luyện nào.</div>';
+  const g = {};
+  rs.forEach(r => { const k = (showName ? thNorm(r.ten).toLowerCase() + '|' : '') + r.bai + '|' + r.phan; (g[k] = g[k] || []).push(r); });
+  const lines = Object.values(g).map(l => l.sort((a, b) => a.t - b.t)).sort((a, b) => (showName ? viNameCmp(a[0].ten, b[0].ten) : 0) || b[b.length - 1].t - a[a.length - 1].t);
+  const errTxt = v => v == null ? '–' : v ? v + ' lỗi' : '✔';
+  return `<div class="card tblwrap"><table class="th-t"><thead><tr>${showName ? '<th>Học sinh</th>' : ''}<th>Đề</th><th class="n">Số lần nộp</th><th class="n">Số lần sửa</th><th>Số lỗi từng lần</th></tr></thead><tbody>
+    ${lines.map(l => { const last = l[l.length - 1]; return `<tr>${showName ? `<td><b>${esc(l[0].ten)}</b>${l[0].lop ? `<div class="hint">${esc(l[0].lop)}</div>` : ''}</td>` : ''}<td>${esc(String(l[0].bai).replace(/^Bài vẽ AI chấm – /, ''))}<div class="hint">${esc(l[0].phan)}</div></td><td class="n"><b>${l.length}</b></td><td class="n"><b>${l.length - 1}</b></td>
+      <td><div class="th-sc">${l.map((r, i) => `<span class="pill ${r.soLoi === 0 ? 'ok' : r.soLoi ? 'bad' : ''}" title="Lần ${i + 1} · ${dt(r.t)}">L${i + 1}: ${errTxt(r.soLoi)}</span>`).join('')}</div>${last.soLoi === 0 ? '<div class="hint">Đã vẽ đúng</div>' : ''}</td></tr>`; }).join('')}
+  </tbody></table></div>`;
+}
 
 route(/^\/gv\/baive\/moi$/, async params => {
   if (!needGV()) return;
@@ -6362,6 +6393,7 @@ window.STC_LOG = o => {
     if (rec) { rec.diem = +o.diem; rec.max = +o.max || 10; rec.t = Date.now(); rec.sent = 0; }
     else {
       rec = { id: newId(), key: o.key || '', t: Date.now(), bai, phan, ten, lop, diem: +o.diem, max: +o.max || 10, lan: all.filter(same).length + 1, sent: 0 };
+      if (o.soLoi != null) rec.soLoi = +o.soLoi;
       all.push(rec);
     }
     store.set('thuchanh', all.slice(-800));
@@ -6376,7 +6408,7 @@ async function thSend() {
   if (!items.length) return;
   thSending = true;
   try {
-    await api('practice_log', { items: items.map(r => ({ id: r.id + (r.key ? '_' + Math.round(r.diem * 100) : ''), t: r.t, bai: r.bai, phan: r.phan, ten: r.ten, lop: r.lop, lan: r.lan, diem: r.diem, max: r.max })) });
+    await api('practice_log', { items: items.map(r => ({ id: r.id + (r.key ? '_' + Math.round(r.diem * 100) : ''), t: r.t, bai: r.bai, phan: r.phan, ten: r.ten, lop: r.lop, lan: r.lan, diem: r.diem, max: r.max, soLoi: r.soLoi })) });
     const ids = new Set(items.map(r => r.id)), now = store.get('thuchanh', []);
     now.forEach(r => { if (ids.has(r.id)) r.sent = 1; }); store.set('thuchanh', now);
   } catch (e) { /* máy chủ chưa cập nhật hoặc mất mạng: giữ lại, lần sau gửi tiếp */ }
@@ -6395,7 +6427,7 @@ function thTable(rows, showName = true) {
     const lines = Object.values(by).map(l => l.sort((a, b) => a.t - b.t)).sort((a, b) => (showName ? viNameCmp(a[0].ten, b[0].ten) : 0) || String(a[0].phan).localeCompare(String(b[0].phan), 'vi', { numeric: true }));
     return `<details class="card th-bai"><summary><b>${esc(bai)}</b> <span class="pill">${g[bai].length} lượt</span></summary><div class="tblwrap"><table class="th-t"><thead><tr>${showName ? '<th>Họ và tên</th>' : ''}<th>Phần</th><th class="n">Số lần</th><th>Điểm các lần</th><th class="n">Cao nhất</th></tr></thead><tbody>
       ${lines.map(l => { const best = Math.max(...l.map(r => +r.diem || 0)); return `<tr>${showName ? `<td>${esc(l[0].ten)}${l[0].lop ? `<div class="hint">${esc(l[0].lop)}</div>` : ''}</td>` : ''}<td>${esc(l[0].phan || '—')}</td><td class="n"><b>${l.length}</b></td>
-        <td><div class="th-sc">${l.map((r, i) => `<span class="pill ${(+r.diem) >= r.max * .8 ? 'ok' : (+r.diem) >= r.max / 2 ? '' : 'bad'}" title="Lần ${i + 1} · ${dt(r.t || r.ThoiDiem)}">L${i + 1}: ${fmt(+r.diem || 0)}</span>`).join('')}</div></td><td class="n"><b>${fmt(best)}</b>/${fmt(l[0].max || 10)}</td></tr>`; }).join('')}
+        <td><div class="th-sc">${l.map((r, i) => r.soLoi != null ? `<span class="pill ${r.soLoi ? 'bad' : 'ok'}" title="Lần ${i + 1} · ${dt(r.t || r.ThoiDiem)}">L${i + 1}: ${r.soLoi ? r.soLoi + ' lỗi' : '✔'}</span>` : `<span class="pill ${(+r.diem) >= r.max * .8 ? 'ok' : (+r.diem) >= r.max / 2 ? '' : 'bad'}" title="Lần ${i + 1} · ${dt(r.t || r.ThoiDiem)}">L${i + 1}: ${fmt(+r.diem || 0)}</span>`).join('')}</div></td><td class="n">${l[0].soLoi != null ? `sửa <b>${l.length - 1}</b> lần` : `<b>${fmt(best)}</b>/${fmt(l[0].max || 10)}`}</td></tr>`; }).join('')}
       </tbody></table></div></details>`;
   }).join('');
 }
@@ -6421,7 +6453,7 @@ route(/^\/gv\/thuchanh$/, async params => {
   setView(`<a href="${code ? '#/gv/lop/' + esc(code) : '#/gv/lop'}">← Lớp</a><h1>🧪 Lượt thực hành${code ? ' – lớp ' + esc(code) : ''}</h1><p class="sub">Số lần làm và điểm từng lần của học sinh ở các bài thực hành có ghi họ tên (HS đăng nhập khi làm bài).</p><div id="th"><div class="card empty">Đang tải…</div></div>`);
   try {
     const l = await api('practice_logs', code ? { code } : {});
-    const rows = l.map(r => ({ t: new Date(r.ThoiDiem).getTime(), bai: r.Bai, phan: r.Phan, ten: r.HoTen, lop: r.TenLop, diem: +r.Diem, max: +r.DiemToiDa || 10 }));
+    const rows = l.map(r => ({ t: new Date(r.ThoiDiem).getTime(), bai: r.Bai, phan: r.Phan, ten: r.HoTen, lop: r.TenLop, diem: +r.Diem, max: +r.DiemToiDa || 10, soLoi: r.SoLoi === '' || r.SoLoi == null ? null : +r.SoLoi }));
     if ($('#th')) $('#th').innerHTML = thTable(rows, true);
   } catch (e) { if ($('#th')) errBox($('#th'), /không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs (xem hướng dẫn cập nhật).' : e); }
 });
