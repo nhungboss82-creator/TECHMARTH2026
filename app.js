@@ -1182,7 +1182,6 @@ route(/^\/gv\/thitn$/, async params => {
             <td>${top && top.sai ? `${pos[1] === 'DS' ? 'Đ/S câu ' + +pos[2] : 'Câu ' + +pos[2]} – sai ${pct(top.sai, top.lam)}%` : '<span class="hint">–</span>'}</td><td style="white-space:nowrap">${rs.length ? `<button type="button" class="btn sm" data-dx="${esc(d)}">Xem câu sai &gt;50%</button> <span class="btn ghost sm">Chi tiết ›</span>` : ''}</td></tr>
             ${rs.length ? `<tr class="dex" data-dex="${esc(d)}" hidden><td colspan="8"></td></tr>` : ''}`; }).join('')}
       </tbody></table></div></div>
-      <h2>📉 Bài học HS hay sai nhất (toàn bộ đề đã làm)</h2><div class="card">${lessonTable(ls)}<p class="hint">Tỉ lệ sai = số lần trả lời sai / số lần gặp câu của bài đó. Bài đỏ (≥ 60%) nên dạy lại; vàng (35–60%) cần ôn thêm.</p></div>
       ${allQ.length ? `<h2>❗ Câu sai nhiều nhất</h2><div class="card"><div class="list compact">${allQ.map(s => `<a class="item" href="#/gv/thitn?de=${encodeURIComponent(s.q.de)}${code ? '&lop=' + code : ''}"><div class="grow"><b>Đề ${esc(nm(s.q.de))}</b> · ${esc(plainQ(s.q.s).slice(0, 110))}…<div class="meta">${esc((s.q.bai || '').replace(/^Lớp \d+ – /, ''))} · ${esc(s.q.md)}</div></div><span>${bar(pct(s.sai, s.lam))}</span></a>`).join('')}</div></div>` : ''}`);
     /* 21/11/2026: Học sinh ôn thi TN – chọn tên HS: mọi đề (số lượt, điểm, xem); để "Tất cả": thống kê câu sai, bấm Xem biết tên HS sai.
        Danh sách gồm HS đã tích "Đăng kí ôn thi TN" (ONTN) và HS đã làm đề. */
@@ -1386,7 +1385,7 @@ route(/^\/gv\/thitn$/, async params => {
   const d = key.slice(3), qs = qStats(rows), qsBy = {}; qs.forEach(s => { qsBy[s.q.id] = s; });
   const order = bank.q.filter(q => q.de === d);
   const posOf = q => { const m = /_(C|DS)(\d+)$/.exec(q.id) || []; return m[1] === 'DS' ? 'Đ/S ' + +m[2] : 'Câu ' + +m[2]; };
-  let sortBy = 'sai', open = {}, who = params.get('hs') || '';
+  let sortBy = 'sai', open = {}, who = params.get('hs') || '', showAll = false;
   const hs = {}; rows.forEach(r => { const x = hs[r.maHS] = hs[r.maHS] || { ten: r.hoTen, lop: r.lop, l: [] }; x.l.push(r); });
   const draw = () => {
     const list = order.slice().sort((a, b) => sortBy === 'sai' ? ((qsBy[b.id] || {}).sai || 0) - ((qsBy[a.id] || {}).sai || 0) : 0);
@@ -1395,15 +1394,17 @@ route(/^\/gv\/thitn$/, async params => {
     setView(`<a href="#/gv/thitn?${[code ? 'lop=' + code : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : ''].filter(Boolean).join('&')}">← Quản lý đề luyện thi TN</a>
       <h1>${esc(d)}</h1><p class="sub">${rows.length} lượt làm · ${hsList.length} học sinh${code ? ' · lớp ' + esc(classes[code] || '') : ''} · điểm TB <b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b></p>
       <div class="row" style="margin-bottom:8px">${schSel}<span class="grow"></span><button class="btn ghost sm" id="pr">🖨️ In đề kèm đáp án</button></div>
-      <h2>📉 Bài học hay sai trong đề này</h2><div class="card">${lessonTable(lessonStats(qs))}</div>
-      <div class="row" style="align-items:center"><h2 class="grow">📝 Từng câu của đề</h2><div class="tabs" style="margin:0"><button data-sort="sai" class="${sortBy === 'sai' ? 'on' : ''}">Sai nhiều trước</button><button data-sort="de" class="${sortBy === 'de' ? 'on' : ''}">Theo thứ tự đề</button></div></div>
-      <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Câu</th><th>Nội dung</th><th class="n">Lượt</th><th>Tỉ lệ sai</th><th>HS hay chọn nhầm</th></tr></thead><tbody>
-        ${list.map(q => { const s = qsBy[q.id] || { lam: 0, sai: 0, chon: {} }, wrong = Object.entries(s.chon).sort((a, b) => b[1] - a[1]);
-          return `<tr class="click" data-q="${q.id}"><td><b>${posOf(q)}</b><div class="hint">${esc(q.t === 'T' ? 'Đúng/Sai' : q.md)}</div></td><td>${esc(plainQ(q.s).slice(0, 120))}${plainQ(q.s).length > 120 ? '…' : ''}<div class="hint">${esc((q.bai || q.cd || '').replace(/^Lớp \d+ – /, ''))} · Lớp ${esc(q.k)}</div></td>
-            <td class="n">${s.lam || '–'}</td><td>${s.lam ? bar(pct(s.sai, s.lam)) : '–'}</td>
-            <td>${wrong.length ? wrong.slice(0, 2).map(([x, c]) => q.t === 'M' ? `<span class="pill bad">${x}. ${esc(plainQ(q.o[LETTERS.indexOf(x)]).slice(0, 28))} · ${c}</span>` : `<span class="pill bad">ý ${x}) sai ${c} lần</span>`).join(' ') : '<span class="hint">–</span>'}</td></tr>
-            ${open[q.id] ? `<tr><td colspan="5"><div class="preview">${qHtml(q, { ids: [q.id], perm: { [q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}${q.e ? `<div class="expl ans"><b class="t">Lời giải</b>${q.t === 'T' ? (q.e || []).map((e, k) => e ? `<div><b>${'abcd'[k]})</b> ${sanitize(e)}</div>` : '').join('') : sanitize(q.e)}</div>` : ''}</div></td></tr>` : ''}`; }).join('')}
-      </tbody></table></div><p class="hint">Bấm vào một câu để xem đầy đủ đề, đáp án và lời giải. "HS hay chọn nhầm" tính theo phương án gốc của đề (A, B, C, D như bản in), dù HS làm trên app bị đảo.</p></div>
+      <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h2 class="grow">📝 Câu sai trong đề (${order.filter(q => (qsBy[q.id] || {}).sai).length}/${order.length})</h2>
+        <div class="tabs" style="margin:0"><button data-sort="sai" class="${sortBy === 'sai' ? 'on' : ''}">Sai nhiều trước</button><button data-sort="de" class="${sortBy === 'de' ? 'on' : ''}">Theo thứ tự đề</button></div>
+        <label class="chk" style="padding:5px 10px"><input type="checkbox" id="showall" ${showAll ? 'checked' : ''}>Hiện cả câu không ai sai</label></div>
+      <div class="stufull dedet">${list.filter(q => showAll || (qsBy[q.id] || {}).sai).map(q => { const st = qsBy[q.id] || { lam: 0, sai: 0, chon: {} }, wrong = Object.entries(st.chon).sort((x, y) => y[1] - x[1]);
+          const who2 = rows.filter(r => (r.sai || []).includes(q.id)), names = [...new Map(who2.map(r => [r.maHS, r])).values()];
+          return `<div class="stq ${st.sai ? 'bad' : 'ok'}" data-qq="${q.id}"><div class="stmark">${st.sai ? '✘' : '✔'} ${posOf(q)} · ${esc(q.t === 'T' ? 'Đúng/Sai' : q.md || '')} · ${st.lam ? `sai <b>${pct(st.sai, st.lam)}%</b> (${st.sai}/${st.lam} lượt)` : 'chưa ai làm'} <span class="hint">· ${esc((q.bai || q.cd || '').replace(/^Lớp \d+ – /, ''))} · Lớp ${esc(q.k)}</span></div>
+            ${qHtml(q, { ids: [q.id], perm: { [q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}
+            ${q.e ? `<div class="expl ans" style="margin:6px 4px"><b class="t">Lời giải</b>${q.t === 'T' ? (q.e || []).map((e, k) => e ? `<div><b>${'abcd'[k]})</b> ${sanitize(e)}</div>` : '').join('') : sanitize(q.e)}</div>` : ''}
+            ${wrong.length ? `<div class="th-sc" style="margin:6px 4px"><span class="hint">HS hay chọn nhầm:</span>${wrong.slice(0, 3).map(([x, c]) => q.t === 'M' ? `<span class="pill bad">${x}. ${esc(plainQ(q.o[LETTERS.indexOf(x)]).slice(0, 40))} · ${c} lần</span>` : `<span class="pill bad">ý ${x}) sai ${c} lần</span>`).join('')}</div>` : ''}
+            ${names.length ? `<div class="th-sc" style="margin:6px 4px"><span class="hint">HS sai:</span>${names.map(r => `<span class="pill bad">${esc(r.hoTen)} – ${esc(r.lop)}</span>`).join('')}</div>` : ''}</div>`; }).join('') || '<div class="card empty">Không có câu nào bị làm sai.</div>'}</div>
+      <p class="hint">Đáp án đúng tô xanh ✔. "HS hay chọn nhầm" tính theo phương án gốc của đề (A, B, C, D như bản in).</p>
       <h2>👩‍🎓 Bài làm của học sinh</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Lớp</th><th class="n">Số lượt</th><th class="n">Cao nhất</th><th class="n">Lần gần nhất</th><th></th></tr></thead><tbody>
         ${hsList.map(([id, x]) => { const ds = x.l.map(r => r.diem), last = x.l.slice().sort((a, b) => new Date(b.t) - new Date(a.t))[0];
           return `<tr><td>${esc(x.ten)}</td><td>${esc(x.lop)}</td><td class="n">${x.l.length}</td><td class="n"><b>${fmt(Math.max(...ds))}</b></td><td class="n">${fmt(last.diem)}</td><td><button class="btn ghost sm" data-who="${esc(id)}">${who === id ? 'Ẩn' : 'Xem bài làm'}</button></td></tr>
@@ -1413,6 +1414,9 @@ route(/^\/gv\/thitn$/, async params => {
     if ($('#lsel')) $('#lsel').onchange = e => go(key, e.target.value);
     if ($('#tsel')) $('#tsel').onchange = e => go(key, '', e.target.value);
     $$('[data-sort]').forEach(b => b.onclick = () => { sortBy = b.dataset.sort; draw(); });
+    if ($('#showall')) $('#showall').onchange = e => { showAll = e.target.checked; draw(); };
+    // câu Đúng/Sai: bật nút Đ/S đúng của từng ý và tô xanh
+    $$('.dedet .stq[data-qq]').forEach(el => { const q = bank.byId[el.dataset.qq]; if (!q || q.t !== 'T') return; const ans = normAns(q); el.querySelectorAll('.tfi').forEach((t, k) => { t.classList.add('right'); const bt = t.querySelector(ans[k] === 'Đ' ? '.d' : '.s'); if (bt) bt.classList.add('on'); }); });
     $$('tr.click[data-q]').forEach(tr => tr.onclick = () => { open[tr.dataset.q] = !open[tr.dataset.q]; draw(); });
     $$('[data-who]').forEach(b => b.onclick = () => { who = who === b.dataset.who ? '' : b.dataset.who; draw(); });
     $('#pr').onclick = () => printExam({ TieuDe: 'ĐỀ LUYỆN THI TỐT NGHIỆP THPT – ' + d.toUpperCase(), Truong: (session && session.user.Truong) || '', Khoi: '12', ThoiGian: 50, versions: [{ ma: '', ids: order.map(q => q.id), perm: {} }] }, 'all', true, { noQr: true });
