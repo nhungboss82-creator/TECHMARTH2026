@@ -1787,6 +1787,8 @@ function gvSchool(cls) {
   // Quản trị viên: chọn trường rồi mới hiện danh sách lớp của trường đó (mặc định: trường của Quản trị viên)
   const m = {};
   all.forEach(c => { const k = schKey(c.Truong); if (!k) return; const x = (m[k] = m[k] || { k, names: {}, n: 0, s: 0 }); x.names[String(c.Truong).trim()] = 1; if (isSelfCls(c)) x.s++; else x.n++; });
+  // mọi trường đã biết (GV đăng ký, HS khai) đều có trong ô chọn, kể cả trường chưa có lớp
+  SCHOOLS.forEach(v => { const k = schKey(v); if (k && !m[k]) m[k] = { k, names: { [v]: 1 }, n: 0, s: 0 }; });
   const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, s: x.s, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
   let k = window._admSchool == null ? mySk : window._admSchool;
   if (k && !ss.some(s => s.k === k)) k = '';
@@ -1911,10 +1913,37 @@ route(/^\/gv\/lop$/, async () => {
         <div class="list" style="margin-top:8px">${sc.self.sort((a, b) => String(a.Khoi).localeCompare(String(b.Khoi)) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<div class="item selfrow"><div class="grow"><b>${esc(c.TenLop || c.MaLop)}</b> <span class="pill">Khối ${esc(c.Khoi)}</span><div class="meta">${c.siSo || 0} học sinh · mã ${esc(c.MaLop)}</div></div>
           <select data-mv="${esc(c.MaLop)}" aria-label="Chuyển lớp ${esc(c.TenLop)} sang trường">${SCHOOLS.map(v => `<option${skNorm(v) === skNorm(c.Truong) ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
           <button type="button" class="btn sm" data-mvgo="${esc(c.MaLop)}">Lưu trường</button><a class="btn ghost sm" href="#/gv/lop/${c.MaLop}">Mở lớp</a></div>`).join('')}</div>
-        <p class="hint" style="margin:8px 0 0">“Lưu trường” = xác nhận lớp này thuộc trường đã chọn; lớp sẽ chuyển lên danh sách chính thức của trường đó (học sinh trong lớp đổi trường theo).</p></details>` : ''}
+        <p class="hint" style="margin:8px 0 0">“Lưu trường” = xác nhận lớp này thuộc trường đã chọn; lớp sẽ chuyển lên danh sách chính thức của trường đó (học sinh trong lớp đổi trường theo).</p>
+        <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn ghost sm" id="selfall">✔ Xác nhận cả ${sc.self.length} lớp trên là lớp của ${esc(sc.school || 'trường này')}</button></div></details>` : ''}
+      ${classes && classes.length ? `<div class="card"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><div class="grow"><b>🔍 Học sinh bị xếp nhầm trường</b><div class="hint">Tìm HS khai trường khác với trường của lớp (vd: em trường Lương Thế Vinh nằm trong lớp 10/1 của Phong Điền) và chuyển các em về lớp cùng tên ở đúng trường.</div></div><button type="button" class="btn sm" id="fixchk">Rà soát</button></div><div id="fixbox"></div></div>` : ''}
       <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>`);
     $('#mccp').onclick = async () => { const m = window._maChung || ''; try { await navigator.clipboard.writeText(m); toast('Đã sao chép mã chung: ' + m); } catch (e) { toast('Mã chung: ' + m, 5000); } };
     const det = $('.selfcls'); if (det) det.ontoggle = () => { window._selfOpen = det.open; };
+    const reloadCls = async () => { window._gvCls = null; classes = await gvClasses(); draw(); };
+    if ($('#selfall')) $('#selfall').onclick = async () => {
+      const list = sc.self.slice(); if (!confirm(`Xác nhận ${list.length} lớp là lớp chính thức của ${sc.school}?\nChỉ làm khi thầy/cô đã kiểm tra: không còn lớp nào của trường khác.`)) return;
+      await busy($('#selfall'), async () => {
+        let ok = 0; for (const c of list) { try { const r = await api('update_class', { code: c.MaLop, name: c.TenLop, khoi: c.Khoi, school: c.Truong, confirm: 1 }); if (r && r.TuTao === undefined) { toast('Máy chủ chưa cài tệp CapNhat_21_11.gs', 6000); break; } ok++; } catch (e) { toast(c.TenLop + ': ' + e.message, 5000); } }
+        toast('Đã xác nhận ' + ok + ' lớp'); await reloadCls();
+      });
+    };
+    if ($('#fixchk')) $('#fixchk').onclick = async () => {
+      const box = $('#fixbox');
+      await busy($('#fixchk'), async () => {
+        let plan; try { plan = await api('fix_schools', { dry: 1 }); } catch (e) { errBox(box, /không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs (bản mới nhất). Dán tệp vào Apps Script rồi Triển khai phiên bản mới.' : e); return; }
+        if (!plan.length) { box.innerHTML = '<div class="okmsg" style="margin-top:8px">Không có học sinh nào khai trường khác với trường của lớp. Nếu vẫn thấy lớp của trường khác trong Phong Điền, đó là do các em khai trường là Phong Điền – thầy/cô dùng “Lưu trường” ở mục Lớp học sinh tự khai để chuyển cả lớp.</div>'; return; }
+        const n = plan.reduce((a, x) => a + x.n, 0);
+        box.innerHTML = `<div class="tblwrap" style="margin-top:8px"><table class="th-t"><thead><tr><th>Lớp đang ở</th><th>HS khai trường</th><th class="n">Số HS</th></tr></thead><tbody>${plan.map(x => `<tr><td><b>${esc(x.TenLop)}</b><div class="hint">${esc(x.from || '(chưa có trường)')}</div></td><td>➜ <b>${esc(x.to)}</b> · lớp ${esc(x.TenLop)}</td><td class="n">${x.n}</td></tr>`).join('')}</tbody></table></div>
+          <button type="button" class="btn block" id="fixgo" style="margin-top:8px">Chuyển ${n} học sinh về đúng trường</button><p class="hint" style="margin:6px 0 0">Kết quả làm bài của các em chuyển theo. Lớp chưa có ở trường mới sẽ được tạo (nằm trong mục “Lớp học sinh tự khai” của trường đó).</p>`;
+        $('#fixgo').onclick = async () => {
+          if (!confirm(`Chuyển ${n} học sinh về đúng trường các em đã khai?`)) return;
+          await busy($('#fixgo'), async () => {
+            try { const r = await api('fix_schools', {}); toast('Đã chuyển ' + r.moved + ' học sinh về đúng trường', 5000); addSchools(plan.map(x => x.to)); await reloadCls(); }
+            catch (e) { errBox(box, e); }
+          });
+        };
+      });
+    };
     $$('[data-mvgo]').forEach(b => b.onclick = async () => {
       const c = classes.find(x => x.MaLop === b.dataset.mvgo), to = $(`[data-mv="${b.dataset.mvgo}"]`).value;
       if (!c) return;
