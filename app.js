@@ -1123,6 +1123,8 @@ route(/^\/de$/, params => {
 /* ================= GV: Quản lý đề luyện thi TN – kết quả, câu hay sai, bài làm HS ================= */
 route(/^\/gv\/thitn$/, async params => {
   if (!needGV()) return;
+  // bảng HS × đề rộng: dùng hết bề ngang màn hình giáo viên
+  document.body.classList.add('wide'); cleanup = () => document.body.classList.remove('wide');
   const key = params.get('de') ? 'DE:' + params.get('de') : '', code = params.get('lop') || '', truong = params.get('truong');
   setView('<div class="card empty">Đang tải kết quả…</div>');
   let res;
