@@ -1396,8 +1396,8 @@ route(/^\/gv\/thitn$/, async params => {
       <div class="row" style="margin-bottom:8px">${schSel}<span class="grow"></span><button class="btn ghost sm" id="pr">🖨️ In đề kèm đáp án</button></div>
       <div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><h2 class="grow">📝 Câu sai trong đề (${order.filter(q => (qsBy[q.id] || {}).sai).length}/${order.length})</h2>
         <div class="tabs" style="margin:0"><button data-sort="sai" class="${sortBy === 'sai' ? 'on' : ''}">Sai nhiều trước</button><button data-sort="de" class="${sortBy === 'de' ? 'on' : ''}">Theo thứ tự đề</button></div>
-        <label class="chk" style="padding:5px 10px"><input type="checkbox" id="showall" ${showAll ? 'checked' : ''}>Hiện cả câu không ai sai</label></div>
-      <div class="stufull dedet">${list.filter(q => showAll || (qsBy[q.id] || {}).sai).map(q => { const st = qsBy[q.id] || { lam: 0, sai: 0, chon: {} }, wrong = Object.entries(st.chon).sort((x, y) => y[1] - x[1]);
+</div>
+      <div class="stufull dedet">${list.filter(q => (qsBy[q.id] || {}).sai).map(q => { const st = qsBy[q.id] || { lam: 0, sai: 0, chon: {} }, wrong = Object.entries(st.chon).sort((x, y) => y[1] - x[1]);
           const who2 = rows.filter(r => (r.sai || []).includes(q.id)), names = [...new Map(who2.map(r => [r.maHS, r])).values()];
           return `<div class="stq ${st.sai ? 'bad' : 'ok'}" data-qq="${q.id}"><div class="stmark">${st.sai ? '✘' : '✔'} ${posOf(q)} · ${esc(q.t === 'T' ? 'Đúng/Sai' : q.md || '')} · ${st.lam ? `sai <b>${pct(st.sai, st.lam)}%</b> (${st.sai}/${st.lam} lượt)` : 'chưa ai làm'} <span class="hint">· ${esc((q.bai || q.cd || '').replace(/^Lớp \d+ – /, ''))} · Lớp ${esc(q.k)}</span></div>
             ${qHtml(q, { ids: [q.id], perm: { [q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}
@@ -1428,7 +1428,8 @@ route(/^\/gv\/thitn$/, async params => {
     order.forEach(q => { const v = ct[q.id]; if (!v) return; a.resp[q.id] = q.t === 'T' ? String(v).split('').map(c => c === '-' ? '' : c) : v; });
     const wrongQ = order.filter(q => r.sai.includes(q.id));
     return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · <b>${fmt(r.diem)} điểm</b> · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}${wrongQ.length ? ` · <b class="tn-bad">${wrongQ.length} câu sai</b>` : ''}</div>
-      <div class="stufull">${order.map((q, i) => { const ok = !r.sai.includes(q.id), has = !!ct[q.id];
+      ${wrongQ.length || order.some(q => !ct[q.id]) ? '' : '<div class="okmsg">Em làm đúng tất cả các câu.</div>'}
+      <div class="stufull">${order.filter(q => r.sai.includes(q.id) || !ct[q.id]).map((q, i) => { const ok = !r.sai.includes(q.id), has = !!ct[q.id];
         return `<div class="stq ${!has ? 'skip' : ok ? 'ok' : 'bad'}"><div class="stmark">${!has ? '⚪ Bỏ trống' : ok ? '✔ Đúng' : '✘ Sai'} · ${posOf(q)}</div>${qHtml(q, a, i, { showAns: true })}</div>`; }).join('')}</div>`;
   };
   if (who && !hs[who]) who = '';
