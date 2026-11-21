@@ -1,0 +1,325 @@
+/* =====================================================================
+ * SmarttechCN 2026 – TỆP BỔ SUNG MÁY CHỦ (cập nhật 21/11/2026)
+ * Cách cài: Apps Script → dấu + cạnh "Tệp" → Tập lệnh → đặt tên CapNhat_21_11
+ *           → dán toàn bộ nội dung này → Lưu → Triển khai → Quản lý các bản triển khai
+ *           → bút chì → Phiên bản mới → Triển khai.
+ * Tệp này phải nằm DƯỚI tệp Mã.gs (Code.gs) trong danh sách tệp (tệp mới tạo tự nằm cuối).
+ * Không cần sửa Mã.gs. Tệp chỉ bổ sung / thay thế một số chức năng:
+ *   1. list_schools   : danh sách trường (trường của GV đã đăng ký + trường có lớp) cho mục "Chọn trường".
+ *   2. Lớp HS tự khai : tạo đúng trường của HS (trước đây luôn gán vào trường của Admin → THPT Phong Điền
+ *                       hiện cả lớp của trường khác). Cùng tên lớp nhưng khác trường là 2 lớp riêng.
+ *   3. common_classes / my_classes / school_classes: kèm cờ TuTao (lớp HS tự khai), lọc theo trường chuẩn.
+ *   4. update_class   : GV/Admin chuyển lớp sang đúng trường; kiểm tra trùng tên lớp trong CÙNG trường.
+ *   5. practice_log / practice_logs: lưu lượt làm bài thực hành (tên, số lần, điểm/số lỗi từng lần) để GV xem;
+ *                       gồm cả mọi lượt HS tự nhờ AI chấm bài vẽ (số lần nộp, số lần sửa).
+ *  11. ontn_candidates / set_ontn_gv: GV thêm, bớt HS lớp 12 trường mình vào danh sách ôn thi TN.
+ *  10. set_ontn/get_ontn: HS tích "Đăng kí ôn thi TN" (cột OnTN trong HocSinh) → GV thấy em trong Quản lý ôn thi TN.
+ *   9. tn_results     : Quản lý đề luyện thi TN theo trường (GV: trường mình; Admin: chọn trường) + lượt luyện thi theo bài.
+ *   8. update_student : GV sửa HS – đổi trường, chọn lớp của trường đó hoặc gõ tên lớp mới (tạo đúng trường).
+ *   7. fix_schools    : chuyển HS bị xếp nhầm trường (HS khai trường khác) về lớp cùng tên ở đúng trường.
+ *   6. list_gv / approve_gv: GV đang hoạt động duyệt, từ chối, khoá giáo viên MỚI CÙNG TRƯỜNG (Admin vẫn duyệt tất cả).
+ * ===================================================================== */
+
+var CN2111_VER = '2026-11-21';
+var CUR_SCHOOL_ = '';
+
+/** lớp do học sinh tự khai (máy chủ tạo hộ, mật khẩu ngẫu nhiên 8 kí tự hex, chủ lớp là Admin) */
+function cn2111AdminIds_() {
+  if (!cn2111AdminIds_.c) cn2111AdminIds_.c = rows_('GiaoVien').filter(r => r.VaiTro === 'admin').map(r => r.MaGV);
+  return cn2111AdminIds_.c;
+}
+function cn2111IsSelf_(c) {
+  if (String(c.TuTao || '') === '1') return true;
+  return /^[0-9a-f]{8}$/.test(String(c.MatKhauLop || '')) && (!c.MaGV || cn2111AdminIds_().indexOf(c.MaGV) >= 0);
+}
+
+/* ---------- thay thế: lớp HS tự khai đúng trường của HS ---------- */
+function selfClass_(name, khoi, school) {
+  const ten = lopName_(clean_(name, 30));
+  const k = String(khoi || '');
+  if (['10', '11', '12'].indexOf(k) < 0) throw new Error('Hãy chọn khối 10, 11 hoặc 12');
+  if (!/^[0-9A-ZÀ-Ỹ.\-\/]{2,15}$/i.test(ten)) throw new Error('Tên lớp chưa hợp lệ (vd: 10A1 hoặc 10/1)');
+  const admin = rows_('GiaoVien').find(r => r.VaiTro === 'admin') || {};
+  const truong = clean_(school || CUR_SCHOOL_ || admin.Truong || '', 80);
+  const sk = schoolKey_(truong);
+  const all = rows_('Lop');
+  // cùng TRƯỜNG + cùng khối + cùng tên lớp (10/1 = 10/01 = 10-1) thì vào chung một lớp; ưu tiên lớp do GV tạo
+  const same = all.filter(r => String(r.Khoi) === k && lopName_(r.TenLop) === ten && schoolKey_(r.Truong) === sk)
+    .sort((a, b) => (cn2111IsSelf_(a) ? 1 : 0) - (cn2111IsSelf_(b) ? 1 : 0) || a._r - b._r)[0];
+  if (same) return same;
+  const existing = all.map(r => r.MaLop);
+  let code; do { code = classCode_(); } while (existing.indexOf(code) >= 0);
+  const c = { MaLop: code, TenLop: ten, Khoi: k, Truong: truong, MaGV: admin.MaGV || '',
+    MatKhauLop: Utilities.getUuid().slice(0, 8), NgayTao: new Date() };
+  append_('Lop', c);
+  return c;
+}
+
+/* ---------- thay thế: thông tin lớp gửi về giao diện có thêm cờ TuTao ---------- */
+function publicClass_(c) {
+  const o = { MaLop: c.MaLop, TenLop: c.TenLop, Khoi: String(c.Khoi), Truong: c.Truong, MatKhauLop: c.MatKhauLop, MaGV: c.MaGV, TuTao: cn2111IsSelf_(c) };
+  if (typeof rosterOf_ === 'function') { try { o.DanhSach = rosterOf_(c); } catch (e) {} }
+  return o;
+}
+
+/* ---------- các chức năng API bổ sung / thay thế ---------- */
+function cn2111Patch_() {
+  if (typeof API === 'undefined') return;
+
+  API.cn2111 = () => ({ ver: CN2111_VER });
+
+  /* 1. danh sách trường cho mục chọn trường (không cần đăng nhập) */
+  API.list_schools = () => {
+    const m = {};
+    const add = s => { s = clean_(s, 80); const k = schoolKey_(s); if (k && !m[k]) m[k] = s; };
+    rows_('GiaoVien').filter(g => ['khoa', 'tu_choi'].indexOf(String(g.TrangThai)) < 0).forEach(g => add(g.Truong));
+    rows_('Lop').filter(c => !cn2111IsSelf_(c)).forEach(c => add(c.Truong));
+    return Object.keys(m).map(k => m[k]).sort((a, b) => a.localeCompare(b, 'vi'));
+  };
+
+  /* 3. lớp cho HS đăng ký bằng mã chung: kèm cờ TuTao để giao diện chỉ hiện lớp chính thức của trường đã chọn */
+  API.common_classes = req => {
+    checkCommon_(req.common);
+    return rows_('Lop').filter(c => String(c.MaLop || '').trim())
+      .map(c => ({ MaLop: c.MaLop, TenLop: c.TenLop, Khoi: String(c.Khoi), Truong: c.Truong, TuTao: cn2111IsSelf_(c) }))
+      .sort((a, b) => a.Khoi.localeCompare(b.Khoi) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }));
+  };
+  API.school_classes = req => {
+    const t = auth_(req, 'gv');
+    const sk = schoolKey_(t.r === 'admin' && req.truong ? req.truong : teacher_(t).Truong);
+    return rows_('Lop').filter(c => String(c.MaLop || '').trim() && sk && schoolKey_(c.Truong) === sk).map(publicClass_);
+  };
+
+  /* 2. HS đăng ký / vào lớp tự khai: lớp mới thuộc đúng trường của HS */
+  const reg = API.register_hs;
+  if (reg) API.register_hs = req => { CUR_SCHOOL_ = clean_(req.school, 80); try { return reg(req); } finally { CUR_SCHOOL_ = ''; } };
+  const join = API.join_class;
+  if (join) API.join_class = req => {
+    try { const t = auth_(req, 'hs'); const hs = rows_('HocSinh').find(r => r.MaHS === t.u); CUR_SCHOOL_ = hs ? String(hs.Truong || '') : ''; } catch (e) {}
+    try { return join(req); } finally { CUR_SCHOOL_ = ''; }
+  };
+
+  /* 4. sửa lớp: đổi tên / khối / mật khẩu / TRƯỜNG; trùng tên chỉ xét trong cùng trường */
+  API.update_class = req => withLock_(() => {
+    const t = auth_(req, 'gv');
+    const c = ownClass_(t, req.code);
+    const ten = lopName_(clean_(req.name == null ? c.TenLop : req.name, 30)), khoi = String(req.khoi || c.Khoi);
+    if (!ten) throw new Error('Hãy nhập tên lớp');
+    if (['10', '11', '12'].indexOf(khoi) < 0) throw new Error('Khối phải là 10, 11 hoặc 12');
+    const truong = req.school != null && String(req.school).trim() ? clean_(req.school, 80) : String(c.Truong || '');
+    const pw = String(req.classPw == null ? c.MatKhauLop : req.classPw).trim();
+    if (pw.length < 4) throw new Error('Mật khẩu chung của lớp tối thiểu 4 ký tự');
+    const sk = schoolKey_(truong);
+    const dup = rows_('Lop').find(r => r.MaLop !== c.MaLop && String(r.Khoi) === khoi && lopName_(r.TenLop) === ten && schoolKey_(r.Truong) === sk);
+    if (dup) {
+      if (!req.merge) throw new Error('TRUNG_LOP|' + dup.MaLop + '|' + (truong || 'Trường') + ' – khối ' + khoi + ' đã có lớp ' + ten + ' (mã ' + dup.MaLop + ').');
+      ownClass_(t, dup.MaLop);
+      moveClass_(c, dup);
+      sheet_('Lop').deleteRow(c._r);
+      return { merged: dup.MaLop };
+    }
+    const patch = { TenLop: ten, Khoi: khoi, MatKhauLop: pw, Truong: truong };
+    // lớp HS tự khai được GV/Admin xác nhận (đổi trường hoặc bấm "Giữ lớp này") → thành lớp chính thức
+    if (req.confirm || truong !== String(c.Truong || '')) { patch.MaGV = t.r === 'admin' && !req.toMe ? c.MaGV : teacher_(t).MaGV; if (cn2111IsSelf_(c) && pw === String(c.MatKhauLop)) patch.MatKhauLop = pw + '#'; }
+    update_('Lop', c._r, patch);
+    patchWhere_('HocSinh', 'MaLop', [c.MaLop], { TenLop: ten, Khoi: khoi, Truong: truong });
+    patchWhere_('KetQua', 'MaLop', [c.MaLop], { TenLop: ten, Khoi: khoi });
+    try { patchWhere_('NopVe', 'MaLop', [c.MaLop], { TenLop: ten, Khoi: khoi }); } catch (e) {}
+    return publicClass_(Object.assign(c, patch));
+  });
+
+  /* 10. HS tích / bỏ tích "Đăng kí ôn thi tốt nghiệp" (ONTN) → hiện trong Quản lý ôn thi TN của GV */
+  API.set_ontn = req => withLock_(() => {
+    const t = auth_(req, 'hs');
+    const sh = sheet_('HocSinh');
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    if (head.indexOf('OnTN') < 0) sh.getRange(1, head.length + 1).setValue('OnTN');
+    const h = rows_('HocSinh').find(r => r.MaHS === t.u);
+    if (!h) throw new Error('Tài khoản không còn tồn tại');
+    update_('HocSinh', h._r, { OnTN: req.on ? '1' : '' });
+    return { on: !!req.on };
+  });
+  API.get_ontn = req => { const t = auth_(req, 'hs'); const h = rows_('HocSinh').find(r => r.MaHS === t.u); return { on: !!h && String(h.OnTN || '') === '1' }; };
+
+  /* 11. GV thêm / bớt học sinh vào danh sách ôn thi TN (đặt cờ OnTN) – HS lớp 12 thuộc trường của GV */
+  API.ontn_candidates = req => {
+    const t = auth_(req, 'gv'), g = teacher_(t);
+    const sk = t.r === 'admin' && req.school != null ? schoolKey_(req.school) : schoolKey_(g.Truong);
+    const lop = {}; rows_('Lop').forEach(c => { if (String(c.Khoi) === '12' && (!sk || schoolKey_(c.Truong) === sk)) lop[c.MaLop] = lopName_(c.TenLop); });
+    return rows_('HocSinh').filter(h => lop[h.MaLop]).map(h => ({ maHS: h.MaHS, hoTen: h.HoTen, lop: lop[h.MaLop], ontn: String(h.OnTN || '') === '1' }));
+  };
+  API.set_ontn_gv = req => withLock_(() => {
+    const t = auth_(req, 'gv');
+    const ids = (Array.isArray(req.ids) ? req.ids : [req.maHS]).filter(Boolean).slice(0, 300);
+    const sh = sheet_('HocSinh');
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    if (head.indexOf('OnTN') < 0) sh.getRange(1, head.length + 1).setValue('OnTN');
+    const hs = rows_('HocSinh'); let n = 0;
+    ids.forEach(id => { const h = hs.find(r => r.MaHS === id); if (!h) return; ownClass_(t, h.MaLop); update_('HocSinh', h._r, { OnTN: req.on === false ? '' : '1' }); n++; });
+    return { done: n };
+  });
+
+  /* 9. Quản lý đề luyện thi TN: theo TRƯỜNG (GV: trường mình; Admin: chọn trường), kèm lượt "Luyện thi TN theo bài" (LT:) */
+  API.tn_results = req => {
+    const t = auth_(req, 'gv');
+    const g = teacher_(t);
+    const allLop = rows_('Lop');
+    const schools = {}; allLop.forEach(c => { const k = schoolKey_(c.Truong); if (k && !schools[k]) schools[k] = String(c.Truong).trim(); });
+    const sk = t.r === 'admin' && req.school != null ? schoolKey_(req.school) : schoolKey_(g.Truong);
+    const codes = {};
+    allLop.forEach(c => { if (!sk || schoolKey_(c.Truong) === sk) codes[c.MaLop] = lopName_(c.TenLop); });
+    if (req.code && codes[req.code]) { const one = {}; one[req.code] = codes[req.code]; Object.keys(codes).forEach(k => delete codes[k]); Object.assign(codes, one); }
+    const out = { classes: codes, rows: [], lt: [], schools: Object.keys(schools).map(k => schools[k]).sort(), school: sk ? (schools[sk] || '') : '' };
+    // HS đã tích "Đăng kí ôn thi TN" (cột OnTN) thuộc các lớp trên
+    out.ontn = rows_('HocSinh').filter(h => codes[h.MaLop] && String(h.OnTN || '') === '1').map(h => ({ maHS: h.MaHS, hoTen: h.HoTen, lop: codes[h.MaLop] || lopName_(h.TenLop) }));
+    const key = req.key ? String(req.key) : '';
+    const sh = sheet_('KetQua'), n = sh.getLastRow() - 1;
+    if (n < 1) return out;
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const col = name => head.indexOf(name);
+    const iKey = col('MaBai'), iLop = col('MaLop');
+    const keys = sh.getRange(2, iKey + 1, n, 1).getValues(), lops = sh.getRange(2, iLop + 1, n, 1).getValues();
+    const hit = [], hitLt = [];
+    for (let i = 0; i < n; i++) {
+      const k = String(keys[i][0]);
+      if (!codes[String(lops[i][0])]) continue;
+      if (k.indexOf('DE:') === 0) { if (!key || k === key) hit.push(i); }
+      else if (!key && k.indexOf('LT:') === 0) hitLt.push(i);
+    }
+    const all = hit.concat(hitLt).sort((a, b) => a - b);
+    if (!all.length) return out;
+    const lo = all[0], hi = all[all.length - 1];
+    const ncol = key ? head.length : Math.min(head.length, col('ChiTiet') < 0 ? head.length : col('ChiTiet'));
+    const vals = sh.getRange(lo + 2, 1, hi - lo + 1, ncol).getValues();
+    const one = (i, full) => {
+      const r = vals[i - lo], v = name => r[col(name)];
+      const o = { maHS: v('MaHS'), hoTen: v('HoTen'), lop: codes[String(v('MaLop'))] || lopName_(v('TenLop')), key: String(v('MaBai')),
+        diem: Number(v('Diem')), dung: Number(v('SoDung')), tong: Number(v('TongCau')), giay: Number(v('ThoiGianLam')) || 0,
+        lan: Number(v('LanThu')) || 1, t: v('ThoiDiem') instanceof Date ? v('ThoiDiem').toISOString() : String(v('ThoiDiem')) };
+      if (full) o.sai = String(v('CauSai') || '').split(',').filter(String);
+      if (full && key) { try { const ct = JSON.parse(v('ChiTiet') || '{}'); delete ct._tl; o.ct = ct; } catch (e) { o.ct = {}; } }
+      return o;
+    };
+    out.rows = hit.map(i => one(i, true));
+    out.lt = hitLt.map(i => one(i, false));
+    return out;
+  };
+
+  /* 8. GV sửa học sinh: đổi họ tên, tên đăng nhập, TRƯỜNG và LỚP cho phù hợp
+        – chọn lớp có sẵn của trường đó (req.toCode) hoặc gõ tên lớp mới (req.newClass, tạo trong đúng trường)
+        – đổi trường mà vẫn giữ lớp cũ → chuyển sang lớp cùng tên ở trường mới. Kết quả làm bài chuyển theo. */
+  const updHs0 = API.update_student;
+  API.update_student = req => {
+    const t = auth_(req, 'gv');
+    const h = rows_('HocSinh').find(r => r.MaHS === req.maHS);
+    if (!h) throw new Error('Không tìm thấy học sinh');
+    const cur = ownClass_(t, h.MaLop);
+    const school = req.school ? clean_(req.school, 80) : ''; // chỉ đổi trường khi GV chọn trường
+    const schoolNew = school || String(h.Truong || cur.Truong || '');
+    let target = null;
+    if (req.newClass && String(req.newClass).trim()) target = withLock_(() => selfClass_(req.newClass, req.khoi || h.Khoi, schoolNew));
+    else if (req.toCode && req.toCode !== h.MaLop) target = findClass_(req.toCode);
+    else if (school && schoolKey_(school) !== schoolKey_(cur.Truong)) target = withLock_(() => selfClass_(cur.TenLop, cur.Khoi, school));
+    // họ tên, tên đăng nhập: dùng chức năng gốc (giữ nguyên lớp)
+    const r = updHs0 ? updHs0(Object.assign({}, req, { toCode: h.MaLop, school: undefined, newClass: undefined })) : { done: true };
+    if (target && target.MaLop !== h.MaLop) withLock_(() => {
+      const ten = lopName_(target.TenLop), k = String(target.Khoi);
+      patchWhere_('HocSinh', 'MaHS', [h.MaHS], { MaLop: target.MaLop, TenLop: ten, Khoi: k, Truong: target.Truong });
+      patchWhere_('KetQua', 'MaHS', [h.MaHS], { MaLop: target.MaLop, TenLop: ten, Khoi: k });
+      try { patchWhere_('NopVe', 'MaHS', [h.MaHS], { MaLop: target.MaLop, TenLop: ten, Khoi: k }); } catch (e) {}
+    });
+    return Object.assign({}, r, { moved: !!(target && target.MaLop !== h.MaLop), toLop: target ? lopName_(target.TenLop) : '', toTruong: target ? target.Truong : '', cn2111: 1 });
+  };
+
+  /* 7. Rà soát: HS nằm trong lớp bị gán nhầm trường (HS khai trường khác trường của lớp) → chuyển về lớp cùng tên ở đúng trường.
+        req.dry = 1: chỉ xem trước. Admin: mọi lớp; GV: lớp thuộc trường mình. */
+  API.fix_schools = req => {
+    const t = auth_(req, 'gv');
+    const mySk = t.r === 'admin' ? '' : schoolKey_(teacher_(t).Truong);
+    const lop = rows_('Lop').filter(c => !mySk || schoolKey_(c.Truong) === mySk), hs = rows_('HocSinh');
+    const plan = [];
+    lop.forEach(c => {
+      const ck = schoolKey_(c.Truong), g = {};
+      hs.filter(h => h.MaLop === c.MaLop && String(h.Truong || '').trim() && schoolKey_(h.Truong) !== ck)
+        .forEach(h => { const k = schoolKey_(h.Truong); (g[k] = g[k] || { to: clean_(h.Truong, 80), ids: [] }).ids.push(h.MaHS); });
+      Object.keys(g).forEach(k => plan.push({ MaLop: c.MaLop, TenLop: lopName_(c.TenLop), Khoi: String(c.Khoi), from: c.Truong, to: g[k].to, n: g[k].ids.length, ids: g[k].ids }));
+    });
+    if (req.dry) return plan.map(x => ({ MaLop: x.MaLop, TenLop: x.TenLop, Khoi: x.Khoi, from: x.from, to: x.to, n: x.n }));
+    return withLock_(() => {
+      let moved = 0;
+      plan.forEach(x => {
+        const to = selfClass_(x.TenLop, x.Khoi, x.to), ten = lopName_(to.TenLop);
+        patchWhere_('HocSinh', 'MaHS', x.ids, { MaLop: to.MaLop, TenLop: ten, Khoi: String(to.Khoi), Truong: to.Truong });
+        patchWhere_('KetQua', 'MaHS', x.ids, { MaLop: to.MaLop, TenLop: ten, Khoi: String(to.Khoi) });
+        try { patchWhere_('NopVe', 'MaHS', x.ids, { MaLop: to.MaLop, TenLop: ten, Khoi: String(to.Khoi) }); } catch (e) {}
+        moved += x.n;
+      });
+      return { moved: moved, groups: plan.length };
+    });
+  };
+
+  /* 6. GV cùng trường tự duyệt / từ chối / khoá – mở khoá tài khoản GV mới của trường mình (Admin vẫn quản lý tất cả) */
+  const listGv0 = API.list_gv, approve0 = API.approve_gv;
+  const pubGv = g => ({ MaGV: g.MaGV, Email: g.Email, HoTen: g.HoTen, Truong: g.Truong, VaiTro: g.VaiTro, TrangThai: g.TrangThai });
+  API.list_gv = req => {
+    const t = auth_(req, 'gv');
+    if (t.r === 'admin') return listGv0 ? listGv0(req) : rows_('GiaoVien').map(pubGv);
+    const me = teacher_(t), sk = schoolKey_(me.Truong);
+    return rows_('GiaoVien').filter(g => sk && schoolKey_(g.Truong) === sk && g.VaiTro !== 'admin').map(pubGv);
+  };
+  API.approve_gv = req => {
+    const t = auth_(req, 'gv');
+    if (t.r === 'admin') return approve0(req);
+    return withLock_(() => {
+      const me = teacher_(t), sk = schoolKey_(me.Truong);
+      const g = rows_('GiaoVien').find(r => r.MaGV === req.maGV);
+      if (!g) throw new Error('Không tìm thấy GV');
+      if (g.VaiTro === 'admin' || !sk || schoolKey_(g.Truong) !== sk) throw new Error('Thầy/cô chỉ duyệt được giáo viên cùng trường');
+      if (g.MaGV === me.MaGV) throw new Error('Không tự đổi trạng thái tài khoản của mình');
+      const st = ['hoat_dong', 'khoa', 'tu_choi'].indexOf(req.status) >= 0 ? req.status : (req.approve === false ? 'khoa' : 'hoat_dong');
+      update_('GiaoVien', g._r, { TrangThai: st, DuyetBoi: me.Email });
+      return { done: true };
+    });
+  };
+
+  /* 5. lượt làm bài thực hành (bài học có ô Họ và tên) */
+  API.practice_log = req => {
+    let hs = null;
+    try { const t = auth_(req, 'hs'); hs = rows_('HocSinh').find(r => r.MaHS === t.u) || null; } catch (e) {}
+    const list = (Array.isArray(req.items) ? req.items : [req]).slice(0, 50);
+    const sh = cn2111Sheet_();
+    const rows = list.map(x => [new Date(x.t || Date.now()), clean_(x.id, 40), hs ? hs.MaHS : '', clean_(x.ten || (hs && hs.HoTen) || '', 60),
+      clean_(x.lop || (hs && hs.TenLop) || '', 20), hs ? hs.MaLop : '', hs ? String(hs.Truong || '') : '', clean_(x.bai, 120), clean_(x.phan, 120),
+      Number(x.lan) || 1, isFinite(+x.diem) ? Math.round(+x.diem * 100) / 100 : '', Number(x.max) || 10,
+      x.soLoi == null || x.soLoi === '' ? '' : Number(x.soLoi) || 0]);
+    if (rows.length) withLock_(() => { const ids = cn2111LogIds_(sh); const fresh = rows.filter(r => !r[1] || ids.indexOf(r[1]) < 0); if (fresh.length) sh.getRange(sh.getLastRow() + 1, 1, fresh.length, fresh[0].length).setValues(fresh); });
+    return { saved: rows.length };
+  };
+  API.practice_logs = req => {
+    const t = auth_(req, 'gv');
+    const c = req.code ? ownClass_(t, req.code) : null;
+    const sk = t.r === 'admin' ? '' : schoolKey_(teacher_(t).Truong), bai = String(req.bai || '');
+    const sh = cn2111Sheet_();
+    const last = sh.getLastRow(); if (last < 2) return [];
+    const head = CN2111_LOG_HEAD;
+    return sh.getRange(2, 1, last - 1, head.length).getValues()
+      .filter(r => c ? r[5] === c.MaLop : (!sk || schoolKey_(r[6]) === sk))
+      .filter(r => !bai || String(r[7]).indexOf(bai) === 0)
+      .map(r => { const o = {}; head.forEach((h, j) => { o[h] = r[j] instanceof Date ? r[j].toISOString() : r[j]; }); return o; })
+      .slice(-3000);
+  };
+}
+var CN2111_LOG_HEAD = ['ThoiDiem', 'MaLuot', 'MaHS', 'HoTen', 'TenLop', 'MaLop', 'Truong', 'Bai', 'Phan', 'Lan', 'Diem', 'DiemToiDa', 'SoLoi'];
+function cn2111Sheet_() {
+  const ss = SpreadsheetApp.getActive();
+  let sh = ss.getSheetByName('ThucHanh');
+  if (!sh) { sh = ss.insertSheet('ThucHanh'); sh.getRange(1, 1, 1, CN2111_LOG_HEAD.length).setValues([CN2111_LOG_HEAD]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  else if (sh.getLastColumn() < CN2111_LOG_HEAD.length) sh.getRange(1, 1, 1, CN2111_LOG_HEAD.length).setValues([CN2111_LOG_HEAD]).setFontWeight('bold');
+  return sh;
+}
+function cn2111LogIds_(sh) {
+  const last = sh.getLastRow(); if (last < 2) return [];
+  return sh.getRange(Math.max(2, last - 400), 2, Math.min(last - 1, 401), 1).getValues().map(r => String(r[0]));
+}
+
+try { cn2111Patch_(); } catch (e) { console.error('CapNhat_21_11: ' + e); }
