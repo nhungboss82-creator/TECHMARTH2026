@@ -1778,7 +1778,7 @@ const schKey = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/
 function gvSchool(cls) {
   const isAdmin = session.role === 'admin', mySk = schKey(session.user.Truong);
   // Cập nhật 21/11/2026: tách lớp chính thức (GV tạo) với lớp HS tự khai – lớp tự khai chỉ hiện trong mục riêng để GV kiểm tra
-  const all = cls || [], off = all.filter(c => !isSelfCls(c)), self = all.filter(isSelfCls);
+  const all = cls || [], self = all.filter(isSelfCls), off = all.filter(c => !isSelfCls(c) || +c.siSo > 0);
   // Giáo viên: chỉ các lớp thuộc trường mình dạy
   if (!isAdmin) {
     const mine = c => !mySk || schKey(c.Truong) === mySk || (!schKey(c.Truong) && c.cuaToi);
@@ -1786,13 +1786,13 @@ function gvSchool(cls) {
   }
   // Quản trị viên: chọn trường rồi mới hiện danh sách lớp của trường đó (mặc định: trường của Quản trị viên)
   const m = {};
-  all.forEach(c => { const k = schKey(c.Truong); if (!k) return; const x = (m[k] = m[k] || { k, names: {}, n: 0, s: 0 }); x.names[String(c.Truong).trim()] = 1; if (isSelfCls(c)) x.s++; else x.n++; });
+  all.forEach(c => { const k = schKey(c.Truong); if (!k) return; const x = (m[k] = m[k] || { k, names: {}, n: 0, s: 0 }); x.names[String(c.Truong).trim()] = 1; if (!isSelfCls(c) || +c.siSo > 0) x.n++; });
   // mọi trường đã biết (GV đăng ký, HS khai) đều có trong ô chọn, kể cả trường chưa có lớp
   SCHOOLS.forEach(v => { const k = schKey(v); if (k && !m[k]) m[k] = { k, names: { [v]: 1 }, n: 0, s: 0 }; });
   const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, s: x.s, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
   let k = window._admSchool || '';
   if (k && !ss.some(s => s.k === k)) k = '';
-  const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp${s.s ? ' · ' + s.s + ' lớp HS tự khai' : ''})</option>`).join('')}</select></div>`;
+  const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp)</option>`).join('')}</select></div>`;
   return { list: k ? off.filter(c => schKey(c.Truong) === k) : [], self: k ? self.filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; redraw(); }; } };
 }
 const gvClasses = async () => { if (!window._gvCls) { window._gvCls = await api('my_classes'); addSchools(window._gvCls.filter(c => !isSelfCls(c)).map(c => c.Truong)); } return window._gvCls; };
@@ -1909,8 +1909,8 @@ route(/^\/gv\/lop$/, async () => {
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
         : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
         : session.role === 'admin' && !sc.school ? ''
-        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('') || (classes && classes.length && shown.length === 0 ? '<div class="card empty">Trường này chưa có lớp chính thức (do thầy cô tạo).</div>' : '')}
-      ${classes && sc.self && sc.self.length ? `<details class="card selfcls"${window._selfOpen ? ' open' : ''}><summary><b>🧾 Lớp học sinh tự khai (${sc.self.length})</b><span class="hint"> – HS tự gõ tên lớp khi đăng kí. Có thể là lớp của trường khác bị gán nhầm vào ${esc(sc.school || 'trường này')}. Kiểm tra rồi chuyển đúng trường, giữ lại hoặc mở lớp để xoá.</span></summary>
+        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${isSelfCls(c) ? ' · <i>HS tự khai, chưa xác nhận</i>' : session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('') || (classes && classes.length && shown.length === 0 ? '<div class="card empty">Trường này chưa có lớp chính thức (do thầy cô tạo).</div>' : '')}
+      ${classes && sc.self && sc.self.length ? `<details class="card selfcls"${window._selfOpen ? ' open' : ''}><summary><b>🧾 Kiểm tra lớp HS tự khai (${sc.self.length})</b><span class="hint"> – lớp do HS tự gõ tên khi đăng kí, có thể là lớp của trường khác gán nhầm vào ${esc(sc.school || 'trường này')}. Xác nhận, chuyển đúng trường hoặc mở lớp để xoá.</span></summary>
         <div class="list" style="margin-top:8px">${sc.self.sort((a, b) => String(a.Khoi).localeCompare(String(b.Khoi)) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<div class="item selfrow"><div class="grow"><b>${esc(c.TenLop || c.MaLop)}</b> <span class="pill">Khối ${esc(c.Khoi)}</span><div class="meta">${c.siSo || 0} học sinh · mã ${esc(c.MaLop)}</div></div>
           <select data-mv="${esc(c.MaLop)}" aria-label="Chuyển lớp ${esc(c.TenLop)} sang trường">${SCHOOLS.map(v => `<option${skNorm(v) === skNorm(c.Truong) ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
           <button type="button" class="btn sm" data-mvgo="${esc(c.MaLop)}">Lưu trường</button><a class="btn ghost sm" href="#/gv/lop/${c.MaLop}">Mở lớp</a></div>`).join('')}</div>
