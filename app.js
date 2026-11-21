@@ -1810,7 +1810,9 @@ route(/^\/gv$/, async params => {
   const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
   const draw = () => {
     const mine = classes ? gvSchool(classes) : null;
-    const cl = session.role === 'admin' ? (classes || []).filter(c => !isSelfCls(c)) : (mine ? mine.list : []);
+    // Quản trị viên: số liệu TOÀN HỆ THỐNG (mọi trường); GV: lớp của trường mình
+    const cl = session.role === 'admin' ? (classes || []).filter(c => !isSelfCls(c) || +c.siSo > 0) : (mine ? mine.list : []);
+    const nTruong = new Set(cl.map(c => schKey(c.Truong)).filter(Boolean)).size;
     const hs = cl.reduce((s, c) => s + (+c.siSo || 0), 0), vs = window._vs;
     const tiles = [
       { href: '#/gv/lop', ic: '🏫', c: 'blue', t: 'Các lớp', d: classes ? `${cl.length} lớp · ${hs} HS` : 'Danh sách, mã đăng ký' },
@@ -1824,8 +1826,9 @@ route(/^\/gv$/, async params => {
           <h1>Chào thầy/cô ${nameOf(u.HoTen)} <span class="wave">👋</span></h1>
           <p>🏫 ${esc(u.Truong || '')}${session.role === 'admin' ? ' · <b>Quản trị viên</b>' : ''}</p></div>
         <div class="gh-stats">
-          <div class="gh-stat"><b>${classes ? cl.length : '…'}</b><span>lớp học</span></div>
-          <div class="gh-stat"><b>${classes ? hs.toLocaleString('vi-VN') : '…'}</b><span>học sinh</span></div>
+          ${session.role === 'admin' ? `<div class="gh-stat"><b>${classes ? nTruong : '…'}</b><span>trường</span></div>` : ''}
+          <div class="gh-stat"><b>${classes ? cl.length : '…'}</b><span>lớp học${session.role === 'admin' ? ' (toàn hệ thống)' : ''}</span></div>
+          <div class="gh-stat"><b>${classes ? hs.toLocaleString('vi-VN') : '…'}</b><span>học sinh${session.role === 'admin' ? ' (toàn hệ thống)' : ''}</span></div>
           <div class="gh-stat" id="vs"><b>${vs ? (vs.total || 0).toLocaleString('vi-VN') : '…'}</b><span>lượt truy cập${vs ? ` · hôm nay ${(vs.today || 0).toLocaleString('vi-VN')}` : ''}</span></div>
         </div>
       </section>

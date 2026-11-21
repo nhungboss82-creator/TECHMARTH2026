@@ -885,3 +885,5 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
   .tl-acc .tl-types button{flex:none}
   .tl-acc .acc-tx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,1fr)}
+@media (max-width:640px){.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(2,1fr)}}
