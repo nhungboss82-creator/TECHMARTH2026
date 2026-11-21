@@ -441,7 +441,7 @@ body.comparing .wrap{box-shadow:inset 0 0 0 3px #1F5FD1}
 #learnBody.lb-dev .dvinfo.full td:first-child{white-space:normal;width:32%}
 @media (max-width:1500px),(max-height:760px){#learnBody.lb-dev .dvinfo.full{font-size:14.5px}.dvcols{gap:10px}.ctl{gap:3px}#learnBody.lb-dev .dvinfo.full table{font-size:13.5px}#learnBody.lb-dev .dvinfo.full .plate span{font-size:15px}.dvsy svg{width:110px;height:58px}.dvsy h5{font-size:15px}.dvsy figcaption{font-size:13px}}
 /* ---------- Bài 9: chỉ phần thiết bị, toàn màn hình, chữ tự vừa khung ---------- */
-body.b9only .tracker,body.b9only .main,body.b9only .rail,body.b9only #btnSample{display:none!important}
+body.b9only .tracker,body.b9only .main,body.b9only .rail{display:none!important}
 body.b9only #learn{top:var(--hdr,64px);background:none;padding:0;z-index:40}
 body.b9only #learn .lbox{box-shadow:none;border-top:1px solid var(--rule)}
 body.b9only #learn .lwho{display:none!important}
@@ -546,6 +546,7 @@ body.rp-min .rpToggle::after{content:" Nhiệm vụ";font:600 13px var(--f-label
 .step:not(.done):not(.cur){color:#1E3A8A}
 .step:not(.done):not(.cur) .n{background:#1E3A8A;border-color:#1E3A8A;color:#fff}
 </style>
+<script src="thuchanh.js"></script>
 </head>
 <body>
 <header class="top">
@@ -1759,7 +1760,7 @@ function grade() {
   let score = allOk ? 10 : core.items.reduce((a, i) => a + (i.ok ? i.pts : 0), 0);
   score = Math.max(allOk && !strict ? 8 : 0, score - ded);
   let advice = [];
-  state.grade = { core: core.items, diags: core.diags, score, advice, issues, strict, errs, ded, spare: spare.map(d => d.label + ' (' + DEF[d.type].name + ')'), spareDed, timeOut: !!state.flags.tOver, time: new Date() }; state.flags.graded = true;
+  state.grade = { core: core.items, diags: core.diags, score, advice, issues, strict, errs, ded, spare: spare.map(d => d.label + ' (' + DEF[d.type].name + ')'), spareDed, timeOut: !!state.flags.tOver, time: new Date() }; state.flags.graded = true; try { if (!state.compare) window.STC_LOG && STC_LOG({ bai: 'Bài 9. Thiết bị điện trong gia đình', phan: (LESSON().title || '').replace(/^Bài \d+\.\s*/, '') || 'Lắp mạch', ten: $('#stName').value, lop: $('#stClass').value, diem: score, max: 10 }); } catch (_) { }
   if (!state.compare) timerStop(); state.grade.ms = timerMs();
   logE('🏁', `Chấm điểm: ${vn(score, 2)}/10 – thời gian thiết kế ${fmtTime(state.grade.ms, true)}`); state.tab = 'score'; save(); renderAll();
   if (score === 10) { sfx('ok'); toast('🎉 Xuất sắc! Mạch đúng và hoạt động – 10 điểm', 'ok'); }
@@ -2457,6 +2458,14 @@ const SAMPLES = {
     checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Nút nhấn nằm trên dây nóng, nối tiếp với chuông.', 'Khi có điện: bấm và giữ nút nhấn để chuông kêu.'] },
   m5: { lesson: 'free', name: 'Đèn tự bật bằng cảm biến chuyển động', desc: 'Công tắc cảm biến cần cả dây nóng và dây nguội để hoạt động.',
     checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Cực L cảm biến nối dây nóng (sau aptomat), cực N nối dây nguội.', 'Cực ra của cảm biến → đèn → dây nguội.', 'Khi có điện: bấm vào cảm biến để giả lập có người đi qua.'] },
+  m7: { lesson: 'free', name: 'Đèn cầu thang – bật/tắt ở 2 nơi', desc: '2 công tắc 3 cực (2 chiều) ở chân và đầu cầu thang cùng điều khiển 1 đèn.',
+    checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Dây nóng → cực C (cực chung) của công tắc 3 cực thứ nhất.', 'Hai cực 1, 2 của công tắc thứ nhất nối chéo sang hai cực 1, 2 của công tắc thứ hai (2 dây đảo chiều).', 'Cực C của công tắc thứ hai → đèn → dây nguội.', 'Khi có điện: bật công tắc nào cũng đổi trạng thái đèn.'] },
+  m8: { lesson: 'free', name: '1 công tắc điều khiển 2 đèn (song song)', desc: 'Sau công tắc rẽ nhánh tới 2 đèn mắc song song – bật một lần, 2 đèn cùng sáng.',
+    checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Công tắc nằm trên dây nóng, TRƯỚC mối nối rẽ nhánh.', 'Từ mối nối sau công tắc: 1 dây tới đèn 1, 1 dây tới đèn 2 (mắc song song, không nối tiếp).', 'Cực còn lại của 2 đèn cùng nối về dây nguội.'] },
+  m9: { lesson: 'free', name: 'Phòng học: đèn tuýp + quạt trần + ổ cắm', desc: 'Dây nóng sau aptomat rẽ 3 nhánh: công tắc → đèn tuýp, công tắc → quạt, ổ cắm luôn có điện.',
+    checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Mối nối rẽ nhánh dây nóng sau aptomat nhánh.', 'Nhánh 1: công tắc → đèn tuýp. Nhánh 2: công tắc → quạt trần. Nhánh 3: thẳng tới cực L ổ cắm.', 'Ba tải mắc SONG SONG, cùng về dây nguội qua các mối nối.'] },
+  m10: { lesson: 'free', name: 'Bình nóng lạnh dùng aptomat riêng', desc: 'Thiết bị công suất lớn (bình nóng lạnh, điều hoà) đóng cắt bằng aptomat riêng, không qua công tắc thường.',
+    checks: ['Lưới điện → công tơ → aptomat tổng 20 A → aptomat nhánh riêng 16 A cho bình nóng lạnh.', 'Tải 2.500 W ≈ 11,4 A nên dùng dây 4 mm² (chịu 16 A).', 'Ngõ ra aptomat nhánh (dây nóng) nối thẳng tới bình nóng lạnh.', 'Cực còn lại của bình nóng lạnh về dây nguội.', 'Không dùng công tắc 2 cực thường cho tải công suất lớn.'] },
   m6: { lesson: 'free', name: 'Quạt trần và đèn – 2 công tắc riêng', desc: 'Mỗi tải có công tắc riêng, mắc song song.',
     checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Dây nóng sau aptomat rẽ nhánh tới 2 công tắc.', 'Công tắc 1 → đèn; công tắc 2 → quạt trần.', 'Đèn và quạt cùng nối về dây nguội qua mối nối rẽ nhánh.'] }
 };
@@ -2486,6 +2495,29 @@ function buildSample(key) {
       V(at, 'o', j1, 'j', 'L', 1.5); V(j1, 'j', k1, 'a', 'L', 1.5); V(k1, 'b', d, 'a', 'K', 1.5); V(d, 'b', ja, 'j', 'N', 1.5); V(ja, 'j', jN0, 'j', 'N', 1.5); V(jb, 'j', ja, 'j', 'N', 1.5);
       if (key === 'm2') { const oc = D('outlet', 480, 450, { r: 10, designP: 500 }); V(j1, 'j', oc, 'l', 'L', 1.5); V(oc, 'n', jb, 'j', 'N', 1.5); }
       else { const k2 = D('sw2', 480, 450), q = D('quat', 650, 450); V(j1, 'j', k2, 'a', 'L', 1.5); V(k2, 'b', q, 'a', 'K', 1.5); V(q, 'b', jb, 'j', 'N', 1.5); }
+    }
+    if (key === 'm7') {
+      const k1 = D('sw3', 480, 145), k2 = D('sw3', 700, 145, {}, 2), d = D('den', 880, 300, { P: 18 }), jN1 = Jn(940, 175);
+      V(at, 'o', k1, 'c', 'L', 1.5); V(k1, 'x1', k2, 'x2', 'K', 1.5); V(k1, 'x2', k2, 'x1', 'K', 1.5);
+      V(k2, 'c', d, 'a', 'K', 1.5); V(d, 'b', jN1, 'j', 'N', 1.5); V(jN1, 'j', jN0, 'j', 'N', 1.5);
+    }
+    if (key === 'm8') {
+      const k = D('sw2', 480, 145), jK = Jn(580, 220), d1 = D('den', 650, 300, { P: 18 }), d2 = D('den', 650, 450, { P: 18 }), ja = Jn(720, 300), jb = Jn(720, 450);
+      V(at, 'o', k, 'a', 'L', 1.5); V(k, 'b', jK, 'j', 'K', 1.5); V(jK, 'j', d1, 'a', 'K', 1.5); V(jK, 'j', d2, 'a', 'K', 1.5);
+      V(d1, 'b', ja, 'j', 'N', 1.5); V(ja, 'j', jN0, 'j', 'N', 1.5); V(d2, 'b', jb, 'j', 'N', 1.5); V(jb, 'j', ja, 'j', 'N', 1.5);
+    }
+    if (key === 'm9') {
+      const j1 = Jn(400, 145), j2 = Jn(400, 450), k1 = D('sw2', 480, 145), k2 = D('sw2', 480, 450), dt = D('dentuyp', 650, 300), q = D('quat', 650, 450), oc = D('outlet', 480, 600, { r: 10, designP: 500 });
+      const ja = Jn(720, 300), jb = Jn(720, 450), jc = Jn(720, 600);
+      V(at, 'o', j1, 'j', 'L', 1.5); V(j1, 'j', k1, 'a', 'L', 1.5); V(j1, 'j', j2, 'j', 'L', 1.5); V(j2, 'j', k2, 'a', 'L', 1.5); V(j2, 'j', oc, 'l', 'L', 1.5);
+      V(k1, 'b', dt, 'a', 'K', 1.5); V(k2, 'b', q, 'a', 'K', 1.5);
+      V(dt, 'b', ja, 'j', 'N', 1.5); V(ja, 'j', jN0, 'j', 'N', 1.5); V(q, 'b', jb, 'j', 'N', 1.5); V(jb, 'j', ja, 'j', 'N', 1.5); V(oc, 'n', jc, 'j', 'N', 1.5); V(jc, 'j', jb, 'j', 'N', 1.5);
+    }
+    if (key === 'm10') {
+      const b = D('binhnl', 650, 300);
+      V(at, 'o', b, 'a', 'L', 4); V(b, 'b', jN0, 'j', 'N', 4);
+      // tải 2.500 W ≈ 11,4 A: aptomat nhánh 16 A, aptomat tổng 20 A, dây 4 mm² (chịu 16 A)
+      at.p.r = 16; am.p.r = 20; state.wires.forEach(w => { w.size = 4; });
     }
     if (key === 'm3') {
       const k1 = D('sw3', 480, 145), k3 = D('sw4', 700, 145), k2 = D('sw3', 920, 145, {}, 2), d = D('den', 1100, 300, { P: 18 }), jN1 = Jn(1160, 175);
@@ -2653,13 +2685,14 @@ document.addEventListener('change', e => {
   const a = state.flags.devAns || (state.flags.devAns = {}); const d = DEVS.find(x => x.id === s.dataset.da); a[d.id] = s.value;
   const ok = s.value === d.n; if (s.value) sfx(ok ? 'ok' : 'err');
   state.flags.devOK = DEVS.filter(x => a[x.id] === x.n).length; if (state.flags.devOK === DEVS.length) state.flags.devDone = true;
+  if (!state.flags.devLogged && DEVS.every(x => a[x.id])) { state.flags.devLogged = 1; try { window.STC_LOG && STC_LOG({ bai: 'Bài 9. Thiết bị điện trong gia đình', phan: 'Nhận biết thiết bị điện', ten: $('#lName').value, lop: $('#lClass').value, diem: Math.round(state.flags.devOK / DEVS.length * 100) / 10, max: 10 }); } catch (_) { } }
   save(); renderLearn();
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('#learn')) return;
   const c = e.target.closest('.dvc.ok'); if (c) { LS.devCur = c.dataset.dv; renderLearn(); return; }
   if (e.target.closest('[data-dback]')) { LS.devCur = null; renderLearn(); return; }
-  if (e.target.closest('[data-dreset]')) { state.flags.devAns = {}; delete state.flags.devOK; delete state.flags.devDone; LS.devCur = null; save(); renderLearn(); }
+  if (e.target.closest('[data-dreset]')) { state.flags.devAns = {}; delete state.flags.devOK; delete state.flags.devDone; delete state.flags.devLogged; LS.devCur = null; save(); renderLearn(); }
 });
 
 /* 100% = cả bảng mạch vừa khít vùng giữa màn hình (chừa chỗ thanh công cụ) */

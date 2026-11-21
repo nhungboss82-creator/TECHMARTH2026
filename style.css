@@ -836,3 +836,52 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .hvsheet{margin-top:6px;background:#fff;border-radius:10px;padding:10px;display:flex;justify-content:center}
 .hvsheet svg{display:block;width:100%;height:auto;max-height:34vh}
 @media (max-height:800px){.hvsheet svg{max-height:28vh}}
+
+/* ===== Cập nhật 21/11/2026 ===== */
+.selfcls summary{cursor:pointer;list-style:revert}
+.selfrow{flex-wrap:wrap;gap:8px;align-items:center}
+.selfrow .grow{min-width:140px}
+.selfrow select{flex:0 1 230px;width:auto;max-width:100%;margin:0}
+/* Mục thu gọn (accordion): bấm mục nào mở mục đó, bấm lại để thu gọn */
+.acc{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.acc-sec{background:var(--card,#fff);border:1px solid var(--line,#e3e8ef);border-radius:14px;overflow:hidden;transition:box-shadow .2s}
+.acc-sec.open{box-shadow:0 6px 22px rgba(15,40,80,.10);border-color:var(--brand2,#2f6fde)}
+.acc-h{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;cursor:pointer}
+.acc-h:focus-visible{outline:3px solid var(--brand2,#2f6fde);outline-offset:-3px}
+.acc-ic{font-size:1.5em;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--info-soft,#eaf2ff);flex:none}
+.acc-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.acc-tx span{color:var(--muted,#64748b);font-size:.9em}
+.acc-chev{font-size:1.1em;color:var(--muted,#64748b);flex:none;width:28px;text-align:center}
+.acc-b{padding:0 12px 12px}
+.acc-b .rows{margin:0}
+.lt-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--info-soft,#eaf2ff);color:var(--brand2,#2f6fde);flex:none}
+.lt-step.on .lt-n{background:var(--brand2,#2f6fde);color:#fff}
+.lt-khoi{margin:0}
+.lt-n.done{background:var(--ok,#16a34a);color:#fff}
+.tl-acc .tl-types{margin:0 0 10px}
+.tl-acc textarea{width:100%;min-height:90px}
+/* Lượt thực hành */
+.th-bai summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.th-bai .tblwrap{overflow-x:auto;margin-top:8px}
+.th-t{width:100%;border-collapse:collapse;font-size:.92em}
+.th-t th,.th-t td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+.th-t th{color:var(--muted);font-weight:600;white-space:nowrap}
+.th-t .n{text-align:center;white-space:nowrap}
+.th-sc{display:flex;flex-wrap:wrap;gap:4px}
+.th-sc .pill{margin:0}
+/* AI chấm bài vẽ – gọn, dùng tốt trên điện thoại */
+.tl-h1{margin:6px 0 4px;font-size:1.35em}
+.tl-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 8px}
+.tl-big{min-height:56px;font-size:1.05em;display:flex;align-items:center;justify-content:center}
+.tl-drop{min-height:54px}
+.tl-acc .tl-de{max-height:none}
+.tl-acc #go{min-height:52px;font-size:1.08em}
+.tl-spin{display:inline-block;width:16px;height:16px;border:3px solid var(--line);border-top-color:var(--brand2);border-radius:50%;animation:tlspin 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes tlspin{to{transform:rotate(360deg)}}
+@media (max-width:640px){
+  .tl-acc .acc-h{padding:12px}
+  .tl-acc .acc-b{padding:0 8px 10px}
+  .tl-acc .tl-types{display:flex;overflow-x:auto;flex-wrap:nowrap;gap:6px;padding-bottom:4px}
+  .tl-acc .tl-types button{flex:none}
+  .tl-acc .acc-tx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}

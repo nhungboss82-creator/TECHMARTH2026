@@ -81,7 +81,7 @@ async function api(action, data = {}) {
   if (DEMO) throw new Error('Chế độ dùng thử chưa kết nối máy chủ');
   const ctl = new AbortController();
   // AI soạn câu, chấm tự luận, chấm bài vẽ, phân tích kết quả có thể mất 1–2 phút (Google bận thì máy chủ tự thử lại)
-  const timer = setTimeout(() => ctl.abort(), /^(ai_|submit|grade_drawing|generate_exam)/.test(action) ? 240000 : 30000);
+  const timer = setTimeout(() => ctl.abort(), /^(ai_|submit|grade_drawing|practice_drawing|generate_exam)/.test(action) ? 240000 : 30000);
   let res;
   try {
     res = await fetch(API, { method: 'POST', body: JSON.stringify(Object.assign({ action, token: session && session.token }, data)), signal: ctl.signal, redirect: 'follow' });
@@ -183,11 +183,11 @@ function getStudentGrade() {
   return store.get('chosen_grade', '12');
 }
 
+/* Cập nhật 21/11/2026: học sinh khối nào chỉ xem nội dung khối đó (HS lớp 12 ôn lại lớp 10, 11 trong mục Luyện thi tốt nghiệp) */
 function getAllowedGrades() {
+  if (isGV() && !(session && session.role === 'hs')) return ['10', '11', '12'];
   const g = getStudentGrade();
-  if (g === '10') return ['10'];
-  if (g === '11') return ['11'];
-  return ['10', '11', '12'];
+  return ['10', '11', '12'].includes(g) ? [g] : ['12'];
 }
 
 function matrixPick() {
@@ -306,7 +306,7 @@ function renderNav(path) {
   document.body.classList.toggle('focus', focus);
   const items = isGV()
     ? [['#/gv', 'grid', 'Trang chủ', /^\/(gv|hcvg|hcat|hctd|hcpc|hinhchieu|gocchieu|trochoi|sgk|thitn|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$|^\/gv\/(matran|sinhde|dethi|baive|thietke|aisoancau|themcau|nganhang|thitn)/], ['#/gv/lop', 'home', 'Các lớp', /^\/gv\/(lop|hs|taolop)/], ['#/gv/diem', 'chart', 'Điểm', /^\/gv\/diem/], ['#/gv/giaobai', 'send', 'Giao bài', /^\/gv\/(giaobai|baigiao|bai\/)/]]
-    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
+    : [['#/', 'home', 'Trang chủ', /^\/$/], ['#/onluyen', 'learn', 'Ôn luyện', /^\/(onluyen|luyenthi|thuchanh|chude|de|dinhki|sgk|sotay|hinhchieu|gocchieu|hcvg|hcat|hctd|trochoi|thitn|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23|bai8|tien|phay|quytrinh|tuluyenve)/], ['#/baigiao', 'task', 'Bài giao', /^\/(baigiao|baive)/], ['#/ketqua', 'chart', 'Kết quả', /^\/(ketqua|ketquabai|bxh)/]];
   nav.hidden = false;
   nav.innerHTML = items.map(([h, ic, t, re]) => `<a href="${h}" class="${re.test(path) ? 'on' : ''}"${re.test(path) ? ' aria-current="page"' : ''}><span class="tico"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[ic]}</svg></span>${t}${ic === 'task' && !isGV() ? `<span class="dot" data-dot${tabDot ? '' : ' hidden'}>${tabDot > 9 ? '9+' : tabDot}</span>` : ''}</a>`).join('');
 }
@@ -461,16 +461,51 @@ route(/^\/quenmk$/, params => {
 
 
 /* ================= Cập nhật 08/11/2026: chọn trường, danh sách lớp, Gmail ================= */
-const SCHOOLS = (CFG.SCHOOLS && CFG.SCHOOLS.length) ? CFG.SCHOOLS : ['THPT Phong Điền', 'THPT Hương Thủy', 'THPT Trần Văn Kỷ', 'THPT Lương Thế Vinh'];
+/* Cập nhật 21/11/2026: danh sách trường tự bổ sung – trường GV mới đăng ký, trường có lớp (lấy từ máy chủ, lưu trên máy) */
+const skNorm = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').replace(/^trường\s+/, '').replace(/^(thpt|thcs|ptdtnt|th)\s+/, '').trim();
+const SCHOOLS = [];
+function addSchools(list, save = true) {
+  let added = 0;
+  (list || []).forEach(x => {
+    const v = String(x || '').normalize('NFC').replace(/\s+/g, ' ').trim(), k = skNorm(v);
+    if (!k || SCHOOLS.some(y => skNorm(y) === k)) return;
+    SCHOOLS.push(v); added++;
+  });
+  if (added) {
+    const def = CFG.SCHOOL_DEFAULT || '';
+    SCHOOLS.sort((a, b) => (skNorm(b) === skNorm(def)) - (skNorm(a) === skNorm(def)) || a.localeCompare(b, 'vi'));
+    if (save) store.set('schools', SCHOOLS.slice(0, 300));
+    refreshSchoolSelects();
+  }
+  return added;
+}
+/** ô chọn trường đang mở trên màn hình: thêm các trường mới tải về mà vẫn giữ lựa chọn hiện tại */
+function refreshSchoolSelects() {
+  $$('select[data-school]').forEach(x => {
+    const cur = x.value, k = $('#' + x.id + '_k'), typed = cur === '__khac' && k ? k.value.trim() : '';
+    x.innerHTML = SCHOOLS.map(v => `<option>${esc(v)}</option>`).join('') + '<option value="__khac">Trường khác…</option>';
+    if (typed && SCHOOLS.some(v => skNorm(v) === skNorm(typed))) { x.value = SCHOOLS.find(v => skNorm(v) === skNorm(typed)); if (k) { k.value = ''; k.hidden = true; } }
+    else x.value = cur && (cur === '__khac' || SCHOOLS.includes(cur)) ? cur : (SCHOOLS[0] || '__khac');
+    if (k) k.hidden = x.value !== '__khac';
+    if (x.value !== cur) x.dispatchEvent(new Event('change'));
+  });
+}
+addSchools((CFG.SCHOOLS && CFG.SCHOOLS.length) ? CFG.SCHOOLS : ['THPT Phong Điền', 'THPT Hương Thủy', 'THPT Trần Văn Kỷ', 'THPT Lương Thế Vinh'], false);
+addSchools(store.get('schools', []), false);
+const loadSchools = () => { if (DEMO || loadSchools.p) return loadSchools.p; loadSchools.p = api('list_schools').then(l => { addSchools(l); return l; }).catch(() => { loadSchools.p = null; }); return loadSchools.p; };
 function schoolField(id, val, label = 'Trường') {
   val = String(val || '').trim();
-  const other = Boolean(val) && !SCHOOLS.includes(val);
-  return `<label for="${id}">${label}</label><select id="${id}">${SCHOOLS.map(x => `<option${x === val ? ' selected' : ''}>${esc(x)}</option>`).join('')}<option value="__khac"${other ? ' selected' : ''}>Trường khác…</option></select>
+  const hit = SCHOOLS.find(x => skNorm(x) === skNorm(val));
+  if (hit) val = hit;
+  const other = Boolean(val) && !hit;
+  return `<label for="${id}">${label}</label><select id="${id}" data-school>${SCHOOLS.map(x => `<option${x === val ? ' selected' : ''}>${esc(x)}</option>`).join('')}<option value="__khac"${other ? ' selected' : ''}>Trường khác…</option></select>
     <input id="${id}_k" class="school-k" type="text" maxlength="80" placeholder="Nhập tên trường, vd: THPT Nguyễn Huệ" value="${other ? esc(val) : ''}"${other ? '' : ' hidden'}>`;
 }
 function bindSchool(id) { const x = $('#' + id), k = $('#' + id + '_k'); if (!x || !k) return; x.onchange = () => { k.hidden = x.value !== '__khac'; k.required = !k.hidden; if (!k.hidden) k.focus(); }; x.onchange(); }
-function setSchool(id, val) { const x = $('#' + id), k = $('#' + id + '_k'); if (!x || !val) return; if (SCHOOLS.includes(val)) x.value = val; else { x.value = '__khac'; k.value = val; } bindSchool(id); }
-function schoolVal(id) { const x = $('#' + id); if (!x) return ''; return x.value === '__khac' ? $('#' + id + '_k').value.trim() : x.value; }
+function setSchool(id, val) { const x = $('#' + id), k = $('#' + id + '_k'); if (!x || !val) return; const hit = SCHOOLS.find(v => skNorm(v) === skNorm(val)); if (hit) x.value = hit; else { x.value = '__khac'; k.value = val; } bindSchool(id); }
+function schoolVal(id) { const x = $('#' + id); if (!x) return ''; if (x.value !== '__khac') return x.value; const v = $('#' + id + '_k').value.replace(/\s+/g, ' ').trim(); return SCHOOLS.find(s => skNorm(s) === skNorm(v)) || v; }
+/** lớp do học sinh tự khai (máy chủ tạo hộ khi HS chọn "lớp của em chưa có"), chưa được GV xác nhận */
+const isSelfCls = c => c && (c.TuTao === true || (c.TuTao == null && /^[0-9a-f]{8}$/.test(String(c.MatKhauLop || ''))));
 const normName = v => String(v || '').normalize('NFC').replace(/\s+/g, ' ').trim().toLowerCase();
 const dupAccBtn = el => { if (el && /đã có tài khoản/i.test(el.textContent)) el.insertAdjacentHTML('beforeend', '<div class="row" style="margin-top:8px;gap:8px"><a class="btn sm" href="#/dangnhap">Đăng nhập ngay</a><a class="btn sm ghost" href="#/quenmk">Quên mật khẩu</a></div>'); };
 const ROSTER_HINT = 'Mở file Excel danh sách lớp, bôi đen cột <b>Họ và tên</b> (hoặc cả hai cột <b>STT</b> và <b>Họ và tên</b>), bấm <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">C</kbd>, rồi bấm vào ô đầu tiên bên dưới và <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">V</kbd>.';
@@ -534,15 +569,15 @@ route(/^\/dangky$/, params => {
       <div style="margin-top:14px"><button class="btn block">Tiếp tục</button></div>
     </form>
     <form class="card" id="f" hidden>
-      <label>Khối</label><div class="tabs" id="kh" style="margin:4px 0 10px">${['10', '11', '12'].map(k => `<button type="button" data-k="${k}">Khối ${k}</button>`).join('')}</div>
-      <label for="lop">Lớp</label><select id="lop" disabled><option value="">— Chọn khối trước —</option></select>
+      ${schoolField('sc', CFG.SCHOOL_DEFAULT || SCHOOLS[0], '1. Trường của em')}
+      <label>2. Khối</label><div class="tabs" id="kh" style="margin:4px 0 10px">${['10', '11', '12'].map(k => `<button type="button" data-k="${k}">Khối ${k}</button>`).join('')}</div>
+      <label for="lop">3. Lớp</label><select id="lop" disabled><option value="">— Chọn khối trước —</option></select>
       <div id="newwrap" hidden><label for="nl">Tên lớp của em</label><input id="nl" type="text" maxlength="15" autocapitalize="characters" placeholder="vd: 10/1"><div class="hint">Ghi đúng tên lớp, vd: 10/1, 11/4. Nếu lớp em đã có trong danh sách phía trên thì chọn lớp đó, không cần gõ.</div></div>
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
       <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.10a1" maxlength="30">
       <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
       <label for="em">Gmail <span class="hint">(bắt buộc – em đăng nhập bằng Gmail và <b>tự lấy lại mật khẩu</b> khi quên)</span></label><input id="em" type="email" required autocomplete="email" maxlength="80" placeholder="vd: an123@gmail.com">
       <div class="hint">Mỗi em chỉ có một tài khoản: nếu họ tên và Gmail đã đăng ký, app sẽ báo để em đăng nhập lại.</div>
-      ${schoolField('sc', CFG.SCHOOL_DEFAULT || SCHOOLS[0])}
       <label for="p1">Mật khẩu</label><input id="p1" type="password" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 kí tự">
       <label for="p2">Nhập lại mật khẩu</label><input id="p2" type="password" required minlength="6" autocomplete="new-password">
       <div id="msg"></div>
@@ -550,29 +585,37 @@ route(/^\/dangky$/, params => {
     </form>
     <p class="sub" style="text-align:center"><a href="#/dangnhap">Đã có tài khoản? Đăng nhập</a></p></div>`);
   const fill = () => {
-    const sel = $('#lop'); const list = classes.filter(c => c.Khoi === khoi);
+    const sel = $('#lop');
+    if (!khoi) { sel.disabled = true; sel.innerHTML = '<option value="">— Chọn khối trước —</option>'; return; }
+    // chỉ hiện lớp chính thức (do thầy cô tạo) của đúng trường em đã chọn
+    const sk = skNorm(schoolVal('sc'));
+    const list = (classes || []).filter(c => c.Khoi === khoi && sk && skNorm(c.Truong) === sk && !isSelfCls(c))
+      .sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }));
     sel.disabled = false;
-    sel.innerHTML = '<option value="">— Chọn lớp —</option>' + list.map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}${c.Truong ? ' – ' + esc(c.Truong) : ''}</option>`).join('')
+    sel.innerHTML = '<option value="">— Chọn lớp —</option>' + list.map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}</option>`).join('')
       + '<option value="__new">➕ Lớp của em chưa có – tự nhập tên lớp</option>';
     if (!list.length) sel.value = '__new';
     $('#newwrap').hidden = sel.value !== '__new';
   };
   $$('#kh button').forEach(b => b.onclick = () => { khoi = b.dataset.k; $$('#kh button').forEach(x => x.classList.toggle('on', x === b)); fill(); });
   bindSchool('sc');
-  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; const c = (classes || []).find(x => x.MaLop === $('#lop').value); if (c && c.Truong) setSchool('sc', c.Truong); };
+  $('#sc').addEventListener('change', fill); $('#sc_k').addEventListener('input', fill);
+  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; };
   $('#f1').onsubmit = async e => {
     e.preventDefault();
     await busy($('#f1 .btn'), async () => {
       try {
         common = $('#mc').value.trim().toUpperCase();
         classes = await api('common_classes', { common });
-        $('#f1').hidden = true; $('#f').hidden = false;
+        addSchools(classes.filter(c => !isSelfCls(c)).map(c => c.Truong));
+        $('#f1').hidden = true; $('#f').hidden = false; fill();
         toast('Mã chung đúng! Em chọn khối và lớp nhé.');
       } catch (err) { errBox($('#msg1'), err); }
     });
   };
   $('#f').onsubmit = async e => {
     e.preventDefault();
+    if (!schoolVal('sc')) return errBox($('#msg'), 'Em hãy chọn trường.');
     if (!khoi) return errBox($('#msg'), 'Em hãy chọn khối.');
     const lop = $('#lop').value;
     if (!lop) return errBox($('#msg'), 'Em hãy chọn lớp.');
@@ -637,6 +680,7 @@ route(/^\/dangkygv$/, () => {
     await busy($('#f .btn'), async () => {
       try {
         const s = await api('register_gv', { name: $('#n').value.trim(), school: schoolVal('s'), email: $('#e').value, password: $('#p').value });
+        addSchools([schoolVal('s')]);
         if (s && s.token) { setSession(s); toast('Đăng ký thành công!'); location.hash = '#/'; }
         else ($('#f') || {}).innerHTML = '<div class="okmsg">✅ Đã gửi đăng ký. Tài khoản sẽ dùng được sau khi <b>Quản trị viên duyệt</b>. Khi được duyệt, thầy/cô đăng nhập bằng email và mật khẩu vừa tạo.</div>';
       } catch (err) { errBox($('#msg'), err); }
@@ -783,7 +827,7 @@ const K12_TOPICS = {
   k12b22: { file: 'cn12_bai22.html', name: 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', k: '12' },
   k12b23: { file: 'cn12_bai23.html', name: 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', k: '12' }
 };
-const LESSON_V = '20261115c';
+const LESSON_V = '20261121a';
 const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
 route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k11b18|k11b19|k12b8|k12b9|k12b10|k12b15|k12b16|k12b17|k12b19|k12b20|k12b21|k12b22|k12b23)$/, (params, key) => {
   const T = K12_TOPICS[key], b = params && params.get('bai');
@@ -821,59 +865,97 @@ route(/^\/(hcat|hctd|bai8|tien|phay|quytrinh|k11b18|k11b19|k12b8|k12b9|k12b10|k1
 
 /* ================= Trang Ôn luyện (gom mọi cách tự ôn) ================= */
 route(/^\/onluyen$/, () => {
-  const g = getStudentGrade(), is12 = g === '12' || isGV();
+  /* Cập nhật 21/11/2026: chỉ hiện nội dung khối của em; các mục thu gọn – bấm mục nào mở danh sách mục đó, rời trang là thu gọn lại */
+  const gv = isGV() && !(session && session.role === 'hs');
+  const g = getStudentGrade(), is12 = g === '12';
   const row = (href, ic, c, t, d, attrs = '') => `<${href ? `a href="${href}"` : `button ${attrs}`}><span class="ic ${c}">${ic}</span><span class="tx"><b>${t}</b>${d ? `<span>${d}</span>` : ''}</span><span class="chev">›</span></${href ? 'a' : 'button'}>`;
-  setView(`<h1>Ôn luyện</h1><p class="sub">Chọn cách ôn phù hợp với em. Mọi bài đều chấm ngay và có giải thích.</p>
-    ${g === '10' || is12 ? `<h2>Thư mục Khối 10</h2><div class="rows">
-      ${row('#/tuluyenve', '📷', 'amber', 'Bài vẽ – AI chấm', 'Vẽ tay, chụp ảnh gửi lên – AI khoanh chỗ sai và hướng dẫn sửa')}
-      ${row('#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', '')}
-      ${row('#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', '')}
-      ${row('#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', '')}
-      ${row('#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', '')}
-    </div>` : ''}
-    ${g === '11' || is12 ? `<h2>Thư mục Khối 11</h2><div class="rows">
-      ${row('#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', '')}
-      ${row('#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', '')}
-      ${row('#/k11b18', '🔥', 'red', 'Bài 18. Nguyên lí làm việc của động cơ đốt trong', '')}
-      ${row('#/k11b19', '⚙️', 'green', 'Bài 19. Các cơ cấu trong động cơ đốt trong', '')}
-    </div>` : ''}
-    ${is12 ? `<h2>Thư mục Khối 12</h2><div class="rows">
-      ${row('#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', '')}
-      ${row('#/k12b9', '💡', '', 'Bài 9. Thiết bị điện trong gia đình', '')}
-      ${row('#/k12b10', '🛠️', 'amber', 'Bài 10. Thực hành lắp mạch điện trong gia đình', '')}
-      ${row('#/k12b15', '🔋', '', 'Bài 15. Điện trở, tụ điện và cuộn cảm', '')}
-      ${row('#/k12b16', '🔬', 'green', 'Bài 16. Diode, transistor và mạch tích hợp IC', '')}
-      ${row('#/k12b17', '🧲', 'amber', 'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn', '')}
-      ${row('#/k12b19', '📈', 'green', 'Bài 19. Khuếch đại thuật toán', '')}
-      ${row('#/k12b20', '🎛️', '', 'Bài 20. Thực hành khuếch đại thuật toán', '')}
-      ${row('#/k12b21', '🔌', 'amber', 'Bài 21. Tín hiệu số và các cổng logic cơ bản', '')}
-      ${row('#/k12b22', '🧮', '', 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', '')}
-      ${row('#/k12b23', '🔥', 'red', 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', '')}
-    </div>` : ''}
-    <h2>Theo nội dung</h2><div class="rows">
-      ${row('#/chude?by=bai', '📖', '', 'Theo bài học', 'Chọn bài trong SGK Lớp ' + (is12 ? '10, 11, 12' : g))}
+  const LESSON_ROWS = {
+    '10': [['#/tuluyenve', '📷', 'amber', 'Bài vẽ – AI chấm', 'Đưa đề, đưa ảnh bài vẽ – AI chấm, khoanh chỗ sai'], ['#/hcvg', '📁', 'amber', 'Bài 9. Hình chiếu vuông góc', ''], ['#/hcat', '✂️', 'red', 'Bài 10. Hình cắt và mặt cắt', ''], ['#/hctd', '🧊', 'green', 'Bài 11. Hình chiếu trục đo', ''], ['#/hcpc', '🛤️', '', 'Bài 12. Hình chiếu phối cảnh', '']],
+    '11': [['#/bai8', '🔩', '', 'Bài 8. Một số phương pháp gia công cơ khí', ''], ['#/quytrinh', '🗂️', 'amber', 'Bài 9. Quy trình công nghệ gia công chi tiết', ''], ['#/k11b18', '🔥', 'red', 'Bài 18. Nguyên lí làm việc của động cơ đốt trong', ''], ['#/k11b19', '⚙️', 'green', 'Bài 19. Các cơ cấu trong động cơ đốt trong', '']],
+    '12': [['#/k12b8', '🏠', 'green', 'Bài 8. Hệ thống điện trong gia đình', ''], ['#/k12b9', '💡', '', 'Bài 9. Thiết bị điện trong gia đình', 'Có thư viện mạch mẫu'], ['#/k12b10', '🛠️', 'amber', 'Bài 10. Thực hành lắp mạch điện trong gia đình', 'Có thư viện mạch mẫu'], ['#/k12b15', '🔋', '', 'Bài 15. Điện trở, tụ điện và cuộn cảm', ''], ['#/k12b16', '🔬', 'green', 'Bài 16. Diode, transistor và mạch tích hợp IC', ''], ['#/k12b17', '🧲', 'amber', 'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn', ''], ['#/k12b19', '📈', 'green', 'Bài 19. Khuếch đại thuật toán', ''], ['#/k12b20', '🎛️', '', 'Bài 20. Thực hành khuếch đại thuật toán', ''], ['#/k12b21', '🔌', 'amber', 'Bài 21. Tín hiệu số và các cổng logic cơ bản', ''], ['#/k12b22', '🧮', '', 'Bài 22. Một số mạch xử lí tín hiệu trong điện tử số', ''], ['#/k12b23', '🔥', 'red', 'Bài 23. Thực hành lắp ráp, kiểm tra mạch báo cháy', '']]
+  };
+  const ks = gv ? ['10', '11', '12'] : [g];
+  const secs = [
+    ...(is12 || gv ? [{ id: 'lt', ic: '🎓', t: 'Luyện thi Tốt nghiệp THPT', d: 'Luyện đề trắc nghiệm → chọn khối → chọn bài cần ôn', body: `<div class="rows">
+      ${row('#/luyenthi', '🎯', 'green', 'Vào khu Luyện thi tốt nghiệp', 'Bước 1 luyện đề · Bước 2 chọn khối 10, 11, 12 · Bước 3 chọn bài')}
+      ${row('#/thitn', '📁', 'green', 'Bộ đề luyện thi TN THPT', deList().length + ' đề đủ 28 câu · mỗi lần mở đều đảo câu, đảo đáp án')}</div>` }] : []),
+    ...ks.map(k => ({ id: 'k' + k, ic: KHOI_INFO[k].ic, t: 'Bài học Khối ' + k, d: LESSON_ROWS[k].length + ' bài · bài giảng, mô phỏng, thực hành', body: `<div class="rows">${LESSON_ROWS[k].map(x => row(...x)).join('')}</div>` })),
+    { id: 'nd', ic: '📖', t: 'Ôn theo nội dung', d: 'Theo bài, chủ đề, dạng câu', body: `<div class="rows">
+      ${row('#/chude?by=bai', '📖', '', 'Theo bài học', 'Chọn bài trong SGK Lớp ' + (gv ? '10, 11, 12' : g))}
       ${row('#/chude?by=cd', '🎯', '', 'Theo chủ đề', 'Gộp nhiều bài cùng chủ đề')}
       ${row('#/chude?by=dang', '🧩', '', 'Theo dạng câu', 'Trắc nghiệm, Đúng/Sai, tự luận, câu có hình vẽ')}
-      ${row('#/de?tab=bai', '📚', '', 'Làm nguyên bài', 'Toàn bộ câu hỏi của một bài, có bấm giờ')}
-    </div>
-    <h2>Luyện đề</h2><div class="rows">
-      ${row('#/thitn', '📁', 'green', 'Bộ đề luyện thi TN THPT', deList().length + ' đề đủ 28 câu · mỗi lần mở đều đảo câu, đảo đáp án' + (is12 ? '' : ' (dành cho HS lớp 12)'))}
-      ${row('', '🧪', 'green', is12 ? 'Đề tổng hợp theo ma trận' : 'Đề tổng hợp Lớp ' + g, 'Mỗi lần làm là một đề mới', 'id="mx"')}
-    </div>
-    <h2>Công cụ học tập</h2><div class="rows">
+      ${row('#/de?tab=bai', '📚', '', 'Làm nguyên bài', 'Toàn bộ câu hỏi của một bài, có bấm giờ')}</div>` },
+    { id: 'de', ic: '🧪', t: 'Luyện đề', d: is12 || gv ? 'Đề tổng hợp theo ma trận tốt nghiệp' : 'Đề tổng hợp Lớp ' + g, body: `<div class="rows">
+      ${row('', '🧪', 'green', is12 || gv ? 'Đề tổng hợp theo ma trận' : 'Đề tổng hợp Lớp ' + g, 'Mỗi lần làm là một đề mới', 'id="mx"')}</div>` },
+    { id: 'th', ic: '🧰', t: 'Thực hành & công cụ', d: 'Lượt thực hành, sổ tay câu sai, SGK, trò chơi', body: `<div class="rows">
+      ${row('#/thuchanh', '📊', 'green', 'Lượt thực hành của em', 'Số lần làm và điểm từng lần ở các bài thực hành')}
       ${window.STC_SGK ? row('#/sgk', '📘', '', 'Sách giáo khoa', 'Đọc lại lí thuyết từng bài') : ''}
       ${row('#/sotay', '📕', 'red', 'Sổ tay câu sai', 'Làm lại những câu em từng sai')}
-      ${row('#/hinhchieu', '🧊', '', 'Hình chiếu 3D', 'Xoay vật thể, tìm hình chiếu đúng')}
-      ${row('#/gocchieu', '📐', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết nhanh, xếp hình chiếu nhiều vật thể')}
-      ${row('#/trochoi', '🎮', 'amber', 'Trò chơi', 'Đoán từ, ô chữ, lật ô đoán tranh')}
-    </div>`);
-  $('#mx').onclick = () => {
-    if (!is12) {
-      const pool = bank.q.filter(q => q.k === g && q.t !== 'L');
-      if (!pool.length) { toast(`Chưa có câu hỏi khối ${g}`); return; }
-      startQuiz({ title: `Đề tổng hợp kiểm tra Lớp ${g}`, key: '', loai: 'matran', ids: shuffle(pool).slice(0, 24).map(q => q.id), minutes: 45 });
-    } else startQuiz({ title: 'Đề tổng hợp theo ma trận tốt nghiệp', key: '', loai: 'matran', ids: matrixPick(), minutes: 50 });
+      ${g === '10' || gv ? row('#/hinhchieu', '🧊', '', 'Hình chiếu 3D', 'Xoay vật thể, tìm hình chiếu đúng') + row('#/gocchieu', '📐', 'amber', 'Góc chiếu 1 & 3 – luyện thêm', 'Nhận biết nhanh, xếp hình chiếu nhiều vật thể') : ''}
+      ${row('#/trochoi', '🎮', 'amber', 'Trò chơi', 'Đoán từ, ô chữ, lật ô đoán tranh')}</div>` }
+  ];
+  let open = '';
+  const draw = () => {
+    setView(`<h1>Ôn luyện${gv ? '' : ` <span class="pill">Lớp ${esc(g)}</span>`}</h1><p class="sub">Bấm vào một mục để mở danh sách. Bấm lại (hoặc ✕) để thu gọn.</p>
+      <div class="acc">${secs.map(x => `<section class="acc-sec ${open === x.id ? 'open' : ''}">
+        <button type="button" class="acc-h" data-acc="${x.id}" aria-expanded="${open === x.id}"><span class="acc-ic">${x.ic}</span><span class="acc-tx"><b>${x.t}</b><span>${x.d}</span></span><span class="acc-chev" aria-hidden="true">${open === x.id ? '✕' : '▾'}</span></button>
+        ${open === x.id ? `<div class="acc-b">${x.body}</div>` : ''}</section>`).join('')}</div>`);
+    $$('[data-acc]').forEach(b => b.onclick = () => { open = open === b.dataset.acc ? '' : b.dataset.acc; draw(); });
+    const mx = $('#mx');
+    if (mx) mx.onclick = () => {
+      if (!is12 && !gv) {
+        const pool = bank.q.filter(q => q.k === g && q.t !== 'L');
+        if (!pool.length) { toast(`Chưa có câu hỏi khối ${g}`); return; }
+        startQuiz({ title: `Đề tổng hợp kiểm tra Lớp ${g}`, key: '', loai: 'matran', ids: shuffle(pool).slice(0, 24).map(q => q.id), minutes: 45 });
+      } else startQuiz({ title: 'Đề tổng hợp theo ma trận tốt nghiệp', key: '', loai: 'matran', ids: matrixPick(), minutes: 50 });
+    };
   };
+  draw();
+});
+
+/* ================= Khối 12 – Luyện thi tốt nghiệp: luyện đề → chọn khối → chọn bài ================= */
+const LT_LESSON = {
+  '10': { 9: '#/hcvg', 10: '#/hcat', 11: '#/hctd', 12: '#/hcpc' },
+  '11': { 8: '#/bai8', 9: '#/quytrinh', 18: '#/k11b18', 19: '#/k11b19' },
+  '12': { 8: '#/k12b8', 9: '#/k12b9', 10: '#/k12b10', 15: '#/k12b15', 16: '#/k12b16', 17: '#/k12b17', 19: '#/k12b19', 20: '#/k12b20', 21: '#/k12b21', 22: '#/k12b22', 23: '#/k12b23' }
+};
+route(/^\/luyenthi$/, params => {
+  const gv = isGV() && !(session && session.role === 'hs');
+  if (!gv && getStudentGrade() !== '12') { setView('<h1>Luyện thi tốt nghiệp</h1><div class="card empty">Mục này dành cho học sinh lớp 12.<div style="margin-top:12px"><a class="btn" href="#/onluyen">← Về Ôn luyện</a></div></div>'); return; }
+  let k = params && ['10', '11', '12'].includes(params.get('k')) ? params.get('k') : '';
+  let step = k ? 3 : (params && params.get('b') === '2' ? 2 : 0);
+  const hist = store.get('hist_' + uid(), []);
+  const bestOf = key => { const m = hist.filter(h => h.key === key); return m.length ? { n: m.length, best: Math.max(...m.map(h => h.diem)) } : null; };
+  const draw = () => {
+    const pk = k ? lessonPackages(k) : [];
+    const exams = deList();
+    const stepH = (n, ic, t, d, on) => `<button type="button" class="acc-h lt-step ${on ? 'on' : ''}" data-step="${n}" aria-expanded="${on}"><span class="lt-n">${n}</span><span class="acc-tx"><b>${ic} ${t}</b><span>${d}</span></span><span class="acc-chev" aria-hidden="true">${on ? '✕' : '▾'}</span></button>`;
+    setView(`<a href="#/onluyen">← Ôn luyện</a>
+      <section class="tl-hero lt-hero"><span class="tl-ic">🎓</span><div><h1>Luyện thi Tốt nghiệp THPT</h1><p>Làm theo 3 bước: <b>luyện đề trắc nghiệm</b> → <b>chọn khối cần ôn</b> → <b>chọn bài cần ôn</b>. Mỗi lần chỉ mở một bước cho gọn màn hình.</p></div></section>
+      <div class="acc">
+        <section class="acc-sec ${step === 1 ? 'open' : ''}">${stepH(1, '📝', 'Luyện đề trắc nghiệm', exams.length + ' đề thi thử · đề ma trận ngẫu nhiên', step === 1)}
+          ${step === 1 ? `<div class="acc-b"><div class="rows">
+            <a href="#/thitn"><span class="ic green">📁</span><span class="tx"><b>Bộ đề luyện thi TN THPT</b><span>${exams.length} đề · 28 câu · 50 phút · đảo câu, đảo đáp án</span></span><span class="chev">›</span></a>
+            <button id="ltmx"><span class="ic green">🧪</span><span class="tx"><b>Đề ngẫu nhiên theo ma trận tốt nghiệp</b><span>Mỗi lần làm là một đề mới</span></span><span class="chev">›</span></button>
+            <button data-step="2"><span class="ic">➡️</span><span class="tx"><b>Phát hiện phần còn yếu? Sang bước 2</b><span>Chọn khối để ôn lại theo bài</span></span><span class="chev">›</span></button></div></div>` : ''}</section>
+        <section class="acc-sec ${step === 2 ? 'open' : ''}">${stepH(2, '🏫', 'Chọn khối cần ôn', k ? 'Đang chọn: Khối ' + k : 'Khối 10 · 11 · 12', step === 2)}
+          ${step === 2 ? `<div class="acc-b"><div class="gh-khoi lt-khoi">${['10', '11', '12'].map(v => { const I = KHOI_INFO[v]; return `<button type="button" data-k="${v}" class="${I.c} ${k === v ? 'on' : ''}"><span class="gh-kic">${I.ic}</span><b>${I.t}</b><span>${I.d} · ${lessonPackages(v).length} bài</span></button>`; }).join('')}</div></div>` : ''}</section>
+        <section class="acc-sec ${step === 3 ? 'open' : ''}">${stepH(3, '📚', 'Chọn bài cần ôn', k ? 'Khối ' + k + ' · ' + pk.length + ' bài' : 'Chọn khối ở bước 2 trước', step === 3)}
+          ${step === 3 ? `<div class="acc-b">${!k ? '<div class="card empty">Em chọn khối ở bước 2 trước nhé.</div>' : `<div class="row" style="gap:6px;margin-bottom:8px">${['10', '11', '12'].map(v => `<button type="button" class="btn sm ${k === v ? '' : 'ghost'}" data-k="${v}">Khối ${v}</button>`).join('')}</div>
+            <div class="list compact">${pk.map(p => { const n = (/^Bài\s*(\d+)/.exec(p.shortName) || [])[1], les = n && LT_LESSON[k][+n], tn = p.ids.filter(id => bank.byId[id] && bank.byId[id].t !== 'L'), b = bestOf('LT:' + p.key);
+              return `<div class="item"><div class="grow"><b>${esc(p.shortName)}</b><div class="meta">${tn.length} câu trắc nghiệm${b ? ` · đã làm ${b.n} lần · cao nhất ${fmt(b.best)}` : ''}</div></div>
+                <div class="row">${les ? `<a class="btn ghost sm" href="${les}" title="Học lại bài">📖 Học bài</a>` : ''}<button class="btn sm" data-lt="${esc(p.id)}" ${tn.length ? '' : 'disabled'}>Luyện trắc nghiệm</button></div></div>`; }).join('') || '<div class="card empty">Chưa có câu hỏi cho khối này.</div>'}</div>`}</div>` : ''}</section>
+      </div>`);
+    $$('[data-step]').forEach(b => b.onclick = () => { const n = +b.dataset.step; step = step === n && b.classList.contains('acc-h') ? 0 : n; draw(); });
+    $$('[data-k]').forEach(b => b.onclick = () => { k = b.dataset.k; step = 3; history.replaceState(null, '', '#/luyenthi?k=' + k); draw(); });
+    const mx = $('#ltmx'); if (mx) mx.onclick = () => startQuiz({ title: 'Đề tổng hợp theo ma trận tốt nghiệp', key: '', loai: 'matran', ids: matrixPick(), minutes: 50 });
+    $$('[data-lt]').forEach(b => b.onclick = () => {
+      const p = lessonPackages(k).find(x => x.id === b.dataset.lt); if (!p) return;
+      const ids = p.ids.filter(id => bank.byId[id] && bank.byId[id].t !== 'L');
+      startQuiz({ title: 'Luyện thi TN – ' + p.name, key: 'LT:' + p.key, loai: 'baihoc', ids, minutes: Math.min(90, estMin(ids)) });
+    });
+  };
+  draw();
 });
 
 /* ================= Trang Bài giao (đầy đủ 3 nhóm) ================= */
@@ -1544,7 +1626,9 @@ route(/^\/chonlop$/, async () => {
       <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Vào lớp</button></div>
     </form>${u.MaLop ? '<p class="sub" style="text-align:center"><a href="#/">← Về trang chủ</a></p>' : ''}</div>`);
   const fill = () => {
-    const list = info.classes.filter(c => c.Khoi === khoi), sel = $('#lop');
+    const sk = skNorm(u.Truong);
+    const list = (info.classes || []).filter(c => String(c.Khoi) === khoi && !isSelfCls(c) && (!sk || c.Truong == null || skNorm(c.Truong) === sk))
+      .sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })), sel = $('#lop');
     sel.innerHTML = (khoi ? '<option value="">— Chọn lớp —</option>' : '<option value="">— Chọn khối trước —</option>') + list.map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}</option>`).join('') + (khoi ? '<option value="__new">➕ Lớp của em chưa có – tự nhập tên lớp</option>' : '');
     if (khoi && !list.length) sel.value = '__new';
     $('#newwrap').hidden = sel.value !== '__new';
@@ -1693,17 +1777,23 @@ const appTile = a => `<a href="${a.href}"><span class="ic ${a.c}">${a.ic}</span>
 const schKey = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').replace(/^trường\s+/, '').replace(/^(thpt|thcs|ptdtnt|th)\s+/, '').trim();
 function gvSchool(cls) {
   const isAdmin = session.role === 'admin', mySk = schKey(session.user.Truong);
+  // Cập nhật 21/11/2026: tách lớp chính thức (GV tạo) với lớp HS tự khai – lớp tự khai chỉ hiện trong mục riêng để GV kiểm tra
+  const all = cls || [], off = all.filter(c => !isSelfCls(c)), self = all.filter(isSelfCls);
   // Giáo viên: chỉ các lớp thuộc trường mình dạy
-  if (!isAdmin) return { list: (cls || []).filter(c => !mySk || schKey(c.Truong) === mySk || (!schKey(c.Truong) && c.cuaToi)), html: '', bind: () => {} };
-  // Quản trị viên: chọn trường trước rồi mới hiện danh sách lớp của trường đó
-  const m = {}; (cls || []).forEach(c => { const k = schKey(c.Truong); if (!k) return; (m[k] = m[k] || { k, names: {}, n: 0 }).names[String(c.Truong).trim()] = 1; m[k].n++; });
-  const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
-  let k = window._admSchool || '';
+  if (!isAdmin) {
+    const mine = c => !mySk || schKey(c.Truong) === mySk || (!schKey(c.Truong) && c.cuaToi);
+    return { list: off.filter(mine), self: self.filter(c => mySk && schKey(c.Truong) === mySk), html: '', school: session.user.Truong || '', bind: () => {} };
+  }
+  // Quản trị viên: chọn trường rồi mới hiện danh sách lớp của trường đó (mặc định: trường của Quản trị viên)
+  const m = {};
+  all.forEach(c => { const k = schKey(c.Truong); if (!k) return; const x = (m[k] = m[k] || { k, names: {}, n: 0, s: 0 }); x.names[String(c.Truong).trim()] = 1; if (isSelfCls(c)) x.s++; else x.n++; });
+  const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, s: x.s, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
+  let k = window._admSchool == null ? mySk : window._admSchool;
   if (k && !ss.some(s => s.k === k)) k = '';
-  const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp)</option>`).join('')}</select></div>`;
-  return { list: k ? (cls || []).filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; redraw(); }; } };
+  const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp${s.s ? ' · ' + s.s + ' lớp HS tự khai' : ''})</option>`).join('')}</select></div>`;
+  return { list: k ? off.filter(c => schKey(c.Truong) === k) : [], self: k ? self.filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; redraw(); }; } };
 }
-const gvClasses = async () => { if (!window._gvCls) window._gvCls = await api('my_classes'); return window._gvCls; };
+const gvClasses = async () => { if (!window._gvCls) { window._gvCls = await api('my_classes'); addSchools(window._gvCls.filter(c => !isSelfCls(c)).map(c => c.Truong)); } return window._gvCls; };
 
 /* ================= Trang chủ Giáo viên (thiết kế lại 08/11/2026) ================= */
 const KHOI_INFO = { '10': { t: 'Khối 10', d: 'Thiết kế & vẽ kĩ thuật', ic: '📐', c: 'k10' }, '11': { t: 'Khối 11', d: 'Công nghệ cơ khí', ic: '⚙️', c: 'k11' }, '12': { t: 'Khối 12', d: 'Điện – điện tử', ic: '⚡', c: 'k12' } };
@@ -1718,7 +1808,7 @@ route(/^\/gv$/, async params => {
   const today = new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
   const draw = () => {
     const mine = classes ? gvSchool(classes) : null;
-    const cl = session.role === 'admin' ? (classes || []) : (mine ? mine.list : []);
+    const cl = session.role === 'admin' ? (classes || []).filter(c => !isSelfCls(c)) : (mine ? mine.list : []);
     const hs = cl.reduce((s, c) => s + (+c.siSo || 0), 0), vs = window._vs;
     const tiles = [
       { href: '#/gv/lop', ic: '🏫', c: 'blue', t: 'Các lớp', d: classes ? `${cl.length} lớp · ${hs} HS` : 'Danh sách, mã đăng ký' },
@@ -1787,9 +1877,28 @@ route(/^\/gv\/lop$/, async () => {
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
         : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
         : session.role === 'admin' && !shown.length ? '<div class="card empty">Chọn trường ở trên để xem danh sách lớp.</div>'
-        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('')}
+        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('') || (classes && classes.length && shown.length === 0 && session.role !== 'admin' ? '<div class="card empty">Trường của thầy/cô chưa có lớp chính thức.</div>' : '')}
+      ${classes && sc.self && sc.self.length ? `<details class="card selfcls"${window._selfOpen ? ' open' : ''}><summary><b>🧾 Lớp học sinh tự khai (${sc.self.length})</b><span class="hint"> – HS tự gõ tên lớp khi đăng kí. Có thể là lớp của trường khác bị gán nhầm vào ${esc(sc.school || 'trường này')}. Kiểm tra rồi chuyển đúng trường, giữ lại hoặc mở lớp để xoá.</span></summary>
+        <div class="list" style="margin-top:8px">${sc.self.sort((a, b) => String(a.Khoi).localeCompare(String(b.Khoi)) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<div class="item selfrow"><div class="grow"><b>${esc(c.TenLop || c.MaLop)}</b> <span class="pill">Khối ${esc(c.Khoi)}</span><div class="meta">${c.siSo || 0} học sinh · mã ${esc(c.MaLop)}</div></div>
+          <select data-mv="${esc(c.MaLop)}" aria-label="Chuyển lớp ${esc(c.TenLop)} sang trường">${SCHOOLS.map(v => `<option${skNorm(v) === skNorm(c.Truong) ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
+          <button type="button" class="btn sm" data-mvgo="${esc(c.MaLop)}">Lưu trường</button><a class="btn ghost sm" href="#/gv/lop/${c.MaLop}">Mở lớp</a></div>`).join('')}</div>
+        <p class="hint" style="margin:8px 0 0">“Lưu trường” = xác nhận lớp này thuộc trường đã chọn; lớp sẽ chuyển lên danh sách chính thức của trường đó (học sinh trong lớp đổi trường theo).</p></details>` : ''}
       <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>`);
     $('#mccp').onclick = async () => { const m = window._maChung || ''; try { await navigator.clipboard.writeText(m); toast('Đã sao chép mã chung: ' + m); } catch (e) { toast('Mã chung: ' + m, 5000); } };
+    const det = $('.selfcls'); if (det) det.ontoggle = () => { window._selfOpen = det.open; };
+    $$('[data-mvgo]').forEach(b => b.onclick = async () => {
+      const c = classes.find(x => x.MaLop === b.dataset.mvgo), to = $(`[data-mv="${b.dataset.mvgo}"]`).value;
+      if (!c) return;
+      if (skNorm(to) !== skNorm(c.Truong) && !confirm(`Chuyển lớp ${c.TenLop} sang ${to}?\nHọc sinh trong lớp sẽ đổi trường theo.`)) return;
+      await busy(b, async () => {
+        try {
+          const r = await api('update_class', { code: c.MaLop, name: c.TenLop, khoi: c.Khoi, school: to, confirm: 1 });
+          if (r && r.TuTao === undefined) { toast('Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs – chưa chuyển được trường.', 6000); return; }
+          toast(skNorm(to) === skNorm(c.Truong) ? 'Đã xác nhận lớp ' + c.TenLop : 'Đã chuyển lớp ' + c.TenLop + ' sang ' + to);
+          window._gvCls = null; classes = await gvClasses(); draw();
+        } catch (e) { toast(String(e.message || e).replace(/^TRUNG_LOP\|[^|]*\|/, ''), 6000); }
+      });
+    });
     sc.bind(draw);
   };
   draw();
@@ -1903,7 +2012,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
       ${extra.map(st => `<tr><td class="n">–</td><td>${esc(st.HoTen)}</td><td><span class="pill bad" title="Họ tên không khớp danh sách">Ngoài danh sách · ${esc(st.TenDN)}</span></td></tr>`).join('')}
       </tbody></table></div>`;
   };
-  setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
+  setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><a class="btn ghost sm" href="#/gv/thuchanh?lop=${code}">🧪 Lượt thực hành</a><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
     <div id="ledit"></div>
     <div class="card"><div class="row"><div class="grow"><div class="hint">Mã lớp</div><div class="code">${esc(code)}</div>
       <div class="hint">Mật khẩu chung: <b>${esc(c.MatKhauLop || '')}</b></div>
@@ -2947,64 +3056,80 @@ const DRAW_PRACTICE = {
     'Vẽ phối cảnh một điểm tụ của một con đường thẳng có hai hàng cột điện hai bên.']
 };
 route(/^\/tuluyenve$/, async () => {
+  /* Cập nhật 21/11/2026: gọn 3 bước – 1. Đề bài · 2. Bài làm · 3. Kết quả; các mục thu gọn, mở mục nào hiện mục đó, ✕ để về như ban đầu */
   if (!session) { location.hash = '#/dangnhap'; return; }
   let loai = store.get('tlv_loai', 'hinhchieu'); if (!DRAW_TYPES[loai]) loai = 'hinhchieu';
-  let pick = 0, own = '', deImg = null, baiImg = null, result = null, busyNow = false;
+  let pick = -2, own = '', deImg = null, baiImg = null, result = null, busyNow = false, open = '', err = '';
   let tasks = session.role === 'hs' ? store.get('drw_' + uid(), null) : [];
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('tlbai');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
-  const deBai = () => pick === -1 ? own.trim() : DRAW_PRACTICE[loai][pick];
+  const deBai = () => pick === -1 ? own.trim() : pick >= 0 ? DRAW_PRACTICE[loai][pick] : '';
+  const short = t => t.length > 90 ? t.slice(0, 88) + '…' : t;
+  const head = (id, n, t, d, ok) => `<button type="button" class="acc-h" data-op="${id}" aria-expanded="${open === id}"><span class="lt-n ${ok ? 'done' : ''}">${ok ? '✓' : n}</span><span class="acc-tx"><b>${t}</b><span>${d}</span></span><span class="acc-chev" aria-hidden="true">${open === id ? '✕' : '▾'}</span></button>`;
   const draw = () => {
-    const open = (tasks || []).filter(t => !t.HanNop || new Date(t.HanNop) > new Date());
+    const due = (tasks || []).filter(t => !t.HanNop || new Date(t.HanNop) > new Date());
+    const de = deBai();
     setView(`<a href="${isGV() && session.role !== 'hs' ? '#/gv?khoi=10' : '#/onluyen'}">← Quay lại</a>
-      <section class="tl-hero"><span class="tl-ic">📷</span><div><h1>Bài vẽ – AI chấm</h1><p>Vẽ tay trên giấy, chụp ảnh gửi lên. AI kiểm tra theo yêu cầu, <b>khoanh chỗ sai</b> và <b>hướng dẫn sửa</b>.</p></div></section>
-      ${open.length ? `<div class="gh-head"><h2>Bài thầy cô giao</h2></div><div class="rows">${open.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''} · ${t.bai.length ? 'đã nộp ' + t.bai.length + ' lần' : 'chưa nộp'}</span></span><span class="chev">›</span></a>`).join('')}</div>` : ''}
-      <div class="gh-head"><h2>Tự luyện</h2><span class="hint">Không tính điểm vào sổ</span></div>
-      <div class="tl-types">${Object.entries(DRAW_TYPES).map(([key, v]) => `<button class="${key === loai ? 'on' : ''}" data-lo="${key}">${v}</button>`).join('')}</div>
-      <div class="tl-grid">
-        <div class="card"><h3 style="margin-top:0">1. Chọn đề</h3>
-          <div class="tl-de">${DRAW_PRACTICE[loai].map((d, i) => `<label class="${pick === i ? 'on' : ''}"><input type="radio" name="de" value="${i}" ${pick === i ? 'checked' : ''}><span>${esc(d)}</span></label>`).join('')}
-            <label class="${pick === -1 ? 'on' : ''}"><input type="radio" name="de" value="-1" ${pick === -1 ? 'checked' : ''}><span><b>Đề của em</b> (bài tập trong SGK, vở…)</span></label></div>
-          ${pick === -1 ? `<textarea id="own" maxlength="1500" placeholder="Chép đề bài, ví dụ: Vẽ hình chiếu trục đo của vật thể Hình 11.6 SGK…">${esc(own)}</textarea>
-            <label style="margin-top:6px">Ảnh đề / vật thể <span class="hint">(không bắt buộc – chụp hình trong sách)</span></label>${imgDrop('tlde', 'Chụp hoặc chọn ảnh đề', 'Bấm để chọn ảnh', deImg)}` : ''}
-        </div>
-        <div class="card"><h3 style="margin-top:0">2. Nộp bài vẽ</h3>
-          <p class="hint">Vẽ bằng bút chì đậm trên giấy trắng. Chụp thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ.</p>
-          <div class="row" style="gap:8px;flex-wrap:wrap;margin:8px 0">
-            <label class="btn ghost grow">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
-            <label class="btn ghost grow">🖼️ Gửi tệp ảnh<input id="file" type="file" accept="image/*" hidden></label></div>
-          <div id="tlbai" class="imgdrop imgdrop-lite">${baiImg ? `<img src="${baiImg}" alt="Ảnh bài vẽ">` : '<span class="hint">Hoặc kéo thả / dán (Ctrl+V) ảnh vào đây</span>'}</div>
-          <div id="msg"></div>
-          <button class="btn block" id="go" style="margin-top:10px" ${baiImg && !busyNow ? '' : 'disabled'}>${busyNow ? '🤖 AI đang xem bài vẽ (10–30 giây)…' : '🤖 Nhờ AI nhận xét'}</button></div>
-      </div>
-      ${result ? '<div class="gh-head"><h2>Kết quả</h2><button class="btn ghost sm" id="again">Vẽ lại & nộp tiếp</button></div><div id="tlrv"></div>' : ''}`);
-    $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); pick = 0; result = null; draw(); });
-    $$('input[name=de]').forEach(r => r.onchange = () => { pick = +r.value; result = null; draw(); });
+      <h1 class="tl-h1">📷 AI chấm bài vẽ</h1>
+      <div class="acc tl-acc">
+        ${due.length ? `<section class="acc-sec ${open === 'gv' ? 'open' : ''}">${head('gv', '★', 'Bài thầy cô giao (' + due.length + ')', 'Có hạn nộp', false)}
+          ${open === 'gv' ? `<div class="acc-b"><div class="rows">${due.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''} · ${t.bai.length ? 'đã nộp ' + t.bai.length + ' lần' : 'chưa nộp'}</span></span><span class="chev">›</span></a>`).join('')}</div></div>` : ''}</section>` : ''}
+        <section class="acc-sec ${open === 'de' ? 'open' : ''}">${head('de', 1, 'Đề bài', de ? esc(short(de)) : 'Chọn đề', !!de)}
+          ${open === 'de' ? `<div class="acc-b">
+            <div class="tl-types">${Object.entries(DRAW_TYPES).map(([key, v]) => `<button type="button" class="${key === loai ? 'on' : ''}" data-lo="${key}">${v}</button>`).join('')}</div>
+            <div class="tl-de">${DRAW_PRACTICE[loai].map((d, i) => `<label class="${pick === i ? 'on' : ''}"><input type="radio" name="de" value="${i}" ${pick === i ? 'checked' : ''}><span>${esc(d)}</span></label>`).join('')}
+              <label class="${pick === -1 ? 'on' : ''}"><input type="radio" name="de" value="-1" ${pick === -1 ? 'checked' : ''}><span><b>✍️ Đề của em</b></span></label></div>
+            ${pick === -1 ? `<textarea id="own" maxlength="1500" placeholder="Chép đề bài…">${esc(own)}</textarea>
+              ${imgDrop('tlde', '📷 Ảnh đề (nếu có)', 'Bấm để chụp / chọn ảnh', deImg)}
+              <button type="button" class="btn block" id="deok" style="margin-top:10px">Tiếp →</button>` : ''}
+          </div>` : ''}</section>
+        <section class="acc-sec ${open === 'bai' ? 'open' : ''}">${head('bai', 2, 'Bài làm', baiImg ? 'Đã có ảnh' : 'Chụp ảnh bài vẽ', !!baiImg)}
+          ${open === 'bai' ? `<div class="acc-b">
+            <div class="tl-pick">
+              <label class="btn tl-big">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
+              <label class="btn ghost tl-big">🖼️ Chọn ảnh<input id="file" type="file" accept="image/*" hidden></label></div>
+            ${baiImg ? `<div id="tlbai" class="imgdrop imgdrop-lite"><img src="${baiImg}" alt="Ảnh bài vẽ"></div>` : '<div id="tlbai" class="imgdrop imgdrop-lite tl-drop"><span class="hint">hoặc kéo thả / dán ảnh</span></div>'}
+            <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
+            <button class="btn block" id="go" style="margin-top:10px" ${baiImg && !busyNow ? '' : 'disabled'}>${busyNow ? '🤖 AI đang chấm…' : !de ? 'Chọn đề ở bước 1' : '🤖 Chấm bài'}</button>
+          </div>` : ''}</section>
+        <section class="acc-sec ${open === 'kq' ? 'open' : ''}">${head('kq', 3, 'Kết quả', busyNow ? '🤖 AI đang chấm…' : result ? (result.doc_duoc === false ? 'Ảnh chưa rõ – chụp lại' : fmt(result.diem) + '/10 điểm') : '—', !!result)}
+          ${open === 'kq' ? `<div class="acc-b">${result ? '<div id="tlrv"></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost grow" id="again">📷 Chụp lại</button><button class="btn ghost grow" id="newde">📄 Đề khác</button></div>' : `<div class="card empty">${busyNow ? '<span class="tl-spin"></span> AI đang chấm, em chờ chút…' : 'Chưa có kết quả.'}</div>`}</div>` : ''}</section>
+      </div>`);
+    $$('[data-op]').forEach(b => b.onclick = () => { open = open === b.dataset.op ? '' : b.dataset.op; draw(); });
+    $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); pick = -2; result = null; draw(); });
+    $$('input[name=de]').forEach(r => r.onchange = () => { pick = +r.value; result = null; if (pick >= 0) open = 'bai'; draw(); });
     if ($('#own')) $('#own').oninput = e => { own = e.target.value; };
+    if ($('#deok')) $('#deok').onclick = () => { if (!own.trim()) { toast('Em chép đề bài vào ô trước nhé'); $('#own').focus(); return; } open = 'bai'; draw(); };
     bindImgDrop('tlde', v => { deImg = v; draw(); });
-    const take = async f => { if (!f) return; try { baiImg = await compressImage(f); result = null; draw(); } catch (e) { toast('Không đọc được ảnh, hãy chụp lại'); } };
-    $('#cam').onchange = e => take(e.target.files[0]);
-    $('#file').onchange = e => take(e.target.files[0]);
-    const z = $('#tlbai'); z._take = take;
-    z.ondragover = e => { e.preventDefault(); z.classList.add('over'); }; z.ondragleave = () => z.classList.remove('over');
-    z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); take(e.dataTransfer.files[0]); };
-    z.onclick = () => $('#file').click();
-    $('#go').onclick = async () => {
-      if (!deBai()) { errBox($('#msg'), 'Hãy chép đề bài của em'); return; }
-      if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để AI nhận xét'); return; }
-      busyNow = true; draw();
+    const take = async f => { if (!f) return; try { baiImg = await compressImage(f); result = null; err = ''; draw(); } catch (e) { toast('Không đọc được ảnh, hãy chụp lại'); } };
+    if ($('#cam')) $('#cam').onchange = e => take(e.target.files[0]);
+    if ($('#file')) $('#file').onchange = e => take(e.target.files[0]);
+    const z = $('#tlbai');
+    if (z) {
+      z._take = take;
+      z.ondragover = e => { e.preventDefault(); z.classList.add('over'); }; z.ondragleave = () => z.classList.remove('over');
+      z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); take(e.dataTransfer.files[0]); };
+      z.onclick = () => $('#file').click();
+    }
+    if ($('#go')) $('#go').onclick = async () => {
+      if (!deBai()) { open = 'de'; draw(); toast('Em chọn hoặc chép đề bài trước'); return; }
+      if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để AI chấm'); return; }
+      busyNow = true; err = ''; open = 'kq'; draw();
       try { result = await api('practice_drawing', { loai, deBai: deBai(), tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: pick === -1 ? deImg : null }); }
-      catch (e) { busyNow = false; draw(); errBox($('#msg'), /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang được cập nhật chức năng tự luyện. Em thử lại sau ít phút nhé.' : e); return; }
-      busyNow = false; draw();
+      catch (e) { busyNow = false; err = /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang được cập nhật chức năng tự luyện. Em thử lại sau ít phút nhé.' : (e.message || String(e)); open = 'bai'; draw(); return; }
+      busyNow = false; open = 'kq'; draw();
+      try { const lg = { bai: 'Bài vẽ AI chấm – ' + DRAW_TYPES[loai], phan: short(deBai()), diem: result.doc_duoc === false ? 0 : result.diem, max: 10, ten: session.user.HoTen, lop: session.user.TenLop || '' }; window.STC_LOG && window.STC_LOG(lg); } catch (e) {}
+    };
+    if (open === 'kq' && result && $('#tlrv')) {
       const t = { MaBV: 'TL', DeBai: deBai(), DiemToiDa: 10, CoAnhDe: false };
       mountReview($('#tlrv'), t, { MaNop: 'TL', AI: result, AIDiem: result.doc_duoc === false ? null : result.diem, TrangThai: 'tuluyen' }, { baiSrc: baiImg, deSrc: pick === -1 ? deImg : null });
-      window.scrollTo(0, $('#tlrv').offsetTop - 90);
-    };
-    if ($('#again')) $('#again').onclick = () => { baiImg = null; result = null; draw(); window.scrollTo(0, 0); };
+    }
+    if ($('#again')) $('#again').onclick = () => { baiImg = null; result = null; open = 'bai'; draw(); };
+    if ($('#newde')) $('#newde').onclick = () => { baiImg = null; result = null; pick = -2; open = 'de'; draw(); };
   };
   draw();
-  if (session.role === 'hs') api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (location.hash === '#/tuluyenve' && !result && !busyNow) draw(); }).catch(() => {});
+  if (session.role === 'hs') api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (location.hash === '#/tuluyenve' && !busyNow) draw(); }).catch(() => {});
 });
 
 route(/^\/gv\/baive$/, async () => {
@@ -6138,12 +6263,93 @@ route(/^\/sgk\/doc$/, async params => {
 });
 
 
+/* ================= Cập nhật 21/11/2026: LƯỢT THỰC HÀNH – lưu tên, số lần làm, điểm từng lần ================= */
+/* Bài học (cn12_bai*.html…) mở trong app gọi window.parent.STC_LOG({bai, phan, ten, lop, diem, max}); mở riêng thì thuchanh.js tự lưu vào máy. */
+const thNorm = v => String(v || '').normalize('NFC').replace(/\s+/g, ' ').trim();
+window.STC_LOG = o => {
+  try {
+    o = o || {};
+    const me = session && session.role === 'hs' ? session.user : null;
+    const ten = thNorm(o.ten) || (me ? me.HoTen : '') || 'Chưa ghi tên', lop = thNorm(o.lop) || (me ? me.TenLop : '') || '';
+    const bai = thNorm(o.bai) || 'Bài thực hành', phan = thNorm(o.phan) || '';
+    const all = store.get('thuchanh', []);
+    const same = r => r.bai === bai && r.phan === phan && thNorm(r.ten).toLowerCase() === ten.toLowerCase();
+    let rec = o.key ? all.find(r => r.key === o.key) : null;
+    if (rec) { rec.diem = +o.diem; rec.max = +o.max || 10; rec.t = Date.now(); rec.sent = 0; }
+    else {
+      rec = { id: newId(), key: o.key || '', t: Date.now(), bai, phan, ten, lop, diem: +o.diem, max: +o.max || 10, lan: all.filter(same).length + 1, sent: 0 };
+      all.push(rec);
+    }
+    store.set('thuchanh', all.slice(-800));
+    thSend();
+    return rec;
+  } catch (e) { return null; }
+};
+let thSending = false;
+async function thSend() {
+  if (DEMO || thSending || !session || session.role !== 'hs' || !navigator.onLine) return;
+  const all = store.get('thuchanh', []), items = all.filter(r => !r.sent && isFinite(r.diem)).slice(0, 30);
+  if (!items.length) return;
+  thSending = true;
+  try {
+    await api('practice_log', { items: items.map(r => ({ id: r.id + (r.key ? '_' + Math.round(r.diem * 100) : ''), t: r.t, bai: r.bai, phan: r.phan, ten: r.ten, lop: r.lop, lan: r.lan, diem: r.diem, max: r.max })) });
+    const ids = new Set(items.map(r => r.id)), now = store.get('thuchanh', []);
+    now.forEach(r => { if (ids.has(r.id)) r.sent = 1; }); store.set('thuchanh', now);
+  } catch (e) { /* máy chủ chưa cập nhật hoặc mất mạng: giữ lại, lần sau gửi tiếp */ }
+  thSending = false;
+}
+window.addEventListener('online', thSend);
+/** bảng lượt thực hành: nhóm theo bài → phần → tên; mỗi dòng: số lần, điểm từng lần, điểm cao nhất */
+function thTable(rows, showName = true) {
+  const g = {};
+  rows.forEach(r => { const k = r.bai; (g[k] = g[k] || []).push(r); });
+  const bais = Object.keys(g).sort((a, b) => a.localeCompare(b, 'vi', { numeric: true }));
+  if (!bais.length) return '<div class="card empty">Chưa có lượt thực hành nào. Mở một bài thực hành có ô <b>Họ và tên</b> (Bài 8, 9, 10, 15, 16, 17 khối 12; Bài vẽ AI chấm…), ghi tên và bấm chấm điểm/nộp bài – lượt làm sẽ được lưu ở đây.</div>';
+  return bais.map(bai => {
+    const by = {};
+    g[bai].forEach(r => { const k = (showName ? thNorm(r.ten).toLowerCase() + '|' : '') + r.phan; (by[k] = by[k] || []).push(r); });
+    const lines = Object.values(by).map(l => l.sort((a, b) => a.t - b.t)).sort((a, b) => (showName ? viNameCmp(a[0].ten, b[0].ten) : 0) || String(a[0].phan).localeCompare(String(b[0].phan), 'vi', { numeric: true }));
+    return `<details class="card th-bai"><summary><b>${esc(bai)}</b> <span class="pill">${g[bai].length} lượt</span></summary><div class="tblwrap"><table class="th-t"><thead><tr>${showName ? '<th>Họ và tên</th>' : ''}<th>Phần</th><th class="n">Số lần</th><th>Điểm các lần</th><th class="n">Cao nhất</th></tr></thead><tbody>
+      ${lines.map(l => { const best = Math.max(...l.map(r => +r.diem || 0)); return `<tr>${showName ? `<td>${esc(l[0].ten)}${l[0].lop ? `<div class="hint">${esc(l[0].lop)}</div>` : ''}</td>` : ''}<td>${esc(l[0].phan || '—')}</td><td class="n"><b>${l.length}</b></td>
+        <td><div class="th-sc">${l.map((r, i) => `<span class="pill ${(+r.diem) >= r.max * .8 ? 'ok' : (+r.diem) >= r.max / 2 ? '' : 'bad'}" title="Lần ${i + 1} · ${dt(r.t || r.ThoiDiem)}">L${i + 1}: ${fmt(+r.diem || 0)}</span>`).join('')}</div></td><td class="n"><b>${fmt(best)}</b>/${fmt(l[0].max || 10)}</td></tr>`; }).join('')}
+      </tbody></table></div></details>`;
+  }).join('');
+}
+route(/^\/thuchanh$/, () => {
+  const all = store.get('thuchanh', []);
+  const names = [...new Set(all.map(r => thNorm(r.ten)))].sort(viNameCmp);
+  let who = session && session.role === 'hs' ? session.user.HoTen : (names[0] || '');
+  const draw = () => {
+    const rows = all.filter(r => !who || thNorm(r.ten).toLowerCase() === thNorm(who).toLowerCase());
+    setView(`<a href="#/onluyen">← Ôn luyện</a><h1>📊 Lượt thực hành</h1>
+      <p class="sub">Mỗi lần em bấm <b>Chấm điểm / Nộp bài</b> ở bài thực hành có ghi họ tên, app lưu lại: <b>số lần làm</b> và <b>điểm từng lần</b>.${session && session.role === 'hs' ? ' Kết quả cũng được gửi cho thầy cô.' : ''}</p>
+      ${names.length > 1 ? `<div class="card row" style="gap:8px;align-items:center"><label for="thwho" style="margin:0"><b>Tên</b></label><select id="thwho" class="grow"><option value="">Tất cả (${names.length} tên)</option>${names.map(n => `<option ${thNorm(n) === thNorm(who) ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : ''}
+      <div class="kpis"><div class="kpi"><b>${rows.length}</b><span>lượt làm</span></div><div class="kpi"><b>${new Set(rows.map(r => r.bai)).size}</b><span>bài thực hành</span></div><div class="kpi"><b>${rows.length ? fmt(Math.max(...rows.map(r => +r.diem || 0))) : '–'}</b><span>điểm cao nhất</span></div></div>
+      ${thTable(rows, !who)}`);
+    const sel = $('#thwho'); if (sel) sel.onchange = () => { who = sel.value; draw(); };
+    const first = $('.th-bai'); if (first) first.open = true;
+  };
+  draw(); thSend();
+});
+route(/^\/gv\/thuchanh$/, async params => {
+  if (!needGV()) return;
+  const code = params && params.get('lop');
+  setView(`<a href="${code ? '#/gv/lop/' + esc(code) : '#/gv/lop'}">← Lớp</a><h1>🧪 Lượt thực hành${code ? ' – lớp ' + esc(code) : ''}</h1><p class="sub">Số lần làm và điểm từng lần của học sinh ở các bài thực hành có ghi họ tên (HS đăng nhập khi làm bài).</p><div id="th"><div class="card empty">Đang tải…</div></div>`);
+  try {
+    const l = await api('practice_logs', code ? { code } : {});
+    const rows = l.map(r => ({ t: new Date(r.ThoiDiem).getTime(), bai: r.Bai, phan: r.Phan, ten: r.HoTen, lop: r.TenLop, diem: +r.Diem, max: +r.DiemToiDa || 10 }));
+    if ($('#th')) $('#th').innerHTML = thTable(rows, true);
+  } catch (e) { if ($('#th')) errBox($('#th'), /không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp cập nhật CapNhat_21_11.gs (xem hướng dẫn cập nhật).' : e); }
+});
+
 /* ================= Khởi động ================= */
 (async () => {
   renderMenu(); netBadge();
   await loadBank();
   render();
   flush();
+  setTimeout(loadSchools, 800);
+  setTimeout(thSend, 2500);
   try { if (!sessionStorage.getItem('stc_hit') || !sessionStorage.getItem('stc_vs')) { sessionStorage.setItem('stc_hit', '1'); setTimeout(() => api('hit').then(r => { if (r && r.total) { try { sessionStorage.setItem('stc_vs', JSON.stringify(r)); } catch (e) {} const el = $('#hsvs'); if (el) el.textContent = r.total.toLocaleString('vi-VN'); } }).catch(() => {}), 1500); } } catch (e) {}
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
     // có bản mới trên máy chủ: tự tải lại một lần để thầy cô, học sinh luôn thấy nội dung mới nhất (không cần Ctrl+F5)

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="vi">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<head><script src="thuchanh.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bài 15 – Điện trở, tụ điện và cuộn cảm</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2426,7 +2426,7 @@ function measure15(host) {
       pts += p;
       const c = $(`td[data-mark="${it.id}"]`, tables); c.textContent = p === 2.5 ? '✓' : String(p).replace('.', ',') + '/2,5'; c.className = 'mark ' + (p === 2.5 ? 'ok' : 'no');
     });
-    const sc = Math.round(pts / max * 100) / 10; S.done.m15 = sc; save();
+    const sc = Math.round(pts / max * 100) / 10; S.done.m15 = sc; save(); try { window.STC_LOG && STC_LOG({ bai: 'Bài 15. Điện trở, tụ điện và cuộn cảm', phan: 'Đo và đánh giá linh kiện', ten: S.name, lop: S.cls, diem: sc, max: 10 }); } catch (e) { }
     scoreBox.innerHTML = `<span class="score">${String(sc).replace('.', ',')}/10</span>`;
     toast('Đã chấm: ' + String(sc).replace('.', ',') + ' điểm'); renderSteps();
   }
@@ -2564,7 +2564,7 @@ function measure16(host) {
       max += m; pts += p;
       const c = $(`td[data-mark="${it.id}"]`, tables); c.textContent = p === m ? '✓' : String(p).replace('.', ',') + '/2'; c.className = 'mark ' + (p === m ? 'ok' : 'no');
     });
-    const sc = Math.round(pts / max * 100) / 10; S.done.m16 = sc; save();
+    const sc = Math.round(pts / max * 100) / 10; S.done.m16 = sc; save(); try { window.STC_LOG && STC_LOG({ bai: 'Bài 16. Diode, transistor và IC', phan: 'Đo và đánh giá linh kiện', ten: S.name, lop: S.cls, diem: sc, max: 10 }); } catch (e) { }
     scoreBox.innerHTML = `<span class="score">${String(sc).replace('.', ',')}/10</span>`; toast('Đã chấm: ' + String(sc).replace('.', ',') + ' điểm'); renderSteps();
   }
   drawTables();
@@ -4092,7 +4092,7 @@ function celebrate(msg) {
   for (let i = 0; i < 60; i++) { const c = h('i', { class: 'conf', style: `left:${Math.random() * 100}%;background:${['#E8A33A', '#3FB58F', '#D23B2F', '#1F57CF', '#F4CF0C'][i % 5]};animation-delay:${Math.random() * .6}s;animation-duration:${1.6 + Math.random()}s` }); o.append(c); }
   document.body.append(o); try { beep(1320, .12); setTimeout(() => beep(1760, .18), 140); } catch (e) {}
 }
-const ok = (k, v) => { S.act = S.act || {}; S.act[k] = Math.max(S.act[k] || 0, v); save(); };
+const ok = (k, v) => { S.act = S.act || {}; S.act[k] = Math.max(S.act[k] || 0, v); save(); try { const nm = { match: 'Ghép tên – hình', meas: 'Đo kiểm tra linh kiện', prac: 'Thực hành', read: 'Đọc trị số', sym: 'Kí hiệu', exp: 'Thí nghiệm Bài 17', nd: 'Nhận diện linh kiện', dt: 'Điện trở', td: 'Tụ điện', cc: 'Cuộn cảm' }, b = String(k).replace(/\d+$/, ''); window.STC_LOG && STC_LOG({ bai: /17$/.test(k) ? 'Bài 17. Thực hành phát hiện dòng điện' : 'Bài 15. Điện trở, tụ điện và cuộn cảm', phan: nm[b] || k, ten: S.name, lop: S.cls, diem: v, max: 10 }); } catch (e) { } };
 const EXTRA_LOOK = { ntc: { look: 'ntc', pins: 2 }, tcap: { look: 'tcap', pins: 2 }, lair: { look: 'coil', pins: 2 }, lfer: { look: 'tor', pins: 2 }, pow: { look: 'to220', mark: 'C2073', pins: 3 }, sip: { look: 'sipk', mark: 'AN5743', pins: 14 }, zener: { look: 'zener', pins: 2 } };
 const thumbOr = (key) => (typeof LIB_PH !== 'undefined' && LIB_PH[key]) ? phImg(LIB_PH[key][0][0]) : THUMBS[key] ? `<img alt="" src="${THUMBS[key]}">` : EXTRA_LOOK[key] ? partSVG(EXTRA_LOOK[key]) : (LOOKS[key] ? partSVG(PARTS[LOOKS[key]]) : '');
 const LOOKS = { res: 'r10k', pot: 'vr10k', ldr: 'ldr', cer: 'c104', elec: 'e100_16', liron: 'l103', diode: 'd5402', led: 'led', npn: 'c1815', pnp: 'a1015', dip: 'ic32' };

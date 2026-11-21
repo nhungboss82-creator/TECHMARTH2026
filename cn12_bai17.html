@@ -1,4 +1,4 @@
-<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!doctype html><html lang="vi"><head><script src="thuchanh.js"></script><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Bài 17 Mạch phát hiện dòng điện</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1107,7 +1107,8 @@ function updScore(){
   let t=0;for(const k in state.score){t+=state.score[k];$('#p'+k).textContent=fmt(state.score[k])+'/'+MAXP[k];
     document.querySelector(`nav.steps [data-step="${k}"]`).classList.toggle('done',state.score[k]>0);}
   const ded=Math.min(2,state.wrong*0.5);
-  const tot=Math.max(0,t-ded),old=$('#total').textContent;$('#total').textContent=fmt(tot);$('#sbar').style.width=(tot*10)+'%';
+  const tot=Math.max(0,t-ded),old=$('#total').textContent;
+  try{if(tot>0&&old!==fmt(tot)&&window.STC_LOG){window._b17k=window._b17k||('b17_'+Date.now().toString(36));const nm=[...document.querySelectorAll('#members .mem')].map(x=>x.value.trim()).filter(Boolean);STC_LOG({key:window._b17k,bai:'Bài 17. Thực hành phát hiện dòng điện chạy trong dây dẫn',phan:'Thực hành (5 bước)',ten:nm.join(', '),diem:tot,max:10});}}catch(e){}$('#total').textContent=fmt(tot);$('#sbar').style.width=(tot*10)+'%';
   if(old!==fmt(tot)){const sb=document.querySelector('.scorebox');sb.classList.remove('bump');void sb.offsetWidth;sb.classList.add('bump');}
   $('#ded').innerHTML=state.wrong?`<span class="ded">Chọn sai linh kiện: ${state.wrong} lần (−${fmt(ded)})</span>`:'Chọn sai linh kiện: 0 lần';
 }
