@@ -1123,16 +1123,19 @@ route(/^\/de$/, params => {
 /* ================= GV: Quản lý đề luyện thi TN – kết quả, câu hay sai, bài làm HS ================= */
 route(/^\/gv\/thitn$/, async params => {
   if (!needGV()) return;
-  const key = params.get('de') ? 'DE:' + params.get('de') : '', code = params.get('lop') || '';
+  const key = params.get('de') ? 'DE:' + params.get('de') : '', code = params.get('lop') || '', truong = params.get('truong');
   setView('<div class="card empty">Đang tải kết quả…</div>');
   let res;
-  try { res = await api('tn_results', { key, code }); } catch (e) { errBox(V, e); return; }
+  try { res = await api('tn_results', Object.assign({ key, code }, session.role === 'admin' && truong != null ? { school: truong } : {})); } catch (e) { errBox(V, e); return; }
+  const isAdm = session.role === 'admin', schoolNow = res.school || (isAdm ? '' : session.user.Truong || '');
   if (bank.q.length && res.rows.some(r => r.sai.some(id => !bank.byId[id]))) await syncBank(true);
   const exams = deList(), rows = res.rows, classes = res.classes || {};
   const nm = d => (/(\d+)\s*$/.exec(d) || [])[1] || d;
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
-  const lopSel = `<select id="lsel" style="max-width:220px"><option value="">Tất cả lớp của tôi (${Object.keys(classes).length})</option>${Object.entries(classes).sort((a, b) => a[1].localeCompare(b[1], 'vi', { numeric: true })).map(([c, t]) => `<option value="${esc(c)}" ${c === code ? 'selected' : ''}>Lớp ${esc(t)}</option>`).join('')}</select>`;
-  const go = (de, lop) => { location.hash = '#/gv/thitn' + (de || lop ? '?' + [de ? 'de=' + encodeURIComponent(de) : '', lop ? 'lop=' + encodeURIComponent(lop) : ''].filter(Boolean).join('&') : ''); };
+  // 21/11/2026: theo trường – GV xem lớp của trường mình; Quản trị viên chọn trường
+  const schSel = isAdm && res.schools ? `<select id="tsel" style="max-width:260px"><option value="">— Tất cả trường —</option>${res.schools.map(x => `<option ${skNorm(x) === skNorm(schoolNow) ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select>` : '';
+  const lopSel = `${schSel}<select id="lsel" style="max-width:220px"><option value="">Tất cả lớp${schoolNow ? ' – ' + esc(schoolNow) : ''} (${Object.keys(classes).length})</option>${Object.entries(classes).sort((a, b) => a[1].localeCompare(b[1], 'vi', { numeric: true })).map(([c, t]) => `<option value="${esc(c)}" ${c === code ? 'selected' : ''}>Lớp ${esc(t)}</option>`).join('')}</select>`;
+  const go = (de, lop, tr) => { const t = tr !== undefined ? tr : (truong != null ? truong : null); location.hash = '#/gv/thitn' + '?' + [de ? 'de=' + encodeURIComponent(de) : '', lop ? 'lop=' + encodeURIComponent(lop) : '', isAdm && t != null ? 'truong=' + encodeURIComponent(t) : ''].filter(Boolean).join('&'); };
   /* thống kê sai theo câu / theo bài học từ danh sách lượt làm */
   const qStats = rs => {
     const st = {};
@@ -1156,10 +1159,20 @@ route(/^\/gv\/thitn$/, async params => {
     const allQ = qStats(rows).filter(s => s.lam >= 3).sort((a, b) => b.sai / b.lam - a.sai / a.lam).slice(0, 8);
     setView(`<a href="#/gv">← Trang giáo viên</a>
       <div class="row" style="align-items:center"><h1 class="grow">🎓 Quản lý đề luyện thi TN THPT</h1><a class="btn ghost sm" href="#/thitn">👁 Xem bộ đề như HS</a></div>
-      <p class="sub">${exams.length} đề · mỗi đề 28 câu · mỗi lần HS mở đề đều đảo câu, đảo đáp án. Thống kê theo đúng câu gốc của đề nên vẫn chính xác dù thứ tự bị đảo.</p>
-      <div class="row" style="margin:6px 0 10px">${lopSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
+      <p class="sub">${exams.length} đề · 28 câu/đề${schoolNow ? ' · ' + esc(schoolNow) : ''}</p>
+      <div class="row" style="margin:6px 0 10px;gap:8px;flex-wrap:wrap">${lopSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
       <div class="kpis"><div class="kpi"><b>${new Set(rows.map(r => r.maHS)).size}</b><span>HS đã luyện</span></div><div class="kpi"><b>${rows.length}</b><span>lượt làm đề</span></div>
         <div class="kpi"><b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b><span>điểm TB mọi lượt</span></div><div class="kpi"><b>${Object.keys(by).length}/${exams.length}</b><span>đề đã có HS làm</span></div></div>
+      ${(() => {
+        const lt = res.lt || [], m = {};
+        rows.forEach(r => { const x = m[r.maHS] = m[r.maHS] || { ten: r.hoTen, lop: r.lop, de: new Set(), d: [], lt: 0, t: 0 }; x.de.add(r.key); x.d.push(r.diem); x.t = Math.max(x.t, new Date(r.t).getTime() || 0); });
+        lt.forEach(r => { const x = m[r.maHS] = m[r.maHS] || { ten: r.hoTen, lop: r.lop, de: new Set(), d: [], lt: 0, t: 0 }; x.lt++; x.t = Math.max(x.t, new Date(r.t).getTime() || 0); });
+        const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
+        return `<h2>👩‍🎓 Học sinh ôn thi tốt nghiệp (${L.length})</h2><div class="card">${L.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ và tên</th><th>Lớp</th><th class="n">Số đề đã làm</th><th class="n">Lượt làm đề</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Luyện theo bài</th><th class="n">Lần gần nhất</th></tr></thead><tbody>
+          ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td><td class="n">${x.de.size}</td><td class="n">${x.d.length}</td><td class="n">${x.d.length ? fmt(x.d.reduce((a, b) => a + b, 0) / x.d.length) : '–'}</td><td class="n">${x.d.length ? '<b>' + fmt(Math.max(...x.d)) + '</b>' : '–'}</td><td class="n">${x.lt || '–'}</td><td class="n">${x.t ? new Date(x.t).toLocaleDateString('vi-VN') : '–'}</td></tr>`).join('')}
+          </tbody></table></div>` : '<div class="empty">Chưa có học sinh nào luyện đề.</div>'}</div>`;
+      })()}
+      <h2>📁 Kết quả từng đề</h2>
       <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
         ${exams.map(d => { const rs = by['DE:' + d] || [], ds = rs.map(r => r.diem);
           const top = rs.length ? qStats(rs).sort((a, b) => b.sai - a.sai)[0] : null;
@@ -1171,6 +1184,7 @@ route(/^\/gv\/thitn$/, async params => {
       <h2>📉 Bài học HS hay sai nhất (toàn bộ đề đã làm)</h2><div class="card">${lessonTable(ls)}<p class="hint">Tỉ lệ sai = số lần trả lời sai / số lần gặp câu của bài đó. Bài đỏ (≥ 60%) nên dạy lại; vàng (35–60%) cần ôn thêm.</p></div>
       ${allQ.length ? `<h2>❗ Câu sai nhiều nhất</h2><div class="card"><div class="list compact">${allQ.map(s => `<a class="item" href="#/gv/thitn?de=${encodeURIComponent(s.q.de)}${code ? '&lop=' + code : ''}"><div class="grow"><b>Đề ${esc(nm(s.q.de))}</b> · ${esc(plainQ(s.q.s).slice(0, 110))}…<div class="meta">${esc((s.q.bai || '').replace(/^Lớp \d+ – /, ''))} · ${esc(s.q.md)}</div></div><span>${bar(pct(s.sai, s.lam))}</span></a>`).join('')}</div></div>` : ''}`);
     $('#lsel').onchange = e => go('', e.target.value);
+    if ($('#tsel')) $('#tsel').onchange = e => go('', '', e.target.value);
     $$('tr.click[data-de]').forEach(tr => tr.onclick = () => go(tr.dataset.de, code));
     $('#ex').onclick = () => csv('LuyenThiTN_' + (code ? classes[code] : 'tat_ca') + '.csv', [['Họ tên', 'Lớp', 'Đề', 'Lần', 'Điểm', 'Số câu đúng', 'Thời gian (phút)', 'Thời điểm'],
       ...rows.slice().sort((a, b) => viNameCmp(a.hoTen, b.hoTen) || a.key.localeCompare(b.key, 'vi', { numeric: true })).map(r => [r.hoTen, r.lop, r.key.slice(3), r.lan, r.diem, r.dung + '/' + r.tong, Math.round(r.giay / 60), dt(r.t)])]);
@@ -1187,7 +1201,7 @@ route(/^\/gv\/thitn$/, async params => {
     const list = order.slice().sort((a, b) => sortBy === 'sai' ? ((qsBy[b.id] || {}).sai || 0) - ((qsBy[a.id] || {}).sai || 0) : 0);
     const hsList = Object.entries(hs).sort((a, b) => viNameCmp(a[1].ten, b[1].ten));
     const one = who && hs[who];
-    setView(`<a href="#/gv/thitn${code ? '?lop=' + code : ''}">← Quản lý đề luyện thi TN</a>
+    setView(`<a href="#/gv/thitn?${[code ? 'lop=' + code : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : ''].filter(Boolean).join('&')}">← Quản lý đề luyện thi TN</a>
       <h1>${esc(d)}</h1><p class="sub">${rows.length} lượt làm · ${hsList.length} học sinh${code ? ' · lớp ' + esc(classes[code] || '') : ''} · điểm TB <b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b></p>
       <div class="row" style="margin-bottom:8px">${lopSel}<span class="grow"></span><button class="btn ghost sm" id="pr">🖨️ In đề kèm đáp án</button></div>
       <h2>📉 Bài học hay sai trong đề này</h2><div class="card">${lessonTable(lessonStats(qs))}</div>
@@ -1206,6 +1220,7 @@ route(/^\/gv\/thitn$/, async params => {
       </tbody></table></div></div>`);
     math(V);
     $('#lsel').onchange = e => go(key, e.target.value);
+    if ($('#tsel')) $('#tsel').onchange = e => go(key, '', e.target.value);
     $$('[data-sort]').forEach(b => b.onclick = () => { sortBy = b.dataset.sort; draw(); });
     $$('tr.click[data-q]').forEach(tr => tr.onclick = () => { open[tr.dataset.q] = !open[tr.dataset.q]; draw(); });
     $$('[data-who]').forEach(b => b.onclick = () => { who = who === b.dataset.who ? '' : b.dataset.who; draw(); });
