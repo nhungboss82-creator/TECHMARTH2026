@@ -2245,28 +2245,35 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
 });
 
 /* ---------- Bảng điểm lớp: mỗi bài / chủ đề / đề thi là 1 cột, GV tích chọn cột, cộng tổng & TB ở cuối ---------- */
-const BD_GROUPS = [
-  ['baigiao', '📝 Bài thầy cô giao'], ['baihoc', '📚 Nguyên bài học SGK'], ['chude', '📖 Ôn theo bài / chủ đề / dạng câu'],
-  ['matran', '📑 Đề kiểm tra / đề tổng hợp'], ['de', '🎓 Đề thi thử tốt nghiệp'], ['dethi', '🖨️ Đề thi giấy (chấm bằng app)'], ['causai', '🔁 Làm lại câu sai']
-];
+/* 21/11/2026: gọn còn 3 nhóm – Bài thầy cô giao · Bài học / chủ đề (chia Khối 10, 11, 12) · Đề luyện thi; bỏ "Nguyên bài học" (gộp vào bài học) và "Làm lại câu sai" */
+const BD_GROUPS = [['baigiao', '📝 Bài thầy cô giao'], ['bai', '📖 Bài học / chủ đề'], ['de', '🎓 Đề luyện thi / đề tổng hợp']];
 function scoreSheet(box, cls, students, results, myAsg) {
   const ck = 'bd_' + cls.MaLop;
-  const grpOf = l => BD_GROUPS.some(g => g[0] === l) ? l : 'chude';
-  // gom các lượt làm thành từng "cột": bài giao / đề theo mã; ôn tập tự chọn theo tên bài
+  // gom các lượt làm thành từng "cột": bài giao theo mã; bài học / chủ đề theo tên bài (gộp "nguyên bài" và "ôn theo bài"); đề theo mã
+  const lessonK = {}; (bank.q || []).forEach(q => { [q.bai, String(q.cd || '').replace(/^Lớp \d+ – /, '')].forEach(n => { if (n && !lessonK[n]) lessonK[n] = String(q.k); }); });
+  const normL = n => String(n || '').replace(/^Luyện thi TN – /, '').replace(/^(Khối|Lớp)\s*1[012]\s*[–-]\s*/, '').replace(/^Ôn (chủ đề: )?/, '').trim();
+  const khoiOf = r => { const m = /^(?:Luyện thi TN – )?(?:Khối|Lớp)\s*(1[012])/.exec(r.bai || ''); return m ? m[1] : lessonK[normL(r.bai)] || String(cls.Khoi); };
+  const colOf = r => {
+    if (r.loai === 'causai') return null;
+    if (r.loai === 'baigiao' || r.loai === 'dethi') return { id: 'K:' + (r.key || r.bai), g: 'baigiao', name: r.loai === 'baigiao' ? ((myAsg.find(a => a.MaBai === r.key) || {}).TieuDe || r.bai) : r.bai };
+    if (r.loai === 'de' || r.loai === 'matran') return { id: r.key ? 'K:' + r.key : 'T:' + r.bai, g: 'de', name: r.bai };
+    const n = normL(r.bai); return { id: 'L:' + n, g: 'bai', name: n, k: khoiOf(r) };
+  };
+  const cid = r => { if (r._c === undefined) { const c = colOf(r); r._c = c ? c.id : null; } return r._c; };
   const cols = {};
   results.forEach(r => {
-    const id = r.key ? 'K:' + r.key : 'T:' + r.bai;
-    const name = r.loai === 'baigiao' ? ((myAsg.find(a => a.MaBai === r.key) || {}).TieuDe || r.bai) : String(r.bai || '').replace(/^Ôn (chủ đề: )?/, '');
-    if (!cols[id]) cols[id] = { id, name: name || '(không tên)', g: grpOf(r.loai), hs: new Set() };
-    cols[id].hs.add(r.maHS);
+    const c = colOf(r); if (!c) return; r._c = c.id;
+    if (!cols[c.id]) cols[c.id] = Object.assign(c, { name: c.name || '(không tên)', hs: new Set() });
+    cols[c.id].hs.add(r.maHS);
   });
   myAsg.forEach(a => { const id = 'K:' + a.MaBai; if (!cols[id]) cols[id] = { id, name: a.TieuDe, g: 'baigiao', hs: new Set() }; });
-  const list = Object.values(cols).sort((a, b) => BD_GROUPS.findIndex(g => g[0] === a.g) - BD_GROUPS.findIndex(g => g[0] === b.g) || a.name.localeCompare(b.name, 'vi', { numeric: true }));
+  const list = Object.values(cols).sort((a, b) => BD_GROUPS.findIndex(g => g[0] === a.g) - BD_GROUPS.findIndex(g => g[0] === b.g) || String(a.k || '').localeCompare(String(b.k || '')) || a.name.localeCompare(b.name, 'vi', { numeric: true }));
   const saved = store.get(ck, null) || {};
-  const sel = new Set(saved.sel || list.filter(x => ['baigiao', 'baihoc', 'matran', 'de', 'dethi'].includes(x.g)).map(x => x.id));
+  const sel = new Set((saved.v === 2 && saved.sel) || list.filter(x => x.g === 'baigiao').map(x => x.id));
   let mode = saved.mode || 'max', zero = saved.zero !== false, hk = !!saved.hk, gd = null, gdErr = '';
+  const openK = new Set([String(cls.Khoi)]);
   const pick = (s, col, R) => {
-    const rs = (R || results).filter(r => r.maHS === s.MaHS && (r.key ? 'K:' + r.key : 'T:' + r.bai) === col.id);
+    const rs = (R || results).filter(r => r.maHS === s.MaHS && cid(r) === col.id);
     if (!rs.length) return null;
     if (mode === 'max') return Math.max(...rs.map(r => r.diem));
     const srt = rs.slice().sort((a, b) => new Date(a.t) - new Date(b.t));
@@ -2298,8 +2305,8 @@ function scoreSheet(box, cls, students, results, myAsg) {
   const SUG = ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Kiểm tra TX 1', 'Kiểm tra TX 2', 'Kiểm tra TX 3', 'Kiểm tra TX 4', 'Kiểm tra đợt 1', 'Kiểm tra đợt 2', 'Kiểm tra giữa kì I', 'Kiểm tra cuối kì I', 'Kiểm tra giữa kì II', 'Kiểm tra cuối kì II', 'Định kì 1', 'Định kì 2'];
   /** xem toàn bộ thông tin một HS (một cột hoặc mọi bài) */
   const detail = (s, col) => {
-    const rs = results.filter(r => r.maHS === s.MaHS && (!col || (r.key ? 'K:' + r.key : 'T:' + r.bai) === col.id)).sort((x, y) => new Date(x.t) - new Date(y.t));
-    const byCol = {}; rs.forEach(r => { const id = r.key ? 'K:' + r.key : 'T:' + r.bai; (byCol[id] = byCol[id] || []).push(r); });
+    const rs = results.filter(r => r.maHS === s.MaHS && cid(r) && (!col || cid(r) === col.id)).sort((x, y) => new Date(x.t) - new Date(y.t));
+    const byCol = {}; rs.forEach(r => { const id = cid(r); (byCol[id] = byCol[id] || []).push(r); });
     const ov = document.createElement('div'); ov.className = 'modal-ov';
     const fmtDay = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
     ov.innerHTML = `<div class="modal-box"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">${esc(s.HoTen)}</h2><button class="btn ghost sm" data-x>Đóng</button></div>
@@ -2312,7 +2319,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
     document.body.appendChild(ov);
   };
   const draw = () => {
-    store.set(ck, { sel: [...sel], mode, zero, hk });
+    store.set(ck, { v: 2, sel: [...sel], mode, zero, hk });
     const { chosen, rows } = build();
     const shortName = x => { const n = colName(x); return n.length > 28 ? n.slice(0, 26) + '…' : n; };
     box.innerHTML = `<div class="card">
@@ -2320,9 +2327,17 @@ function scoreSheet(box, cls, students, results, myAsg) {
         <label class="chk" style="padding:5px 10px"><input type="checkbox" id="bdz" ${zero ? 'checked' : ''}>Bài chưa làm tính 0 khi chia TB</label>
         <label class="chk" style="padding:5px 10px"><input type="checkbox" id="bdk" ${hk ? 'checked' : ''}>🏅 Xếp hạng cùng khối ${esc(cls.Khoi)}</label></div>
       ${hk && !gd ? `<p class="hint">${gdErr ? '⚠️ ' + esc(gdErr) : 'Đang tải điểm cả khối ' + esc(cls.Khoi) + '…'}</p>` : ''}
-      <p class="hint" style="margin:8px 0 4px">Tích vào bài / chủ đề / đề muốn lấy điểm. Mỗi mục được tích là một cột; cuối bảng tự cộng <b>Tổng điểm</b> và <b>Điểm TB</b>.</p>
-      ${list.length ? BD_GROUPS.map(([g, title]) => { const xs = list.filter(x => x.g === g); if (!xs.length) return ''; const all = xs.every(x => sel.has(x.id)); return `<div class="bdgrp"><label class="lchk bdhead"><input type="checkbox" data-grp="${g}" ${all ? 'checked' : ''}><b class="grow">${title}</b><span class="n">${xs.length} mục</span></label>
-        <div class="lessonlist" style="max-height:220px">${xs.map(x => `<label class="lchk"><input type="checkbox" data-col="${esc(x.id)}" ${sel.has(x.id) ? 'checked' : ''}><span class="grow">${esc(x.name)}</span><span class="n">${x.hs.size}/${students.length} HS</span></label>`).join('')}</div></div>`; }).join('') : '<div class="empty">Lớp chưa có bài làm nào.</div>'}
+      <p class="hint" style="margin:8px 0 4px">Tích mục cần lấy điểm – mỗi mục là một cột.</p>
+      ${list.length ? BD_GROUPS.map(([g, title]) => {
+        const xs = list.filter(x => x.g === g); if (!xs.length) return '';
+        const item = x => `<label class="lchk"><input type="checkbox" data-col="${esc(x.id)}" ${sel.has(x.id) ? 'checked' : ''}><span class="grow">${esc(x.name)}</span><span class="n">${x.hs.size}/${students.length} HS</span></label>`;
+        const head = (key, t, arr) => `<label class="lchk bdhead"><input type="checkbox" data-grp="${key}" ${arr.every(x => sel.has(x.id)) ? 'checked' : ''}><b class="grow">${t}</b><span class="n">${arr.length} mục</span></label>`;
+        if (g !== 'bai') return `<div class="bdgrp">${head(g, title, xs)}<div class="lessonlist" style="max-height:220px">${xs.map(item).join('')}</div></div>`;
+        // Bài học / chủ đề: chia theo khối, mở sẵn khối của lớp
+        return `<div class="bdgrp"><div class="bdhead bdtitle"><b>${title}</b></div>${['10', '11', '12'].map(k => { const ks = xs.filter(x => x.k === k); if (!ks.length) return '';
+          const on = openK.has(k);
+          return `<div class="bdk"><div class="lchk bdhead bdkh"><input type="checkbox" data-grp="bai:${k}" ${ks.every(x => sel.has(x.id)) ? 'checked' : ''} aria-label="Chọn cả Khối ${k}"><button type="button" class="bdkt" data-bdk="${k}" aria-expanded="${on}"><b>Khối ${k}</b><span class="n">${ks.length} mục</span><span class="acc-chev">${on ? '▴' : '▾'}</span></button></div>${on ? `<div class="lessonlist" style="max-height:220px">${ks.map(item).join('')}</div>` : ''}</div>`; }).join('')}</div>`;
+      }).join('') : '<div class="empty">Lớp chưa có bài làm nào.</div>'}
       ${chosen.length ? `<details class="bdnames" ${store.get('bdn_open', 0) ? 'open' : ''}><summary><b>✏️ Đặt tên cột điểm</b> <span class="hint">(vd: Bài 1, Kiểm tra TX 1, Kiểm tra đợt 1, Định kì…)</span></summary>
         <datalist id="bdsug">${SUG.map(x => `<option value="${x}">`).join('')}</datalist>
         <div class="bdngrid">${chosen.map(x => `<label><span class="hint">${esc(x.name)}</span><input list="bdsug" data-nm="${esc(x.id)}" value="${esc(names[x.id] || '')}" placeholder="${esc(x.name)}" maxlength="40"></label>`).join('')}</div></details>` : ''}
@@ -2337,7 +2352,8 @@ function scoreSheet(box, cls, students, results, myAsg) {
     $('#bdz', box).onchange = e => { zero = e.target.checked; draw(); };
     $('#bdk', box).onchange = e => { hk = e.target.checked; draw(); if (hk && !gd) loadGrade(); };
     $$('[data-col]', box).forEach(i => i.onchange = () => { i.checked ? sel.add(i.dataset.col) : sel.delete(i.dataset.col); draw(); });
-    $$('[data-grp]', box).forEach(i => i.onchange = () => { list.filter(x => x.g === i.dataset.grp).forEach(x => i.checked ? sel.add(x.id) : sel.delete(x.id)); draw(); });
+    $$('[data-grp]', box).forEach(i => { i.onclick = e => e.stopPropagation(); i.onchange = () => { const [g, k] = i.dataset.grp.split(':'); list.filter(x => x.g === g && (!k || x.k === k)).forEach(x => i.checked ? sel.add(x.id) : sel.delete(x.id)); draw(); }; });
+    $$('[data-bdk]', box).forEach(b => b.onclick = () => { const k = b.dataset.bdk; openK.has(k) ? openK.delete(k) : openK.add(k); draw(); });
     $('#bdx', box).onclick = () => {
       const { chosen, rows } = build();
       if (!chosen.length) { toast('Hãy tích chọn ít nhất 1 cột điểm'); return; }
