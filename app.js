@@ -2170,20 +2170,42 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     tr.firstElementChild.innerHTML = `<form class="row hsform" style="gap:8px;flex-wrap:wrap;align-items:flex-end">
       <div class="grow"><label>Họ và tên</label><input name="n" value="${esc(s.HoTen)}" maxlength="60"></div>
       <div><label>Tên đăng nhập</label><input name="u" value="${esc(s.TenDN)}" maxlength="30" autocapitalize="none"></div>
-      <div><label>Lớp</label><select name="l">${lopOpts(code)}</select></div>
       <div class="hsschool">${schoolField('hsc_' + s.MaHS, s.Truong || c.Truong)}</div>
+      <div><label>Lớp</label><select name="l"></select></div>
+      <div class="hsnew" hidden><label>Tên lớp</label><input name="nl" maxlength="15" placeholder="vd: 10/1" style="width:90px"> <select name="nk" aria-label="Khối">${['10', '11', '12'].map(k => `<option ${k === String(c.Khoi) ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
       <button class="btn sm">Lưu</button><button type="button" class="btn ghost sm" data-c>Huỷ</button><div class="msg" style="flex-basis:100%"></div></form>`;
     const f = tr.querySelector('form');
     bindSchool('hsc_' + s.MaHS);
+    // Cập nhật 21/11/2026: chọn trường → danh sách lớp của trường đó; lớp chưa có thì gõ tên lớp (tạo trong đúng trường)
+    const fillLop = () => {
+      const sk = skNorm(schoolVal('hsc_' + s.MaHS)), cur = f.l.value || code;
+      const l = (cls || []).filter(x => sk && skNorm(x.Truong) === sk && (!isSelfCls(x) || +x.siSo > 0 || x.MaLop === code))
+        .sort((a, b) => String(a.Khoi).localeCompare(String(b.Khoi)) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }));
+      f.l.innerHTML = l.map(x => `<option value="${esc(x.MaLop)}">${esc(x.TenLop)} (khối ${esc(x.Khoi)})</option>`).join('') + '<option value="__new">➕ Lớp khác – gõ tên lớp</option>';
+      f.l.value = l.some(x => x.MaLop === cur) ? cur : l.length ? (l.find(x => lopNorm(x.TenLop) === lopNorm(c.TenLop)) || l[0]).MaLop : '__new';
+      if (f.l.value === '__new' && !f.nl.value) f.nl.value = c.TenLop;
+      f.querySelector('.hsnew').hidden = f.l.value !== '__new';
+    };
+    const lopNorm = v => String(v || '').replace(/\s+/g, '').replace(/[.\-]/g, '/').toUpperCase();
+    $('#hsc_' + s.MaHS).addEventListener('change', fillLop); $('#hsc_' + s.MaHS + '_k').addEventListener('input', fillLop);
+    f.l.onchange = () => { f.querySelector('.hsnew').hidden = f.l.value !== '__new'; if (f.l.value === '__new' && !f.nl.value) f.nl.value = c.TenLop; };
+    fillLop();
     f.querySelector('[data-c]').onclick = () => { tr.hidden = true; };
     f.onsubmit = async e => {
       e.preventDefault();
       await busy(f.querySelector('.btn'), async () => {
         try {
-          const sc = schoolVal('hsc_' + s.MaHS), lopTo = cls.find(x => x.MaLop === f.l.value) || c;
-          if (sc && schKey(sc) !== schKey(lopTo.Truong) && !confirm('Trường "' + sc + '" khác trường của lớp ' + lopTo.TenLop + '.\nHọc sinh sẽ rời lớp này; khi đăng nhập, em tự chọn lại lớp thuộc trường mới. Tiếp tục?')) return;
-          const r = await api('update_student', { maHS: s.MaHS, name: f.n.value, username: f.u.value, toCode: f.l.value, school: sc });
-          toast(r.detached ? 'Đã đổi trường: học sinh sẽ tự chọn lại lớp khi đăng nhập' : r.moved ? 'Đã chuyển học sinh sang lớp mới' : 'Đã lưu'); reload();
+          const sc = schoolVal('hsc_' + s.MaHS), isNew = f.l.value === '__new', lopTo = isNew ? null : cls.find(x => x.MaLop === f.l.value) || c;
+          if (!sc) return errBox(f.querySelector('.msg'), 'Chọn trường của học sinh');
+          if (isNew && !f.nl.value.trim()) return errBox(f.querySelector('.msg'), 'Gõ tên lớp, vd: 10/1');
+          const toName = isNew ? f.nl.value.trim() : lopTo.TenLop;
+          if ((isNew || lopTo.MaLop !== code) && !confirm(`Chuyển ${s.HoTen} sang lớp ${toName} – ${sc}?\nKết quả làm bài của em chuyển theo.`)) return;
+          const req = { maHS: s.MaHS, name: f.n.value, username: f.u.value, school: sc };
+          if (isNew) Object.assign(req, { newClass: f.nl.value.trim(), khoi: f.nk.value, toCode: code }); else req.toCode = lopTo.MaLop;
+          const r = await api('update_student', req);
+          if (!r.cn2111 && (isNew || skNorm(sc) !== skNorm(c.Truong))) toast('Máy chủ chưa cài tệp CapNhat_21_11.gs – chưa đổi được trường/lớp mới cho học sinh.', 6000);
+          else toast(r.moved ? `Đã chuyển sang lớp ${r.toLop || toName}${r.toTruong ? ' – ' + r.toTruong : ''}` : 'Đã lưu');
+          window._gvCls = null; reload();
         } catch (err) { errBox(f.querySelector('.msg'), err); }
       });
     };
