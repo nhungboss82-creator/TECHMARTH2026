@@ -888,3 +888,6 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,1fr)}
 @media (max-width:640px){.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(2,1fr)}}
 .gh-app .gh-tx b{display:block}
+/* AI chấm bài vẽ tự luyện: 2 cột – bài làm có khoanh lỗi | chỗ sai cần vẽ lại */
+.rv.rv-tl{grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr)}
+@media (max-width:1000px){.rv.rv-tl{grid-template-columns:1fr}.rv.rv-tl .rv-nx{order:-1;grid-column:auto}}

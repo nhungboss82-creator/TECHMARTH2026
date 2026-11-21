@@ -3010,6 +3010,13 @@ const boxOf = v => Array.isArray(v) && v.length === 4 && v.every(n => isFinite(+
 function nxHtml(t, s, marks, gv) {
   const ai = s.AI, max = t.DiemToiDa, L = a => (a || []).filter(Boolean);
   let h = '';
+  /* HS tự luyện (21/11/2026): không chấm điểm – chỉ chỉ ra chỗ sai và cách vẽ lại */
+  if (s.TrangThai === 'tuluyen') {
+    if (!ai || ai.doc_duoc === false) return `<div class="rv-verdict bad">📷 Ảnh chưa rõ – em chụp lại</div>${L(ai && ai.goi_y_sua).map(x => `<p class="rv-p">• ${esc(x)}</p>`).join('')}`;
+    const errs = L(ai.loi);
+    if (!errs.length) return '<div class="rv-verdict ok">✔ Bài vẽ đúng – không có chỗ nào cần vẽ lại</div>';
+    return `<div class="rv-verdict bad">✘ Có ${errs.length} chỗ sai – em vẽ lại</div><ol class="rv-errs">${errs.map((x, i) => `<li><span class="rv-n">${i + 1}</span><div>${esc(x.mo_ta || x)}${x.cach_sua ? `<div class="rv-fix">➜ ${esc(x.cach_sua)}</div>` : ''}</div></li>`).join('')}</ol>`;
+  }
   if (s.TrangThai === 'da_cham') h += `<div class="rv-score ok">Điểm: <b>${fmt(s.GVDiem)}</b>/${max}</div>`;
   else if (s.AIDiem != null) h += `<div class="rv-score">AI đề xuất: <b>${fmt(s.AIDiem)}</b>/${max}</div>`;
   if (!ai) h += `<p class="rv-p">${esc(s.AINhanXet || 'Chưa có nhận xét AI. Thầy/cô sẽ chấm trực tiếp.')}</p>`;
@@ -3036,14 +3043,14 @@ async function mountReview(el, t, s, opts = {}) {
   const marks = opts.marks || (s.GVDanhDau || []).map(m => Object.assign({}, m));
   const errs = s.AI && s.AI.loi ? s.AI.loi.filter(Boolean) : [];
   const draw = (deSrc, baiSrc) => {
-    el.innerHTML = `<div class="rv">
-      <section class="rv-col rv-de"><div class="rv-h">Đề bài</div>${deSrc ? `<img src="${deSrc}" alt="Ảnh đề bài">` : t.CoAnhDe ? '<div class="hint">Đang tải ảnh đề…</div>' : ''}<div class="rv-txt">${esc(t.DeBai)}</div></section>
+    el.innerHTML = `<div class="rv${s.TrangThai === 'tuluyen' ? ' rv-tl' : ''}">
+      ${s.TrangThai === 'tuluyen' ? '' : `<section class="rv-col rv-de"><div class="rv-h">Đề bài</div>${deSrc ? `<img src="${deSrc}" alt="Ảnh đề bài">` : t.CoAnhDe ? '<div class="hint">Đang tải ảnh đề…</div>' : ''}<div class="rv-txt">${esc(t.DeBai)}</div></section>`}
       <section class="rv-col rv-bai"><div class="rv-h">Bài làm${s.HoTen ? ' · ' + esc(s.HoTen) : ''}</div>
         <div class="rv-stage${opts.gv ? ' marking' : ''}">${baiSrc ? `<img src="${baiSrc}" alt="Bài làm của học sinh">` : '<div class="hint" style="padding:30px">Đang tải bài làm…</div>'}
           ${baiSrc ? errs.map((x, i) => { const b = boxOf(x.vi_tri); return b ? `<div class="mk ai" style="top:${b[0] / 10}%;left:${b[1] / 10}%;height:${(b[2] - b[0]) / 10}%;width:${(b[3] - b[1]) / 10}%" title="${esc(x.mo_ta || '')}"><span>${i + 1}</span></div>` : ''; }).join('') : ''}
           ${baiSrc ? marks.map((m, i) => `<div class="mk gv" style="left:${m.x / 10}%;top:${m.y / 10}%" title="${esc(m.n || '')}"><span>${String.fromCharCode(65 + i)}</span></div>`).join('') : ''}
         </div></section>
-      <aside class="rv-col rv-nx"><div class="rv-h">Nhận xét & hướng dẫn sửa</div>${nxHtml(t, s, marks, opts.gv)}</aside></div>`;
+      <aside class="rv-col rv-nx"><div class="rv-h">${s.TrangThai === 'tuluyen' ? 'Chỗ sai cần vẽ lại' : 'Nhận xét & hướng dẫn sửa'}</div>${nxHtml(t, s, marks, opts.gv)}</aside></div>`;
     if (opts.gv) {
       const st = $('.rv-stage', el), im = $('img', st);
       if (im) st.onclick = e => {
@@ -3170,7 +3177,7 @@ route(/^\/tuluyenve$/, async () => {
             <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
             <button class="btn block" id="go" style="margin-top:10px" ${baiImg && !busyNow ? '' : 'disabled'}>${busyNow ? '🤖 AI đang chấm…' : !de ? 'Chọn đề ở bước 1' : '🤖 Chấm bài'}</button>
           </div>` : ''}</section>
-        <section class="acc-sec ${open === 'kq' ? 'open' : ''}">${head('kq', 3, 'Kết quả', busyNow ? '🤖 AI đang chấm…' : result ? (result.doc_duoc === false ? 'Ảnh chưa rõ – chụp lại' : fmt(result.diem) + '/10 điểm') : '—', !!result)}
+        <section class="acc-sec ${open === 'kq' ? 'open' : ''}">${head('kq', 3, 'Kết quả', busyNow ? '🤖 AI đang chấm…' : result ? (result.doc_duoc === false ? 'Ảnh chưa rõ – chụp lại' : (result.loi || []).filter(Boolean).length ? (result.loi || []).filter(Boolean).length + ' chỗ sai cần vẽ lại' : 'Bài vẽ đúng') : '—', !!result)}
           ${open === 'kq' ? `<div class="acc-b">${result ? '<div id="tlrv"></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn ghost grow" id="again">📷 Chụp lại</button><button class="btn ghost grow" id="newde">📄 Đề khác</button></div>' : `<div class="card empty">${busyNow ? '<span class="tl-spin"></span> AI đang chấm, em chờ chút…' : 'Chưa có kết quả.'}</div>`}</div>` : ''}</section>
       </div>`);
     $$('[data-op]').forEach(b => b.onclick = () => { open = open === b.dataset.op ? '' : b.dataset.op; draw(); });
