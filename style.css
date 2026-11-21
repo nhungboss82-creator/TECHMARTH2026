@@ -919,3 +919,6 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .tn-ok{color:var(--ok)}.tn-bad{color:var(--bad)}
 .tn-ren{all:unset;cursor:pointer;opacity:.45;font-size:.85em;padding:0 2px}
 .tn-ren:hover,.tn-ren:focus-visible{opacity:1}
+.ontn{display:flex;gap:12px;align-items:center;cursor:pointer;border:2px solid var(--brand2)}
+.ontn input{width:22px;height:22px;flex:none;margin:0}
+.ontn>span{display:flex;flex-direction:column}
