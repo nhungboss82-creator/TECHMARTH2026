@@ -1790,7 +1790,7 @@ function gvSchool(cls) {
   // mọi trường đã biết (GV đăng ký, HS khai) đều có trong ô chọn, kể cả trường chưa có lớp
   SCHOOLS.forEach(v => { const k = schKey(v); if (k && !m[k]) m[k] = { k, names: { [v]: 1 }, n: 0, s: 0 }; });
   const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, s: x.s, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
-  let k = window._admSchool == null ? mySk : window._admSchool;
+  let k = window._admSchool || '';
   if (k && !ss.some(s => s.k === k)) k = '';
   const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp${s.s ? ' · ' + s.s + ' lớp HS tự khai' : ''})</option>`).join('')}</select></div>`;
   return { list: k ? off.filter(c => schKey(c.Truong) === k) : [], self: k ? self.filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; redraw(); }; } };
@@ -1900,6 +1900,7 @@ route(/^\/gv\/giaovien$/, async () => {
 /* ---- Các lớp ---- */
 route(/^\/gv\/lop$/, async () => {
   if (!needGV()) return;
+  window._admSchool = '';
   let classes = window._gvCls || null, err = '';
   const draw = () => {
     const sc = gvSchool(classes), shown = sc.list;
@@ -1907,15 +1908,15 @@ route(/^\/gv\/lop$/, async () => {
     setView(`<a href="#/gv">← Trang chủ</a><div class="sechead"><h1 style="margin:6px 0">🏫 Các lớp</h1><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>${sc.html}
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
         : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
-        : session.role === 'admin' && !shown.length ? '<div class="card empty">Chọn trường ở trên để xem danh sách lớp.</div>'
-        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('') || (classes && classes.length && shown.length === 0 && session.role !== 'admin' ? '<div class="card empty">Trường của thầy/cô chưa có lớp chính thức.</div>' : '')}
+        : session.role === 'admin' && !sc.school ? ''
+        : ks.map(k => `<h2>Khối ${k}</h2><div class="rows">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<a href="#/gv/lop/${c.MaLop}"><span class="ic green">🏫</span><span class="tx"><b>${esc(c.TenLop || c.MaLop)}</b><span>${c.siSo} học sinh · mã lớp ${esc(c.MaLop)}${session.role === 'admin' && !c.cuaToi ? ' · lớp của GV khác' : ''}</span></span><span class="chev">›</span></a>`).join('')}</div>`).join('') || (classes && classes.length && shown.length === 0 ? '<div class="card empty">Trường này chưa có lớp chính thức (do thầy cô tạo).</div>' : '')}
       ${classes && sc.self && sc.self.length ? `<details class="card selfcls"${window._selfOpen ? ' open' : ''}><summary><b>🧾 Lớp học sinh tự khai (${sc.self.length})</b><span class="hint"> – HS tự gõ tên lớp khi đăng kí. Có thể là lớp của trường khác bị gán nhầm vào ${esc(sc.school || 'trường này')}. Kiểm tra rồi chuyển đúng trường, giữ lại hoặc mở lớp để xoá.</span></summary>
         <div class="list" style="margin-top:8px">${sc.self.sort((a, b) => String(a.Khoi).localeCompare(String(b.Khoi)) || String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<div class="item selfrow"><div class="grow"><b>${esc(c.TenLop || c.MaLop)}</b> <span class="pill">Khối ${esc(c.Khoi)}</span><div class="meta">${c.siSo || 0} học sinh · mã ${esc(c.MaLop)}</div></div>
           <select data-mv="${esc(c.MaLop)}" aria-label="Chuyển lớp ${esc(c.TenLop)} sang trường">${SCHOOLS.map(v => `<option${skNorm(v) === skNorm(c.Truong) ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>
           <button type="button" class="btn sm" data-mvgo="${esc(c.MaLop)}">Lưu trường</button><a class="btn ghost sm" href="#/gv/lop/${c.MaLop}">Mở lớp</a></div>`).join('')}</div>
         <p class="hint" style="margin:8px 0 0">“Lưu trường” = xác nhận lớp này thuộc trường đã chọn; lớp sẽ chuyển lên danh sách chính thức của trường đó (học sinh trong lớp đổi trường theo).</p>
         <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button type="button" class="btn ghost sm" id="selfall">✔ Xác nhận cả ${sc.self.length} lớp trên là lớp của ${esc(sc.school || 'trường này')}</button></div></details>` : ''}
-      ${classes && classes.length ? `<div class="card"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><div class="grow"><b>🔍 Học sinh bị xếp nhầm trường</b><div class="hint">Tìm HS khai trường khác với trường của lớp (vd: em trường Lương Thế Vinh nằm trong lớp 10/1 của Phong Điền) và chuyển các em về lớp cùng tên ở đúng trường.</div></div><button type="button" class="btn sm" id="fixchk">Rà soát</button></div><div id="fixbox"></div></div>` : ''}
+      ${classes && classes.length && (session.role !== 'admin' || sc.school) ? `<div class="card"><div class="row" style="align-items:center;gap:8px;flex-wrap:wrap"><div class="grow"><b>🔍 Học sinh bị xếp nhầm trường</b><div class="hint">Tìm HS khai trường khác với trường của lớp (vd: em trường Lương Thế Vinh nằm trong lớp 10/1 của Phong Điền) và chuyển các em về lớp cùng tên ở đúng trường.</div></div><button type="button" class="btn sm" id="fixchk">Rà soát</button></div><div id="fixbox"></div></div>` : ''}
       <div class="card" style="margin-top:14px"><div class="row"><div class="grow"><b>Mã chung cho học sinh đăng ký</b><div class="hint">HS bấm “Đăng ký tài khoản mới”, nhập mã này, tự chọn lớp và đặt mật khẩu.</div></div><b id="mcv" style="font-size:1.3em;letter-spacing:2px">${esc(window._maChung || '…')}</b><button class="btn ghost sm" id="mccp">Sao chép</button></div></div>`);
     $('#mccp').onclick = async () => { const m = window._maChung || ''; try { await navigator.clipboard.writeText(m); toast('Đã sao chép mã chung: ' + m); } catch (e) { toast('Mã chung: ' + m, 5000); } };
     const det = $('.selfcls'); if (det) det.ontoggle = () => { window._selfOpen = det.open; };
