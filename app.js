@@ -1189,6 +1189,9 @@ route(/^\/gv\/thitn$/, async params => {
       const lt = res.lt || [], m = {};
       const add = r => m[r.maHS] = m[r.maHS] || { id: r.maHS, ten: r.hoTen, lop: r.lop, de: {}, lt: 0, ontn: false };
       (res.ontn || []).forEach(r => { add(r).ontn = true; });
+      // danh sách GV tự thêm, lưu trên máy (dùng khi máy chủ chưa cài tệp cập nhật)
+      const LKEY = 'ontn_gv_' + skNorm(schoolNow || session.user.Truong || '');
+      store.get(LKEY, []).forEach(r => { add(r).ontn = true; });
       rows.forEach(r => { const x = add(r); (x.de[r.key] = x.de[r.key] || []).push(r); });
       lt.forEach(r => { add(r).lt++; });
       const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
@@ -1247,7 +1250,20 @@ route(/^\/gv\/thitn$/, async params => {
       drawMx();
       /* + Thêm học sinh: chọn HS lớp 12 của trường đưa vào danh sách ôn thi (bỏ tích để rút ra) */
       $('#tnadd').onclick = async () => {
-        let cand; try { cand = await api('ontn_candidates', isAdm && truong != null ? { school: truong } : {}); } catch (e) { toast(/không hợp lệ/i.test(e.message || '') ? 'Máy chủ chưa cài tệp CapNhat_21_11.gs bản mới nhất.' : e.message, 6000); return; }
+        let cand, local = false;
+        try { cand = await api('ontn_candidates', isAdm && truong != null ? { school: truong } : {}); }
+        catch (e) {
+          if (!/không hợp lệ/i.test(e.message || '')) { toast(e.message, 6000); return; }
+          // máy chủ chưa có chức năng mới → lấy HS lớp 12 của trường từ danh sách lớp, lưu danh sách trên máy này
+          local = true; toast('Đang tải học sinh lớp 12…');
+          try {
+            const sk = skNorm(schoolNow || session.user.Truong || '');
+            const cls = (await gvClasses()).filter(c => String(c.Khoi) === '12' && (!sk || skNorm(c.Truong) === sk));
+            const all = await Promise.all(cls.map(c => api('class_students', { code: c.MaLop }).then(l => l.map(h => ({ maHS: h.MaHS, hoTen: h.HoTen, lop: c.TenLop }))).catch(() => [])));
+            const mine = new Set(store.get(LKEY, []).map(r => r.maHS));
+            const seen = new Set(); cand = all.flat().filter(c => !seen.has(c.maHS) && seen.add(c.maHS)).map(c => Object.assign(c, { ontn: mine.has(c.maHS) || (m[c.maHS] && m[c.maHS].ontn) }));
+          } catch (e2) { toast(e2.message, 6000); return; }
+        }
         cand.sort((a, b) => String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }) || viNameCmp(a.hoTen, b.hoTen));
         const pick = new Set(cand.filter(c => c.ontn).map(c => c.maHS)), orig = new Set(pick);
         let q = '', lopF = '';
@@ -1266,7 +1282,11 @@ route(/^\/gv\/thitn$/, async params => {
           ov.querySelector('#tnsave').onclick = async e => {
             const add = [...pick].filter(x => !orig.has(x)), del = [...orig].filter(x => !pick.has(x));
             await busy(e.target, async () => {
-              try { if (add.length) await api('set_ontn_gv', { ids: add, on: true }); if (del.length) await api('set_ontn_gv', { ids: del, on: false }); toast(`Đã cập nhật: thêm ${add.length}, bớt ${del.length} học sinh`); ov.remove(); window.dispatchEvent(new HashChangeEvent('hashchange')); }
+              try {
+                if (local) store.set(LKEY, cand.filter(c => pick.has(c.maHS)).map(c => ({ maHS: c.maHS, hoTen: c.hoTen, lop: c.lop })));
+                else { if (add.length) await api('set_ontn_gv', { ids: add, on: true }); if (del.length) await api('set_ontn_gv', { ids: del, on: false }); }
+                toast(`Đã cập nhật: thêm ${add.length}, bớt ${del.length} học sinh${local ? ' (lưu trên máy này)' : ''}`); ov.remove(); window.dispatchEvent(new HashChangeEvent('hashchange'));
+              }
               catch (err) { toast(err.message, 6000); }
             });
           };
