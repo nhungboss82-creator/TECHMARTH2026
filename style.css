@@ -939,3 +939,5 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .stq .tfi.wrong{background:var(--bad-soft)}
 .stq .tfi.right .tx::after{content:" ✔";color:var(--ok);font-weight:800}
 .stq .tfi.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
+.tnstat{margin-top:12px}.tnstat>summary{cursor:pointer;margin-bottom:6px}
+.tnmx td a{text-decoration:none}
