@@ -1195,8 +1195,13 @@ route(/^\/gv\/thitn$/, async params => {
       store.get(LKEY, []).forEach(r => { add(r).ontn = true; });
       rows.forEach(r => { const x = add(r); (x.de[r.key] = x.de[r.key] || []).push(r); });
       lt.forEach(r => { add(r).lt++; });
+      // HS đã bị GV xoá khỏi danh sách ôn thi: ẩn khỏi bảng (dù đã làm đề), trừ khi được thêm lại
+      const HKEY = 'ontn_hide_' + skNorm(schoolNow || session.user.Truong || '');
+      const hidden = new Set([...(res.ontnOut || []), ...store.get(HKEY, [])]);
+      Object.keys(m).forEach(id => { if (hidden.has(id) && !((res.ontn || []).some(r => r.maHS === id))) delete m[id]; });
       const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
       let pickHs = '', openQ = '', pg = 0, statOpen = false;
+      const selHs = new Set();
       const nmOf = id => (m[id] || {}).ten || '';
       const hsLink = (d, id) => '#/gv/thitn?' + ['de=' + encodeURIComponent(d), isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : '', 'hs=' + encodeURIComponent(id)].filter(Boolean).join('&');
       const posOf = q => { const mm = /_(C|DS)(\d+)$/.exec(q.id) || []; return mm[1] === 'DS' ? 'Đ/S ' + +mm[2] : 'Câu ' + +mm[2]; };
@@ -1223,10 +1228,13 @@ route(/^\/gv\/thitn$/, async params => {
           const pages = Math.max(1, Math.ceil(exams.length / per)); if (pg >= pages) pg = pages - 1;
           const vis = exams.slice(pg * per, pg * per + per);
           const pager = pages > 1 ? `<div class="row tnpg" style="gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><button type="button" class="btn ghost sm" data-pg="${pg - 1}" ${pg ? '' : 'disabled'}>◀ Trang trước</button>${Array.from({ length: pages }, (_, i) => `<button type="button" class="btn sm ${i === pg ? '' : 'ghost'}" data-pg="${i}" title="Đề ${nm(exams[i * per])}–${nm(exams[Math.min(exams.length, i * per + per) - 1])}">${i + 1}</button>`).join('')}<button type="button" class="btn ghost sm" data-pg="${pg + 1}" ${pg < pages - 1 ? '' : 'disabled'}>Trang sau ▶</button><span class="hint">Trang ${pg + 1}/${pages} · Đề ${esc(nm(vis[0]))}–${esc(nm(vis[vis.length - 1]))}</span></div>` : '';
-          h = `${pager}<div class="tablewrap tnmx"><table><thead>
-              <tr><th class="n" rowspan="2">STT</th><th class="tnmx-name" rowspan="2">Tên học sinh</th><th rowspan="2">Lớp</th>${vis.map(d => `<th class="n tnmx-de" colspan="2">Đề ${esc(nm(d))}</th>`).join('')}</tr>
+          const bar = `<div class="row tnbar" style="gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="hint">Tích ô trước STT để chọn học sinh · đã chọn <b>${selHs.size}</b></span>
+            <button type="button" class="btn sm" data-bulk="out" ${selHs.size ? '' : 'disabled'}>➖ Xoá khỏi danh sách ôn thi TN</button>
+            <button type="button" class="btn ghost sm tn-danger" data-bulk="del" ${selHs.size ? '' : 'disabled'}>🗑 Xoá hẳn tài khoản</button></div>`;
+          h = `${bar}${pager}<div class="tablewrap tnmx"><table><thead>
+              <tr><th class="n" rowspan="2"><input type="checkbox" id="selall" aria-label="Chọn tất cả học sinh" ${L.length && L.every(x => selHs.has(x.id)) ? 'checked' : ''}></th><th class="n" rowspan="2">STT</th><th class="tnmx-name" rowspan="2">Tên học sinh</th><th rowspan="2">Lớp</th>${vis.map(d => `<th class="n tnmx-de" colspan="2">Đề ${esc(nm(d))}</th>`).join('')}</tr>
               <tr>${vis.map(() => '<th class="n tnmx-sub tnmx-l">Số lượt làm</th><th class="n tnmx-sub">Điểm</th>').join('')}</tr></thead><tbody>
-              ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b>${x.ontn ? ' <span class="hint" title="Đã đăng kí ôn thi TN">✓</span>' : ''} <button type="button" class="tn-del" data-del="${esc(x.id)}" title="Bỏ khỏi danh sách / xoá tài khoản" aria-label="Xoá ${esc(x.ten)}">🗑 Xoá</button></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">0</span></td><td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
+              ${L.map((x, i) => `<tr class="${selHs.has(x.id) ? 'tn-sel' : ''}"><td class="n"><input type="checkbox" data-sel="${esc(x.id)}" aria-label="Chọn ${esc(x.ten)}" ${selHs.has(x.id) ? 'checked' : ''}></td><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b>${x.ontn ? ' <span class="hint" title="Đã đăng kí ôn thi TN">✓</span>' : ''}</td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">0</span></td><td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
                 return `<td class="n tnmx-l">${rs.length}</td><td class="n"><a class="${best >= 8 ? 'tn-ok' : best < 5 ? 'tn-bad' : ''}" href="${hsLink(d, x.id)}" title="Điểm cao nhất · bấm để xem bài làm"><b>${fmt(best)}</b></a></td>`; }).join('')}</tr>`).join('')}
             </tbody></table></div><p class="hint" style="margin:6px 0 0">Điểm = điểm cao nhất của em ở đề đó · bấm vào điểm để xem bài làm.</p>
             <details class="tnstat" ${statOpen ? 'open' : ''}><summary><b>📉 Thống kê câu sai (${qs.length} câu)</b> <span class="hint">– bấm Xem để biết em nào sai câu đó</span></summary>`
@@ -1240,6 +1248,29 @@ route(/^\/gv\/thitn$/, async params => {
         $('#hssel').onchange = e => { pickHs = e.target.value; openQ = ''; drawMx(); };
         $$('[data-oq]', $('#tnmxbox')).forEach(b => b.onclick = () => { openQ = openQ === b.dataset.oq ? '' : b.dataset.oq; statOpen = true; drawMx(); });
         $$('[data-pg]', $('#tnmxbox')).forEach(b => b.onclick = () => { pg = +b.dataset.pg; drawMx(); });
+        $$('[data-sel]', $('#tnmxbox')).forEach(c => c.onchange = () => { c.checked ? selHs.add(c.dataset.sel) : selHs.delete(c.dataset.sel); drawMx(); });
+        const sa = $('#selall'); if (sa) sa.onchange = () => { L.forEach(x => sa.checked ? selHs.add(x.id) : selHs.delete(x.id)); drawMx(); };
+        $$('[data-bulk]', $('#tnmxbox')).forEach(b => b.onclick = async () => {
+          const ids = [...selHs], names = ids.map(id => (m[id] || {}).ten).filter(Boolean);
+          if (!ids.length) return;
+          if (b.dataset.bulk === 'out') {
+            if (!confirm(`Xoá ${ids.length} học sinh khỏi danh sách ôn thi tốt nghiệp?\n${names.join(', ')}\n(Tài khoản và kết quả của các em vẫn giữ nguyên.)`)) return;
+            await busy(b, async () => {
+              store.set(LKEY, store.get(LKEY, []).filter(r => !selHs.has(r.maHS)));
+              store.set(HKEY, [...new Set([...store.get(HKEY, []), ...ids])]);
+              try { await api('set_ontn_gv', { ids, on: false }); } catch (e) { /* máy chủ chưa cập nhật: bỏ trên máy này */ }
+              toast(`Đã xoá ${ids.length} học sinh khỏi danh sách ôn thi`);
+              selHs.clear(); window.dispatchEvent(new HashChangeEvent('hashchange'));
+            });
+          } else {
+            if (!confirm(`XOÁ HẲN tài khoản của ${ids.length} học sinh?\n${names.join(', ')}\nCác em sẽ không đăng nhập được nữa. Không hoàn tác được.`)) return;
+            await busy(b, async () => {
+              let ok = 0; for (const id of ids) { try { await api('delete_student', { maHS: id }); ok++; } catch (e) { toast((m[id] || {}).ten + ': ' + e.message, 5000); } }
+              store.set(LKEY, store.get(LKEY, []).filter(r => !selHs.has(r.maHS)));
+              toast('Đã xoá ' + ok + ' tài khoản học sinh'); selHs.clear(); window._gvCls = null; window.dispatchEvent(new HashChangeEvent('hashchange'));
+            });
+          }
+        });
         /* 🗑 cạnh tên: bỏ khỏi danh sách ôn thi, hoặc xoá hẳn tài khoản học sinh */
         $$('[data-del]', $('#tnmxbox')).forEach(b => b.onclick = () => {
           const x = m[b.dataset.del]; if (!x) return;
@@ -1309,6 +1340,7 @@ route(/^\/gv\/thitn$/, async params => {
             const add = [...pick].filter(x => !orig.has(x)), del = [...orig].filter(x => !pick.has(x));
             await busy(e.target, async () => {
               try {
+                store.set(HKEY, store.get(HKEY, []).filter(id => !pick.has(id)));
                 if (local) store.set(LKEY, cand.filter(c => pick.has(c.maHS)).map(c => ({ maHS: c.maHS, hoTen: c.hoTen, lop: c.lop })));
                 else { if (add.length) await api('set_ontn_gv', { ids: add, on: true }); if (del.length) await api('set_ontn_gv', { ids: del, on: false }); }
                 toast(`Đã cập nhật: thêm ${add.length}, bớt ${del.length} học sinh${local ? ' (lưu trên máy này)' : ''}`); ov.remove(); window.dispatchEvent(new HashChangeEvent('hashchange'));

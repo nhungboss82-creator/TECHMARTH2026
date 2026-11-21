@@ -944,3 +944,6 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .tn-del{all:unset;cursor:pointer;font-size:.78em;font-weight:600;color:var(--bad);border:1px solid var(--bad);border-radius:6px;padding:1px 6px;margin-left:6px;background:var(--bad-soft)}
 .tn-del:hover,.tn-del:focus-visible{background:var(--bad);color:#fff}
 tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
+.tnmx tr.tn-sel td{background:var(--info-soft)}
+.tnmx input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer}
+.tn-danger{color:var(--bad)!important;border-color:var(--bad)!important}

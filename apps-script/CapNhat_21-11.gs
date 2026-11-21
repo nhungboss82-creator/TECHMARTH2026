@@ -155,7 +155,7 @@ function cn2111Patch_() {
     const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
     if (head.indexOf('OnTN') < 0) sh.getRange(1, head.length + 1).setValue('OnTN');
     const hs = rows_('HocSinh'); let n = 0;
-    ids.forEach(id => { const h = hs.find(r => r.MaHS === id); if (!h) return; ownClass_(t, h.MaLop); update_('HocSinh', h._r, { OnTN: req.on === false ? '' : '1' }); n++; });
+    ids.forEach(id => { const h = hs.find(r => r.MaHS === id); if (!h) return; ownClass_(t, h.MaLop); update_('HocSinh', h._r, { OnTN: req.on === false ? '0' : '1' }); n++; });
     return { done: n };
   });
 
@@ -171,7 +171,9 @@ function cn2111Patch_() {
     if (req.code && codes[req.code]) { const one = {}; one[req.code] = codes[req.code]; Object.keys(codes).forEach(k => delete codes[k]); Object.assign(codes, one); }
     const out = { classes: codes, rows: [], lt: [], schools: Object.keys(schools).map(k => schools[k]).sort(), school: sk ? (schools[sk] || '') : '' };
     // HS đã tích "Đăng kí ôn thi TN" (cột OnTN) thuộc các lớp trên
-    out.ontn = rows_('HocSinh').filter(h => codes[h.MaLop] && String(h.OnTN || '') === '1').map(h => ({ maHS: h.MaHS, hoTen: h.HoTen, lop: codes[h.MaLop] || lopName_(h.TenLop) }));
+    const hsAll = rows_('HocSinh').filter(h => codes[h.MaLop]);
+    out.ontn = hsAll.filter(h => String(h.OnTN || '') === '1').map(h => ({ maHS: h.MaHS, hoTen: h.HoTen, lop: codes[h.MaLop] || lopName_(h.TenLop) }));
+    out.ontnOut = hsAll.filter(h => String(h.OnTN || '') === '0').map(h => h.MaHS); // GV đã xoá khỏi danh sách ôn thi
     const key = req.key ? String(req.key) : '';
     const sh = sheet_('KetQua'), n = sh.getLastRow() - 1;
     if (n < 1) return out;
