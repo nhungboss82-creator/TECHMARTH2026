@@ -917,3 +917,5 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .tnmx .tnmx-sub{font-weight:500;font-size:.85em}
 .tnmx thead tr:nth-child(2) th:nth-child(3n+1),.tnmx td.tnmx-l{border-left:2px solid var(--line)}
 .tn-ok{color:var(--ok)}.tn-bad{color:var(--bad)}
+.tn-ren{all:unset;cursor:pointer;opacity:.45;font-size:.85em;padding:0 2px}
+.tn-ren:hover,.tn-ren:focus-visible{opacity:1}

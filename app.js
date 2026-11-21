@@ -1161,7 +1161,7 @@ route(/^\/gv\/thitn$/, async params => {
     const allQ = qStats(rows).filter(s => s.lam >= 3).sort((a, b) => b.sai / b.lam - a.sai / a.lam).slice(0, 8);
     setView(`<a href="#/gv">← Trang giáo viên</a>
       <div class="row" style="align-items:center"><h1 class="grow">🎓 Quản lý đề luyện thi TN THPT</h1><a class="btn ghost sm" href="#/thitn">👁 Xem bộ đề như HS</a></div>
-      <div class="row" style="margin:6px 0 10px;gap:8px;flex-wrap:wrap">${lopSel}<span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
+      <div class="row" style="margin:6px 0 10px;gap:8px;flex-wrap:wrap">${lopSel}<span id="hsselwrap"></span><span class="grow"></span><button class="btn sm" id="ex">⬇ Xuất Excel</button></div>
       <h2>👩‍🎓 Học sinh ôn thi tốt nghiệp</h2><div class="card" id="tnmxbox"></div>
       <h2>📁 Kết quả từng đề</h2>
       <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
@@ -1186,17 +1186,23 @@ route(/^\/gv\/thitn$/, async params => {
       let pickHs = '';
       const drawMx = () => {
         const vis = des.filter(d => shown.has(d)), hid = des.filter(d => !shown.has(d)), LL = pickHs ? L.filter(x => x.id === pickHs) : L;
+        $('#hsselwrap').innerHTML = L.length ? `<select id="hssel" style="max-width:300px" aria-label="Chọn học sinh"><option value="">👤 Tất cả học sinh đã ôn (${L.length})</option>${L.map(x => `<option value="${esc(x.id)}" ${x.id === pickHs ? 'selected' : ''}>${esc(x.ten)} – ${esc(x.lop)}</option>`).join('')}</select>` : '';
         $('#tnmxbox').innerHTML = !L.length ? '<div class="empty">Chưa có học sinh nào luyện đề.</div>' : `
-          <div class="row" style="gap:8px;align-items:center;margin-bottom:8px"><label for="hssel" style="margin:0"><b>👤 Chọn học sinh</b></label><select id="hssel" style="max-width:320px"><option value="">Tất cả (${L.length} học sinh đã ôn)</option>${L.map(x => `<option value="${esc(x.id)}" ${x.id === pickHs ? 'selected' : ''}>${esc(x.ten)} – ${esc(x.lop)}</option>`).join('')}</select></div>
           <div class="row tnmx-bar" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px"><span class="hint">Bấm tên đề để hiện / ẩn:</span>
             ${des.map(d => `<button type="button" class="btn sm ${shown.has(d) ? '' : 'ghost'}" data-tg="${esc(d)}">Đề ${esc(nm(d))}${shown.has(d) ? ' ✕' : ''}</button>`).join('')}
             ${hid.length ? '<button type="button" class="btn ghost sm" data-tg="__all">Hiện tất cả</button>' : des.length > 2 ? '<button type="button" class="btn ghost sm" data-tg="__none">Ẩn bớt</button>' : ''}</div>
           <div class="tablewrap tnmx"><table><thead>
             <tr><th class="n" rowspan="2">STT</th><th class="tnmx-name" rowspan="2">Tên học sinh</th><th rowspan="2">Lớp</th>${vis.map(d => `<th class="n tnmx-de" colspan="3">Đề ${esc(nm(d))}</th>`).join('')}<th class="n" rowspan="2">Luyện<br>theo bài</th></tr>
             <tr>${vis.map(() => '<th class="n tnmx-sub">Số lượt làm</th><th class="n tnmx-sub">Điểm</th><th class="n tnmx-sub">Xem</th>').join('')}</tr></thead><tbody>
-            ${LL.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">–</span></td><td class="n"><span class="hint">–</span></td><td class="n"></td>'; const best = Math.max(...rs.map(r => r.diem));
+            ${LL.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b> <button type="button" class="tn-ren" data-ren="${esc(x.id)}" title="Sửa tên học sinh" aria-label="Sửa tên ${esc(x.ten)}">✏️</button></td><td>${esc(x.lop)}</td>${vis.map(d => { const rs = x.de['DE:' + d] || []; if (!rs.length) return '<td class="n tnmx-l"><span class="hint">–</span></td><td class="n"><span class="hint">–</span></td><td class="n"></td>'; const best = Math.max(...rs.map(r => r.diem));
               return `<td class="n tnmx-l">${rs.length}</td><td class="n"><b class="${best >= 8 ? 'tn-ok' : best < 5 ? 'tn-bad' : ''}" title="Các lần: ${rs.slice().sort((a, b) => new Date(a.t) - new Date(b.t)).map(r => fmt(r.diem)).join(' · ')}">${fmt(best)}</b></td><td class="n"><button type="button" class="btn ghost sm" data-hsde="${esc(d)}" data-hs="${esc(x.id)}" title="Xem câu chọn sai">Xem</button></td>`; }).join('')}<td class="n">${x.lt || '–'}</td></tr>`).join('')}
           </tbody></table></div>`;
+        $$('[data-ren]', $('#tnmxbox')).forEach(b => b.onclick = async () => {
+          const x = L.find(y => y.id === b.dataset.ren); if (!x) return;
+          const v = prompt('Sửa họ và tên học sinh (lớp ' + x.lop + '):', x.ten); if (v == null || !v.trim() || v.trim() === x.ten) return;
+          try { await api('update_student', { maHS: x.id, name: v.trim() }); x.ten = v.trim().replace(/\s+/g, ' '); rows.forEach(r => { if (r.maHS === x.id) r.hoTen = x.ten; }); L.sort((a, c) => viNameCmp(a.ten, c.ten)); toast('Đã sửa tên: ' + x.ten); drawMx(); }
+          catch (e) { toast(e.message, 5000); }
+        });
         const hsel = $('#hssel'); if (hsel) hsel.onchange = () => { pickHs = hsel.value; if (pickHs) { const x = L.find(y => y.id === pickHs); des.forEach(d => { if (x.de['DE:' + d]) shown.add(d); }); } drawMx(); };
         $$('[data-tg]', $('#tnmxbox')).forEach(b => b.onclick = () => { const d = b.dataset.tg; if (d === '__all') des.forEach(x => shown.add(x)); else if (d === '__none') { shown.clear(); des.slice(0, 2).forEach(x => shown.add(x)); } else shown.has(d) ? shown.delete(d) : shown.add(d); store.set('tnmx_show', [...shown]); drawMx(); });
         $$('[data-hsde]', $('#tnmxbox')).forEach(b => b.onclick = () => { location.hash = '#/gv/thitn?' + ['de=' + encodeURIComponent(b.dataset.hsde), code ? 'lop=' + encodeURIComponent(code) : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : '', 'hs=' + encodeURIComponent(b.dataset.hs)].filter(Boolean).join('&'); });
