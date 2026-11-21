@@ -887,3 +887,4 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 }
 .gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,1fr)}
 @media (max-width:640px){.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(2,1fr)}}
+.gh-app .gh-tx b{display:block}

@@ -1799,7 +1799,7 @@ const gvClasses = async () => { if (!window._gvCls) { window._gvCls = await api(
 
 /* ================= Trang chủ Giáo viên (thiết kế lại 08/11/2026) ================= */
 const KHOI_INFO = { '10': { t: 'Khối 10', d: 'Thiết kế & vẽ kĩ thuật', ic: '📐', c: 'k10' }, '11': { t: 'Khối 11', d: 'Công nghệ cơ khí', ic: '⚙️', c: 'k11' }, '12': { t: 'Khối 12', d: 'Điện – điện tử', ic: '⚡', c: 'k12' } };
-const ghApp = a => `<a class="gh-app ${a.c || 'blue'}" href="${a.href}"><span class="gh-ic">${a.ic}</span><span class="gh-tx"><b>${a.t}</b>${a.d ? `<span>${a.d}</span>` : ''}</span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}</a>`;
+const ghApp = a => `<a class="gh-app ${a.c || 'blue'}" href="${a.href}"${a.d ? ` title="${esc(String(a.d).replace(/<[^>]+>/g, ''))}"` : ''}><span class="gh-ic">${a.ic}</span><span class="gh-tx"><b>${a.t}</b></span>${a.who ? `<span class="who ${a.who === 'GV' ? 'gv' : a.who === 'HS' ? 'hs' : ''}">${a.who}</span>` : ''}</a>`;
 route(/^\/gv$/, async params => {
   if (!needGV()) return;
   const u = session.user;
