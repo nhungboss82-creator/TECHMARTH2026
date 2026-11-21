@@ -902,3 +902,13 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .bdkh{display:flex;align-items:center;gap:8px}
 .bdkt{all:unset;flex:1;display:flex;align-items:center;gap:8px;cursor:pointer}
 .bdkt b{flex:1}
+/* bảng HS × đề luyện thi TN */
+.tnmx table{border-collapse:collapse;min-width:100%}
+.tnmx th,.tnmx td{white-space:nowrap}
+.tnmx .tnmx-name{position:sticky;left:0;background:var(--card);z-index:1}
+.tncell{all:unset;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;min-width:54px;padding:4px 6px;border-radius:8px;background:var(--info-soft);line-height:1.15}
+.tncell b{font-size:1.05em}
+.tncell small{font-size:.75em;color:var(--muted)}
+.tncell.ok{background:var(--ok-soft)}
+.tncell.bad{background:var(--bad-soft)}
+.tncell:hover{outline:2px solid var(--brand2)}

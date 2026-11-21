@@ -1164,13 +1164,17 @@ route(/^\/gv\/thitn$/, async params => {
       <div class="kpis"><div class="kpi"><b>${new Set(rows.map(r => r.maHS)).size}</b><span>HS đã luyện</span></div><div class="kpi"><b>${rows.length}</b><span>lượt làm đề</span></div>
         <div class="kpi"><b>${rows.length ? fmt(rows.reduce((a, r) => a + r.diem, 0) / rows.length) : '–'}</b><span>điểm TB mọi lượt</span></div><div class="kpi"><b>${Object.keys(by).length}/${exams.length}</b><span>đề đã có HS làm</span></div></div>
       ${(() => {
+        /* 21/11/2026: bảng HS × đề – hàng: học sinh (A–B), cột: các đề đã có HS làm; mỗi ô: điểm cao nhất + số lượt; bấm ô xem câu chọn sai */
         const lt = res.lt || [], m = {};
-        rows.forEach(r => { const x = m[r.maHS] = m[r.maHS] || { ten: r.hoTen, lop: r.lop, de: new Set(), d: [], lt: 0, t: 0 }; x.de.add(r.key); x.d.push(r.diem); x.t = Math.max(x.t, new Date(r.t).getTime() || 0); });
-        lt.forEach(r => { const x = m[r.maHS] = m[r.maHS] || { ten: r.hoTen, lop: r.lop, de: new Set(), d: [], lt: 0, t: 0 }; x.lt++; x.t = Math.max(x.t, new Date(r.t).getTime() || 0); });
+        const add = r => m[r.maHS] = m[r.maHS] || { id: r.maHS, ten: r.hoTen, lop: r.lop, de: {}, lt: 0 };
+        rows.forEach(r => { const x = add(r); (x.de[r.key] = x.de[r.key] || []).push(r); });
+        lt.forEach(r => { add(r).lt++; });
         const L = Object.values(m).sort((a, b) => viNameCmp(a.ten, b.ten) || String(a.lop).localeCompare(String(b.lop), 'vi', { numeric: true }));
-        return `<h2>👩‍🎓 Học sinh ôn thi tốt nghiệp (${L.length})</h2><div class="card">${L.length ? `<div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ và tên</th><th>Lớp</th><th class="n">Số đề đã làm</th><th class="n">Lượt làm đề</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Luyện theo bài</th><th class="n">Lần gần nhất</th></tr></thead><tbody>
-          ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td><td class="n">${x.de.size}</td><td class="n">${x.d.length}</td><td class="n">${x.d.length ? fmt(x.d.reduce((a, b) => a + b, 0) / x.d.length) : '–'}</td><td class="n">${x.d.length ? '<b>' + fmt(Math.max(...x.d)) + '</b>' : '–'}</td><td class="n">${x.lt || '–'}</td><td class="n">${x.t ? new Date(x.t).toLocaleDateString('vi-VN') : '–'}</td></tr>`).join('')}
-          </tbody></table></div>` : '<div class="empty">Chưa có học sinh nào luyện đề.</div>'}</div>`;
+        const des = exams.filter(d => rows.some(r => r.key === 'DE:' + d));
+        return `<h2>👩‍🎓 Học sinh ôn thi tốt nghiệp (${L.length})</h2><div class="card">${L.length ? `<div class="tablewrap tnmx"><table><thead><tr><th class="n">STT</th><th class="tnmx-name">Họ và tên</th><th>Lớp</th>${des.map(d => `<th class="n">Đề ${esc(nm(d))}</th>`).join('')}<th class="n">Luyện theo bài</th></tr></thead><tbody>
+          ${L.map((x, i) => `<tr><td class="n">${i + 1}</td><td class="tnmx-name"><b>${esc(x.ten)}</b></td><td>${esc(x.lop)}</td>${des.map(d => { const rs = (x.de['DE:' + d] || []).slice().sort((a, b) => new Date(a.t) - new Date(b.t)); if (!rs.length) return '<td class="n"><span class="hint">–</span></td>'; const best = Math.max(...rs.map(r => r.diem));
+            return `<td class="n"><button type="button" class="tncell ${best >= 8 ? 'ok' : best >= 5 ? '' : 'bad'}" data-hsde="${esc(d)}" data-hs="${esc(x.id)}" title="Các lần: ${rs.map(r => fmt(r.diem)).join(' · ')} – bấm để xem câu chọn sai"><b>${fmt(best)}</b><small>${rs.length} lượt</small></button></td>`; }).join('')}<td class="n">${x.lt || '–'}</td></tr>`).join('')}
+          </tbody></table></div><p class="hint" style="margin:6px 0 0">Mỗi ô: điểm cao nhất · số lượt làm đề. Bấm vào ô để xem câu em chọn sai.</p>` : '<div class="empty">Chưa có học sinh nào luyện đề.</div>'}</div>`;
       })()}
       <h2>📁 Kết quả từng đề</h2>
       <div class="card"><div class="tablewrap"><table class="detable"><thead><tr><th>Đề</th><th class="n">Số HS</th><th class="n">Lượt</th><th class="n">Điểm TB</th><th class="n">Cao nhất</th><th class="n">Thấp nhất</th><th>Câu sai nhiều nhất</th><th></th></tr></thead><tbody>
@@ -1186,6 +1190,7 @@ route(/^\/gv\/thitn$/, async params => {
     $('#lsel').onchange = e => go('', e.target.value);
     if ($('#tsel')) $('#tsel').onchange = e => go('', '', e.target.value);
     $$('tr.click[data-de]').forEach(tr => tr.onclick = () => go(tr.dataset.de, code));
+    $$('[data-hsde]').forEach(b => b.onclick = () => { location.hash = '#/gv/thitn?' + ['de=' + encodeURIComponent(b.dataset.hsde), code ? 'lop=' + encodeURIComponent(code) : '', isAdm && truong != null ? 'truong=' + encodeURIComponent(truong) : '', 'hs=' + encodeURIComponent(b.dataset.hs)].filter(Boolean).join('&'); });
     $('#ex').onclick = () => csv('LuyenThiTN_' + (code ? classes[code] : 'tat_ca') + '.csv', [['Họ tên', 'Lớp', 'Đề', 'Lần', 'Điểm', 'Số câu đúng', 'Thời gian (phút)', 'Thời điểm'],
       ...rows.slice().sort((a, b) => viNameCmp(a.hoTen, b.hoTen) || a.key.localeCompare(b.key, 'vi', { numeric: true })).map(r => [r.hoTen, r.lop, r.key.slice(3), r.lan, r.diem, r.dung + '/' + r.tong, Math.round(r.giay / 60), dt(r.t)])]);
     return;
@@ -1195,7 +1200,7 @@ route(/^\/gv\/thitn$/, async params => {
   const d = key.slice(3), qs = qStats(rows), qsBy = {}; qs.forEach(s => { qsBy[s.q.id] = s; });
   const order = bank.q.filter(q => q.de === d);
   const posOf = q => { const m = /_(C|DS)(\d+)$/.exec(q.id) || []; return m[1] === 'DS' ? 'Đ/S ' + +m[2] : 'Câu ' + +m[2]; };
-  let sortBy = 'sai', open = {}, who = '';
+  let sortBy = 'sai', open = {}, who = params.get('hs') || '';
   const hs = {}; rows.forEach(r => { const x = hs[r.maHS] = hs[r.maHS] || { ten: r.hoTen, lop: r.lop, l: [] }; x.l.push(r); });
   const draw = () => {
     const list = order.slice().sort((a, b) => sortBy === 'sai' ? ((qsBy[b.id] || {}).sai || 0) - ((qsBy[a.id] || {}).sai || 0) : 0);
@@ -1229,13 +1234,18 @@ route(/^\/gv\/thitn$/, async params => {
   /* bài làm lần gần nhất của 1 HS: từng câu đúng/sai, phương án em chọn */
   const studentView = (x, r) => {
     const ct = r.ct || {};
-    return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · ${fmt(r.diem)} điểm · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}</div><div class="stuans">${order.map(q => {
+    const wrongQ = order.filter(q => r.sai.includes(q.id));
+    return `<div class="hint" style="margin-bottom:6px">Lần ${r.lan} · ${dt(r.t)} · ${fmt(r.diem)} điểm · đúng ${r.dung}/${r.tong} · ${mmss(r.giay)}</div>
+      ${wrongQ.length ? `<div class="err" style="margin-bottom:8px"><b>Câu chọn sai (${wrongQ.length}):</b> ${wrongQ.map(q => { const a = ct[q.id]; return `${posOf(q)}${a ? ' – chọn ' + esc(q.t === 'M' ? a : String(a).split('').map((v, i) => 'abcd'[i] + ')' + (v === '-' ? '–' : v)).join(' ')) : ' – bỏ trống'}`; }).join(' · ')}</div>` : '<div class="okmsg" style="margin-bottom:8px">Không có câu sai.</div>'}
+      <div class="stuans">${order.map(q => {
       const a = ct[q.id], ok = !r.sai.includes(q.id), ans = normAns(q);
       const txt = q.t === 'M' ? (a ? a : '–') : (a ? String(a).split('').map((v, i) => 'abcd'[i] + ')' + (v === '-' ? '–' : v)).join(' ') : '–');
       return `<span class="sa ${a ? (ok ? 'ok' : 'bad') : 'skip'}" title="${esc(plainQ(q.s).slice(0, 140))}"><b>${posOf(q)}</b> ${esc(txt)}${!ok ? ` <i>(đúng: ${esc(q.t === 'M' ? ans : ans.split('').map((v, i) => 'abcd'[i] + ')' + v).join(' '))})</i>` : ''}</span>`;
     }).join('')}</div><p class="hint">Xanh: đúng · Đỏ: sai · Xám: bỏ trống. Chữ cái là phương án theo đề gốc.</p>`;
   };
+  if (who && !hs[who]) who = '';
   draw();
+  if (who) setTimeout(() => { const b = $(`[data-who="${who}"]`); if (b) b.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 150);
 });
 /** nội dung câu hỏi dạng chữ thường (bỏ thẻ HTML, ảnh) để hiện tóm tắt */
 function plainQ(h) { return String(h || '').replace(/<img[^>]*>/gi, ' [hình] ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim(); }
