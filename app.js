@@ -2679,15 +2679,14 @@ route(/^\/gv\/giaobai$/, async params => {
           <div><label for="lbx">Loại bài</label><select id="lbx">${ASG_TYPES.map(x => `<option ${x === keep.lb ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>
         <label>Giao cho lớp</label>
         <div class="gb-cls">${isAdm && !cls.length ? '<div class="hint">Chọn trường ở trên để hiện các lớp.</div>' : ['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="gb-kr"><b>K${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}</div>
-        <div class="gb-2 gb-eq"><div><label for="mi">Thời gian làm (phút)</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
-          <div><label for="at">Số lần được làm</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
-        <div class="gb-2 gb-eq"><div><label for="st">🟢 Bắt đầu</label><input id="st" type="datetime-local" value="${esc(keep.st || '')}"></div>
-          <div><label for="dl">🔴 Kết thúc (hạn nộp)</label><input id="dl" type="datetime-local" value="${esc(keep.dl || '')}"></div></div>
-        <p class="hint" style="margin:2px 0 0">0 = không giới hạn · bỏ trống Bắt đầu = mở ngay · bỏ trống Kết thúc = không hạn</p>
+        <div class="gb-2 gb-eq"><div><label for="mi" title="0 = không giới hạn">⏱ Số phút làm bài</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
+          <div><label for="at" title="0 = không giới hạn">🔁 Số lần được làm</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
+        <div class="gb-time"><div class="gb-t gb-ts"><label for="st">▶ Bắt đầu <small>(trống = mở ngay)</small></label><input id="st" type="datetime-local" value="${esc(keep.st || '')}"></div>
+          <div class="gb-t gb-te"><label for="dl">■ Kết thúc <small>(trống = không hạn)</small></label><input id="dl" type="datetime-local" value="${esc(keep.dl || '')}"></div></div>
         <div class="gb-2"><div><label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div><label for="lb">Bảng xếp hạng</label><select id="lb"><option value="ngay">Hiện ngay sau khi nộp</option><option value="sau_han">Chỉ hiện sau hạn nộp</option><option value="tat">Tắt</option></select></div></div>
         <p class="hint" id="cddh" style="margin:2px 0 0">${DIEM_MODES.find(x => x[0] === keep.cdd)[2]}</p>
-        <label for="no">Ghi chú cho HS</label><input id="no" type="text" maxlength="300">
+        <label for="no">Ghi chú cho HS</label><input id="no" type="text" maxlength="300" placeholder="Không bắt buộc">
         <div id="msg"></div><button class="btn block gb-go">🚀 Xem trước đề & Giao bài</button>
       </div><div class="gb-r">
         <label style="margin-top:0">Cách lấy câu hỏi</label>

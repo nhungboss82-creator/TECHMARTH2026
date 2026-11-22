@@ -1188,3 +1188,29 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .gh-auto{border:1.5px solid var(--line2,#cbd5e1);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;color:#334155;margin-left:6px;white-space:nowrap}
 .gh-auto.on{border-color:#16a34a;background:#f0fdf4;color:#15803d}
 @media (max-width:560px){.gh-head{flex-wrap:wrap}.gh-auto{padding:4px 9px;font-size:12px}}
+/* Giao bài: vừa 1 màn hình, ngày bắt đầu / kết thúc 2 màu */
+.gb-time{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.gb-t{border-radius:12px;padding:6px 8px 8px;border:1.5px solid}
+.gb-t label{margin:0 0 4px!important;font-size:13px!important}
+.gb-t label small{font-weight:500;opacity:.75}
+.gb-t input{width:100%;background:#fff;font-size:14px;padding:6px 8px!important;min-height:34px!important}
+.gb-ts{background:#f0fdf4;border-color:#86efac}.gb-ts label{color:#15803d}.gb-ts input{border-color:#86efac}
+.gb-te{background:#fef2f2;border-color:#fca5a5}.gb-te label{color:#b91c1c}.gb-te input{border-color:#fca5a5}
+@media (min-width:981px){
+  .view.gbwide{padding-bottom:8px}
+  .gbf{height:calc(100vh - 128px);min-height:520px;grid-template-rows:minmax(0,1fr)}
+  .gb-l,.gb-r{min-height:0;align-self:stretch!important}
+  .gb-l,.gb-r{overflow:auto;position:static!important;scrollbar-width:thin;padding-right:4px}
+  .gbf label:not(.chk):not(.lchk){margin:7px 0 3px;font-size:13px}
+  .gbf .gb-l input:not([type=checkbox]),.gbf .gb-l select{min-height:34px;padding:6px 9px;font-size:14px}
+  .gb-l .hint{font-size:12px}
+  .gb-go{margin-top:10px;padding:10px}
+}
+@media (max-width:420px){.gb-time{grid-template-columns:1fr}}
+.gb-t{min-width:0}.gb-t input{box-sizing:border-box;max-width:100%;min-width:0}
+@media (min-width:981px){
+  .gbf{grid-template-columns:minmax(400px,470px) minmax(0,1fr)}
+  .gb-l #cddh{display:none}
+  .gb-l .gb-cls{padding:4px 8px}
+  .gb-l .gb-kr{padding:2px 0}
+}
