@@ -3188,7 +3188,8 @@ async function compressImage(file, max = 1600, q = 0.82) {
 /* 22/11/2026: đọc MỌI loại tệp bài vẽ trên Android / iOS / máy tính → ảnh JPEG để AI chấm và khoanh lỗi.
    Ảnh (JPG, PNG, WEBP, GIF, BMP, SVG), ảnh iPhone HEIC/HEIF, PDF (bản vẽ máy, đề scan – lấy trang 1, nhiều trang thì ghép tối đa 3 trang).
    Thư viện PDF / HEIC chỉ tải khi cần (cdn.jsdelivr.net – trang đã dùng sẵn cho KaTeX). */
-const FILE_ACCEPT = 'image/*,.heic,.heif,.pdf,application/pdf,.docx,.pptx,.xlsx,.odt,.odp,.ods,.dxf,.dwg,.doc,.ppt';
+/* không lọc loại tệp: Android / iPhone hiện đủ mọi tệp (Zalo, email, Drive…); readAnyFile tự nhận dạng */
+const FILE_ACCEPT = '*/*';
 const _libs = {};
 function loadLib(url, glob) {
   if (window[glob]) return Promise.resolve(window[glob]);
@@ -3239,6 +3240,85 @@ async function officeToImage(f, ext, max) {
   else if (ext === 'pptx') { const sl = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).sort(); for (const n of sl) txt += (await zip.file(n).async('string')).replace(/<\/a:p>/g, '\n').replace(/<[^>]+>/g, '') + '\n'; txt = txt.replace(/\n\s*\n+/g, '\n').trim(); }
   const e = new Error(txt ? 'Tệp chỉ có chữ, không có hình vẽ' : 'Tệp không có hình vẽ nào – hãy gửi ảnh hoặc PDF của bản vẽ');
   if (txt) e.text = txt.slice(0, 1500);
+  throw e;
+}
+/* Office đời cũ (.doc, .ppt, .xls, .rtf): hình JPG/PNG được lưu nguyên trong tệp → dò chữ ký JPG/PNG để lấy hình lớn nhất;
+   không có hình thì lấy chữ (UTF-16 / RTF) làm đề bài */
+function scanImages(u8) {
+  const out = [], n = u8.length;
+  for (let i = 0; i < n - 8; i++) {
+    if (u8[i] === 0xFF && u8[i + 1] === 0xD8 && u8[i + 2] === 0xFF) { /* JPG: đi theo các đoạn marker tới SOS rồi tìm EOI */
+      let j = i + 2, ok = false;
+      while (j + 4 < n && u8[j] === 0xFF) { const m = u8[j + 1]; if (m === 0xD8 || (m >= 0xD0 && m <= 0xD7) || m === 0x01) { j += 2; continue; } const len = (u8[j + 2] << 8) | u8[j + 3]; if (m === 0xDA) { j += 2 + len; ok = true; break; } j += 2 + len; }
+      if (!ok) continue;
+      while (j + 1 < n && !(u8[j] === 0xFF && u8[j + 1] === 0xD9)) j++;
+      if (j + 1 < n && j - i > 2000) { out.push({ type: 'image/jpeg', a: i, b: j + 2 }); i = j + 1; }
+    } else if (u8[i] === 0x89 && u8[i + 1] === 0x50 && u8[i + 2] === 0x4E && u8[i + 3] === 0x47 && u8[i + 4] === 0x0D && u8[i + 5] === 0x0A) { /* PNG: đi theo các chunk tới IEND */
+      let j = i + 8, ok = false;
+      while (j + 12 <= n) { const len = ((u8[j] << 24) | (u8[j + 1] << 16) | (u8[j + 2] << 8) | u8[j + 3]) >>> 0; const t = String.fromCharCode(u8[j + 4], u8[j + 5], u8[j + 6], u8[j + 7]); j += 12 + len; if (t === 'IEND') { ok = true; break; } if (len > n) break; }
+      if (ok && j - i > 1000) { out.push({ type: 'image/png', a: i, b: j }); i = j - 1; }
+    }
+  }
+  return out;
+}
+function rtfText(src) {
+  const SKIP = /^(fonttbl|colortbl|stylesheet|info|pict|header[lrf]?|footer[lrf]?|listtable|listoverridetable|rsidtbl|generator|latentstyles|themedata|colorschememapping|datastore|xmlnstbl|mmathPr|pgdsctbl|object|fldinst|shppict|nonshppict|filetbl|revtbl|wgrffmtfilter|panose|falt|bkmkstart|bkmkend)$/;
+  let out = '', i = 0, uc = 1, skipDepth = 0, depth = 0, pendSkip = 0;
+  const st = [];
+  while (i < src.length) {
+    const ch = src[i];
+    if (ch === '{') { st.push(uc); depth++; i++; if (src[i] === '\\' && src[i + 1] === '*') { if (!skipDepth) skipDepth = depth; } continue; }
+    if (ch === '}') { if (skipDepth === depth) skipDepth = 0; depth--; uc = st.length ? st.pop() : 1; i++; continue; }
+    if (ch === '\\') {
+      const m = /^\\([a-zA-Z]+)(-?\d+)? ?|^\\'([0-9a-fA-F]{2})|^\\(.)/.exec(src.slice(i, i + 40));
+      if (!m) { i++; continue; }
+      i += m[0].length;
+      if (m[1]) {
+        const w = m[1];
+        if (SKIP.test(w) && !skipDepth) { skipDepth = depth; continue; }
+        if (skipDepth) continue;
+        if (w === 'uc') uc = +m[2] || 0;
+        else if (w === 'u') { out += String.fromCharCode((+m[2] + 65536) % 65536); pendSkip = uc; }
+        else if (w === 'par' || w === 'line' || w === 'sect' || w === 'page') out += '\n';
+        else if (w === 'tab' || w === 'cell') out += ' ';
+      } else if (m[3]) { if (pendSkip) { pendSkip--; continue; } if (!skipDepth) out += new TextDecoder('windows-1252').decode(new Uint8Array([parseInt(m[3], 16)])); }
+      else if (m[4] && !skipDepth && '\\{}'.includes(m[4])) out += m[4];
+      continue;
+    }
+    if (ch === '\r' || ch === '\n') { i++; continue; }
+    if (pendSkip) { pendSkip--; i++; continue; }
+    if (!skipDepth) out += ch;
+    i++;
+  }
+  return out.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').replace(/\n{2,}/g, '\n').trim();
+}
+function scanText(u8, ext) {
+  if (ext === 'rtf') return rtfText(new TextDecoder('latin1').decode(u8)).slice(0, 1500);
+  /* .doc / .ppt: dò các đoạn chữ UTF-16 (tiếng Việt) và chữ 8-bit; bỏ tên kiểu chữ, phông chữ */
+  const STYLE = /\b(Char|Heading|Body Text|Normal|Default|Table|List|Footnote|Endnote|Caption|Hyperlink|Title|Subtitle|Font|Paragraph|Quote|Macro|Balloon|Header|Footer|Comment|Annotation|Bullet|Contents|Index|Signature|Salutation|Closing|Times New Roman|Arial|Calibri|Cambria|Symbol|Liberation|Courier|Microsoft|Office Theme|Click to|PowerPoint)\b/;
+  const good = r => r.replace(/\s/g, '').length >= 10 && (r.match(/ /g) || []).length >= 2 && !STYLE.test(r);
+  const runs = [];
+  const push = (r, at) => { r = r.replace(/[ \t]+/g, ' ').trim(); if (good(r)) runs.push({ r, at }); };
+  let cur = '', st = 0;
+  for (let i = 0; i + 1 < u8.length; i += 2) {
+    const c = u8[i] | (u8[i + 1] << 8);
+    if ((c >= 0x20 && c < 0x7F) || (c >= 0xC0 && c <= 0x1EF9) || c === 0x0D || c === 0x0B || c === 0x09) { if (!cur) st = i; cur += c === 0x0D || c === 0x0B ? '\n' : c === 0x09 ? ' ' : String.fromCharCode(c); }
+    else { if (cur.length > 8) cur.split('\n').forEach(x => push(x, st)); cur = ''; }
+  }
+  cur = '';
+  for (let i = 0; i < u8.length; i++) { const c = u8[i]; if ((c >= 0x20 && c < 0x7F) || c === 0x0D) { if (!cur) st = i; cur += c === 0x0D ? '\n' : String.fromCharCode(c); } else { if (cur.length > 20) cur.split('\n').forEach(x => /[a-z]{3,} [a-z]{2,}/i.test(x) && push(x, st)); cur = ''; } }
+  const seen = new Set();
+  return runs.sort((a, b) => a.at - b.at).filter(x => !seen.has(x.r) && seen.add(x.r)).map(x => x.r).join('\n').slice(0, 1500).trim();
+}
+async function oldOfficeToImage(f, ext, max) {
+  const u8 = new Uint8Array(await f.arrayBuffer());
+  const imgs = scanImages(u8).sort((a, b) => (b.b - b.a) - (a.b - a.a));
+  for (const im of imgs.slice(0, 4)) {
+    try { const r = await compressImage(new File([u8.subarray(im.a, im.b)], 'hinh' + (im.type === 'image/png' ? '.png' : '.jpg'), { type: im.type }), max); if (imgs.length > 1) toast('Tệp có ' + imgs.length + ' hình – lấy hình lớn nhất'); return r; } catch (e) {}
+  }
+  const txt = scanText(u8, ext);
+  const e = new Error(txt ? 'Tệp chỉ có chữ, không có hình vẽ (ảnh JPG/PNG)' : 'Không tìm thấy hình vẽ trong tệp .' + ext + ' – hình dán từ CAD (dạng vẽ) chưa đọc được; hãy lưu tệp thành PDF rồi tải lên');
+  if (txt) e.text = txt;
   throw e;
 }
 /* Bản vẽ CAD dạng DXF (AutoCAD, LibreCAD, QCAD…): vẽ lại thành ảnh – giữ nét đứt / nét chấm gạch theo kiểu đường của lớp */
@@ -3315,7 +3395,7 @@ async function readAnyFile(f, max = 1600) {
   if (/^(docx|pptx|xlsx|odt|odp|ods)$/.test(ext)) return officeToImage(f, ext, max);
   if (ext === 'dxf') return dxfToImage(await f.text(), Math.max(max, 1800));
   if (ext === 'dwg') throw new Error('Tệp DWG (AutoCAD) chưa đọc trực tiếp được – trong AutoCAD chọn Save As → DXF, hoặc Plot → PDF, rồi tải lên');
-  if (/^(doc|ppt|xls)$/.test(ext)) throw new Error('Tệp .' + ext + ' là định dạng Office cũ – hãy mở và lưu lại thành .' + ext + 'x hoặc PDF rồi tải lên');
+  if (/^(doc|ppt|xls|pps|pot|dot|rtf)$/.test(ext)) return oldOfficeToImage(f, ext, max);
   if (/^(skp|ipt|sldprt|step|stp|iges|igs|3dm)$/.test(ext)) throw new Error('Tệp 3D .' + ext + ' chưa đọc được – hãy xuất bản vẽ ra PDF hoặc ảnh rồi tải lên');
   if (type === 'application/pdf' || ext === 'pdf') return pdfToImage(f, Math.max(max, 1800));
   const heic = /hei[cf]/.test(type) || ext === 'heic' || ext === 'heif';
