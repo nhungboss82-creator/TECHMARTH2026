@@ -1044,3 +1044,4 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .vk-more{margin-top:10px;padding:8px 12px}
 .vk-more summary{cursor:pointer;font-weight:700}
 .vk .tl-types{flex-wrap:wrap;overflow:visible}
+.vk-kq.noerr .rv{grid-template-columns:1fr}.vk-kq.noerr .rv-nx{display:none}

@@ -3377,8 +3377,9 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
     if ($('#send')) $('#send').onclick = async () => {
       if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để nộp ảnh và nhận kết quả AI'); return; }
       sending = true; draw();
-      try { const s = await api('submit_drawing', { maBV, image: img }); drwImgCache['n_' + s.MaNop] = img; t.bai.unshift(s); img = null; open = s.MaNop; sending = false; draw(); toast(s.AI ? 'AI đã chấm xong' : 'Đã nộp bài'); const k = $('.bv-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      catch (err) { sending = false; draw(); errBox($('#msg'), err); }
+      try { const s = await api('submit_drawing', { maBV, image: img }); drwImgCache['n_' + s.MaNop] = img; t.bai.unshift(s); img = null; open = s.MaNop; sending = false;
+        if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast('AI đã chấm xong bài vẽ – mở lại bài để xem kết quả'); return; } draw(); toast(s.AI ? 'AI đã chấm xong' : 'Đã nộp bài'); const k = $('.bv-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      catch (err) { sending = false; if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast(err.message || String(err)); return; } draw(); errBox($('#msg'), err); }
     };
     $$('[data-o]').forEach(b => b.onclick = () => { open = b.dataset.o; draw(); });
     if (open && $('#rv')) mountReview($('#rv'), t, t.bai.find(x => x.MaNop === open));
@@ -3409,7 +3410,11 @@ route(/^\/tuluyenve$/, async () => {
   /* 22/11/2026: một trang chung cho GV và HS – ① loại bài · ② đề bài · ③ bài vẽ (đáp án) → AI chỉ lỗi sai; vẽ đúng thì chúc mừng */
   if (!session) { location.hash = '#/dangnhap'; return; }
   let loai = store.get('tlv_loai', 'hinhchieu'); if (!DRAW_MAIN[loai]) loai = 'hinhchieu';
-  let deTxt = '', deImg = null, baiImg = null, result = null, busyNow = false, err = '', lanNop = 0, tasks = [];
+  let deTxt = '', deImg = null, baiImg = null, sentImg = null, result = null, busyNow = false, err = '', lanNop = 0, tasks = [];
+  const here = () => location.hash.split('?')[0] === '#/tuluyenve';
+  /* kết quả về khi em đã rời trang: giữ lại để mở lại trang là thấy ngay */
+  if (window._tlvLast) { ({ loai, deTxt, deImg, baiImg, result } = window._tlvLast); sentImg = baiImg; window._tlvLast = null; }
+  const hashStr = x => { let h = 0; for (let i = 0; i < x.length; i += 97) h = (h * 31 + x.charCodeAt(i)) | 0; return (h >>> 0).toString(36).slice(0, 5); };
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('vbai');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
@@ -3417,8 +3422,12 @@ route(/^\/tuluyenve$/, async () => {
     <div id="${id}" class="imgdrop imgdrop-lite vk-drop" tabindex="0">${img ? `<img src="${img}" alt="${label}"><button type="button" class="imgdrop-x" data-clr="${id}" title="Bỏ ảnh">✕</button>` : `<span class="hint">${label} · kéo thả hoặc dán ảnh (Ctrl+V)</span>`}</div>`;
   const draw = () => {
     const nErr = result && result.doc_duoc !== false ? (result.loi || []).filter(Boolean).length : -1;
+    /* chỉ chúc mừng khi AI không thấy lỗi VÀ xác nhận đạt yêu cầu (tránh trường hợp AI không liệt kê lỗi nhưng bài vẽ sai đề) */
+    const dung = result && result.doc_duoc !== false && !nErr && result.dat_yeu_cau !== false && (result.diem == null || +result.diem >= 8);
+    const lyDo = result ? esc(result.nhan_xet_chung || '') : '';
+    const goiY = result ? (result.goi_y_sua || []).filter(Boolean).slice(0, 3).map(x => `<p class="rv-p">• ${esc(x)}</p>`).join('') : '';
     const due = (tasks || []).filter(t => !t.HanNop || new Date(t.HanNop) > new Date());
-    setView(`<h1 class="bv-h1">📷 Bài vẽ – AI chấm</h1>
+    setView(`<a href="${isGV() && session.role !== 'hs' ? '#/gv?khoi=10' : '#/onluyen'}">← Quay lại</a><h1 class="bv-h1">📷 Bài vẽ – AI chấm</h1>
       <div class="card vk">
         <div class="bv-sh"><span class="lt-n ${loai ? 'done' : ''}">1</span><b>Loại bài</b></div>
         <div class="tl-types">${Object.entries(DRAW_MAIN).map(([k, v]) => `<button type="button" class="${k === loai ? 'on' : ''}" data-lo="${k}">${v}</button>`).join('')}</div>
@@ -3431,10 +3440,11 @@ route(/^\/tuluyenve$/, async () => {
         <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
         <button class="btn block" id="go" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> AI đang chấm, chờ chút (20–60 giây)…' : '🤖 Chấm bài vẽ'}</button>
       </div>
-      ${result ? `<div class="card vk-kq">${result.doc_duoc === false ? '<div class="vk-ban bad">📷 Ảnh chưa rõ – chụp lại thẳng, đủ sáng, thấy trọn bản vẽ</div>'
+      ${result ? `<div class="card vk-kq${nErr > 0 ? '' : ' noerr'}">${result.doc_duoc === false ? `<div class="vk-ban bad">📷 AI chưa đọc được bài vẽ</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY || '<p class="rv-p hint">Chụp lại thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ; kiểm tra đã chọn đúng loại bài và đúng đề.</p>'}`
         : nErr ? `<div class="vk-ban bad">✘ Có ${nErr} chỗ sai – xem các chỗ khoanh đỏ và vẽ lại${lanNop > 1 ? ` <span class="hint">(lần ${lanNop})</span>` : ''}</div>`
-        : '<div class="vk-ban ok">🎉 Xin chúc mừng! Bài vẽ đúng.</div>'}
-        <div id="vrv"></div>
+        : dung ? '<div class="vk-ban ok">🎉 Xin chúc mừng! Bài vẽ đúng.</div>'
+        : `<div class="vk-ban bad">✘ Bài vẽ chưa đúng yêu cầu của đề</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY}`}
+        ${result.doc_duoc === false ? '' : '<div id="vrv"></div>'}
         <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost grow" id="again">📷 Gửi bài đã sửa</button><button class="btn ghost grow" id="newde">📄 Bài mới</button></div></div>` : ''}
       ${due.length ? `<details class="card vk-more"><summary>Bài thầy cô giao (${due.length})</summary><div class="rows">${due.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''}</span></span><span class="chev">›</span></a>`).join('')}</div></details>` : ''}
       ${isGV() && session.role !== 'hs' ? '<p class="hint" style="margin-top:8px"><a href="#/gv/baive?tab=giao">Bài vẽ đã giao cho lớp</a> · <a href="#/gv/baive?tab=tl">Lượt HS đã chấm</a></p>' : ''}`);
@@ -3454,15 +3464,18 @@ route(/^\/tuluyenve$/, async () => {
       if (!deImg && !deTxt.trim()) { err = 'Gửi ảnh đề bài hoặc ghi yêu cầu của bài ở mục 2'; draw(); return; }
       if (!baiImg) { err = 'Gửi ảnh bài vẽ (đáp án) của em ở mục 3'; draw(); return; }
       if (!navigator.onLine) { err = 'Cần có mạng để AI chấm'; draw(); return; }
-      busyNow = true; err = ''; result = null; draw();
+      if (deImg && deImg === baiImg) { err = 'Ảnh đề bài và ảnh bài vẽ đang là cùng một ảnh – hãy gửi đúng ảnh bài vẽ của em ở mục 3'; draw(); return; }
+      busyNow = true; err = ''; result = null; sentImg = baiImg; draw();
       const de = deTxt.trim() || ('Bài ' + DRAW_MAIN[loai].toLowerCase() + ' theo ảnh đề bài đính kèm.');
       try { result = await api('practice_drawing', { loai, deBai: de, tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: deImg }); }
-      catch (e) { busyNow = false; err = /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang cập nhật. Thử lại sau ít phút.' : (e.message || String(e)); draw(); return; }
+      catch (e) { busyNow = false; err = /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang cập nhật. Thử lại sau ít phút.' : (e.message || String(e)); if (here()) draw(); return; }
       busyNow = false;
-      try { if (result.doc_duoc !== false) { const rec = window.STC_LOG && window.STC_LOG({ bai: 'Bài vẽ AI chấm – ' + DRAW_MAIN[loai], phan: de.length > 90 ? de.slice(0, 88) + '…' : de, diem: result.diem, max: 10, soLoi: (result.loi || []).filter(Boolean).length, ten: session.user.HoTen, lop: session.user.TenLop || '' }); lanNop = rec ? rec.lan : 0; } } catch (e) {}
+      const phan = deTxt.trim() ? (de.length > 90 ? de.slice(0, 88) + '…' : de) : 'Đề ảnh #' + hashStr(deImg || '');
+      try { if (result.doc_duoc !== false) { const rec = window.STC_LOG && window.STC_LOG({ bai: 'Bài vẽ AI chấm – ' + DRAW_MAIN[loai], phan, diem: result.diem, max: 10, soLoi: (result.loi || []).filter(Boolean).length, ten: session.user.HoTen, lop: session.user.TenLop || '' }); lanNop = rec ? rec.lan : 0; } } catch (e) {}
+      if (!here()) { window._tlvLast = { loai, deTxt, deImg, baiImg: sentImg, result }; toast('AI đã chấm xong bài vẽ – mở lại mục Bài vẽ – AI chấm để xem kết quả'); return; }
       draw(); const k = $('.vk-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    if (result && $('#vrv')) mountReview($('#vrv'), { MaBV: 'TL', DeBai: deTxt, DiemToiDa: 10, CoAnhDe: false }, { MaNop: 'TL', AI: result, AIDiem: null, TrangThai: 'tuluyen' }, { baiSrc: baiImg });
+    if (result && $('#vrv')) mountReview($('#vrv'), { MaBV: 'TL', DeBai: deTxt, DiemToiDa: 10, CoAnhDe: false }, { MaNop: 'TL', AI: result, AIDiem: null, TrangThai: 'tuluyen' }, { baiSrc: sentImg || baiImg });
     if ($('#again')) $('#again').onclick = () => { baiImg = null; result = null; draw(); window.scrollTo(0, 0); };
     if ($('#newde')) $('#newde').onclick = () => { deImg = null; deTxt = ''; baiImg = null; result = null; lanNop = 0; draw(); window.scrollTo(0, 0); };
   };
