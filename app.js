@@ -4178,6 +4178,7 @@ async function dlDocx(title, sub, ids, withKey, onProg) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = dlFileName(title) + '.docx';
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
+window.stcDl = { pdf: (...a) => dlPdf(...a), docx: (...a) => dlDocx(...a), ids: f => bank.q.filter(f).map(q => q.id) };
 /* hộp chọn: PDF / Word, kèm đáp án */
 function downloadModal(title, sub, ids) {
   const { M, T, L } = dlQuestions(ids);
