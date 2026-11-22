@@ -946,7 +946,7 @@ route(/^\/luyenthi$/, params => {
           ${step === 3 ? `<div class="acc-b">${!k ? '<div class="card empty">Em chọn khối ở bước 2 trước nhé.</div>' : `<div class="row" style="gap:6px;margin-bottom:8px">${['10', '11', '12'].map(v => `<button type="button" class="btn sm ${k === v ? '' : 'ghost'}" data-k="${v}">Khối ${v}</button>`).join('')}</div>
             <div class="list compact">${pk.map(p => { const n = (/^Bài\s*(\d+)/.exec(p.shortName) || [])[1], les = n && LT_LESSON[k][+n], tn = p.ids.filter(id => bank.byId[id] && bank.byId[id].t !== 'L'), b = bestOf('LT:' + p.key);
               return `<div class="item"><div class="grow"><b>${esc(p.shortName)}</b><div class="meta">${tn.length} câu trắc nghiệm${b ? ` · đã làm ${b.n} lần · cao nhất ${fmt(b.best)}` : ''}</div></div>
-                <div class="row">${les ? `<a class="btn ghost sm" href="${les}" title="Học lại bài">📖 Học bài</a>` : ''}<button class="btn sm" data-lt="${esc(p.id)}" ${tn.length ? '' : 'disabled'}>Luyện trắc nghiệm</button></div></div>`; }).join('') || '<div class="card empty">Chưa có câu hỏi cho khối này.</div>'}</div>`}</div>` : ''}</section>
+                <div class="row">${les ? `<a class="btn ghost sm" href="${les}" title="Học lại bài">📖 Học bài</a>` : ''}<button class="btn ghost sm" data-dl="${esc(p.id)}" title="Tải đề về máy">⬇</button><button class="btn sm" data-lt="${esc(p.id)}" ${tn.length ? '' : 'disabled'}>Luyện trắc nghiệm</button></div></div>`; }).join('') || '<div class="card empty">Chưa có câu hỏi cho khối này.</div>'}</div>`}</div>` : ''}</section>
       </div>`);
     $$('[data-step]').forEach(b => b.onclick = () => { const n = +b.dataset.step; step = step === n && b.classList.contains('acc-h') ? 0 : n; draw(); });
     $$('[data-k]').forEach(b => b.onclick = () => { k = b.dataset.k; step = 3; history.replaceState(null, '', '#/luyenthi?k=' + k); draw(); });
@@ -957,6 +957,7 @@ route(/^\/luyenthi$/, params => {
       oc.disabled = false;
     };
     const mx = $('#ltmx'); if (mx) mx.onclick = () => startQuiz({ title: 'Đề tổng hợp theo ma trận tốt nghiệp', key: '', loai: 'matran', ids: matrixPick(), minutes: 50 });
+    $$('[data-dl]').forEach(b => b.onclick = () => { const p = lessonPackages(k).find(x => x.id === b.dataset.dl); if (p) downloadModal(p.name, 'Môn Công nghệ · Ôn tập theo bài · Khối ' + p.khoi, p.ids); });
     $$('[data-lt]').forEach(b => b.onclick = () => {
       const p = lessonPackages(k).find(x => x.id === b.dataset.lt); if (!p) return;
       const ids = p.ids.filter(id => bank.byId[id] && bank.byId[id].t !== 'L');
@@ -1063,6 +1064,7 @@ route(/^\/de$/, params => {
               <div class="row">
                 ${best != null && !DEMO ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent(p.key)}&t=${encodeURIComponent(p.name)}">🏆</a>` : ''}
                 ${(() => { const r = sgkLesson(bank.byId[p.ids[0]]); return r ? `<a class="btn ghost sm" title="Đọc SGK" href="${sgkHref(r.b.k, r.l.pdf)}">📘 SGK</a>` : ''; })()}
+                <button class="btn ghost sm" data-dl="${esc(p.id)}" title="Tải đề về máy (PDF hoặc Word)">⬇ Tải đề</button>
                 <button class="btn sm" data-pkg="${esc(p.id)}">Làm nguyên bài (${p.count} câu)</button>
               </div>
             </div>`;
@@ -1082,6 +1084,7 @@ route(/^\/de$/, params => {
               </div>
               <div class="row">
                 ${best != null && !DEMO ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent('DE:' + d)}&t=${encodeURIComponent(d)}">🏆</a>` : ''}
+                <button class="btn ghost sm" data-dld="${esc(d)}" title="Tải đề về máy">⬇</button>
                 <button class="btn sm" data-d="${esc(d)}">Làm đề (50 phút)</button>
               </div>
             </div>`;
@@ -1118,6 +1121,8 @@ route(/^\/de$/, params => {
         startQuiz({ title: p.name, key: p.key, loai: 'baihoc', ids: p.ids, minutes: Math.min(150, estMin(p.ids)) });
       };
     });
+    $$('[data-dl]').forEach(b => b.onclick = () => { const p = lessonPackages().find(x => x.id === b.dataset.dl); if (p) downloadModal(p.name, 'Môn Công nghệ · Ôn tập theo bài · Khối ' + p.khoi, p.ids); });
+    $$('[data-dld]').forEach(b => b.onclick = () => downloadModal(b.dataset.dld, 'Môn Công nghệ công nghiệp · Đề luyện thi tốt nghiệp THPT · 50 phút', bank.q.filter(q => q.de === b.dataset.dld).map(q => q.id)));
     $$('[data-d]').forEach(b => {
       b.onclick = () => {
         const d = b.dataset.d;
@@ -1459,9 +1464,11 @@ route(/^\/thitn$/, () => {
           <div class="meta">${st.n ? `Đã làm ${st.n} lần · cao nhất <b>${fmt(st.best)}</b>${st.n > 1 ? ' · lần gần nhất ' + fmt(st.last) : ''}` : 'Chưa làm'}</div></div></div>
         <div class="row" style="margin-top:8px;gap:6px;flex-wrap:wrap"><button class="btn sm" data-re="${esc(d)}">${st.n ? '🔀 Làm lại' : '▶ Làm đề'} (50 phút)</button>
           ${st.n && !DEMO ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent('DE:' + d)}&t=${encodeURIComponent(d)}" title="Bảng xếp hạng">🏆</a>` : ''}
+          <button class="btn ghost sm" data-dld="${esc(d)}" title="Tải đề về máy (PDF hoặc Word)">⬇ Tải đề</button>
           ${isGV() ? `<button class="btn ghost sm" data-pr="${esc(d)}" title="In / lưu PDF đề kèm đáp án">🖨️</button>` : ''}</div></div>`; }).join('')}</div>`);
   const ids = d => bank.q.filter(q => q.de === d).map(q => q.id);
   $$('[data-re]').forEach(b => b.onclick = () => startQuiz({ title: b.dataset.re, key: 'DE:' + b.dataset.re, loai: 'de', ids: ids(b.dataset.re), minutes: 50 }));
+  $$('[data-dld]').forEach(b => b.onclick = () => downloadModal(b.dataset.dld, 'Môn Công nghệ công nghiệp · Đề luyện thi tốt nghiệp THPT · 50 phút', ids(b.dataset.dld)));
   $$('[data-pr]').forEach(b => b.onclick = () => printExam({ TieuDe: 'ĐỀ LUYỆN THI TỐT NGHIỆP THPT – ' + b.dataset.pr.toUpperCase(), Truong: (session && session.user.Truong) || '', Khoi: '12', ThoiGian: 50, versions: [{ ma: '', ids: ids(b.dataset.pr), perm: {} }] }, 'all', true, { noQr: true }));
 });
 
@@ -4032,6 +4039,173 @@ function examQ(q, v, n) {
 function printedKey(q, v) {
   if (q.t === 'M') { const p = v.perm[q.id] || [0, 1, 2, 3]; return LETTERS[p.indexOf(LETTERS.indexOf(normAns(q)))]; }
   return normAns(q).split('').join('');
+}
+/* ================= 22/11/2026: HS tải đề từng bài / từng đề thi về máy – PDF hoặc Word (.docx) =================
+   Tạo ngay trên máy (không cần máy chủ). Thư viện chỉ tải khi bấm: html2canvas + jsPDF (PDF), docx (Word). */
+function dlQuestions(ids) {
+  const qs = ids.map(id => bank.byId[id]).filter(Boolean);
+  return { M: qs.filter(q => q.t === 'M'), T: qs.filter(q => q.t === 'T'), L: qs.filter(q => q.t === 'L') };
+}
+function dlFileName(title) { return String(title).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').replace(/[^\w]+/g, '_').replace(/^_|_$/g, '').slice(0, 80) || 'De'; }
+/* các khối HTML theo thứ tự (dùng cho PDF) */
+function dlBlocks(title, sub, ids, withKey) {
+  const { M, T, L } = dlQuestions(ids), v = { perm: {} }, B = [];
+  B.push(`<div class="dl-hd"><div class="dl-t">${esc(title)}</div><div class="dl-s">${esc(sub)}</div><div class="dl-s">Họ và tên: ………………………………… Lớp: ……………</div></div>`);
+  if (M.length) { B.push(`<p class="dl-sec">PHẦN I. Trắc nghiệm nhiều lựa chọn (${M.length} câu). Mỗi câu chỉ chọn một phương án.</p>`); M.forEach((q, i) => B.push(examQ(q, v, i + 1))); }
+  if (T.length) { B.push(`<p class="dl-sec">PHẦN II. Trắc nghiệm Đúng/Sai (${T.length} câu). Với mỗi ý a), b), c), d), chọn Đúng hoặc Sai.</p>`); T.forEach((q, i) => B.push(examQ(q, v, i + 1))); }
+  if (L.length) { B.push(`<p class="dl-sec">PHẦN III. Tự luận (${L.length} câu).</p>`); L.forEach((q, i) => B.push(`<div class="q"><b>Câu ${i + 1}.</b> ${sanitize(q.s)}</div>`)); }
+  B.push('<p style="text-align:center">----- HẾT -----</p>');
+  if (withKey) {
+    B.push('<div class="dl-t" style="margin-top:6px">ĐÁP ÁN VÀ GIẢI THÍCH</div>');
+    if (M.length) {
+      B.push('<p class="dl-sec">Phần I</p>');
+      for (let i = 0; i < M.length; i += 10) B.push(`<table class="dl-key"><tr>${M.slice(i, i + 10).map((q, j) => `<td><b>${i + j + 1}</b><br>${normAns(q)}</td>`).join('')}</tr></table>`);
+      M.forEach((q, i) => { if (q.e) B.push(`<div class="dl-e"><b>Câu ${i + 1} (${normAns(q)}).</b> ${sanitize(String(q.e))}</div>`); });
+    }
+    if (T.length) {
+      B.push('<p class="dl-sec">Phần II</p>');
+      T.forEach((q, i) => { const a = normAns(q).split(''), e = Array.isArray(q.e) ? q.e : [];
+        B.push(`<div class="dl-e"><b>Câu ${i + 1}.</b> ${a.map((x, k) => `<b>${'abcd'[k]})</b> ${x === 'Đ' ? 'Đúng' : 'Sai'}${e[k] ? ' – ' + sanitize(e[k]) : ''}`).join('<br>')}</div>`); });
+    }
+    if (L.length) { B.push('<p class="dl-sec">Phần III – gợi ý trả lời</p>'); L.forEach((q, i) => B.push(`<div class="dl-e"><b>Câu ${i + 1}.</b><br>${sanitize(q.a || '')}${q.e ? `<br><i>${sanitize(q.e)}</i>` : ''}</div>`)); }
+  }
+  return B;
+}
+async function dlPdf(title, sub, ids, withKey, onProg) {
+  await loadLib('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas');
+  await loadLib('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'jspdf');
+  const box = document.createElement('div'); box.className = 'dl-box';
+  box.innerHTML = dlBlocks(title, sub, ids, withKey).map(b => `<div class="dl-b">${b}</div>`).join('').replace(/ loading="lazy"/g, '');
+  document.body.appendChild(box);
+  try {
+    await Promise.all([...box.querySelectorAll('img')].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
+    try { if (window.renderMathInElement) renderMathInElement(box, { delimiters: [{ left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true }], throwOnError: false }); } catch (e) {}
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }), X = 14, W = 182, TOP = 14, BOT = 283;
+    let y = TOP; const els = [...box.children];
+    for (let i = 0; i < els.length; i++) {
+      const c = await html2canvas(els[i], { scale: 1.7, backgroundColor: '#ffffff', useCORS: true, logging: false });
+      let h = c.height * W / c.width, w = W;
+      if (h > BOT - TOP) { w = W * (BOT - TOP) / h; h = BOT - TOP; }
+      if (y + h > BOT && y > TOP) { pdf.addPage(); y = TOP; }
+      pdf.addImage(c.toDataURL('image/jpeg', 0.82), 'JPEG', X + (W - w) / 2, y, w, h);
+      y += h + 1.2;
+      if (onProg) onProg(i + 1, els.length);
+    }
+    const n = pdf.getNumberOfPages();
+    for (let p = 1; p <= n; p++) { pdf.setPage(p); pdf.setFontSize(9); pdf.setTextColor(120); pdf.text(p + ' / ' + n, 105, 292, { align: 'center' }); }
+    pdf.save(dlFileName(title) + '.pdf');
+  } finally { box.remove(); }
+}
+/* HTML câu hỏi → các đoạn Word */
+async function dlDocx(title, sub, ids, withKey, onProg) {
+  const D = await loadLib('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js', 'docx');
+  const imgCache = {};
+  const toJpg = async src => {
+    if (imgCache[src]) return imgCache[src];
+    const im = new Image(); im.crossOrigin = 'anonymous'; im.src = src; await im.decode();
+    const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
+    const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88));
+    return (imgCache[src] = { data: await b.arrayBuffer(), w: im.naturalWidth, h: im.naturalHeight });
+  };
+  /* html → mảng đoạn; mỗi đoạn là mảng run */
+  const toParas = async (html, first) => {
+    const doc = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html');
+    const paras = [[]]; if (first) paras[0].push(...first);
+    const cur = () => paras[paras.length - 1];
+    const walk = async (n, st) => {
+      for (const ch of n.childNodes) {
+        if (ch.nodeType === 3) { const t = ch.nodeValue.replace(/\s+/g, ' '); if (t) cur().push(new D.TextRun({ text: t, bold: st.b, italics: st.i, superScript: st.sup, subScript: st.sub })); continue; }
+        if (ch.nodeType !== 1) continue;
+        const tg = ch.tagName.toLowerCase();
+        if (tg === 'br') { paras.push([]); continue; }
+        if (tg === 'img') {
+          try {
+            const r = await toJpg(ch.getAttribute('src'));
+            let w = +ch.getAttribute('width') || r.w, h = +ch.getAttribute('height') || r.h; const k = Math.min(1, 480 / w); w = Math.round(w * k); h = Math.round(h * k);
+            if (cur().length) paras.push([]);
+            cur().push(new D.ImageRun({ data: r.data, transformation: { width: w, height: h } })); paras.push([]);
+          } catch (e) { cur().push(new D.TextRun({ text: '[hình]', italics: true })); }
+          continue;
+        }
+        const blk = /^(p|div|li|tr|h\d|table|ul|ol)$/.test(tg);
+        if (blk && cur().length) paras.push([]);
+        if (tg === 'td' || tg === 'th') cur().push(new D.TextRun({ text: ' | ' }));
+        await walk(ch, { b: st.b || tg === 'b' || tg === 'strong' || tg === 'th', i: st.i || tg === 'i' || tg === 'em' || ch.classList.contains('cap'), sup: st.sup || tg === 'sup', sub: st.sub || tg === 'sub' });
+        if (blk) paras.push([]);
+      }
+    };
+    await walk(doc.body.firstChild, {});
+    return paras.filter(p => p.length);
+  };
+  const P = (runs, o = {}) => new D.Paragraph(Object.assign({ children: runs, spacing: { after: 60 } }, o));
+  const center = runs => P(runs, { alignment: D.AlignmentType.CENTER });
+  const B = (t, o = {}) => new D.TextRun(Object.assign({ text: t, bold: true }, o));
+  const out = [];
+  const add = async (html, first, indent) => { for (const r of await toParas(html, first)) out.push(P(r, indent ? { indent: { left: 360 } } : {})); };
+  const { M, T, L } = dlQuestions(ids); let done = 0; const total = M.length + T.length + L.length;
+  const tick = () => { done++; if (onProg) onProg(done, total); };
+  out.push(center([B(title.toUpperCase(), { size: 28 })]), center([new D.TextRun({ text: sub, italics: true })]), P([new D.TextRun('Họ và tên: ………………………………… Lớp: ……………')]));
+  if (M.length) { out.push(P([B(`PHẦN I. Trắc nghiệm nhiều lựa chọn (${M.length} câu). Mỗi câu chỉ chọn một phương án.`)], { spacing: { before: 160, after: 80 } }));
+    for (const [i, q] of M.entries()) { await add(sanitize(q.s), [B(`Câu ${i + 1}. `)]); for (let k = 0; k < 4; k++) await add(sanitize(q.o[k] || ''), [B(LETTERS[k] + '. ')], true); tick(); } }
+  if (T.length) { out.push(P([B(`PHẦN II. Trắc nghiệm Đúng/Sai (${T.length} câu). Với mỗi ý a), b), c), d), chọn Đúng hoặc Sai.`)], { spacing: { before: 160, after: 80 } }));
+    for (const [i, q] of T.entries()) { await add(sanitize(q.s), [B(`Câu ${i + 1}. `)]); for (let k = 0; k < 4; k++) await add(sanitize(q.o[k] || ''), [B('abcd'[k] + ') ')], true); tick(); } }
+  if (L.length) { out.push(P([B(`PHẦN III. Tự luận (${L.length} câu).`)], { spacing: { before: 160, after: 80 } }));
+    for (const [i, q] of L.entries()) { await add(sanitize(q.s), [B(`Câu ${i + 1}. `)]); tick(); } }
+  out.push(center([new D.TextRun('----- HẾT -----')]));
+  if (withKey) {
+    out.push(P([B('ĐÁP ÁN VÀ GIẢI THÍCH', { size: 26 })], { pageBreakBefore: true, alignment: D.AlignmentType.CENTER }));
+    if (M.length) {
+      out.push(P([B('Phần I')]));
+      const rows = [];
+      for (let i = 0; i < M.length; i += 10) {
+        const sl = M.slice(i, i + 10), cell = t => new D.TableCell({ children: [new D.Paragraph({ alignment: D.AlignmentType.CENTER, children: [new D.TextRun(t)] })] });
+        rows.push(new D.TableRow({ children: sl.map((q, j) => cell(String(i + j + 1))) }), new D.TableRow({ children: sl.map(q => cell(normAns(q))) }));
+      }
+      out.push(new D.Table({ rows }));
+      for (const [i, q] of M.entries()) if (q.e) await add(sanitize(String(q.e)), [B(`Câu ${i + 1} (${normAns(q)}). `)]);
+    }
+    if (T.length) { out.push(P([B('Phần II')], { spacing: { before: 120 } }));
+      for (const [i, q] of T.entries()) { const a = normAns(q).split(''), e = Array.isArray(q.e) ? q.e : [];
+        out.push(P([B(`Câu ${i + 1}.`)]));
+        for (let k = 0; k < 4; k++) await add(sanitize(e[k] || ''), [B(`${'abcd'[k]}) ${a[k] === 'Đ' ? 'Đúng' : 'Sai'}`), new D.TextRun(e[k] ? ' – ' : '')], true); } }
+    if (L.length) { out.push(P([B('Phần III – gợi ý trả lời')], { spacing: { before: 120 } }));
+      for (const [i, q] of L.entries()) { out.push(P([B(`Câu ${i + 1}.`)])); await add(sanitize(q.a || ''), null, true); if (q.e) await add('<i>' + sanitize(q.e) + '</i>', null, true); } }
+  }
+  const docx = new D.Document({ styles: { default: { document: { run: { font: 'Times New Roman', size: 26 } } } },
+    sections: [{ properties: { page: { margin: { top: 1000, bottom: 1000, left: 1100, right: 1000 } } }, children: out }] });
+  const blob = await D.Packer.toBlob(docx);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = dlFileName(title) + '.docx';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+}
+/* hộp chọn: PDF / Word, kèm đáp án */
+function downloadModal(title, sub, ids) {
+  const { M, T, L } = dlQuestions(ids);
+  if (!M.length && !T.length && !L.length) { toast('Chưa có câu hỏi để tải'); return; }
+  const ov = document.createElement('div'); ov.className = 'modal-ov';
+  let fmtSel = store.get('dl_fmt', 'pdf'), key = store.get('dl_key', true), busyNow = false;
+  const draw = (msg = '') => {
+    ov.innerHTML = `<div class="modal-box dl-modal"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">⬇ Tải đề về máy</h2><button class="btn ghost sm" data-x ${busyNow ? 'disabled' : ''}>✕</button></div>
+      <p style="margin:8px 0 4px"><b>${esc(title)}</b></p><p class="hint" style="margin:0 0 10px">${M.length} câu nhiều lựa chọn · ${T.length} câu Đúng/Sai${L.length ? ' · ' + L.length + ' câu tự luận' : ''}</p>
+      <div class="dl-fmt">${[['pdf', '📄', 'PDF', 'Xem, in trên mọi máy'], ['docx', '📝', 'Word (.docx)', 'Sửa được trong Word, Google Docs']].map(([k, ic, t, d]) => `<button type="button" class="${fmtSel === k ? 'on' : ''}" data-f="${k}" ${busyNow ? 'disabled' : ''}><span>${ic}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>
+      <label class="chk" style="margin:10px 0"><input type="checkbox" id="dlkey" ${key ? 'checked' : ''} ${busyNow ? 'disabled' : ''}> Kèm đáp án và giải thích (ở cuối tệp)</label>
+      <div id="dlmsg" class="hint">${msg}</div>
+      <button class="btn block" id="dlgo" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> Đang tạo tệp…' : '⬇ Tải về'}</button></div>`;
+    ov.querySelector('[data-x]').onclick = () => { if (!busyNow) ov.remove(); };
+    ov.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { fmtSel = b.dataset.f; store.set('dl_fmt', fmtSel); draw(); });
+    ov.querySelector('#dlkey').onchange = e => { key = e.target.checked; store.set('dl_key', key); };
+    ov.querySelector('#dlgo').onclick = async () => {
+      if (!navigator.onLine) { draw('Cần có mạng để tạo tệp lần đầu.'); return; }
+      busyNow = true; draw('Đang chuẩn bị…');
+      const prog = (i, n) => { const m = ov.querySelector('#dlmsg'); if (m) m.textContent = `Đang tạo tệp… ${Math.round(i * 100 / n)}%`; };
+      try {
+        if (fmtSel === 'pdf') await dlPdf(title, sub, ids, key, prog); else await dlDocx(title, sub, ids, key, prog);
+        busyNow = false; draw('✔ Đã tạo xong – xem trong thư mục Tải xuống (Downloads) của máy.'); toast('Đã tải ' + (fmtSel === 'pdf' ? 'PDF' : 'Word'));
+      } catch (e) { busyNow = false; draw('⚠ Chưa tạo được tệp: ' + esc(e.message || String(e)) + '. Kiểm tra mạng rồi thử lại.'); }
+    };
+  };
+  draw(); document.body.appendChild(ov);
+  window.addEventListener('hashchange', () => { if (!busyNow) ov.remove(); }, { once: true });
 }
 async function printExam(d, which, withKey, o = {}) {
   const w = window.open('', '_blank');
