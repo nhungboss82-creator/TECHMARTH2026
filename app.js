@@ -3231,7 +3231,8 @@ async function readAnyFile(f, max = 1600) {
     catch (e) {
       if (!heic) throw new Error('Không đọc được ảnh này – hãy chụp lại hoặc lưu thành JPG/PNG');
       const h2a = await loadLib('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js', 'heic2any');
-      let blob = await h2a({ blob: f, toType: 'image/jpeg', quality: 0.9 }); if (Array.isArray(blob)) blob = blob[0];
+      let blob; try { blob = await h2a({ blob: f, toType: 'image/jpeg', quality: 0.9 }); } catch (e2) { throw new Error('Không đọc được ảnh HEIC này – hãy chụp trực tiếp bằng nút 📷 hoặc đổi máy ảnh sang JPG'); }
+      if (Array.isArray(blob)) blob = blob[0];
       return compressImage(blob, max);
     }
   }
