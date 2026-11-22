@@ -1025,3 +1025,22 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .bv-lan button.on{background:var(--brand,#2563eb);color:#fff;border-color:transparent}
 .bv-more{margin-top:12px}
 .bv-more summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--muted)}
+/* Bài vẽ – AI chấm: một trang chung (22/11/2026) */
+.vk{padding:12px 14px}
+.vk .bv-sh{margin:10px 0 6px}
+.vk .bv-sh:first-child{margin-top:0}
+.vk-2{display:grid;gap:4px 16px}
+@media (min-width:760px){.vk-2{grid-template-columns:1fr 1fr}}
+.vk-pick{display:flex;gap:6px;margin-bottom:6px}
+.vk-drop{min-height:84px;cursor:pointer;margin:0 0 6px;position:relative}
+.vk-drop img{max-height:220px;width:auto;max-width:100%;display:block;margin:0 auto}
+.vk textarea{min-height:52px;margin:0}
+.vk #go{margin-top:10px}
+.vk-kq{padding:10px 12px;margin-top:10px}
+.vk-ban{font-weight:800;font-size:16px;padding:10px 12px;border-radius:10px;margin-bottom:8px}
+.vk-ban.ok{background:var(--ok-soft);color:var(--ok);font-size:19px;text-align:center}
+.vk-ban.bad{background:var(--bad-soft);color:var(--bad)}
+.vk-kq .rv-nx>.rv-verdict{display:none}
+.vk-more{margin-top:10px;padding:8px 12px}
+.vk-more summary{cursor:pointer;font-weight:700}
+.vk .tl-types{flex-wrap:wrap;overflow:visible}
