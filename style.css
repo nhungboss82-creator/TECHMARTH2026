@@ -1065,7 +1065,7 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .dl-box .dl-sec{font-weight:700;margin:8px 0 2px}
 .dl-box .q{margin:3px 0}
 .dl-box .ops{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px}
-.dl-box img.pic{display:block;max-width:85%;max-height:330px;width:auto;height:auto;margin:4px auto}
+.dl-box img.pic{display:block;max-width:75%;max-height:250px;width:auto;height:auto;margin:4px auto}
 .dl-box .cap{display:block;font-size:13px;text-align:center;font-style:italic;color:#333}
 .dl-box table.dl-key{border-collapse:collapse;margin:2px 0}.dl-box table.dl-key td{border:1px solid #000;padding:2px 8px;text-align:center;font-size:14px;min-width:32px}
 .dl-box .dl-e{font-size:14.5px;margin:2px 0}

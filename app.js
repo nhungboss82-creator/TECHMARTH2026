@@ -4083,11 +4083,11 @@ async function dlPdf(title, sub, ids, withKey, onProg) {
     const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }), X = 14, W = 182, TOP = 14, BOT = 283;
     let y = TOP; const els = [...box.children];
     for (let i = 0; i < els.length; i++) {
-      const c = await html2canvas(els[i], { scale: 1.7, backgroundColor: '#ffffff', useCORS: true, logging: false });
+      const c = await html2canvas(els[i], { scale: 1.5, backgroundColor: '#ffffff', useCORS: true, logging: false });
       let h = c.height * W / c.width, w = W;
       if (h > BOT - TOP) { w = W * (BOT - TOP) / h; h = BOT - TOP; }
       if (y + h > BOT && y > TOP) { pdf.addPage(); y = TOP; }
-      pdf.addImage(c.toDataURL('image/jpeg', 0.82), 'JPEG', X + (W - w) / 2, y, w, h);
+      pdf.addImage(c.toDataURL('image/jpeg', 0.78), 'JPEG', X + (W - w) / 2, y, w, h);
       y += h + 1.2;
       if (onProg) onProg(i + 1, els.length);
     }
@@ -4178,7 +4178,6 @@ async function dlDocx(title, sub, ids, withKey, onProg) {
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = dlFileName(title) + '.docx';
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
-window.stcDl = { pdf: (...a) => dlPdf(...a), docx: (...a) => dlDocx(...a), ids: f => bank.q.filter(f).map(q => q.id) };
 /* hộp chọn: PDF / Word, kèm đáp án */
 function downloadModal(title, sub, ids) {
   const { M, T, L } = dlQuestions(ids);
