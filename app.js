@@ -353,6 +353,7 @@ function render() {
 window.addEventListener('hashchange', render);
 function setView(html) {
   V.innerHTML = html; math(V);
+  V.classList.toggle('gbwide', /^#\/gv\/giaobai/.test(location.hash));
   // thư mục Khối 10: đưa danh sách hình sang cột trái cho gọn
   const pk = V.querySelector('.gcpick.compact');
   if (pk) {
@@ -2668,24 +2669,27 @@ route(/^\/gv\/giaobai$/, async params => {
   const draw = () => {
     const sc = isAdm ? gvSchool(allCls) : { list: allCls, html: '', bind: () => {} };
     cls = sc.list;
-    setView(`<h1>Giao bài ${targetK ? 'Khối ' + targetK : ''}</h1><p class="sub">Có thể giao cùng một bài cho cả khối để HS xếp hạng chung. Chỉ hiện các lớp của trường ${isAdm ? 'đã chọn' : 'thầy/cô dạy'}.</p>${sc.html}
-      ${isAdm && !cls.length ? '<div class="card empty">Chọn trường ở trên để hiện các lớp cần giao bài.</div>' : ''}
-      <form class="card" id="f">
-        <label for="t">Tiêu đề</label><input id="t" type="text" required maxlength="120" placeholder="${targetK ? 'Kiểm tra Công nghệ ' + targetK : 'Kiểm tra 15 phút – Mạch điện ba pha'}" value="${esc(keep.t)}">
-        <label for="lbx">Loại bài (HS thấy ở mục "Bài kiểm tra")</label><select id="lbx">${ASG_TYPES.map(x => `<option ${x === keep.lb ? 'selected' : ''}>${x}</option>`).join('')}</select>
+    setView(`<div class="gb-head"><h1>📝 Giao bài ${targetK ? 'Khối ' + targetK : ''}</h1><span class="hint">Giao chung cả khối để HS xếp hạng chung · chỉ hiện lớp của trường ${isAdm ? 'đã chọn' : 'thầy/cô dạy'}</span></div>
+      <form class="card gbf" id="f"><div class="gb-l">
+        ${sc.html ? `<div class="gb-sch">${sc.html}</div>` : ''}
+        <div class="gb-2"><div><label for="t">Tiêu đề</label><input id="t" type="text" required maxlength="120" placeholder="${targetK ? 'Kiểm tra Công nghệ ' + targetK : 'Kiểm tra 15 phút – Mạch điện ba pha'}" value="${esc(keep.t)}"></div>
+          <div><label for="lbx">Loại bài</label><select id="lbx">${ASG_TYPES.map(x => `<option ${x === keep.lb ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>
         <label>Giao cho lớp</label>
-        ${['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="row" style="margin:6px 0"><b style="width:66px">Khối ${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}
-        <label>Cách lấy câu hỏi</label>
+        <div class="gb-cls">${isAdm && !cls.length ? '<div class="hint">Chọn trường ở trên để hiện các lớp.</div>' : ['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="gb-kr"><b>K${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}</div>
+        <div class="gb-3"><div><label for="mi">Số phút</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
+          <div><label for="at">Số lần làm</label><input id="at" type="number" min="0" max="20" value="1"></div>
+          <div><label for="dl">Hạn nộp</label><input id="dl" type="datetime-local"></div></div>
+        <p class="hint" style="margin:2px 0 0">0 = không giới hạn · để trống hạn nộp = không hạn</p>
+        <div class="gb-2"><div><label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+          <div><label for="lb">Bảng xếp hạng</label><select id="lb"><option value="ngay">Hiện ngay sau khi nộp</option><option value="sau_han">Chỉ hiện sau hạn nộp</option><option value="tat">Tắt</option></select></div></div>
+        <p class="hint" id="cddh" style="margin:2px 0 0">${DIEM_MODES.find(x => x[0] === keep.cdd)[2]}</p>
+        <label for="no">Ghi chú cho HS</label><input id="no" type="text" maxlength="300">
+        <div id="msg"></div><button class="btn block gb-go">🚀 Xem trước đề & Giao bài</button>
+      </div><div class="gb-r">
+        <label style="margin-top:0">Cách lấy câu hỏi</label>
         <div class="gbm">${GB_MODES.map(([v, ic, t, d]) => `<button type="button" data-m="${v}" class="gbm-c${mode === v ? ' on' : ''}"><span class="gbm-i">${ic}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>
         <div id="mbox" class="gbm-box"></div>
-        <div class="row"><div class="grow"><label for="mi">Thời gian (phút, 0 = không giới hạn)</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
-          <div class="grow"><label for="at">Số lần được làm (0 = không giới hạn)</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
-        <label for="dl">Hạn nộp (để trống = không hạn)</label><input id="dl" type="datetime-local">
-        <label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select>
-        <p class="hint" id="cddh">${DIEM_MODES.find(x => x[0] === keep.cdd)[2]}</p>
-        <label for="lb">Bảng xếp hạng (xếp hạng chung cả khối)</label><select id="lb"><option value="ngay">Hiện ngay sau khi nộp</option><option value="sau_han">Chỉ hiện sau hạn nộp</option><option value="tat">Tắt</option></select>
-        <label for="no">Ghi chú cho HS</label><input id="no" type="text" maxlength="300">
-        <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Giao bài</button></div></form>`);
+      </div></form>`);
     const remember = () => { keep.t = $('#t').value; keep.lb = $('#lbx').value; keep.cdd = $('#cdd').value; keep.mi = $('#mi').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
     sc.bind(() => { remember(); keep.cl = null; draw(); });
     $$('[data-m]').forEach(b => b.onclick = () => { if (b.dataset.m === mode) return; remember(); readCells(); mode = b.dataset.m; keep.mi = '';
