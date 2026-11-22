@@ -1045,3 +1045,7 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .vk-more summary{cursor:pointer;font-weight:700}
 .vk .tl-types{flex-wrap:wrap;overflow:visible}
 .vk-kq.noerr .rv{grid-template-columns:1fr}.vk-kq.noerr .rv-nx{display:none}
+.imgdrop.loading{opacity:.6;pointer-events:none;position:relative}
+.imgdrop.loading::after{content:'Đang đọc tệp…';position:absolute;inset:auto 0 8px;text-align:center;font-size:13px;font-weight:700;color:var(--brand2)}
+/* điện thoại: nút chụp/tải to, dễ bấm */
+@media (max-width:640px){.vk-pick .btn,.bv-pick .btn{flex:1;min-height:44px;font-size:15px}.vk{padding:10px}.vk-drop img{max-height:180px}}

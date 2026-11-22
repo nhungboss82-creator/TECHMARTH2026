@@ -3185,17 +3185,70 @@ async function compressImage(file, max = 1600, q = 0.82) {
   const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(src, 0, 0, c.width, c.height);
   return c.toDataURL('image/jpeg', q);
 }
+/* 22/11/2026: đọc MỌI loại tệp bài vẽ trên Android / iOS / máy tính → ảnh JPEG để AI chấm và khoanh lỗi.
+   Ảnh (JPG, PNG, WEBP, GIF, BMP, SVG), ảnh iPhone HEIC/HEIF, PDF (bản vẽ máy, đề scan – lấy trang 1, nhiều trang thì ghép tối đa 3 trang).
+   Thư viện PDF / HEIC chỉ tải khi cần (cdn.jsdelivr.net – trang đã dùng sẵn cho KaTeX). */
+const FILE_ACCEPT = 'image/*,.heic,.heif,.pdf,application/pdf';
+const _libs = {};
+function loadLib(url, glob) {
+  if (window[glob]) return Promise.resolve(window[glob]);
+  return _libs[url] || (_libs[url] = new Promise((ok, no) => {
+    const sc = document.createElement('script'); sc.src = url; sc.async = true;
+    sc.onload = () => window[glob] ? ok(window[glob]) : no(new Error('lib')); sc.onerror = () => { delete _libs[url]; no(new Error('Không tải được bộ đọc tệp – kiểm tra mạng rồi thử lại')); };
+    document.head.appendChild(sc);
+  }));
+}
+const fileExt = f => ((/\.([a-z0-9]+)$/i.exec((f && f.name) || '') || [])[1] || '').toLowerCase();
+async function pdfToImage(file, max = 1800) {
+  const PV = '3.11.174', base = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@' + PV + '/build/';
+  const lib = await loadLib(base + 'pdf.min.js', 'pdfjsLib');
+  lib.GlobalWorkerOptions.workerSrc = base + 'pdf.worker.min.js';
+  const pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const n = Math.min(pdf.numPages, 3), pages = [];
+  for (let i = 1; i <= n; i++) {
+    const pg = await pdf.getPage(i), v0 = pg.getViewport({ scale: 1 });
+    const k = Math.min(3, max / Math.max(v0.width, v0.height)), v = pg.getViewport({ scale: k });
+    const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    await pg.render({ canvasContext: x, viewport: v }).promise; pages.push(c);
+  }
+  if (pdf.numPages > 3) toast('Tệp PDF có ' + pdf.numPages + ' trang – chỉ lấy 3 trang đầu');
+  const W = Math.max(...pages.map(c => c.width)), H = pages.reduce((a, c) => a + c.height, 0), k = Math.min(1, max / Math.max(W, H));
+  const out = document.createElement('canvas'); out.width = Math.round(W * k); out.height = Math.round(H * k);
+  const x = out.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, out.width, out.height);
+  let y = 0; pages.forEach(c => { x.drawImage(c, 0, y * k, c.width * k, c.height * k); y += c.height; });
+  return out.toDataURL('image/jpeg', 0.85);
+}
+window.stcReadFile = (f, m) => readAnyFile(f, m);
+async function readAnyFile(f, max = 1600) {
+  if (!f) throw new Error('Chưa chọn tệp');
+  const ext = fileExt(f), type = (f.type || '').toLowerCase();
+  if (f.size > 40e6) throw new Error('Tệp quá lớn (trên 40 MB)');
+  if (type === 'application/pdf' || ext === 'pdf') return pdfToImage(f, Math.max(max, 1800));
+  const heic = /hei[cf]/.test(type) || ext === 'heic' || ext === 'heif';
+  if (type.startsWith('image/') || heic || /^(jpe?g|png|webp|gif|bmp|svg|avif|jfif)$/.test(ext)) {
+    try { return await compressImage(f, max); }
+    catch (e) {
+      if (!heic) throw new Error('Không đọc được ảnh này – hãy chụp lại hoặc lưu thành JPG/PNG');
+      const h2a = await loadLib('https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js', 'heic2any');
+      let blob = await h2a({ blob: f, toType: 'image/jpeg', quality: 0.9 }); if (Array.isArray(blob)) blob = blob[0];
+      return compressImage(blob, max);
+    }
+  }
+  if (/^(docx?|pptx?|xlsx?|odt|dwg|dxf|skp|ipt|sldprt)$/.test(ext)) throw new Error('Tệp .' + ext + ' chưa đọc trực tiếp được – hãy lưu (xuất) thành PDF hoặc ảnh rồi tải lên');
+  throw new Error('Chưa đọc được tệp' + (ext ? ' .' + ext : '') + ' – hãy gửi ảnh hoặc PDF');
+}
 /* Ô nhận ảnh: bấm để chọn tệp, kéo thả, hoặc dán (Ctrl+V) ảnh vừa chụp màn hình/sao chép */
 function imgDrop(id, title, hint, val) {
   return `<div class="imgdrop${val ? ' has' : ''}" id="${id}" tabindex="0" role="button" aria-label="${esc(title)}">
     ${val ? `<img src="${val}" alt="${esc(title)}"><button type="button" class="imgdrop-x" data-x="${id}" title="Bỏ ảnh">✕</button>`
       : `<span class="imgdrop-ic">🖼️</span><b>${esc(title)}</b><span class="hint">${hint}</span>`}
-    <input type="file" accept="image/*" hidden></div>`;
+    <input type="file" accept="${FILE_ACCEPT}" hidden></div>`;
 }
 function bindImgDrop(id, onImg) {
   const box = $('#' + id); if (!box) return;
   const inp = $('input', box);
-  const take = async f => { if (!f || !/^image\//.test(f.type)) { toast('Chỉ nhận tệp ảnh (JPG, PNG…)'); return; } try { onImg(await compressImage(f)); } catch (e) { toast('Không đọc được ảnh'); } };
+  const take = async f => { if (!f) return; box.classList.add('loading'); try { onImg(await readAnyFile(f)); } catch (e) { toast(e.message || 'Không đọc được tệp'); } finally { box.classList.remove('loading'); } };
   box.onclick = e => { if (e.target.closest('[data-x]')) { e.stopPropagation(); onImg(null); return; } inp.click(); };
   box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
   inp.onclick = e => e.stopPropagation();
@@ -3362,14 +3415,14 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
         <section class="card bv-st"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">2</span><b>Nộp bài làm</b><span class="hint">${max ? `còn <b>${left}</b>/${max} lần` : 'không giới hạn số lần'}</span></div>
           ${late ? '<div class="hint">Đã hết hạn nộp.</div>' : out ? '<div class="hint">Em đã dùng hết số lần nộp.</div>' : `
           <div class="bv-pick"><label class="btn">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
-            <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="image/*" hidden></label></div>
-          <div id="hsimg" class="imgdrop imgdrop-lite bv-drop">${img ? `<img src="${img}" alt="Ảnh bài vẽ">` : '<span class="hint">Bài vẽ tay (chụp thẳng, đủ sáng) hoặc vẽ máy (ảnh PNG/JPG) · có thể kéo thả / dán ảnh</span>'}</div>
+            <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
+          <div id="hsimg" class="imgdrop imgdrop-lite bv-drop">${img ? `<img src="${img}" alt="Ảnh bài vẽ">` : '<span class="hint">Bài vẽ tay (chụp thẳng, đủ sáng) hoặc vẽ máy · nhận ảnh, ảnh iPhone (HEIC), PDF</span>'}</div>
           <div id="msg"></div><button class="btn block" id="send" ${img && !sending ? '' : 'disabled'}>${sending ? '🤖 AI đang chấm (khoảng 20–60 giây)…' : '📤 Nộp bài – AI chấm'}</button>`}</section>
       </div>
       <section class="card bv-st bv-kq"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">3</span><b>Kết quả AI chấm</b>
         ${n > 1 ? `<span class="bv-lan">${t.bai.map((s, i) => `<button type="button" class="${open === s.MaNop ? 'on' : ''}" data-o="${s.MaNop}" title="${dt(s.ThoiDiem)}">Lần ${n - i}</button>`).join('')}</span>` : ''}</div>
         ${open ? `<div id="rv"></div>` : `<div class="hint" style="padding:8px 0">${sending ? '<span class="tl-spin"></span> AI đang chấm, em chờ chút…' : 'Chưa nộp lần nào.'}</div>`}</section>`);
-    const pick = async f => { if (!f) return; if (!/^image\//.test(f.type)) { toast('Chỉ nhận tệp ảnh (JPG, PNG). Bài vẽ máy: xuất ra ảnh PNG/JPG rồi tải lên.'); return; } try { img = await compressImage(f); draw(); } catch (err) { toast('Không đọc được ảnh, hãy chụp lại'); } };
+    const pick = async f => { if (!f) return; try { img = await readAnyFile(f); draw(); } catch (err) { toast(err.message || 'Không đọc được tệp'); } };
     if ($('#cam')) $('#cam').onchange = e => pick(e.target.files[0]);
     if ($('#file')) $('#file').onchange = e => pick(e.target.files[0]);
     const z = $('#hsimg');
@@ -3418,8 +3471,8 @@ route(/^\/tuluyenve$/, async () => {
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('vbai');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
-  const picker = (id, img, label) => `<div class="vk-pick"><label class="btn ghost sm">📷 Chụp ảnh<input data-cam="${id}" type="file" accept="image/*" capture="environment" hidden></label><label class="btn ghost sm">📁 Tải tệp<input data-file="${id}" type="file" accept="image/*" hidden></label></div>
-    <div id="${id}" class="imgdrop imgdrop-lite vk-drop" tabindex="0">${img ? `<img src="${img}" alt="${label}"><button type="button" class="imgdrop-x" data-clr="${id}" title="Bỏ ảnh">✕</button>` : `<span class="hint">${label} · kéo thả hoặc dán ảnh (Ctrl+V)</span>`}</div>`;
+  const picker = (id, img, label) => `<div class="vk-pick"><label class="btn ghost sm">📷 Chụp ảnh<input data-cam="${id}" type="file" accept="image/*" capture="environment" hidden></label><label class="btn ghost sm">📁 Tải tệp<input data-file="${id}" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
+    <div id="${id}" class="imgdrop imgdrop-lite vk-drop" tabindex="0">${img ? `<img src="${img}" alt="${label}"><button type="button" class="imgdrop-x" data-clr="${id}" title="Bỏ ảnh">✕</button>` : `<span class="hint">${label} · ảnh, ảnh iPhone (HEIC) hoặc PDF</span>`}</div>`;
   const draw = () => {
     const nErr = result && result.doc_duoc !== false ? (result.loi || []).filter(Boolean).length : -1;
     /* chỉ chúc mừng khi AI không thấy lỗi VÀ xác nhận đạt yêu cầu (tránh trường hợp AI không liệt kê lỗi nhưng bài vẽ sai đề) */
@@ -3451,7 +3504,7 @@ route(/^\/tuluyenve$/, async () => {
     $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); result = null; draw(); });
     $('#vdt').oninput = e => { deTxt = e.target.value; };
     const set = (id, v) => { if (id === 'vde') deImg = v; else { baiImg = v; result = null; } err = ''; draw(); };
-    const take = async (id, f) => { if (!f) return; if (!/^image\//.test(f.type)) { toast('Chỉ nhận tệp ảnh (JPG, PNG). Bản vẽ máy: xuất ra ảnh rồi tải lên.'); return; } try { set(id, await compressImage(f)); } catch (e) { toast('Không đọc được ảnh, hãy chụp lại'); } };
+    const take = async (id, f) => { if (!f) return; const z = $('#' + id); z && z.classList.add('loading'); try { set(id, await readAnyFile(f)); } catch (e) { z && z.classList.remove('loading'); toast(e.message || 'Không đọc được tệp'); } };
     $$('[data-cam],[data-file]').forEach(i => i.onchange = e => take(i.dataset.cam || i.dataset.file, e.target.files[0]));
     ['vde', 'vbai'].forEach(id => {
       const z = $('#' + id); if (!z) return;
@@ -3468,7 +3521,7 @@ route(/^\/tuluyenve$/, async () => {
       busyNow = true; err = ''; result = null; sentImg = baiImg; draw();
       const de = deTxt.trim() || ('Bài ' + DRAW_MAIN[loai].toLowerCase() + ' theo ảnh đề bài đính kèm.');
       try { result = await api('practice_drawing', { loai, deBai: de, tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: deImg }); }
-      catch (e) { busyNow = false; err = /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang cập nhật. Thử lại sau ít phút.' : (e.message || String(e)); if (here()) draw(); return; }
+      catch (e) { busyNow = false; err = e.network ? 'Mất kết nối khi AI đang chấm. Khi chờ, em giữ màn hình sáng và để nguyên trang này, rồi bấm Chấm bài vẽ lại.' : /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang cập nhật. Thử lại sau ít phút.' : (e.message || String(e)); if (here()) draw(); return; }
       busyNow = false;
       const phan = deTxt.trim() ? (de.length > 90 ? de.slice(0, 88) + '…' : de) : 'Đề ảnh #' + hashStr(deImg || '');
       try { if (result.doc_duoc !== false) { const rec = window.STC_LOG && window.STC_LOG({ bai: 'Bài vẽ AI chấm – ' + DRAW_MAIN[loai], phan, diem: result.diem, max: 10, soLoi: (result.loi || []).filter(Boolean).length, ten: session.user.HoTen, lop: session.user.TenLop || '' }); lanNop = rec ? rec.lan : 0; } } catch (e) {}
