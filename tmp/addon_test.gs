@@ -410,7 +410,7 @@ function stcTestVe_(cases) {
   const base = 'https://raw.githubusercontent.com/nhungboss82-creator/TECHMARTH2026/30be536/tmp/vetest/';
   const DE = {"hinhchieu": "Vẽ 3 hình chiếu vuông góc (đứng, bằng, cạnh) của khối hộp 60×40×30 mm có lỗ trụ Ø20 xuyên suốt theo phương thẳng đứng ở chính giữa. Không yêu cầu ghi kích thước.", "trucdo": "Vẽ hình chiếu trục đo vuông góc đều của khối hộp chữ nhật 60×40×30 mm. Không yêu cầu ghi kích thước.", "hinhcat": "Khối hộp 60×40×30 mm có lỗ trụ Ø20 xuyên suốt thẳng đứng ở giữa. Vẽ hình cắt toàn bộ A–A (mặt phẳng cắt đi qua tâm lỗ, song song mặt phẳng hình chiếu đứng) thay cho hình chiếu đứng, và hình chiếu bằng có vết mặt phẳng cắt. Không yêu cầu ghi kích thước.", "phoicanh": "Vẽ hình chiếu phối cảnh một điểm tụ của khối hộp, điểm tụ F nằm trên đường chân trời ở phía trên bên phải vật thể."}, CRIT = {"hinhchieu": "Vẽ đúng vị trí 3 hình chiếu (đứng, bằng, cạnh) theo phương pháp chiếu góc thứ nhất – 3 điểm\nĐúng hình dạng từng hình chiếu, các hình chiếu dóng thẳng với nhau – 3 điểm\nĐúng loại nét: nét liền đậm cạnh thấy, nét đứt cạnh khuất, nét gạch chấm đường tâm – 2 điểm\nGhi kích thước đúng quy ước – 1 điểm\nBản vẽ sạch, rõ, có khung tên – 1 điểm", "trucdo": "Đặt đúng hệ trục đo (vuông góc đều: 3 trục lệch nhau 120°; xiên góc cân: O′x′ ⊥ O′z′, O′y′ lệch 135°) – 2 điểm\nĐúng hệ số biến dạng (vuông góc đều p = q = r = 1; xiên góc cân p = r = 1, q = 0,5) – 2 điểm\nĐúng hình dạng vật thể, các cạnh song song với trục được vẽ song song với trục đo tương ứng – 3 điểm\nLỗ tròn, cung tròn trên mặt phẳng vẽ thành elip đúng hướng – 1 điểm\nNét vẽ đúng quy ước (nét liền đậm cạnh thấy; xoá nét dựng hình), bản vẽ sạch, rõ – 2 điểm", "hinhcat": "Chọn đúng vị trí mặt phẳng cắt, có kí hiệu vết mặt phẳng cắt, hướng chiếu và tên (A–A) – 2 điểm\nĐúng loại hình cắt/mặt cắt theo đề (toàn bộ, một nửa, cục bộ; mặt cắt chập hoặc rời) – 2 điểm\nĐúng hình dạng phần vật thể sau mặt phẳng cắt, không vẽ thừa/thiếu cạnh – 3 điểm\nĐường gạch gạch: nét liền mảnh, nghiêng 45°, cách đều, chỉ vẽ ở phần đặc bị cắt – 2 điểm\nNét vẽ đúng quy ước, bản vẽ sạch, rõ – 1 điểm", "phoicanh": "Vẽ đúng đường chân trời và điểm tụ (1 điểm tụ hoặc 2 điểm tụ theo đề) – 2 điểm\nCác cạnh hội tụ đúng về điểm tụ; cạnh thẳng đứng vẽ thẳng đứng – 3 điểm\nĐúng hình dạng, tỉ lệ vật thể – 3 điểm\nXoá nét dựng hình, tô đậm nét thấy, bản vẽ sạch – 2 điểm"}, out = [];
   cases.forEach(c => {
-    const loai = c.split('_')[0], t0 = Date.now();
+    const loai = c.split('_')[0], t0 = Date.now(); console.log('bắt đầu ' + c);
     try {
       const b = UrlFetchApp.fetch(base + c + '.png').getBlob();
       const task = { Khoi: '10', Loai: loai, DeBai: DE[loai], TieuChi: CRIT[loai], DiemToiDa: 10 };
@@ -418,7 +418,13 @@ function stcTestVe_(cases) {
       out.push(c + ' | ' + Math.round((Date.now() - t0) / 1000) + 's | doc=' + ai.doc_duoc + ' dat=' + ai.dat_yeu_cau + ' diem=' + ai.diem + ' | loi=' + JSON.stringify((ai.loi || []).map(x => x.mo_ta)) + ' | nx=' + ai.nhan_xet_chung);
     } catch (e) { out.push(c + ' | LỖI ' + e.message); }
   });
-  Logger.log(out.join('\n\n'));
+  console.log(out.join('\n\n'));
 }
-function stcTestVe1() { stcTestVe_(['hinhchieu_dung', 'hinhchieu_sai', 'trucdo_dung', 'trucdo_sai']); }
-function stcTestVe2() { stcTestVe_(['hinhcat_dung', 'hinhcat_sai', 'phoicanh_dung', 'phoicanh_sai']); }
+function stcT1() { stcTestVe_(['hinhchieu_dung']); }
+function stcT2() { stcTestVe_(['hinhchieu_sai']); }
+function stcT3() { stcTestVe_(['trucdo_dung']); }
+function stcT4() { stcTestVe_(['trucdo_sai']); }
+function stcT5() { stcTestVe_(['hinhcat_dung']); }
+function stcT6() { stcTestVe_(['hinhcat_sai']); }
+function stcT7() { stcTestVe_(['phoicanh_dung']); }
+function stcT8() { stcTestVe_(['phoicanh_sai']); }
