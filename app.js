@@ -3188,7 +3188,7 @@ async function compressImage(file, max = 1600, q = 0.82) {
 /* 22/11/2026: đọc MỌI loại tệp bài vẽ trên Android / iOS / máy tính → ảnh JPEG để AI chấm và khoanh lỗi.
    Ảnh (JPG, PNG, WEBP, GIF, BMP, SVG), ảnh iPhone HEIC/HEIF, PDF (bản vẽ máy, đề scan – lấy trang 1, nhiều trang thì ghép tối đa 3 trang).
    Thư viện PDF / HEIC chỉ tải khi cần (cdn.jsdelivr.net – trang đã dùng sẵn cho KaTeX). */
-const FILE_ACCEPT = 'image/*,.heic,.heif,.pdf,application/pdf';
+const FILE_ACCEPT = 'image/*,.heic,.heif,.pdf,application/pdf,.docx,.pptx,.xlsx,.odt,.odp,.ods,.dxf,.dwg,.doc,.ppt';
 const _libs = {};
 function loadLib(url, glob) {
   if (window[glob]) return Promise.resolve(window[glob]);
@@ -3219,11 +3219,104 @@ async function pdfToImage(file, max = 1800) {
   let y = 0; pages.forEach(c => { x.drawImage(c, 0, y * k, c.width * k, c.height * k); y += c.height; });
   return out.toDataURL('image/jpeg', 0.85);
 }
+/* Word / PowerPoint / Excel / LibreOffice: lấy hình lớn nhất trong tệp; tệp chỉ có chữ thì trả chữ (dùng làm đề bài) */
+async function officeToImage(f, ext, max) {
+  const JSZip = await loadLib('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js', 'JSZip');
+  let zip; try { zip = await JSZip.loadAsync(await f.arrayBuffer()); } catch (e) { throw new Error('Tệp .' + ext + ' bị hỏng hoặc có mật khẩu – hãy lưu lại thành PDF'); }
+  const media = Object.values(zip.files).filter(z => !z.dir && /(^|\/)(media|Pictures)\//i.test(z.name));
+  const ok = media.filter(z => /\.(png|jpe?g|gif|bmp|webp|tiff?)$/i.test(z.name));
+  if (ok.length) {
+    const sized = await Promise.all(ok.map(async z => ({ z, b: await z.async('blob') })));
+    sized.sort((a, b) => b.b.size - a.b.size);
+    const top = sized[0], name = top.z.name, mime = /png$/i.test(name) ? 'image/png' : /gif$/i.test(name) ? 'image/gif' : /bmp$/i.test(name) ? 'image/bmp' : /webp$/i.test(name) ? 'image/webp' : 'image/jpeg';
+    if (sized.length > 1) toast('Tệp có ' + sized.length + ' hình – lấy hình lớn nhất');
+    try { return await compressImage(new File([top.b], name, { type: mime }), max); } catch (e) { throw new Error('Không đọc được hình trong tệp – hãy lưu tệp thành PDF rồi tải lên'); }
+  }
+  if (media.some(z => /\.(emf|wmf|svm)$/i.test(z.name))) throw new Error('Hình trong tệp là dạng vẽ (EMF/WMF, thường dán từ CAD) – hãy lưu tệp thành PDF rồi tải lên');
+  const xmlName = { docx: 'word/document.xml', odt: 'content.xml', odp: 'content.xml', pptx: null, xlsx: null, ods: 'content.xml' }[ext];
+  let txt = '';
+  if (xmlName && zip.file(xmlName)) txt = (await zip.file(xmlName).async('string')).replace(/<\/(w:p|text:p|text:h)>/g, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/[ \t]+/g, ' ').replace(/\n\s*\n+/g, '\n').trim();
+  else if (ext === 'pptx') { const sl = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).sort(); for (const n of sl) txt += (await zip.file(n).async('string')).replace(/<\/a:p>/g, '\n').replace(/<[^>]+>/g, '') + '\n'; txt = txt.replace(/\n\s*\n+/g, '\n').trim(); }
+  const e = new Error(txt ? 'Tệp chỉ có chữ, không có hình vẽ' : 'Tệp không có hình vẽ nào – hãy gửi ảnh hoặc PDF của bản vẽ');
+  if (txt) e.text = txt.slice(0, 1500);
+  throw e;
+}
+/* Bản vẽ CAD dạng DXF (AutoCAD, LibreCAD, QCAD…): vẽ lại thành ảnh – giữ nét đứt / nét chấm gạch theo kiểu đường của lớp */
+function dxfToImage(txt, max = 1800) {
+  const L = txt.split(/\r?\n/), P = [];
+  for (let i = 0; i + 1 < L.length; i += 2) P.push([parseInt(L[i], 10), L[i + 1].trim()]);
+  const layers = {}, blocks = {}, ents = [];
+  let sec = '', cur = null, blk = null, tbl = '', lay = null;
+  const flush = () => { if (!cur) return; (blk ? blk.ents : ents).push(cur); cur = null; };
+  for (let i = 0; i < P.length; i++) {
+    const [c, v] = P[i];
+    if (c === 0) {
+      flush();
+      if (v === 'SECTION') { sec = (P[i + 1] || [])[1] || ''; lay = null; continue; }
+      if (v === 'ENDSEC') { sec = ''; lay = null; continue; }
+      if (sec === 'TABLES') { if (v === 'TABLE') tbl = (P[i + 1] || [])[1]; lay = v === 'LAYER' ? {} : null; continue; }
+      if (sec === 'BLOCKS' && v === 'BLOCK') { blk = { ents: [], bx: 0, by: 0, name: '' }; cur = null; continue; }
+      if (sec === 'BLOCKS' && v === 'ENDBLK') { if (blk) blocks[blk.name] = blk; blk = null; continue; }
+      if (sec === 'ENTITIES' || (sec === 'BLOCKS' && blk)) cur = { t: v, pts: [] };
+      continue;
+    }
+    if (lay) { if (c === 2) { lay.name = v; layers[v] = layers[v] || {}; } else if (lay.name && c === 6) layers[lay.name].lt = v; else if (lay.name && c === 370) layers[lay.name].lw = +v; continue; }
+    if (blk && !cur) { if (c === 2) blk.name = v; else if (c === 10) blk.bx = +v; else if (c === 20) blk.by = +v; continue; }
+    if (!cur) continue;
+    if (c === 10) cur.pts.push([+v, 0]); else if (c === 20 && cur.pts.length) cur.pts[cur.pts.length - 1][1] = +v;
+    else if (c === 11) cur.x2 = +v; else if (c === 21) cur.y2 = +v;
+    else cur['c' + c] = cur['c' + c] === undefined ? v : cur['c' + c];
+  }
+  flush();
+  /* gom POLYLINE + VERTEX */
+  const merge = list => { const out = []; let pl = null; list.forEach(e => { if (e.t === 'POLYLINE') { pl = Object.assign(e, { pts: [] }); out.push(pl); } else if (e.t === 'VERTEX' && pl) pl.pts.push(e.pts[0]); else if (e.t === 'SEQEND') pl = null; else out.push(e); }); return out; };
+  const top = merge(ents); Object.values(blocks).forEach(b => { b.ents = merge(b.ents); });
+  const segs = [];
+  const style = e => { const ly = layers[e.c8] || {}; const lt = String(e.c6 && e.c6 !== 'BYLAYER' ? e.c6 : ly.lt || '').toUpperCase(); const lw = e.c370 !== undefined && +e.c370 >= 0 ? +e.c370 : ly.lw; return { dash: /HIDDEN|DASHED|DASH(?!DOT)|ẨN/.test(lt) && !/DOT|CENTER|PHANTOM/.test(lt) ? 'h' : /CENTER|DASHDOT|PHANTOM|DOT/.test(lt) ? 'c' : '', w: lw >= 40 ? 2 : lw > 0 && lw < 30 ? 0.6 : 1 }; };
+  const walk = (list, T, depth) => list.forEach(e => {
+    const st = style(e), add = pts => { if (pts.length > 1) segs.push({ pts: pts.map(([x, y]) => T(x, y)), st }); };
+    const arc = (cx, cy, r, a0, a1) => { if (a1 <= a0) a1 += 360; const n = Math.max(8, Math.ceil((a1 - a0) / 6)), p = []; for (let k = 0; k <= n; k++) { const a = (a0 + (a1 - a0) * k / n) * Math.PI / 180; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } add(p); };
+    const p0 = e.pts[0] || [0, 0];
+    if (e.t === 'LINE') add([p0, [e.x2, e.y2]]);
+    else if (e.t === 'CIRCLE') arc(p0[0], p0[1], +e.c40, 0, 360);
+    else if (e.t === 'ARC') arc(p0[0], p0[1], +e.c40, +e.c50, +e.c51);
+    else if (e.t === 'LWPOLYLINE' || e.t === 'POLYLINE' || e.t === 'SPLINE') add((+e.c70 & 1) && e.pts.length ? e.pts.concat([e.pts[0]]) : e.pts);
+    else if (e.t === 'ELLIPSE') { const mx = e.x2, my = e.y2, R = Math.hypot(mx, my), r = R * +e.c40, rot = Math.atan2(my, mx), t0 = +(e.c41 || 0), t1 = +(e.c42 || 2 * Math.PI), p = []; for (let k = 0; k <= 72; k++) { const t = t0 + (t1 - t0) * k / 72; p.push([p0[0] + R * Math.cos(t) * Math.cos(rot) - r * Math.sin(t) * Math.sin(rot), p0[1] + R * Math.cos(t) * Math.sin(rot) + r * Math.sin(t) * Math.cos(rot)]); } add(p); }
+    else if (e.t === 'SOLID' || e.t === '3DFACE') add(e.pts.concat([e.pts[0]]));
+    else if ((e.t === 'TEXT' || e.t === 'MTEXT') && e.c1) segs.push({ text: String(e.c1).replace(/\\[A-Za-z][^;]*;|[{}]|\\P/g, ' ').replace(/%%[cC]/g, 'Ø').replace(/%%[dD]/g, '°').replace(/%%[pP]/g, '±'), at: T(p0[0], p0[1]), h: +(e.c40 || 2.5), T, x: p0[0], y: p0[1], rot: +(e.c50 || 0) });
+    else if ((e.t === 'INSERT' || e.t === 'DIMENSION') && blocks[e.c2] && depth < 6) {
+      const b = blocks[e.c2];
+      if (e.t === 'DIMENSION') walk(b.ents, T, depth + 1);
+      else { const sx = +(e.c41 || 1), sy = +(e.c42 || 1), a = +(e.c50 || 0) * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+        walk(b.ents, (x, y) => { const X = (x - b.bx) * sx, Y = (y - b.by) * sy; return T(p0[0] + X * ca - Y * sa, p0[1] + X * sa + Y * ca); }, depth + 1); }
+    }
+  });
+  walk(top, (x, y) => [x, y], 0);
+  const all = segs.flatMap(s => s.pts || [s.at]).filter(p => isFinite(p[0]) && isFinite(p[1]));
+  if (!all.length) throw new Error('Tệp DXF không có nét vẽ nào đọc được – hãy xuất bản vẽ ra PDF');
+  let x0 = Math.min(...all.map(p => p[0])), x1 = Math.max(...all.map(p => p[0])), y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
+  const W = (x1 - x0) || 1, H = (y1 - y0) || 1, pad = 40, k = (max - 2 * pad) / Math.max(W, H);
+  const c = document.createElement('canvas'); c.width = Math.round(W * k + 2 * pad); c.height = Math.round(H * k + 2 * pad);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.strokeStyle = g.fillStyle = '#000'; g.lineCap = g.lineJoin = 'round';
+  const X = x => pad + (x - x0) * k, Y = y => c.height - pad - (y - y0) * k, base = Math.max(1.2, max / 900);
+  segs.forEach(s => {
+    if (s.text) { const fs = Math.max(10, s.h * k); g.save(); g.translate(X(s.at[0]), Y(s.at[1])); g.rotate(-s.rot * Math.PI / 180); g.font = fs + 'px sans-serif'; g.fillText(s.text, 0, 0); g.restore(); return; }
+    g.lineWidth = base * s.st.w * (s.st.dash ? 0.7 : 1); g.setLineDash(s.st.dash === 'h' ? [8 * base, 5 * base] : s.st.dash === 'c' ? [16 * base, 4 * base, 2 * base, 4 * base] : []);
+    g.beginPath(); s.pts.forEach(([x, y], i) => i ? g.lineTo(X(x), Y(y)) : g.moveTo(X(x), Y(y))); g.stroke();
+  });
+  return c.toDataURL('image/jpeg', 0.88);
+}
 window.stcReadFile = (f, m) => readAnyFile(f, m);
 async function readAnyFile(f, max = 1600) {
   if (!f) throw new Error('Chưa chọn tệp');
   const ext = fileExt(f), type = (f.type || '').toLowerCase();
   if (f.size > 40e6) throw new Error('Tệp quá lớn (trên 40 MB)');
+  /* kiểm tra đuôi tệp trước: máy có thể gán DXF/DWG là image/vnd.* */
+  if (/^(docx|pptx|xlsx|odt|odp|ods)$/.test(ext)) return officeToImage(f, ext, max);
+  if (ext === 'dxf') return dxfToImage(await f.text(), Math.max(max, 1800));
+  if (ext === 'dwg') throw new Error('Tệp DWG (AutoCAD) chưa đọc trực tiếp được – trong AutoCAD chọn Save As → DXF, hoặc Plot → PDF, rồi tải lên');
+  if (/^(doc|ppt|xls)$/.test(ext)) throw new Error('Tệp .' + ext + ' là định dạng Office cũ – hãy mở và lưu lại thành .' + ext + 'x hoặc PDF rồi tải lên');
+  if (/^(skp|ipt|sldprt|step|stp|iges|igs|3dm)$/.test(ext)) throw new Error('Tệp 3D .' + ext + ' chưa đọc được – hãy xuất bản vẽ ra PDF hoặc ảnh rồi tải lên');
   if (type === 'application/pdf' || ext === 'pdf') return pdfToImage(f, Math.max(max, 1800));
   const heic = /hei[cf]/.test(type) || ext === 'heic' || ext === 'heif';
   if (type.startsWith('image/') || heic || /^(jpe?g|png|webp|gif|bmp|svg|avif|jfif)$/.test(ext)) {
@@ -3236,7 +3329,6 @@ async function readAnyFile(f, max = 1600) {
       return compressImage(blob, max);
     }
   }
-  if (/^(docx?|pptx?|xlsx?|odt|dwg|dxf|skp|ipt|sldprt)$/.test(ext)) throw new Error('Tệp .' + ext + ' chưa đọc trực tiếp được – hãy lưu (xuất) thành PDF hoặc ảnh rồi tải lên');
   throw new Error('Chưa đọc được tệp' + (ext ? ' .' + ext : '') + ' – hãy gửi ảnh hoặc PDF');
 }
 /* Ô nhận ảnh: bấm để chọn tệp, kéo thả, hoặc dán (Ctrl+V) ảnh vừa chụp màn hình/sao chép */
@@ -3505,7 +3597,7 @@ route(/^\/tuluyenve$/, async () => {
     $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); result = null; draw(); });
     $('#vdt').oninput = e => { deTxt = e.target.value; };
     const set = (id, v) => { if (id === 'vde') deImg = v; else { baiImg = v; result = null; } err = ''; draw(); };
-    const take = async (id, f) => { if (!f) return; const z = $('#' + id); z && z.classList.add('loading'); try { set(id, await readAnyFile(f)); } catch (e) { z && z.classList.remove('loading'); toast(e.message || 'Không đọc được tệp'); } };
+    const take = async (id, f) => { if (!f) return; const z = $('#' + id); z && z.classList.add('loading'); try { set(id, await readAnyFile(f)); } catch (e) { z && z.classList.remove('loading'); if (e.text && id === 'vde') { deTxt = e.text; draw(); toast('Đã lấy nội dung đề bài từ tệp'); } else toast(e.message || 'Không đọc được tệp'); } };
     $$('[data-cam],[data-file]').forEach(i => i.onchange = e => take(i.dataset.cam || i.dataset.file, e.target.files[0]));
     ['vde', 'vbai'].forEach(id => {
       const z = $('#' + id); if (!z) return;
