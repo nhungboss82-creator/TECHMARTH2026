@@ -3423,10 +3423,10 @@ route(/^\/tuluyenve$/, async () => {
         <div class="bv-sh"><span class="lt-n ${loai ? 'done' : ''}">1</span><b>Loại bài</b></div>
         <div class="tl-types">${Object.entries(DRAW_MAIN).map(([k, v]) => `<button type="button" class="${k === loai ? 'on' : ''}" data-lo="${k}">${v}</button>`).join('')}</div>
         <div class="vk-2">
-          <div><div class="bv-sh"><span class="lt-n ${deImg || deTxt.trim() ? 'done' : ''}">2</span><b>Đề bài</b></div>
+          <div><div class="bv-sh"><span class="lt-n ${deImg || deTxt.trim() ? 'done' : ''}">2</span><b>Đề bài tự chọn</b><span class="hint">chụp đề trong sách, vở, đề thầy cô cho</span></div>
             ${picker('vde', deImg, 'Ảnh đề bài')}
-            <textarea id="vdt" rows="2" maxlength="1500" placeholder="Yêu cầu của bài (nếu có) – vd: Vẽ 3 hình chiếu vuông góc, ghi kích thước">${esc(deTxt)}</textarea></div>
-          <div><div class="bv-sh"><span class="lt-n ${baiImg ? 'done' : ''}">3</span><b>Bài vẽ cần chấm</b><span class="hint">vẽ tay hoặc vẽ máy</span></div>
+            <textarea id="vdt" rows="2" maxlength="1500" placeholder="Ghi yêu cầu của đề (nếu có) – vd: Vẽ 3 hình chiếu vuông góc, ghi kích thước">${esc(deTxt)}</textarea></div>
+          <div><div class="bv-sh"><span class="lt-n ${baiImg ? 'done' : ''}">3</span><b>Đáp án – bài vẽ của em</b><span class="hint">vẽ tay trên lớp hoặc vẽ máy</span></div>
             ${picker('vbai', baiImg, 'Ảnh bài vẽ')}</div></div>
         <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
         <button class="btn block" id="go" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> AI đang chấm, chờ chút (20–60 giây)…' : '🤖 Chấm bài vẽ'}</button>
@@ -3452,7 +3452,7 @@ route(/^\/tuluyenve$/, async () => {
     });
     $('#go').onclick = async () => {
       if (!deImg && !deTxt.trim()) { err = 'Gửi ảnh đề bài hoặc ghi yêu cầu của bài ở mục 2'; draw(); return; }
-      if (!baiImg) { err = 'Gửi ảnh bài vẽ cần chấm ở mục 3'; draw(); return; }
+      if (!baiImg) { err = 'Gửi ảnh bài vẽ (đáp án) của em ở mục 3'; draw(); return; }
       if (!navigator.onLine) { err = 'Cần có mạng để AI chấm'; draw(); return; }
       busyNow = true; err = ''; result = null; draw();
       const de = deTxt.trim() || ('Bài ' + DRAW_MAIN[loai].toLowerCase() + ' theo ảnh đề bài đính kèm.');
@@ -3513,7 +3513,7 @@ function drawPracticeTable(rows, showName) {
 }
 
 /* 22/11/2026: tạo bài vẽ đơn giản – 3 loại bài; mỗi HS nộp tối đa 5 lần; thang 10 */
-const DRAW_MAIN = { hinhchieu: 'Hình chiếu vuông góc', trucdo: 'Hình chiếu trục đo', hinhcat: 'Hình cắt – mặt cắt' };
+const DRAW_MAIN = { hinhchieu: 'Hình chiếu vuông góc', trucdo: 'Hình chiếu trục đo', hinhcat: 'Hình cắt – mặt cắt', phoicanh: 'Hình chiếu phối cảnh' };
 const DRAW_LAN = 5;
 route(/^\/gv\/baive\/moi$/, async params => {
   if (!needGV()) return;
