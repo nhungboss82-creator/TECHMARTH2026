@@ -3590,7 +3590,7 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
           <div class="bv-pick"><label class="btn">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
             <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
           <div id="hsimg" class="imgdrop imgdrop-lite bv-drop">${img ? `<img src="${img}" alt="Ảnh bài vẽ">` : '<span class="hint">Bài vẽ tay (chụp thẳng, đủ sáng) hoặc vẽ máy · nhận ảnh, ảnh iPhone (HEIC), PDF</span>'}</div>
-          <div id="msg"></div><button class="btn block" id="send" ${img && !sending ? '' : 'disabled'}>${sending ? '🤖 AI đang chấm (khoảng 20–60 giây)…' : '📤 Nộp bài – AI chấm'}</button>`}</section>
+          <div id="msg"></div><button class="btn block" id="send" ${img && !sending ? '' : 'disabled'}>${sending ? '🤖 AI đang chấm (khoảng 1–2 phút)…' : '📤 Nộp bài – AI chấm'}</button>`}</section>
       </div>
       <section class="card bv-st bv-kq"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">3</span><b>Kết quả AI chấm</b>
         ${n > 1 ? `<span class="bv-lan">${t.bai.map((s, i) => `<button type="button" class="${open === s.MaNop ? 'on' : ''}" data-o="${s.MaNop}" title="${dt(s.ThoiDiem)}">Lần ${n - i}</button>`).join('')}</span>` : ''}</div>
@@ -3664,7 +3664,7 @@ route(/^\/tuluyenve$/, async () => {
           <div><div class="bv-sh"><span class="lt-n ${baiImg ? 'done' : ''}">3</span><b>Đáp án – bài vẽ của em</b><span class="hint">vẽ tay trên lớp hoặc vẽ máy</span></div>
             ${picker('vbai', baiImg, 'Ảnh bài vẽ')}</div></div>
         <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
-        <button class="btn block" id="go" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> AI đang chấm, chờ chút (20–60 giây)…' : '🤖 Chấm bài vẽ'}</button>
+        <button class="btn block" id="go" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> AI đang chấm, chờ chút (khoảng 1–2 phút)…' : '🤖 Chấm bài vẽ'}</button>
       </div>
       ${result ? `<div class="card vk-kq${nErr > 0 ? '' : ' noerr'}">${result.doc_duoc === false ? `<div class="vk-ban bad">📷 AI chưa đọc được bài vẽ</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY || '<p class="rv-p hint">Chụp lại thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ; kiểm tra đã chọn đúng loại bài và đúng đề.</p>'}`
         : nErr ? `<div class="vk-ban bad">✘ Có ${nErr} chỗ sai – xem các chỗ khoanh đỏ và vẽ lại${lanNop > 1 ? ` <span class="hint">(lần ${lanNop})</span>` : ''}</div>`
@@ -3834,7 +3834,7 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
         <select id="uhs"><option value="">${roster ? '— Chọn học sinh —' : 'Đang tải danh sách…'}</option>${(roster || []).map(h => `<option value="${h.maHS}" ${up.hs === h.maHS ? 'selected' : ''}>${esc(h.hoTen)} – ${esc(h.lop)}</option>`).join('')}<option value="_" ${up.hs === '_' ? 'selected' : ''}>Khác (nhập tên)…</option></select>
         ${up.hs === '_' ? `<input id="uten" type="text" maxlength="60" placeholder="Họ tên học sinh" value="${esc(up.ten)}" style="margin-top:6px">` : ''}
         <button class="btn block" id="usend" style="margin-top:8px" ${up.img ? '' : 'disabled'}>📤 Gửi & AI chấm</button>
-        <div class="hint" style="margin-top:4px">Ảnh chụp bài vẽ tay hoặc ảnh xuất từ phần mềm vẽ (PNG/JPG). AI chấm mất khoảng 20–60 giây.</div><div id="umsg"></div></div>
+        <div class="hint" style="margin-top:4px">Ảnh chụp bài vẽ tay hoặc ảnh xuất từ phần mềm vẽ (PNG/JPG). AI chấm mất khoảng 1–2 phút.</div><div id="umsg"></div></div>
       <div class="dv-upi">${imgDrop('dropbai', 'Ảnh bài làm của HS', 'Bấm để chụp/chọn ảnh · kéo thả · hoặc Ctrl+V', up.img)}</div></div>`;
   const draw = () => {
     const pending = d.items.filter(s => s.TrangThai !== 'da_cham').length;
