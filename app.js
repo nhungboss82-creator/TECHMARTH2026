@@ -3210,7 +3210,7 @@ async function pdfToImage(file, max = 1800) {
     const k = Math.min(3, max / Math.max(v0.width, v0.height)), v = pg.getViewport({ scale: k });
     const c = document.createElement('canvas'); c.width = Math.round(v.width); c.height = Math.round(v.height);
     const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
-    await pg.render({ canvasContext: x, viewport: v }).promise; pages.push(c);
+    await pg.render({ canvasContext: x, viewport: v, intent: 'print' }).promise; /* 'print': không phụ thuộc requestAnimationFrame – không treo khi màn hình tắt / tab ẩn */ pages.push(c);
   }
   if (pdf.numPages > 3) toast('Tệp PDF có ' + pdf.numPages + ' trang – chỉ lấy 3 trang đầu');
   const W = Math.max(...pages.map(c => c.width)), H = pages.reduce((a, c) => a + c.height, 0), k = Math.min(1, max / Math.max(W, H));
