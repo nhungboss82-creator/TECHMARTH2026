@@ -3641,19 +3641,23 @@ const DRAW_PRACTICE = {
 };
 /* 22/11/2026: tiêu chí chấm riêng cho từng loại bài tự luyện – [tên tiêu chí, điểm tối đa, yêu cầu / cách làm đúng] */
 const VE_TC = {
-  hinhchieu: [['Bố trí các hình chiếu theo phương pháp chiếu', 2.5, 'Phương pháp chiếu góc thứ nhất: hình chiếu bằng đặt dưới hình chiếu đứng, hình chiếu cạnh đặt bên phải hình chiếu đứng; các hình dóng thẳng hàng với nhau.'],
+  hinhchieu: [['Bố trí các hình chiếu theo phương pháp chiếu', 2, 'Phương pháp chiếu góc thứ nhất: hình chiếu bằng đặt dưới hình chiếu đứng, hình chiếu cạnh đặt bên phải hình chiếu đứng; các hình dóng thẳng hàng với nhau.'],
     ['Chiếu đúng hình dạng vật thể', 3.5, 'Mỗi hình chiếu có đủ đường bao, cạnh thấy, cạnh khuất; đúng chiều dài – chiều cao – chiều rộng; lỗ, rãnh thể hiện đúng vị trí.'],
-    ['Nét vẽ đúng tiêu chuẩn', 2, 'Cạnh thấy: nét liền đậm; cạnh khuất: nét đứt mảnh; đường tâm, trục đối xứng: nét gạch dài – chấm – mảnh.'],
-    ['Ghi kích thước', 2, 'Đường gióng, đường kích thước vẽ nét liền mảnh, có mũi tên; chữ số ghi giá trị thật (mm), đặt đúng chiều đọc.']],
+    ['Nét vẽ đúng tiêu chuẩn', 1.5, 'Cạnh thấy: nét liền đậm; cạnh khuất: nét đứt mảnh; đường tâm, trục đối xứng: nét gạch dài – chấm – mảnh.'],
+    ['Ghi kích thước', 2, 'Đường gióng, đường kích thước vẽ nét liền mảnh, có mũi tên; chữ số ghi giá trị thật (mm), đặt đúng chiều đọc.'],
+    ['Trình bày sạch sẽ, rõ ràng', 1, 'Bản vẽ sạch, không tẩy xoá lem nhem, không vết bẩn; nét đều, rõ; chữ, số viết rõ ràng; hình bố trí cân đối trên khổ giấy, có khung tên nếu đề yêu cầu.']],
   trucdo: [['Chọn loại hình chiếu trục đo', 3, 'Vuông góc đều: ba trục lệch nhau 120°, hệ số p = q = r = 1. Xiên góc cân: O′x′ ⊥ O′z′, O′y′ lệch 135°, hệ số q = 0,5.'],
-    ['Biểu diễn hình chiếu trục đo', 4.5, 'Cạnh song song trục toạ độ vẽ song song trục đo tương ứng; đủ các cạnh thấy; đúng hệ số biến dạng; đường tròn vẽ thành elip.'],
-    ['Nét vẽ', 2.5, 'Cạnh thấy vẽ nét liền đậm; không vẽ nét khuất; nét dựng hình vẽ mảnh hoặc xoá đi.']],
-  hinhcat: [['Chọn loại hình cắt, mặt cắt', 3, 'Chọn đúng hình cắt toàn bộ / một nửa / cục bộ hoặc mặt cắt chập / rời theo yêu cầu của đề và hình dạng vật thể.'],
+    ['Biểu diễn hình chiếu trục đo', 4, 'Cạnh song song trục toạ độ vẽ song song trục đo tương ứng; đủ các cạnh thấy; đúng hệ số biến dạng; đường tròn vẽ thành elip.'],
+    ['Nét vẽ', 2, 'Cạnh thấy vẽ nét liền đậm; không vẽ nét khuất; nét dựng hình vẽ mảnh hoặc xoá đi.'],
+    ['Trình bày sạch sẽ, rõ ràng', 1, 'Bản vẽ sạch, không tẩy xoá lem nhem, không vết bẩn; nét đều, rõ; chữ, số viết rõ ràng; hình bố trí cân đối trên khổ giấy, có khung tên nếu đề yêu cầu.']],
+  hinhcat: [['Chọn loại hình cắt, mặt cắt', 2.5, 'Chọn đúng hình cắt toàn bộ / một nửa / cục bộ hoặc mặt cắt chập / rời theo yêu cầu của đề và hình dạng vật thể.'],
     ['Vẽ nét hình cắt – mặt cắt', 4, 'Vẽ đủ phần vật thể sau mặt phẳng cắt; đường gạch gạch là nét liền mảnh nghiêng 45°, chỉ ở vùng vật liệu đặc bị cắt, không gạch qua lỗ rỗng.'],
-    ['Biểu diễn nét cắt', 3, 'Vết mặt phẳng cắt là nét gạch chấm mảnh, hai đầu nét đậm, có mũi tên hướng chiếu và chữ cái; ghi tên hình cắt (A–A).']],
+    ['Biểu diễn nét cắt', 2.5, 'Vết mặt phẳng cắt là nét gạch chấm mảnh, hai đầu nét đậm, có mũi tên hướng chiếu và chữ cái; ghi tên hình cắt (A–A).'],
+    ['Trình bày sạch sẽ, rõ ràng', 1, 'Bản vẽ sạch, không tẩy xoá lem nhem, không vết bẩn; nét đều, rõ; chữ, số viết rõ ràng; hình bố trí cân đối trên khổ giấy, có khung tên nếu đề yêu cầu.']],
   phoicanh: [['Chọn loại hình chiếu phối cảnh', 3, 'Một điểm tụ hoặc hai điểm tụ đúng yêu cầu; có đường chân trời, điểm tụ nằm trên đường chân trời.'],
-    ['Biểu diễn hình phối cảnh', 4.5, 'Các cạnh lùi hội tụ về điểm tụ; cạnh thẳng đứng vẽ thẳng đứng; đủ các cạnh thấy; tỉ lệ xa – gần hợp lí.'],
-    ['Nét vẽ', 2.5, 'Nét thấy đậm, rõ; nét dựng hình vẽ mảnh hoặc xoá đi; không vẽ cạnh khuất.']]
+    ['Biểu diễn hình phối cảnh', 4, 'Các cạnh lùi hội tụ về điểm tụ; cạnh thẳng đứng vẽ thẳng đứng; đủ các cạnh thấy; tỉ lệ xa – gần hợp lí.'],
+    ['Nét vẽ', 2, 'Nét thấy đậm, rõ; nét dựng hình vẽ mảnh hoặc xoá đi; không vẽ cạnh khuất.'],
+    ['Trình bày sạch sẽ, rõ ràng', 1, 'Bản vẽ sạch, không tẩy xoá lem nhem, không vết bẩn; nét đều, rõ; chữ, số viết rõ ràng; hình bố trí cân đối trên khổ giấy, có khung tên nếu đề yêu cầu.']]
 };
 const veCrit = loai => (VE_TC[loai] || VE_TC.hinhchieu).map(([t, d, g]) => `${t} (${g}) – ${String(d).replace('.', ',')} điểm`).join('\n');
 const VE_LOG = 'Bài vẽ AI chấm – ';
