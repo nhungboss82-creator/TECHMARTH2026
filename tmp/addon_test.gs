@@ -461,3 +461,5 @@ var STC_CASES_;
 var STC_GEN_;
 function stcTD() { STC_CASES_ = ['hinhcat_sai', 'trucdo_sai', 'hinhchieu_dung']; STC_GEN_ = { thinkingConfig: { thinkingLevel: 'high' } }; stcTAll(); }
 function stcTE() { STC_CASES_ = ['hinhcat_sai', 'trucdo_sai', 'hinhchieu_dung']; stcTAll(); }
+function stcTF() { STC_CASES_ = ['trucdo_dung', 'hinhcat_dung']; STC_GEN_ = null; stcTAll(); }
+function stcTG() { STC_CASES_ = ['phoicanh_dung', 'hinhchieu_dung']; STC_GEN_ = null; stcTAll(); }
