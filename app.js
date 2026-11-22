@@ -2057,7 +2057,7 @@ route(/^\/gv$/, async params => {
       </section>
       <div class="gh-head"><h2>Quản lý lớp học</h2></div>
       <div class="gh-tiles">${tiles.map(x => `<a class="gh-tile ${x.c}" href="${x.href}"><span class="gh-ic">${x.ic}</span><b>${x.t}</b><span>${x.d}</span></a>`).join('')}</div>
-      <div class="gh-head"><h2>Hỗ trợ dạy học</h2><span class="hint">Chọn khối</span></div>
+      <div class="gh-head"><h2>Hỗ trợ dạy học</h2><span class="hint">Chọn khối</span><span class="spacer"></span><button type="button" class="gh-auto${store.get('gh_auto', 1) ? ' on' : ''}" id="ghauto" title="Mở mục này thì tự thu gọn các mục khác">${store.get('gh_auto', 1) ? '✅' : '⬜'} Tự thu gọn</button><button type="button" class="gh-auto" id="ghclose" title="Thu gọn tất cả các mục">⏶ Thu gọn hết</button></div>
       <div class="gh-khoi" role="tablist">${['10', '11', '12'].map(v => { const I = KHOI_INFO[v]; return `<button role="tab" aria-selected="${k === v}" data-khoi="${v}" class="${I.c} ${k === v ? 'on' : ''}"><span class="gh-kic">${I.ic}</span><b>${I.t}</b><span>${I.d}</span></button>`; }).join('')}</div>
       ${k === '10' ? `<a class="gh-feature" href="#/tuluyenve"><span class="gh-fic">📷</span><span class="gh-ftx"><b>Bài vẽ – AI chấm</b><span>Giao bài vẽ cho lớp hoặc để HS tự luyện: chụp bài vẽ tay → AI khoanh lỗi, hướng dẫn sửa</span></span><span class="gh-fgo">Mở ›</span></a>` : ''}
       ${groups.map(([t, xs], i) => { const id = k + '_' + i, on = fold[id] === undefined ? i === 0 : !!fold[id];
@@ -2065,7 +2065,11 @@ route(/^\/gv$/, async params => {
       <p class="hint gh-legend"><span class="who">GV·HS</span> trình chiếu, HS tự học · <span class="who hs">HS</span> HS tự ôn · <span class="who gv">GV</span> chỉ giáo viên</p>
       <div class="gh-foot"><a class="btn ghost sm" href="#/?role=hs">🎓 Xem như học sinh</a>${session.role === 'admin' ? '<a class="btn ghost sm" href="#/admin">🛡️ Quản trị</a>' : '<a class="btn ghost sm" href="#/gv/giaovien">👥 Giáo viên trường</a>'}</div>`);
     $$('[data-khoi]').forEach(b => b.onclick = () => { k = b.dataset.khoi; store.set('gv_active_khoi', k); draw(); });
-    $$('[data-fold]').forEach(b => b.onclick = () => { const id = b.dataset.fold, cur = fold[id] === undefined ? id.endsWith('_0') : !!fold[id]; fold[id] = cur ? 0 : 1; store.set('gh_fold', fold); draw(); });
+    $$('[data-fold]').forEach(b => b.onclick = () => { const id = b.dataset.fold, cur = fold[id] === undefined ? id.endsWith('_0') : !!fold[id]; fold[id] = cur ? 0 : 1;
+      if (!cur && store.get('gh_auto', 1)) $$('[data-fold]').forEach(x => { if (x.dataset.fold !== id) fold[x.dataset.fold] = 0; });
+      store.set('gh_fold', fold); draw(); const g = $(`[data-fold="${id}"]`); if (g && !cur) g.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); });
+    $('#ghauto').onclick = () => { const v = store.get('gh_auto', 1) ? 0 : 1; store.set('gh_auto', v); toast(v ? 'Mở mục nào thì các mục khác tự thu gọn' : 'Đã tắt tự thu gọn'); draw(); };
+    $('#ghclose').onclick = () => { $$('[data-fold]').forEach(x => { fold[x.dataset.fold] = 0; }); store.set('gh_fold', fold); draw(); };
   };
   const fold = store.get('gh_fold', {});
   draw();

@@ -1184,3 +1184,7 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .gb-kr .chk{padding:3px 8px;min-height:0;font-size:13.5px}
 .gb-kr .chk .pill{padding:1px 6px;font-size:11px}
 .gb-kr .btn.sm{padding:3px 10px;min-height:0}
+.gh-head .spacer{flex:1}
+.gh-auto{border:1.5px solid var(--line2,#cbd5e1);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;color:#334155;margin-left:6px;white-space:nowrap}
+.gh-auto.on{border-color:#16a34a;background:#f0fdf4;color:#15803d}
+@media (max-width:560px){.gh-head{flex-wrap:wrap}.gh-auto{padding:4px 9px;font-size:12px}}
