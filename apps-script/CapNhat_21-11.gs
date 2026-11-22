@@ -181,6 +181,8 @@ function cn2111Patch_() {
     return [
       'Em là giáo viên Công nghệ THPT ở Việt Nam, đang chấm bài vẽ kĩ thuật của học sinh lớp ' + t.Khoi + '. Bài làm có thể là ảnh chụp bản vẽ tay hoặc ảnh bản vẽ bằng máy tính (vẽ máy).',
       'Loại bài: ' + ten + '.', hint,
+      /* HS tự luyện (không có mã bài GV giao): đề tự chọn → chỉ bắt lỗi những gì đề yêu cầu */
+      !t.MaBV ? 'ĐÂY LÀ BÀI HỌC SINH TỰ LUYỆN VỚI ĐỀ TỰ CHỌN. Chỉ áp dụng những tiêu chí phù hợp với đề; tiêu chí nào đề không yêu cầu (ví dụ đề không yêu cầu ghi kích thước, khung tên, kí hiệu mặt cắt…) thì cho đủ điểm tiêu chí đó và KHÔNG coi là lỗi. "loi" chỉ gồm những chỗ vẽ SAI THẬT so với đề và quy ước bản vẽ kĩ thuật; không đưa gợi ý trình bày cho đẹp vào "loi" (đưa vào "y_tuong"). Bài vẽ đúng yêu cầu của đề thì "loi" = [] và "dat_yeu_cau" = true. Nếu bài làm rõ ràng là một loại bản vẽ khác với loại bài đã chọn (ví dụ chọn hình chiếu trục đo nhưng bài vẽ 3 hình chiếu vuông góc) thì đặt "doc_duoc": false và ghi trong "nhan_xet_chung": em đã chọn nhầm loại bài, bài của em là …' : '',
       'Đề bài (yêu cầu của giáo viên): ' + t.DeBai,
       'Bảng chấm điểm của giáo viên (thang ' + t.DiemToiDa + ' điểm; mỗi dòng: tiêu chí – số điểm tối đa):\n' + t.TieuChi,
       hasDe ? 'Có kèm ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu) của giáo viên; đối chiếu bài làm với vật thể và yêu cầu trong ảnh đề.' : '',
