@@ -428,3 +428,20 @@ function stcT5() { stcTestVe_(['hinhcat_dung']); }
 function stcT6() { stcTestVe_(['hinhcat_sai']); }
 function stcT7() { stcTestVe_(['phoicanh_dung']); }
 function stcT8() { stcTestVe_(['phoicanh_sai']); }
+function stcTAll() {
+  const base = 'https://raw.githubusercontent.com/nhungboss82-creator/TECHMARTH2026/30be536/tmp/vetest/';
+  const src = String(stcTestVe_); const DE = eval('(' + src.slice(src.indexOf('DE = ') + 5, src.indexOf(', CRIT = ')) + ')'); const CRIT = eval('(' + src.slice(src.indexOf('CRIT = ') + 7, src.indexOf(', out = [];')) + ')');
+  const cases = ['hinhchieu_sai', 'trucdo_dung', 'trucdo_sai', 'hinhcat_dung', 'hinhcat_sai', 'phoicanh_dung', 'phoicanh_sai'];
+  const key = PropertiesService.getScriptProperties().getProperty('GEMINI_KEY'), model = geminiModel_(), t0 = Date.now();
+  const reqs = cases.map(c => { const loai = c.split('_')[0]; const b = UrlFetchApp.fetch(base + c + '.png').getBlob();
+    const task = { Khoi: '10', Loai: loai, DeBai: DE[loai], TieuChi: CRIT[loai], DiemToiDa: 10 };
+    const parts = [{ text: drawPrompt_(task, false, false) }, { text: 'ẢNH BÀI LÀM CỦA HỌC SINH (toạ độ vi_tri tính trên ảnh này):' }, { inline_data: { mime_type: 'image/png', data: Utilities.base64Encode(b.getBytes()) } }];
+    return { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': key },
+      payload: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }; });
+  const res = UrlFetchApp.fetchAll(reqs);
+  console.log('model ' + model + ' – ' + Math.round((Date.now() - t0) / 1000) + 's cho ' + cases.length + ' bài');
+  res.forEach((r, i) => { let line = cases[i] + ' | HTTP ' + r.getResponseCode();
+    try { const j = JSON.parse(r.getContentText()); const tx = j.candidates[0].content.parts.map(p => p.text || '').join(''); const ai = JSON.parse(tx.match(/\{[\s\S]*\}/)[0]);
+      line += ' | doc=' + ai.doc_duoc + ' dat=' + ai.dat_yeu_cau + ' diem=' + ai.diem + ' | loi=' + JSON.stringify((ai.loi || []).map(x => x.mo_ta)) + ' | nx=' + ai.nhan_xet_chung; } catch (e) { line += ' | ' + r.getContentText().slice(0, 200); }
+    console.log(line); });
+}
