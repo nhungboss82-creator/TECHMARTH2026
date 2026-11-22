@@ -178,8 +178,8 @@ function cn2111Patch_() {
   var DRAW_CHECK_ = {
     chung: '(1) đúng loại bản vẽ đề yêu cầu; (2) đủ mọi cạnh, mọi đường bao của vật thể – không thiếu, không thừa; (3) đúng loại nét; (4) đúng yêu cầu riêng của đề.',
     hinhchieu: '(1) đủ 3 hình chiếu, đúng vị trí: bằng ở DƯỚI đứng, cạnh ở BÊN PHẢI đứng; (2) các hình chiếu dóng thẳng, cùng chiều dài/cao/rộng; (3) từng hình chiếu đủ đường bao và cạnh thấy, không thiếu/thừa; (4) mọi lỗ, rãnh, phần khuất đều có nét đứt ở các hình chiếu thấy nó bị che; (5) đường tâm, trục đối xứng bằng nét gạch chấm (đường tròn có 2 đường tâm vuông góc); (6) đúng loại nét (liền đậm/đứt/gạch chấm).',
-    trucdo: '(1) đúng loại trục đo đề yêu cầu (vuông góc đều: các trục lệch 120°; xiên góc cân: x ⊥ z, y lệch 135°, cạnh theo y vẽ bằng 0,5); (2) ĐẾM SỐ CẠNH THẤY: liệt kê từng đỉnh thấy của vật thể và kiểm tra mỗi đỉnh nối đủ các cạnh (khối hộp nhìn từ trên phải thấy đủ 9 cạnh: 4 cạnh mặt trên, 3 cạnh đứng, 2 cạnh đáy) – thiếu cạnh nào là lỗi; (3) các cạnh song song ngoài thực tế phải song song trên hình; (4) không vẽ nét khuất; (5) đường tròn trên các mặt vẽ thành elip đúng hướng.',
-    hinhcat: '(1) có vết mặt phẳng cắt, mũi tên hướng chiếu, chữ tên và tên hình cắt (A–A) nếu đề yêu cầu; (2) đúng loại hình cắt/mặt cắt theo đề; (3) KIỂM TRA ĐƯỜNG GẠCH GẠCH: chỉ được gạch ở phần VẬT LIỆU ĐẶC bị mặt phẳng cắt đi qua; vùng LỖ RỖNG, rãnh rỗng, khoảng trống tuyệt đối KHÔNG gạch – nếu có gạch trùm qua lỗ rỗng là lỗi nghiêm trọng; gạch là nét liền mảnh nghiêng 45°, cách đều, cùng hướng trên cùng một chi tiết; (4) phần sau mặt phẳng cắt vẽ đủ, cạnh lỗ bị cắt vẽ nét liền đậm (không còn nét đứt); (5) đường tâm lỗ bằng nét gạch chấm.',
+    trucdo: '(1) đúng loại trục đo đề yêu cầu (vuông góc đều: các trục lệch 120°; xiên góc cân: x ⊥ z, y lệch 135°, cạnh theo y vẽ bằng 0,5); (2) ĐẾM SỐ CẠNH THẤY TRÊN ẢNH: liệt kê từng đỉnh thấy của vật thể và với mỗi đỉnh, đếm các đoạn thẳng THỰC SỰ ĐƯỢC VẼ xuất phát từ đỉnh đó (không tự hình dung thêm cạnh mà ảnh không có). Với khối hộp nhìn từ trên: đỉnh gần người xem nhất (đỉnh thấp nhất ở giữa hình) phải có 3 cạnh – 2 cạnh đáy và 1 cạnh đứng đi lên tới mặt trên; toàn hình phải có đủ 9 cạnh thấy (4 cạnh mặt trên, 3 cạnh đứng, 2 cạnh đáy). Thiếu cạnh nào là lỗi nghiêm trọng; (3) các cạnh song song ngoài thực tế phải song song trên hình; (4) không vẽ nét khuất; (5) đường tròn trên các mặt vẽ thành elip đúng hướng.',
+    hinhcat: '(1) có vết mặt phẳng cắt, mũi tên hướng chiếu, chữ tên và tên hình cắt (A–A) nếu đề yêu cầu; (2) đúng loại hình cắt/mặt cắt theo đề; (3) KIỂM TRA ĐƯỜNG GẠCH GẠCH TỪNG VÙNG: chia hình cắt thành các vùng giữa các nét liền; đối chiếu với hình chiếu còn lại để biết vùng nào là vật liệu đặc, vùng nào là LỖ RỖNG (ví dụ lỗ tròn trên hình chiếu bằng ứng với dải giữa hai nét liền trên hình cắt). Vùng đặc phải có gạch; vùng lỗ rỗng phải để TRẮNG. Ghi rõ vùng nào đang có gạch. Có gạch trong vùng lỗ rỗng là lỗi nghiêm trọng; gạch là nét liền mảnh nghiêng 45°, cách đều, cùng hướng trên cùng một chi tiết; (4) phần sau mặt phẳng cắt vẽ đủ, cạnh lỗ bị cắt vẽ nét liền đậm (không còn nét đứt); (5) đường tâm lỗ bằng nét gạch chấm.',
     phoicanh: '(1) có đường chân trời và điểm tụ trên đường chân trời, đúng số điểm tụ đề yêu cầu; (2) KÉO DÀI TỪNG CẠNH LÙI xem có đi qua đúng điểm tụ không – các cạnh lùi song song với nhau (không hội tụ) là lỗi nghiêm trọng; (3) cạnh thẳng đứng vẽ thẳng đứng; với 1 điểm tụ, mặt trước là hình thật (cạnh ngang nằm ngang); (4) đủ các cạnh thấy, không vẽ cạnh khuất; (5) tô đậm nét thấy, nét dựng hình mảnh hoặc đã xoá.'
   };
   drawPrompt_ = function (t, hasRef, hasDe) {
@@ -203,7 +203,7 @@ function cn2111Patch_() {
       '- Không khẳng định chắc chắn khi không nhìn rõ; ghi "có thể" khi chưa chắc.',
       '- "dat_yeu_cau": true nếu đạt từ 50% thang điểm và không có lỗi nghiêm trọng.',
       'BẮT BUỘC TỰ KIỂM TRA TRƯỚC KHI KẾT LUẬN – điền vào "kiem_tra" từng mục dưới đây (nhìn kĩ bản vẽ, không đoán): ' + (DRAW_CHECK_[t.Loai] || DRAW_CHECK_.chung),
-      'Mỗi mục "kiem_tra" có ket_qua "sai" thì PHẢI có một lỗi tương ứng trong "loi". Không được chấm đạt nếu còn mục sai.',
+      '"ghi_chu" của mỗi mục phải nêu BẰNG CHỨNG cụ thể nhìn thấy trên ảnh (ví dụ: liệt kê các cạnh đếm được, vùng nào có gạch, vùng nào để trắng, cạnh nào kéo dài có/không qua điểm tụ) – không được ghi chung chung "đúng". Mỗi mục "kiem_tra" có ket_qua "sai" thì PHẢI có một lỗi tương ứng trong "loi". Không được chấm đạt nếu còn mục sai.',
       'Trả lời DUY NHẤT một đối tượng JSON, không thêm chữ nào khác, theo mẫu (ghi "kiem_tra" TRƯỚC):',
       '{"kiem_tra": [{"muc": "…", "ket_qua": "đúng|sai|không áp dụng", "ghi_chu": "…"}], "doc_duoc": true, "dat_yeu_cau": false, "diem": 7.5, "bang_diem": [{"tieu_chi": "…", "toi_da": 3, "dat": 2.5, "nhan_xet": "…"}], "nhan_xet_chung": "…", "diem_dung": ["…"], "loi": [{"mo_ta": "…", "tieu_chi": "…", "tru_diem": 0.5, "vi_tri": [120, 340, 260, 520], "cach_sua": "…"}], "goi_y_sua": ["…"], "y_tuong": ["…"]}'
     ].filter(String).join('\n');
@@ -446,15 +446,18 @@ function stcTAll() {
     const task = { Khoi: '10', Loai: loai, DeBai: DE[loai], TieuChi: CRIT[loai], DiemToiDa: 10 };
     const parts = [{ text: drawPrompt_(task, false, false) }, { text: 'ẢNH BÀI LÀM CỦA HỌC SINH (toạ độ vi_tri tính trên ảnh này):' }, { inline_data: { mime_type: 'image/png', data: Utilities.base64Encode(b.getBytes()) } }];
     return { url: 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent', method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': key },
-      payload: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } }) }; });
+      payload: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: Object.assign({ temperature: 0.2, responseMimeType: 'application/json' }, STC_GEN_ || {}) }) }; });
   const res = UrlFetchApp.fetchAll(reqs);
   console.log('model ' + model + ' – ' + Math.round((Date.now() - t0) / 1000) + 's cho ' + cases.length + ' bài');
   res.forEach((r, i) => { let line = cases[i] + ' | HTTP ' + r.getResponseCode();
     try { const j = JSON.parse(r.getContentText()); const tx = j.candidates[0].content.parts.map(p => p.text || '').join(''); const ai = JSON.parse(tx.match(/\{[\s\S]*\}/)[0]);
-      line += ' | kt=' + JSON.stringify((ai.kiem_tra || []).filter(k => k.ket_qua === 'sai').map(k => k.muc)) + ' | doc=' + ai.doc_duoc + ' dat=' + ai.dat_yeu_cau + ' diem=' + ai.diem + ' | loi=' + JSON.stringify((ai.loi || []).map(x => x.mo_ta)) + ' | nx=' + ai.nhan_xet_chung; } catch (e) { line += ' | ' + r.getContentText().slice(0, 200); }
+      line += ' | kt=' + JSON.stringify((ai.kiem_tra || []).map(k => k.ket_qua + ': ' + String(k.ghi_chu).slice(0, 160))) + ' | doc=' + ai.doc_duoc + ' dat=' + ai.dat_yeu_cau + ' diem=' + ai.diem + ' | loi=' + JSON.stringify((ai.loi || []).map(x => x.mo_ta)) + ' | nx=' + ai.nhan_xet_chung; } catch (e) { line += ' | ' + r.getContentText().slice(0, 200); }
     console.log(line); });
 }
 function stcTA() { STC_CASES_ = ['hinhcat_sai', 'trucdo_sai', 'phoicanh_sai']; stcTAll(); }
 function stcTB() { STC_CASES_ = ['hinhcat_dung', 'trucdo_dung', 'phoicanh_dung']; stcTAll(); }
 function stcTC() { STC_CASES_ = ['hinhchieu_dung', 'hinhchieu_sai']; stcTAll(); }
 var STC_CASES_;
+var STC_GEN_;
+function stcTD() { STC_CASES_ = ['hinhcat_sai', 'trucdo_sai', 'hinhchieu_dung']; STC_GEN_ = { thinkingConfig: { thinkingLevel: 'high' } }; stcTAll(); }
+function stcTE() { STC_CASES_ = ['hinhcat_sai', 'trucdo_sai', 'hinhchieu_dung']; stcTAll(); }
