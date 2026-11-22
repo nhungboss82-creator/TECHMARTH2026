@@ -792,7 +792,7 @@ async function homeTodo(box) {
     if (!box.isConnected) return;
     quiz = Array.isArray(quiz) ? quiz : []; drw = Array.isArray(drw) ? drw : [];
     const items = [
-      ...quiz.filter(a => !a.soLanDaLam && !lateOf(a.HanNop)).map(a => ({ ic: '📝', c: '', t: a.TieuDe, m: [a.LoaiBai, a.DanhSachCau.length + ' câu', a.HanNop ? 'hạn ' + dt(a.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baigiao?mo=' + a.MaBai })),
+      ...quiz.filter(a => !a.soLanDaLam && !lateOf(a.HanNop)).map(a => ({ ic: '📝', c: '', t: a.TieuDe, m: [a.LoaiBai, (a.soCau || a.DanhSachCau.length) + ' câu', a.chuaMo && a.BatDau ? '🔒 mở ' + dt(a.BatDau) : '', a.HanNop ? 'hạn ' + dt(a.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baigiao?mo=' + a.MaBai })),
       ...drw.filter(t => !t.bai.length && !lateOf(t.HanNop)).map(t => ({ ic: t.Loai === 'thietke' ? '💡' : '✏️', c: 'amber', t: t.TieuDe, m: [t.Loai === 'thietke' ? 'Thiết kế kĩ thuật' : 'Bài tập vẽ', t.HanNop ? 'hạn ' + dt(t.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baive/' + t.MaBV }))];
     setTabDot(items.length);
     if (!items.length) { box.innerHTML = `<div class="card empty">${err ? esc(err) : 'Em đã làm hết bài thầy cô giao. Ôn thêm bên dưới nhé!'}</div>`; return; }
@@ -994,16 +994,16 @@ async function homeTasks(box, openId) {
     if (st.quiz == null && st.drw == null) body = `<div class="card empty">${esc(st.err || 'Đang tải…')}</div>`;
     else if (cur[0] === 'quiz') {
       body = quiz.length ? '<div class="list">' + quiz.map((a, i) => {
-        const late = lateOf(a.HanNop), out = a.SoLan && a.soLanDaLam >= a.SoLan;
+        const late = lateOf(a.HanNop), out = a.SoLan && a.soLanDaLam >= a.SoLan, wait = a.chuaMo && a.BatDau && new Date(a.BatDau) > new Date();
         const nTL = a.DanhSachCau.filter(id => bank.byId[id] && bank.byId[id].t === 'L').length;
         return `<div class="item"${a.MaBai === openId ? ' id="asgopen" style="border-color:var(--brand2);box-shadow:0 0 0 3px var(--info-soft)"' : ''}><div class="grow">${a.MaBai === openId ? '<div class="pill" style="margin-bottom:4px">👉 Bài thầy cô vừa chia sẻ</div>' : ''}<b>${esc(a.TieuDe)}</b> ${a.LoaiBai ? `<span class="pill">${esc(a.LoaiBai)}</span>` : ''}
-          <div class="meta">${a.DanhSachCau.length} câu${nTL ? ' (có ' + nTL + ' câu tự luận)' : ''}${a.ThoiGian ? ' · ' + a.ThoiGian + ' phút' : ''}${a.HanNop ? ' · hạn ' + dt(a.HanNop) : ''} · ${esc(a.TenGV)}</div>
+          <div class="meta">${a.soCau || a.DanhSachCau.length} câu${nTL ? ' (có ' + nTL + ' câu tự luận)' : ''}${a.ThoiGian ? ' · ' + a.ThoiGian + ' phút' : ''}${a.BatDau ? ' · mở ' + dt(a.BatDau) : ''}${a.HanNop ? ' · hạn ' + dt(a.HanNop) : ''} · ${esc(a.TenGV)}</div>
           ${a.MoTa ? `<div class="meta">📌 ${esc(a.MoTa)}</div>` : ''}
           <div class="row" style="margin-top:4px">${a.soLanDaLam ? (a.choDiem ? `<span class="pill ok">Đã nộp ${a.soLanDaLam} lần</span><span class="pill warn">⏳ Chờ cả lớp nộp (${a.choDiem.nop}/${a.choDiem.si}) mới có điểm</span>` : `<span class="pill ok">Đã làm ${a.soLanDaLam} lần · cao nhất ${fmt(a.diemCao)}</span>`) : '<span class="pill warn">Chưa làm</span>'}
           ${a.CheDoDiem === 'diem' ? '<span class="pill">Chỉ xem điểm</span>' : a.CheDoDiem === 'calop' && !a.soLanDaLam ? '<span class="pill">Cả lớp nộp xong mới có điểm</span>' : ''}
-          ${late ? '<span class="pill bad">Hết hạn</span>' : ''}</div></div>
+          ${late ? '<span class="pill bad">Hết hạn</span>' : ''}${wait ? `<span class="pill warn">🔒 Mở lúc ${dt(a.BatDau)}</span>` : ''}</div></div>
           <div class="row">${a.soLanDaLam && a.BangXepHang !== 'tat' && !a.choDiem ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent(a.MaBai)}&t=${encodeURIComponent(a.TieuDe)}">🏆</a>` : ''}
-          <button class="btn sm" data-i="${i}" ${late || out ? 'disabled' : ''}>${out ? 'Hết lượt' : 'Làm bài'}</button></div></div>`;
+          <button class="btn sm" data-i="${i}" ${late || out || wait ? 'disabled' : ''}>${out ? 'Hết lượt' : wait ? 'Chưa mở' : 'Làm bài'}</button></div></div>`;
       }).join('') + '</div>' : '<div class="card empty">Chưa có bài kiểm tra nào được giao.</div>';
     } else {
       const l = cur[2], isTK = cur[0] === 'tk';
@@ -1018,6 +1018,7 @@ async function homeTasks(box, openId) {
     const op = $('#asgopen', box); if (op && !st.scrolled) { st.scrolled = true; setTimeout(() => op.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200); }
     $$('[data-i]', box).forEach(b => b.onclick = async () => {
       const a = quiz[+b.dataset.i];
+      if (a.chuaMo && a.BatDau && new Date(a.BatDau) > new Date()) { toast('Bài mở lúc ' + dt(a.BatDau)); return; }
       if (a.DanhSachCau.some(id => !bank.byId[id])) { toast('Đang tải câu hỏi mới…'); await syncBank(true); }
       const ids = a.DanhSachCau.filter(id => bank.byId[id]);
       if (!ids.length) { toast('Chưa tải được câu hỏi của bài này'); return; }
@@ -2676,10 +2677,11 @@ route(/^\/gv\/giaobai$/, async params => {
           <div><label for="lbx">Loại bài</label><select id="lbx">${ASG_TYPES.map(x => `<option ${x === keep.lb ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>
         <label>Giao cho lớp</label>
         <div class="gb-cls">${isAdm && !cls.length ? '<div class="hint">Chọn trường ở trên để hiện các lớp.</div>' : ['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="gb-kr"><b>K${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}</div>
-        <div class="gb-3"><div><label for="mi">Số phút</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
-          <div><label for="at">Số lần làm</label><input id="at" type="number" min="0" max="20" value="1"></div>
-          <div><label for="dl">Hạn nộp</label><input id="dl" type="datetime-local"></div></div>
-        <p class="hint" style="margin:2px 0 0">0 = không giới hạn · để trống hạn nộp = không hạn</p>
+        <div class="gb-2 gb-eq"><div><label for="mi">Thời gian làm (phút)</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
+          <div><label for="at">Số lần được làm</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
+        <div class="gb-2 gb-eq"><div><label for="st">🟢 Bắt đầu</label><input id="st" type="datetime-local" value="${esc(keep.st || '')}"></div>
+          <div><label for="dl">🔴 Kết thúc (hạn nộp)</label><input id="dl" type="datetime-local" value="${esc(keep.dl || '')}"></div></div>
+        <p class="hint" style="margin:2px 0 0">0 = không giới hạn · bỏ trống Bắt đầu = mở ngay · bỏ trống Kết thúc = không hạn</p>
         <div class="gb-2"><div><label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div><label for="lb">Bảng xếp hạng</label><select id="lb"><option value="ngay">Hiện ngay sau khi nộp</option><option value="sau_han">Chỉ hiện sau hạn nộp</option><option value="tat">Tắt</option></select></div></div>
         <p class="hint" id="cddh" style="margin:2px 0 0">${DIEM_MODES.find(x => x[0] === keep.cdd)[2]}</p>
@@ -2690,7 +2692,7 @@ route(/^\/gv\/giaobai$/, async params => {
         <div class="gbm">${GB_MODES.map(([v, ic, t, d]) => `<button type="button" data-m="${v}" class="gbm-c${mode === v ? ' on' : ''}"><span class="gbm-i">${ic}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>
         <div id="mbox" class="gbm-box"></div>
       </div></form>`);
-    const remember = () => { keep.t = $('#t').value; keep.lb = $('#lbx').value; keep.cdd = $('#cdd').value; keep.mi = $('#mi').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
+    const remember = () => { keep.st = $('#st').value; keep.dl = $('#dl').value; keep.t = $('#t').value; keep.lb = $('#lbx').value; keep.cdd = $('#cdd').value; keep.mi = $('#mi').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
     sc.bind(() => { remember(); keep.cl = null; draw(); });
     $$('[data-m]').forEach(b => b.onclick = () => { if (b.dataset.m === mode) return; remember(); readCells(); mode = b.dataset.m; keep.mi = '';
       if (mode === 'tuchon') { mt.src = ''; mt.cells = {}; mt.k = curK(); } else if (mode === 'matran' && !String(mt.src).startsWith('CV')) mt.k = '';
@@ -2706,9 +2708,10 @@ route(/^\/gv\/giaobai$/, async params => {
       const classes = $$('input[name=cl]:checked').map(i => i.value);
       const ks = new Set($$('input[name=cl]:checked').map(i => i.dataset.k));
       if (ks.size > 1) { errBox($('#msg'), 'Mỗi bài chỉ giao cho các lớp cùng một khối'); return; }
+      if ($('#st').value && $('#dl').value && new Date($('#dl').value) <= new Date($('#st').value)) { errBox($('#msg'), 'Thời gian kết thúc phải sau thời gian bắt đầu'); return; }
       const cdd = $('#cdd').value;
       const a = { title: $('#t').value, classes, mode, minutes: +$('#mi').value, attempts: +$('#at').value,
-        deadline: $('#dl').value ? new Date($('#dl').value).toISOString() : '', leaderboard: $('#lb').value, diemMode: cdd, hints: cdd !== 'diem', note: $('#no').value, loaiBai: $('#lbx').value };
+        deadline: $('#dl').value ? new Date($('#dl').value).toISOString() : '', startAt: $('#st').value ? new Date($('#st').value).toISOString() : '', leaderboard: $('#lb').value, diemMode: cdd, hints: cdd !== 'diem', note: $('#no').value, loaiBai: $('#lbx').value };
       // bốc câu ở máy để thầy cô xem trước đúng bộ câu sẽ giao (gen() gọi lại được để bốc bộ khác)
       let gen = null;
       if (mode === 'matran' || mode === 'tuchon') {
@@ -2905,7 +2908,7 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
     const dist = [0, 0, 0, 0, 0]; fr.forEach(r => dist[Math.min(4, Math.floor(r.diem / 2))]++);
     const dmax = Math.max(1, ...dist);
     setView(`<a href="#/gv/baigiao">← Bài đã giao</a><h1>${esc(a.TieuDe)}</h1>
-      <p class="sub">Khối ${esc(a.Khoi)} · ${a.DanhSachCau.length} câu${a.ThoiGian ? ' · ' + a.ThoiGian + ' phút' : ''}${a.HanNop ? ' · hạn ' + dt(a.HanNop) : ''} · Lớp: ${esc(a.DanhSachLop.map(c => (cls.find(x => x.MaLop === c) || {}).TenLop || c).join(', '))}<br>Sau khi nộp: <b>${esc(cddName)}</b></p>
+      <p class="sub">Khối ${esc(a.Khoi)} · ${a.DanhSachCau.length} câu${a.ThoiGian ? ' · ' + a.ThoiGian + ' phút' : ''}${a.BatDau ? ' · mở ' + dt(a.BatDau) : ''}${a.HanNop ? ' · hạn ' + dt(a.HanNop) : ''} · Lớp: ${esc(a.DanhSachLop.map(c => (cls.find(x => x.MaLop === c) || {}).TenLop || c).join(', '))}<br>Sau khi nộp: <b>${esc(cddName)}</b></p>
       <div class="card qrcard${params && params.get('moi') ? ' fresh' : ''}"><div class="row" style="align-items:center;gap:16px;flex-wrap:wrap"><div class="qrbox">${qrBig}</div>
         <div class="grow">${params && params.get('moi') ? '<div class="okmsg" style="margin:0 0 6px">✅ Đã giao bài. HS quét mã này để mở đúng bài.</div>' : ''}<h3 style="margin:0 0 4px">📱 Mã QR cho học sinh</h3>
           <p class="hint" style="margin:0 0 8px">HS quét bằng camera điện thoại → đăng nhập tài khoản HS → bài này hiện lên đầu, bấm <b>Làm bài</b>. Chỉ HS thuộc lớp được giao mới làm được.</p>

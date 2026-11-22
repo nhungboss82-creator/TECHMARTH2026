@@ -422,3 +422,35 @@ function cn2111LogIds_(sh) {
 }
 
 try { cn2111Patch_(); } catch (e) { console.error('CapNhat_21_11: ' + e); }
+
+/* ===== Cập nhật 22/11: thời gian BẮT ĐẦU cho bài giao (BaiGiao.BatDau) ===== */
+function cn2211BatDau_() {
+  if (typeof API === 'undefined' || typeof SHEETS === 'undefined') return;
+  if (SHEETS.BaiGiao.indexOf('BatDau') < 0) SHEETS.BaiGiao.push('BatDau');
+  const iso = v => v instanceof Date ? v.toISOString() : String(v || '');
+  const map = () => { const m = {}; rows_('BaiGiao').forEach(b => { if (b.BatDau) m[b.MaBai] = iso(b.BatDau); }); return m; };
+  const ca = API.create_assignment;
+  if (ca) API.create_assignment = req => {
+    const a = (req && req.assignment) || {};
+    const st = a.startAt && !isNaN(new Date(a.startAt)) ? new Date(a.startAt).toISOString() : '';
+    if (st && a.deadline && new Date(a.deadline) <= new Date(st)) throw new Error('Thời gian kết thúc phải sau thời gian bắt đầu');
+    const o = ca(req);
+    if (st) { ensureCols_('BaiGiao'); const r = rows_('BaiGiao').find(x => x.MaBai === o.MaBai); if (r) update_('BaiGiao', r._r, { BatDau: st }); o.BatDau = st; }
+    return o;
+  };
+  const my = API.my_assignments;
+  if (my) API.my_assignments = req => {
+    const l = my(req), m = map(), now = new Date();
+    l.forEach(o => { if (m[o.MaBai]) { o.BatDau = m[o.MaBai]; if (now < new Date(o.BatDau)) { o.chuaMo = true; o.soCau = o.DanhSachCau.length; o.DanhSachCau = []; } } });
+    return l;
+  };
+  const la = API.list_assignments;
+  if (la) API.list_assignments = req => { const l = la(req), m = map(); (l || []).forEach(o => { if (o && m[o.MaBai]) o.BatDau = m[o.MaBai]; }); return l; };
+  const sb = API.submit;
+  if (sb) API.submit = req => {
+    const s = (req && req.result) || {};
+    if (s.loai === 'baigiao') { const st = map()[String(s.key || '')]; if (st && new Date() < new Date(st)) throw new Error('Bài chưa đến giờ bắt đầu'); }
+    return sb(req);
+  };
+}
+try { cn2211BatDau_(); } catch (e) { console.error('CapNhat_22_11 BatDau: ' + e); }
