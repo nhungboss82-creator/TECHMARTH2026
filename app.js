@@ -3639,31 +3639,72 @@ const DRAW_PRACTICE = {
     'Vẽ hình chiếu phối cảnh hai điểm tụ của khối hộp chữ nhật (mô phỏng ngôi nhà) có cạnh đứng gần người quan sát nhất.',
     'Vẽ phối cảnh một điểm tụ của một con đường thẳng có hai hàng cột điện hai bên.']
 };
+/* 22/11/2026: tiêu chí chấm riêng cho từng loại bài tự luyện – [tên tiêu chí, điểm tối đa, yêu cầu / cách làm đúng] */
+const VE_TC = {
+  hinhchieu: [['Bố trí các hình chiếu theo phương pháp chiếu', 2.5, 'Phương pháp chiếu góc thứ nhất: hình chiếu bằng đặt dưới hình chiếu đứng, hình chiếu cạnh đặt bên phải hình chiếu đứng; các hình dóng thẳng hàng với nhau.'],
+    ['Chiếu đúng hình dạng vật thể', 3.5, 'Mỗi hình chiếu có đủ đường bao, cạnh thấy, cạnh khuất; đúng chiều dài – chiều cao – chiều rộng; lỗ, rãnh thể hiện đúng vị trí.'],
+    ['Nét vẽ đúng tiêu chuẩn', 2, 'Cạnh thấy: nét liền đậm; cạnh khuất: nét đứt mảnh; đường tâm, trục đối xứng: nét gạch dài – chấm – mảnh.'],
+    ['Ghi kích thước', 2, 'Đường gióng, đường kích thước vẽ nét liền mảnh, có mũi tên; chữ số ghi giá trị thật (mm), đặt đúng chiều đọc.']],
+  trucdo: [['Chọn loại hình chiếu trục đo', 3, 'Vuông góc đều: ba trục lệch nhau 120°, hệ số p = q = r = 1. Xiên góc cân: O′x′ ⊥ O′z′, O′y′ lệch 135°, hệ số q = 0,5.'],
+    ['Biểu diễn hình chiếu trục đo', 4.5, 'Cạnh song song trục toạ độ vẽ song song trục đo tương ứng; đủ các cạnh thấy; đúng hệ số biến dạng; đường tròn vẽ thành elip.'],
+    ['Nét vẽ', 2.5, 'Cạnh thấy vẽ nét liền đậm; không vẽ nét khuất; nét dựng hình vẽ mảnh hoặc xoá đi.']],
+  hinhcat: [['Chọn loại hình cắt, mặt cắt', 3, 'Chọn đúng hình cắt toàn bộ / một nửa / cục bộ hoặc mặt cắt chập / rời theo yêu cầu của đề và hình dạng vật thể.'],
+    ['Vẽ nét hình cắt – mặt cắt', 4, 'Vẽ đủ phần vật thể sau mặt phẳng cắt; đường gạch gạch là nét liền mảnh nghiêng 45°, chỉ ở vùng vật liệu đặc bị cắt, không gạch qua lỗ rỗng.'],
+    ['Biểu diễn nét cắt', 3, 'Vết mặt phẳng cắt là nét gạch chấm mảnh, hai đầu nét đậm, có mũi tên hướng chiếu và chữ cái; ghi tên hình cắt (A–A).']],
+  phoicanh: [['Chọn loại hình chiếu phối cảnh', 3, 'Một điểm tụ hoặc hai điểm tụ đúng yêu cầu; có đường chân trời, điểm tụ nằm trên đường chân trời.'],
+    ['Biểu diễn hình phối cảnh', 4.5, 'Các cạnh lùi hội tụ về điểm tụ; cạnh thẳng đứng vẽ thẳng đứng; đủ các cạnh thấy; tỉ lệ xa – gần hợp lí.'],
+    ['Nét vẽ', 2.5, 'Nét thấy đậm, rõ; nét dựng hình vẽ mảnh hoặc xoá đi; không vẽ cạnh khuất.']]
+};
+const veCrit = loai => (VE_TC[loai] || VE_TC.hinhchieu).map(([t, d, g]) => `${t} (${g}) – ${String(d).replace('.', ',')} điểm`).join('\n');
+const VE_LOG = 'Bài vẽ AI chấm – ';
+/* gộp bảng điểm AI trả về với tiêu chí của loại bài (theo thứ tự) */
+function veScore(loai, ai) {
+  const tc = VE_TC[loai] || VE_TC.hinhchieu, bd = ai && Array.isArray(ai.bang_diem) ? ai.bang_diem : [];
+  const rows = tc.map(([t, max, g], i) => { const r = bd[i] || {}; const dat = isFinite(+r.dat) && r.dat !== '' && r.dat != null ? Math.max(0, Math.min(max, +r.dat)) : null;
+    return { t, max, g, dat, nx: r.nhan_xet || '', hd: r.huong_dan || '' }; });
+  const ok = rows.every(r => r.dat != null);
+  const total = ok ? Math.round(rows.reduce((a, r) => a + r.dat, 0) * 4) / 4 : (ai && isFinite(+ai.diem) ? +ai.diem : null);
+  return { rows, total };
+}
 route(/^\/tuluyenve$/, async () => {
-  /* 22/11/2026: một trang chung cho GV và HS – ① loại bài · ② đề bài · ③ bài vẽ (đáp án) → AI chỉ lỗi sai; vẽ đúng thì chúc mừng */
+  /* Bài vẽ – AI chấm (chung GV/HS): ① loại bài · ② đề · ③ bài vẽ → điểm theo tiêu chí riêng từng loại, lỗi sai, hướng dẫn sửa; nhật ký lượt chấm */
   if (!session) { location.hash = '#/dangnhap'; return; }
+  const isHS = session.role === 'hs';
   let loai = store.get('tlv_loai', 'hinhchieu'); if (!DRAW_MAIN[loai]) loai = 'hinhchieu';
-  let deTxt = '', deImg = null, baiImg = null, sentImg = null, result = null, busyNow = false, err = '', lanNop = 0, tasks = [];
+  let deTxt = '', deImg = null, baiImg = null, sentImg = null, result = null, rLoai = loai, busyNow = false, err = '', lanNop = 0, tasks = [], showTc = false, logAll = false;
+  let ten = isHS ? session.user.HoTen : store.get('tlv_ten', ''), lop = isHS ? (session.user.TenLop || '') : store.get('tlv_lop', '');
+  let srvLog = null;
   const here = () => location.hash.split('?')[0] === '#/tuluyenve';
-  /* kết quả về khi em đã rời trang: giữ lại để mở lại trang là thấy ngay */
-  if (window._tlvLast) { ({ loai, deTxt, deImg, baiImg, result } = window._tlvLast); sentImg = baiImg; window._tlvLast = null; }
+  if (window._tlvLast) { ({ loai, deTxt, deImg, baiImg, result, rLoai } = window._tlvLast); sentImg = baiImg; window._tlvLast = null; }
   const hashStr = x => { let h = 0; for (let i = 0; i < x.length; i += 97) h = (h * 31 + x.charCodeAt(i)) | 0; return (h >>> 0).toString(36).slice(0, 5); };
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('vbai');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
   const picker = (id, img, label) => `<div class="vk-pick"><label class="btn ghost sm">📷 Chụp ảnh<input data-cam="${id}" type="file" accept="image/*" capture="environment" hidden></label><label class="btn ghost sm">📁 Tải tệp<input data-file="${id}" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
     <div id="${id}" class="imgdrop imgdrop-lite vk-drop" tabindex="0">${img ? `<img src="${img}" alt="${label}"><button type="button" class="imgdrop-x" data-clr="${id}" title="Bỏ ảnh">✕</button>` : `<span class="hint">${label} · ảnh, ảnh iPhone (HEIC) hoặc PDF</span>`}</div>`;
+  /* nhật ký: máy này + (HS) máy chủ */
+  const logs = () => {
+    const loc = store.get('thuchanh', []).filter(r => String(r.bai).indexOf(VE_LOG) === 0 && (isHS || r.ten === ten || !ten));
+    const m = {}; loc.forEach(r => { m[r.id] = { t: r.t, bai: r.bai, phan: r.phan, ten: r.ten, lop: r.lop, lan: r.lan, diem: r.diem, soLoi: r.soLoi }; });
+    (srvLog || []).forEach(r => { const id = String(r.MaLuot || ''); if (!m[id]) m[id] = { t: new Date(r.ThoiDiem).getTime(), bai: r.Bai, phan: r.Phan, ten: r.HoTen, lop: r.TenLop, lan: r.Lan, diem: r.Diem === '' ? null : +r.Diem, soLoi: r.SoLoi === '' ? null : +r.SoLoi }; });
+    return Object.values(m).sort((a, b) => b.t - a.t);
+  };
+  const scoreCls = d => d == null ? '' : d >= 8 ? 'ok' : d >= 5 ? 'mid' : 'bad';
   const draw = () => {
-    const nErr = result && result.doc_duoc !== false ? (result.loi || []).filter(Boolean).length : -1;
-    /* chỉ chúc mừng khi AI không thấy lỗi VÀ xác nhận đạt yêu cầu (tránh trường hợp AI không liệt kê lỗi nhưng bài vẽ sai đề) */
-    const dung = result && result.doc_duoc !== false && !nErr && result.dat_yeu_cau !== false && (result.diem == null || +result.diem >= 8);
-    const lyDo = result ? esc(result.nhan_xet_chung || '') : '';
-    const goiY = result ? (result.goi_y_sua || []).filter(Boolean).slice(0, 3).map(x => `<p class="rv-p">• ${esc(x)}</p>`).join('') : '';
+    const ai = result, nErr = ai && ai.doc_duoc !== false ? (ai.loi || []).filter(Boolean).length : -1;
+    const sc = ai && ai.doc_duoc !== false ? veScore(rLoai, ai) : null;
+    const dung = sc && !nErr && ai.dat_yeu_cau !== false && (sc.total == null || sc.total >= 8);
+    const lyDo = ai ? esc(ai.nhan_xet_chung || '') : '';
+    const goiY = ai ? (ai.goi_y_sua || []).filter(Boolean).slice(0, 3).map(x => `<p class="rv-p">• ${esc(x)}</p>`).join('') : '';
     const due = (tasks || []).filter(t => !t.HanNop || new Date(t.HanNop) > new Date());
-    setView(`<a href="${isGV() && session.role !== 'hs' ? '#/gv?khoi=10' : '#/onluyen'}">← Quay lại</a><h1 class="bv-h1">📷 Bài vẽ – AI chấm</h1>
+    const L = logs(), shown = logAll ? L : L.slice(0, 8), best = L.filter(x => x.diem != null);
+    setView(`<a href="${isGV() && !isHS ? '#/gv?khoi=10' : '#/onluyen'}">← Quay lại</a><h1 class="bv-h1">📷 Bài vẽ – AI chấm</h1>
       <div class="card vk">
-        <div class="bv-sh"><span class="lt-n ${loai ? 'done' : ''}">1</span><b>Loại bài</b></div>
+        <div class="vk-who">${isHS ? `<span class="vk-me">👤 <b>${esc(ten)}</b>${lop ? ` · Lớp ${esc(lop)}` : ''}</span>`
+          : `<label>👤 Họ tên HS<input id="vten" type="text" maxlength="60" value="${esc(ten)}" placeholder="Nhập họ tên"></label><label>Lớp<input id="vlop" type="text" maxlength="20" value="${esc(lop)}" placeholder="vd 10/3"></label>`}</div>
+        <div class="bv-sh"><span class="lt-n done">1</span><b>Loại bài</b><button type="button" class="vk-tcbtn" id="tcb">${showTc ? '▴ Ẩn tiêu chí chấm' : '▾ Xem tiêu chí chấm'}</button></div>
         <div class="tl-types">${Object.entries(DRAW_MAIN).map(([k, v]) => `<button type="button" class="${k === loai ? 'on' : ''}" data-lo="${k}">${v}</button>`).join('')}</div>
+        ${showTc ? `<ol class="vk-tc">${VE_TC[loai].map(([t, d, g]) => `<li><div><b>${t}</b><span class="vk-pt">${fmt(d)} đ</span></div><p>${g}</p></li>`).join('')}</ol>` : ''}
         <div class="vk-2">
           <div><div class="bv-sh"><span class="lt-n ${deImg || deTxt.trim() ? 'done' : ''}">2</span><b>Đề bài tự chọn</b><span class="hint">chụp đề trong sách, vở, đề thầy cô cho</span></div>
             ${picker('vde', deImg, 'Ảnh đề bài')}
@@ -3673,17 +3714,36 @@ route(/^\/tuluyenve$/, async () => {
         <div id="msg">${err ? `<div class="err">${esc(err)}</div>` : ''}</div>
         <button class="btn block" id="go" ${busyNow ? 'disabled' : ''}>${busyNow ? '<span class="tl-spin"></span> AI đang chấm, chờ chút (khoảng 1–2 phút)…' : '🤖 Chấm bài vẽ'}</button>
       </div>
-      ${result ? `<div class="card vk-kq${nErr > 0 ? '' : ' noerr'}">${result.doc_duoc === false ? `<div class="vk-ban bad">📷 AI chưa đọc được bài vẽ</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY || '<p class="rv-p hint">Chụp lại thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ; kiểm tra đã chọn đúng loại bài và đúng đề.</p>'}`
-        : nErr ? `<div class="vk-ban bad">✘ Có ${nErr} chỗ sai – xem các chỗ khoanh đỏ và vẽ lại${lanNop > 1 ? ` <span class="hint">(lần ${lanNop})</span>` : ''}</div>`
-        : dung ? '<div class="vk-ban ok">🎉 Xin chúc mừng! Bài vẽ đúng.</div>'
-        : `<div class="vk-ban bad">✘ Bài vẽ chưa đúng yêu cầu của đề</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY}`}
-        ${result.doc_duoc === false ? '' : '<div id="vrv"></div>'}
-        <div class="row" style="gap:8px;margin-top:8px"><button class="btn ghost grow" id="again">📷 Gửi bài đã sửa</button><button class="btn ghost grow" id="newde">📄 Bài mới</button></div></div>` : ''}
-      ${due.length ? `<details class="card vk-more"><summary>Bài thầy cô giao (${due.length})</summary><div class="rows">${due.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''}</span></span><span class="chev">›</span></a>`).join('')}</div></details>` : ''}
-      ${isGV() && session.role !== 'hs' ? '<p class="hint" style="margin-top:8px"><a href="#/gv/baive?tab=giao">Bài vẽ đã giao cho lớp</a> · <a href="#/gv/baive?tab=tl">Lượt HS đã chấm</a></p>' : ''}`);
-    $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); result = null; draw(); });
+      ${ai ? `<div class="card vk-kq${nErr > 0 ? '' : ' noerr'}">
+        <div class="vk-kqh"><b>Kết quả chấm · ${esc(DRAW_MAIN[rLoai])}</b><span class="hint">${esc(ten || '')}${lop ? ' · Lớp ' + esc(lop) : ''}${lanNop ? ' · Lần ' + lanNop : ''}</span></div>
+        ${ai.doc_duoc === false ? `<div class="vk-ban bad">📷 AI chưa đọc được bài vẽ</div>${lyDo ? `<p class="rv-p">${lyDo}</p>` : ''}${goiY || '<p class="rv-p hint">Chụp lại thẳng từ trên xuống, đủ sáng, thấy trọn bản vẽ; kiểm tra đã chọn đúng loại bài và đúng đề.</p>'}`
+        : `<div class="vk-res">
+          <aside class="vk-left">
+            <div class="vk-score ${scoreCls(sc.total)}" style="--p:${sc.total == null ? 0 : sc.total * 10}"><div><b>${sc.total == null ? '–' : fmt(sc.total)}</b><span>/10 điểm</span></div></div>
+            <div class="vk-ban ${dung ? 'ok' : 'bad'}">${dung ? '🎉 Xin chúc mừng! Bài vẽ đúng.' : nErr > 0 ? `✘ Có ${nErr} chỗ sai cần sửa` : '✘ Chưa đạt yêu cầu của đề'}</div>
+            ${lyDo ? `<p class="vk-nx">${lyDo}</p>` : ''}
+            <div class="vk-sec">Đánh giá theo tiêu chí</div>
+            <div class="vk-crit">${sc.rows.map((r, i) => { const pc = r.dat == null ? 0 : Math.round(r.dat / r.max * 100), c = r.dat == null ? '' : pc >= 100 ? 'ok' : pc >= 50 ? 'mid' : 'bad';
+              return `<div class="vk-c ${c}"><div class="vk-ch"><span class="vk-ci">${i + 1}</span><b>${esc(r.t)}</b><span class="vk-cs">${r.dat == null ? '–' : fmt(r.dat)}<small>/${fmt(r.max)}</small></span></div>
+                <div class="vk-bar"><i style="width:${pc}%"></i></div>
+                ${r.nx ? `<p>${esc(r.nx)}</p>` : ''}
+                ${r.dat != null && r.dat < r.max ? `<p class="vk-hd">➜ <b>Sửa:</b> ${esc(r.hd || r.g)}</p>` : ''}</div>`; }).join('')}</div>
+          </aside>
+          <div class="vk-right"><div class="vk-sec">Bài vẽ – chỗ sai được khoanh và đánh số</div><div id="vrv"></div></div>
+        </div>`}
+        <div class="row" style="gap:8px;margin-top:10px"><button class="btn grow" id="again">📷 Gửi bài đã sửa</button><button class="btn ghost grow" id="newde">📄 Bài mới</button></div></div>` : ''}
+      <div class="card vk-log"><div class="vk-kqh"><b>📒 Nhật ký luyện vẽ</b><span class="hint">${L.length ? `${L.length} lượt · cao nhất ${best.length ? fmt(Math.max(...best.map(x => x.diem))) : '–'} · TB ${best.length ? fmt(best.reduce((a, x) => a + x.diem, 0) / best.length) : '–'}` : 'chưa có lượt nào'}</span></div>
+        ${L.length ? `<div class="tbl-wrap"><table class="vk-tbl"><thead><tr><th>Thời gian</th>${isHS ? '' : '<th>Học sinh</th>'}<th>Loại bài</th><th class="vk-de">Đề</th><th>Lần</th><th>Điểm</th><th>Lỗi</th></tr></thead><tbody>
+          ${shown.map(x => `<tr><td>${dt(x.t)}</td>${isHS ? '' : `<td>${esc(x.ten || '')}${x.lop ? ' <span class="hint">' + esc(x.lop) + '</span>' : ''}</td>`}<td>${esc(String(x.bai || '').replace(VE_LOG, ''))}</td><td class="vk-de">${esc(x.phan || '')}</td><td>${x.lan || 1}</td><td><b class="${scoreCls(x.diem)}">${x.diem == null ? '–' : fmt(x.diem)}</b></td><td>${x.soLoi == null ? '–' : x.soLoi}</td></tr>`).join('')}</tbody></table></div>
+          ${L.length > 8 ? `<button class="btn ghost sm" id="logmore">${logAll ? 'Thu gọn' : 'Xem tất cả ' + L.length + ' lượt'}</button>` : ''}` : '<p class="hint" style="margin:4px 0 0">Mỗi lần chấm được lưu lại: thời gian, loại bài, đề, lần làm thứ mấy, điểm và số lỗi.</p>'}
+        ${isGV() && !isHS ? '<p class="hint" style="margin:8px 0 0">Lượt chấm của HS cả lớp: <a href="#/gv/baive?tab=tl">Lượt HS đã chấm</a> · <a href="#/gv/baive?tab=giao">Bài vẽ đã giao cho lớp</a></p>' : ''}</div>
+      ${due.length ? `<details class="card vk-more"><summary>Bài thầy cô giao (${due.length})</summary><div class="rows">${due.map(t => `<a href="#/baive/${t.MaBV}"><span class="ic amber">✏️</span><span class="tx"><b>${esc(t.TieuDe)}</b><span>${esc(t.LoaiTen)}${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''}</span></span><span class="chev">›</span></a>`).join('')}</div></details>` : ''}`);
+    $$('[data-lo]').forEach(b => b.onclick = () => { loai = b.dataset.lo; store.set('tlv_loai', loai); draw(); });
+    $('#tcb').onclick = () => { showTc = !showTc; draw(); };
+    if ($('#logmore')) $('#logmore').onclick = () => { logAll = !logAll; draw(); };
+    if ($('#vten')) { $('#vten').oninput = e => { ten = e.target.value; store.set('tlv_ten', ten); }; $('#vlop').oninput = e => { lop = e.target.value; store.set('tlv_lop', lop); }; }
     $('#vdt').oninput = e => { deTxt = e.target.value; };
-    const set = (id, v) => { if (id === 'vde') deImg = v; else { baiImg = v; result = null; } err = ''; draw(); };
+    const set = (id, v) => { if (id === 'vde') deImg = v; else { baiImg = v; } err = ''; draw(); };
     const take = async (id, f) => { if (!f) return; const z = $('#' + id); z && z.classList.add('loading'); try { set(id, await readAnyFile(f)); } catch (e) { z && z.classList.remove('loading'); if (e.text && id === 'vde') { deTxt = e.text; draw(); toast('Đã lấy nội dung đề bài từ tệp'); } else toast(e.message || 'Không đọc được tệp'); } };
     $$('[data-cam],[data-file]').forEach(i => i.onchange = e => take(i.dataset.cam || i.dataset.file, e.target.files[0]));
     ['vde', 'vbai'].forEach(id => {
@@ -3694,26 +3754,31 @@ route(/^\/tuluyenve$/, async () => {
       z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); take(id, e.dataTransfer.files[0]); };
     });
     $('#go').onclick = async () => {
+      if (!isHS && !String(ten).trim()) { err = 'Nhập họ tên học sinh ở ô trên cùng để lưu vào nhật ký'; draw(); return; }
       if (!deImg && !deTxt.trim()) { err = 'Gửi ảnh đề bài hoặc ghi yêu cầu của bài ở mục 2'; draw(); return; }
       if (!baiImg) { err = 'Gửi ảnh bài vẽ (đáp án) của em ở mục 3'; draw(); return; }
       if (!navigator.onLine) { err = 'Cần có mạng để AI chấm'; draw(); return; }
       if (deImg && deImg === baiImg) { err = 'Ảnh đề bài và ảnh bài vẽ đang là cùng một ảnh – hãy gửi đúng ảnh bài vẽ của em ở mục 3'; draw(); return; }
-      busyNow = true; err = ''; result = null; sentImg = baiImg; draw();
+      busyNow = true; err = ''; result = null; sentImg = baiImg; rLoai = loai; draw();
       const de = deTxt.trim() || ('Bài ' + DRAW_MAIN[loai].toLowerCase() + ' theo ảnh đề bài đính kèm.');
-      try { result = await api('practice_drawing', { loai, deBai: de, tieuChi: DRAW_SAMPLE[loai], image: baiImg, anhDe: deImg }); }
+      let r;
+      try { r = await api('practice_drawing', { loai, deBai: de, tieuChi: veCrit(loai), image: baiImg, anhDe: deImg }); }
       catch (e) { busyNow = false; err = e.network ? 'Mất kết nối khi AI đang chấm. Khi chờ, em giữ màn hình sáng và để nguyên trang này, rồi bấm Chấm bài vẽ lại.' : /không hợp lệ/i.test(e.message || '') && !/ảnh/i.test(e.message || '') ? 'Máy chủ đang cập nhật. Thử lại sau ít phút.' : (e.message || String(e)); if (here()) draw(); return; }
-      busyNow = false;
+      busyNow = false; result = r;
       const phan = deTxt.trim() ? (de.length > 90 ? de.slice(0, 88) + '…' : de) : 'Đề ảnh #' + hashStr(deImg || '');
-      try { if (result.doc_duoc !== false) { const rec = window.STC_LOG && window.STC_LOG({ bai: 'Bài vẽ AI chấm – ' + DRAW_MAIN[loai], phan, diem: result.diem, max: 10, soLoi: (result.loi || []).filter(Boolean).length, ten: session.user.HoTen, lop: session.user.TenLop || '' }); lanNop = rec ? rec.lan : 0; } } catch (e) {}
-      if (!here()) { window._tlvLast = { loai, deTxt, deImg, baiImg: sentImg, result }; toast('AI đã chấm xong bài vẽ – mở lại mục Bài vẽ – AI chấm để xem kết quả'); return; }
+      try { if (r.doc_duoc !== false) { const s2 = veScore(rLoai, r); const rec = window.STC_LOG && window.STC_LOG({ bai: VE_LOG + DRAW_MAIN[rLoai], phan, diem: s2.total == null ? 0 : s2.total, max: 10, soLoi: (r.loi || []).filter(Boolean).length, ten: String(ten).trim(), lop: String(lop).trim() }); lanNop = rec ? rec.lan : 0; } } catch (e) {}
+      if (!here()) { window._tlvLast = { loai, deTxt, deImg, baiImg: sentImg, result, rLoai }; toast('AI đã chấm xong bài vẽ – mở lại mục Bài vẽ – AI chấm để xem kết quả'); return; }
       draw(); const k = $('.vk-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    if (result && $('#vrv')) mountReview($('#vrv'), { MaBV: 'TL', DeBai: deTxt, DiemToiDa: 10, CoAnhDe: false }, { MaNop: 'TL', AI: result, AIDiem: null, TrangThai: 'tuluyen' }, { baiSrc: sentImg || baiImg });
+    if (ai && $('#vrv')) mountReview($('#vrv'), { MaBV: 'TL', DeBai: deTxt, DiemToiDa: 10, CoAnhDe: false }, { MaNop: 'TL', AI: ai, AIDiem: null, TrangThai: 'tuluyen' }, { baiSrc: sentImg || baiImg });
     if ($('#again')) $('#again').onclick = () => { baiImg = null; result = null; draw(); window.scrollTo(0, 0); };
     if ($('#newde')) $('#newde').onclick = () => { deImg = null; deTxt = ''; baiImg = null; result = null; lanNop = 0; draw(); window.scrollTo(0, 0); };
   };
   draw();
-  if (session.role === 'hs') api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (location.hash === '#/tuluyenve' && !busyNow) draw(); }).catch(() => {});
+  if (isHS) {
+    api('my_drawing_tasks').then(l => { tasks = l; store.set('drw_' + uid(), l); if (here() && !busyNow) draw(); }).catch(() => {});
+    api('practice_my', { bai: VE_LOG }).then(l => { srvLog = Array.isArray(l) ? l : []; if (here() && !busyNow) draw(); }).catch(() => {});
+  }
 });
 
 route(/^\/gv\/baive$/, async params => {
@@ -7117,7 +7182,7 @@ window.STC_LOG = o => {
 };
 let thSending = false;
 async function thSend() {
-  if (DEMO || thSending || !session || session.role !== 'hs' || !navigator.onLine) return;
+  if (DEMO || thSending || !session || !navigator.onLine) return;
   const all = store.get('thuchanh', []), items = all.filter(r => !r.sent && isFinite(r.diem)).slice(0, 30);
   if (!items.length) return;
   thSending = true;

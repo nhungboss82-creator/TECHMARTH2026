@@ -12,6 +12,7 @@
  *   4. update_class   : GV/Admin chuyển lớp sang đúng trường; kiểm tra trùng tên lớp trong CÙNG trường.
  *   5. practice_log / practice_logs: lưu lượt làm bài thực hành (tên, số lần, điểm/số lỗi từng lần) để GV xem;
  *                       gồm cả mọi lượt HS tự nhờ AI chấm bài vẽ (số lần nộp, số lần sửa).
+ *  15. practice_my: HS xem nhật ký lượt luyện (bài vẽ AI chấm…) của mình; GV chấm hộ HS được ghi đúng trường.
  *  14. drawPrompt_ : AI chấm theo từng tiêu chí (bang_diem), nhận bài vẽ tay hoặc vẽ máy.
  *  13. gv_regrade_drawing: AI chấm lại một bài đã nộp.
  *  12. gv_submit_drawing: GV chụp/gửi bài vẽ của HS (vẽ tay hoặc vẽ máy) để AI chấm, lưu như một lần nộp.
@@ -195,7 +196,7 @@ function cn2111Patch_() {
       hasDe ? 'Có kèm ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu) của giáo viên; đối chiếu bài làm với vật thể và yêu cầu trong ảnh đề.' : '',
       hasRef ? 'Có kèm ẢNH ĐÁP ÁN MẪU của giáo viên; so sánh bài học sinh với đáp án mẫu (đáp án mẫu KHÔNG phải bài làm).' : '',
       'Yêu cầu khi chấm:',
-      '- Chấm theo TỪNG tiêu chí trong bảng chấm điểm; ghi vào "bang_diem" đúng thứ tự các tiêu chí: tieu_chi (chép ngắn gọn), toi_da, dat (điểm đạt, bội của 0,25), nhan_xet (ngắn). "diem" = tổng các "dat".',
+      '- Chấm theo TỪNG tiêu chí trong bảng chấm điểm; ghi vào "bang_diem" đúng thứ tự và đủ số tiêu chí: tieu_chi (chép ngắn gọn), toi_da, dat (điểm đạt, bội của 0,25), nhan_xet (1 câu đánh giá cụ thể em đã làm được gì / sai ở đâu), huong_dan (tiêu chí chưa đạt đủ điểm: hướng dẫn cụ thể em cần sửa thế nào; đạt đủ thì để ""). "diem" = tổng các "dat".',
       '- Đối chiếu quy ước bản vẽ kĩ thuật theo TCVN (nét liền đậm, nét đứt cạnh khuất, nét gạch chấm mảnh đường tâm/trục; vị trí các hình chiếu; hình cắt, mặt cắt, đường gạch gạch; ghi kích thước). Chỉ nêu số hiệu TCVN khi chắc chắn.',
       '- Mỗi lỗi sai: mô tả cụ thể vị trí trên bản vẽ, tiêu chí bị trừ, số điểm trừ, và "cach_sua": yêu cầu em sửa lại như thế nào. Xưng "em" với học sinh, giọng khích lệ.',
       '- Với MỖI lỗi, khoanh vị trí lỗi trên ẢNH BÀI LÀM bằng "vi_tri": [ymin, xmin, ymax, xmax] theo thang 0–1000 (gốc góc trên bên trái ảnh bài làm); không xác định được thì để [].',
@@ -205,7 +206,7 @@ function cn2111Patch_() {
       'BẮT BUỘC TỰ KIỂM TRA TRƯỚC KHI KẾT LUẬN – điền vào "kiem_tra" từng mục dưới đây (nhìn kĩ bản vẽ, không đoán): ' + (DRAW_CHECK_[t.Loai] || DRAW_CHECK_.chung),
       '"ghi_chu" của mỗi mục phải nêu BẰNG CHỨNG cụ thể nhìn thấy trên ảnh (ví dụ: liệt kê các cạnh đếm được, vùng nào có gạch, vùng nào để trắng, cạnh nào kéo dài có/không qua điểm tụ) – không được ghi chung chung "đúng". Mỗi mục "kiem_tra" có ket_qua "sai" thì PHẢI có một lỗi tương ứng trong "loi". Không được chấm đạt nếu còn mục sai.',
       'Trả lời DUY NHẤT một đối tượng JSON, không thêm chữ nào khác, theo mẫu (ghi "kiem_tra" TRƯỚC):',
-      '{"kiem_tra": [{"muc": "…", "ket_qua": "đúng|sai|không áp dụng", "ghi_chu": "…"}], "doc_duoc": true, "dat_yeu_cau": false, "diem": 7.5, "bang_diem": [{"tieu_chi": "…", "toi_da": 3, "dat": 2.5, "nhan_xet": "…"}], "nhan_xet_chung": "…", "diem_dung": ["…"], "loi": [{"mo_ta": "…", "tieu_chi": "…", "tru_diem": 0.5, "vi_tri": [120, 340, 260, 520], "cach_sua": "…"}], "goi_y_sua": ["…"], "y_tuong": ["…"]}'
+      '{"kiem_tra": [{"muc": "…", "ket_qua": "đúng|sai|không áp dụng", "ghi_chu": "…"}], "doc_duoc": true, "dat_yeu_cau": false, "diem": 7.5, "bang_diem": [{"tieu_chi": "…", "toi_da": 3, "dat": 2.5, "nhan_xet": "…", "huong_dan": "…"}], "nhan_xet_chung": "…", "diem_dung": ["…"], "loi": [{"mo_ta": "…", "tieu_chi": "…", "tru_diem": 0.5, "vi_tri": [120, 340, 260, 520], "cach_sua": "…"}], "goi_y_sua": ["…"], "y_tuong": ["…"]}'
     ].filter(String).join('\n');
   };
 
@@ -374,16 +375,24 @@ function cn2111Patch_() {
 
   /* 5. lượt làm bài thực hành (bài học có ô Họ và tên) */
   API.practice_log = req => {
-    let hs = null;
+    let hs = null, gvTruong = '';
     try { const t = auth_(req, 'hs'); hs = rows_('HocSinh').find(r => r.MaHS === t.u) || null; } catch (e) {}
+    if (!hs) { try { gvTruong = String(teacher_(auth_(req, 'gv')).Truong || ''); } catch (e) {} }
     const list = (Array.isArray(req.items) ? req.items : [req]).slice(0, 50);
     const sh = cn2111Sheet_();
     const rows = list.map(x => [new Date(x.t || Date.now()), clean_(x.id, 40), hs ? hs.MaHS : '', clean_(x.ten || (hs && hs.HoTen) || '', 60),
-      clean_(x.lop || (hs && hs.TenLop) || '', 20), hs ? hs.MaLop : '', hs ? String(hs.Truong || '') : '', clean_(x.bai, 120), clean_(x.phan, 120),
+      clean_(x.lop || (hs && hs.TenLop) || '', 20), hs ? hs.MaLop : '', hs ? String(hs.Truong || '') : gvTruong, clean_(x.bai, 120), clean_(x.phan, 120),
       Number(x.lan) || 1, isFinite(+x.diem) ? Math.round(+x.diem * 100) / 100 : '', Number(x.max) || 10,
       x.soLoi == null || x.soLoi === '' ? '' : Number(x.soLoi) || 0]);
     if (rows.length) withLock_(() => { const ids = cn2111LogIds_(sh); const fresh = rows.filter(r => !r[1] || ids.indexOf(r[1]) < 0); if (fresh.length) sh.getRange(sh.getLastRow() + 1, 1, fresh.length, fresh[0].length).setValues(fresh); });
     return { saved: rows.length };
+  };
+  API.practice_my = req => {
+    const t = auth_(req, 'hs'), bai = String(req.bai || '');
+    const sh = cn2111Sheet_(), last = sh.getLastRow(); if (last < 2) return [];
+    const head = CN2111_LOG_HEAD;
+    return sh.getRange(2, 1, last - 1, head.length).getValues().filter(r => r[2] === t.u && (!bai || String(r[7]).indexOf(bai) === 0))
+      .map(r => { const o = {}; head.forEach((h, j) => { o[h] = r[j] instanceof Date ? r[j].toISOString() : r[j]; }); return o; }).slice(-300);
   };
   API.practice_logs = req => {
     const t = auth_(req, 'gv');
