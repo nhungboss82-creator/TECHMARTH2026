@@ -2650,6 +2650,7 @@ function mtLessons(k) {
 }
 const mtKey = r => r.type === 'bai' && lessonNo(r.value) < 999 ? 'B' + lessonNo(r.value) : (r.type === 'bai' ? 'T:' : 'C:') + r.value;
 
+const GB_MODES = [['ngaunhien', '📖', 'Theo bài / chủ đề', 'Chọn bài, chủ đề + số câu từng mức'], ['matran', '📊', 'Ma trận CV 7991', 'Giữa kì, cuối kì – điền sẵn số câu'], ['tuchon', '✏️', 'Ma trận tự chọn', 'Tự nhập số câu cho từng bài']];
 route(/^\/gv\/giaobai$/, async params => {
   if (!needGV()) return;
   const targetK = params ? (params.get('k') || '') : '';
@@ -2659,7 +2660,7 @@ route(/^\/gv\/giaobai$/, async params => {
   try { allCls = isAdm ? await gvClasses() : await api('school_classes'); } catch (e) { errBox(V, e); return; }
   cls = allCls;
   const mine = session.user.MaGV;
-  let mode = 'de', selK = targetK || '';
+  let mode = 'ngaunhien', selK = targetK || '';
   const keep = { t: targetK ? 'Kiểm tra Công nghệ ' + targetK : '', lb: 'Kiểm tra thường xuyên', cdd: 'dapan', mi: '', cl: null };
   const mt = { k: '', src: '', cells: {} };   // bảng ma trận: cells[mtKey] = {b,h,v,ds,tl}
   let schoolMx = store.get('matrices', []);
@@ -2675,9 +2676,9 @@ route(/^\/gv\/giaobai$/, async params => {
         <label>Giao cho lớp</label>
         ${['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="row" style="margin:6px 0"><b style="width:66px">Khối ${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}
         <label>Cách lấy câu hỏi</label>
-        <div class="tabs"><button type="button" data-m="de" class="${mode === 'de' ? 'on' : ''}">Theo đề có sẵn</button><button type="button" data-m="matran" class="${mode === 'matran' ? 'on' : ''}">Đề theo ma trận</button><button type="button" data-m="ngaunhien" class="${mode === 'ngaunhien' ? 'on' : ''}">Chủ đề & mức độ</button></div>
-        <div id="mbox"></div>
-        <div class="row"><div class="grow"><label for="mi">Thời gian (phút, 0 = không giới hạn)</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : mode === 'matran' ? 45 : 50)}"></div>
+        <div class="gbm">${GB_MODES.map(([v, ic, t, d]) => `<button type="button" data-m="${v}" class="gbm-c${mode === v ? ' on' : ''}"><span class="gbm-i">${ic}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>
+        <div id="mbox" class="gbm-box"></div>
+        <div class="row"><div class="grow"><label for="mi">Thời gian (phút, 0 = không giới hạn)</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
           <div class="grow"><label for="at">Số lần được làm (0 = không giới hạn)</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
         <label for="dl">Hạn nộp (để trống = không hạn)</label><input id="dl" type="datetime-local">
         <label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select>
@@ -2687,7 +2688,9 @@ route(/^\/gv\/giaobai$/, async params => {
         <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Giao bài</button></div></form>`);
     const remember = () => { keep.t = $('#t').value; keep.lb = $('#lbx').value; keep.cdd = $('#cdd').value; keep.mi = $('#mi').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
     sc.bind(() => { remember(); keep.cl = null; draw(); });
-    $$('[data-m]').forEach(b => b.onclick = () => { remember(); readCells(); mode = b.dataset.m; keep.mi = ''; draw(); });
+    $$('[data-m]').forEach(b => b.onclick = () => { if (b.dataset.m === mode) return; remember(); readCells(); mode = b.dataset.m; keep.mi = '';
+      if (mode === 'tuchon') { mt.src = ''; mt.cells = {}; mt.k = curK(); } else if (mode === 'matran' && !String(mt.src).startsWith('CV')) mt.k = '';
+      draw(); });
     $('#cdd').onchange = () => { ($('#cddh') || {}).textContent = DIEM_MODES.find(x => x[0] === $('#cdd').value)[2]; };
     let lastK = curK();
     const onK = () => { const k = curK(); if (k !== lastK) { lastK = k; renderMode(); } };
@@ -2704,14 +2707,7 @@ route(/^\/gv\/giaobai$/, async params => {
         deadline: $('#dl').value ? new Date($('#dl').value).toISOString() : '', leaderboard: $('#lb').value, diemMode: cdd, hints: cdd !== 'diem', note: $('#no').value, loaiBai: $('#lbx').value };
       // bốc câu ở máy để thầy cô xem trước đúng bộ câu sẽ giao (gen() gọi lại được để bốc bộ khác)
       let gen = null;
-      if (mode === 'de') {
-        const src = deSource(), n = lvInputs();
-        if (!src) { errBox($('#msg'), 'Hãy chọn bài học hoặc đề'); return; }
-        const full = LV.every(([f]) => n[f] >= src.cnt[f]);
-        a.cheDo = src.de ? (full ? 'de' : 'de_mucdo') : (full ? 'bai' : 'bai_mucdo');
-        gen = () => full ? src.qs.map(q => q.id) : pickLevels(src.qs, n);
-      }
-      if (mode === 'matran') {
+      if (mode === 'matran' || mode === 'tuchon') {
         readCells();
         if (mt.src === 'SO') { a.cheDo = 'matran'; gen = () => matrixPick().sort((x, y) => (bank.byId[x].t === 'T') - (bank.byId[y].t === 'T')); }
         else {
@@ -2794,31 +2790,6 @@ route(/^\/gv\/giaobai$/, async params => {
     if (c.length && c[0].dataset.k !== b.dataset.kk) { if (!confirm('Đang tích lớp khối ' + c[0].dataset.k + '. Bỏ tích các lớp đó để chọn khối ' + b.dataset.kk + '?')) return; c.forEach(i => i.checked = false); }
     selK = b.dataset.kk; renderMode();
   });
-  /* ----- Theo đề có sẵn: bài học / đề + số câu từng mức ----- */
-  const deSource = () => {
-    const v = ($('#de') || {}).value || '';
-    if (v.startsWith('PKG:')) { const p = lessonPackages(curK()).find(x => x.id === v.slice(4)); if (!p) return null; const qs = p.ids.map(id => bank.byId[id]).filter(Boolean); return { name: p.name, qs, cnt: lvCount(qs), pkg: p }; }
-    if (v.startsWith('DE:')) { const de = v.slice(3), qs = bank.q.filter(q => q.de === de); return { name: de, de, qs, cnt: lvCount(qs) }; }
-    return null;
-  };
-  const lvInputs = () => { const n = {}; LV.forEach(([f]) => { n[f] = Math.max(0, +(($('#x_' + f) || {}).value) || 0); }); return n; };
-  const fillLv = () => {
-    const s = deSource(); if (!s) return;
-    LV.forEach(([f]) => { const i = $('#x_' + f); if (!i) return; i.value = s.cnt[f]; i.max = s.cnt[f]; i.disabled = !s.cnt[f]; ($('#c_' + f) || {}).textContent = 'có ' + s.cnt[f]; });
-    sumLv();
-  };
-  const sumLv = () => { const n = lvInputs(), s = deSource(); ($('#xsum') || {}).innerHTML = s ? `Sẽ giao <b>${LV.reduce((a, [f]) => a + Math.min(n[f], s.cnt[f]), 0)}</b> / ${s.qs.length} câu` : ''; };
-  const deBox = k => {
-    const pkgs = lessonPackages(k), exams = []; // đề thi thử TN để HS tự luyện ở thư mục Bộ đề, không giao ở đây
-    return `${kChips(k)}
-      <label for="de">Chọn bài học / đề giao cho lớp (Khối ${k})</label>
-      <select id="de" style="width:100%">
-        ${pkgs.length ? `<optgroup label="📖 Theo bài học SGK – Công nghệ ${k}">${pkgs.map(p => `<option value="PKG:${p.id}">${esc(p.shortName)} (${p.count} câu)</option>`).join('')}</optgroup>` : ''}
-        ${exams.length ? `<optgroup label="🎓 Đề thi thử tốt nghiệp THPT (28 câu/đề)">${exams.map(d => `<option value="DE:${esc(d)}">${esc(d)}</option>`).join('')}</optgroup>` : ''}
-      </select>
-      <div class="lvgrid">${LV.map(([f, t]) => `<div><label for="x_${f}">${t}</label><input id="x_${f}" type="number" min="0"><span class="hint" id="c_${f}"></span></div>`).join('')}</div>
-      <p class="hint"><span id="xsum"></span> · Mặc định lấy <b>toàn bộ</b> câu của bài. Muốn ít hơn thì sửa số câu từng mức, app bốc ngẫu nhiên đúng số đó (cả lớp làm chung, mỗi em được đảo câu và phương án).</p>`;
-  };
   /* ----- Đề theo ma trận: kì + bảng số câu từng bài ----- */
   const readCells = () => $$('[data-c]').forEach(i => { const c = mt.cells[i.dataset.c] = mt.cells[i.dataset.c] || {}; c[i.dataset.f] = Math.max(0, +i.value || 0); });
   const applyTpl = (k, src) => {
@@ -2835,15 +2806,15 @@ route(/^\/gv\/giaobai$/, async params => {
     }
     if (src === 'SO') { if ($('#mi')) $('#mi').value = 50; if ($('#lbx')) $('#lbx').value = 'Thi thử'; if ($('#t') && !$('#t').value) $('#t').value = 'Đề thi thử TN THPT – Công nghệ 12'; }
   };
-  const mxBox = k => {
-    if (mt.k !== k) { mt.k = k; const first = (window.STC_MATRAN || []).find(t => t.khoi === k); applyTpl(k, first ? first.id : ''); }
-    const tpls = (window.STC_MATRAN || []).filter(t => t.khoi === k), mine = schoolMx.filter(m => String(m.Khoi) === k);
+  const mxBox = (k, free) => {
+    if (mt.k !== k) { mt.k = k; if (free) { mt.src = ''; mt.cells = {}; } else { const first = (window.STC_MATRAN || []).find(t => t.khoi === k); applyTpl(k, first ? first.id : ''); } }
+    const tpls = (window.STC_MATRAN || []).filter(t => t.khoi === k);
     const rows = mtLessons(k);
-    const srcBtn = (v, t) => `<button type="button" class="btn ghost sm${mt.src === v ? ' on' : ''}" data-src="${esc(v)}">${esc(t)}</button>`;
-    const head = `${kChips(k)}<label>Ma trận đề kiểm tra Công nghệ ${k}</label>
-      <div class="row" style="gap:6px;flex-wrap:wrap">${tpls.map(t => srcBtn(t.id, t.loai)).join('')}${mine.map(m => srcBtn('MT:' + m.MaMT, '🏫 ' + m.TenMT)).join('')}${srcBtn('', '✏️ Tự nhập')}</div>`;
-    if (mt.src === 'SO') return head + '<p class="hint" style="margin-top:8px">Mỗi vị trí câu (Câu 1–24, Đúng/Sai 1–4) được bốc ngẫu nhiên từ 30 đề thi thử cùng cấu trúc ma trận của Sở. Cả lớp làm chung 1 đề, mỗi em được đảo câu và phương án.</p>';
-    return head + `<p class="hint" style="margin:8px 0 4px">Bảng lấy sẵn số câu theo ma trận CV 7991 của kì đã chọn; thầy cô sửa số câu từng bài, từng mức tuỳ ý. Số nhỏ bên cạnh là số câu ngân hàng đang có. Bài để trống = không lấy.</p>
+    const KY_IC = { 'Giữa kì I': '🍂', 'Cuối kì I': '📘', 'Giữa kì II': '🌱', 'Cuối kì II': '🎓' };
+    const head = free ? `${kChips(k)}<div class="gbm-step">✏️ Tự nhập số câu cho từng bài – Công nghệ ${k}</div>`
+      : `${kChips(k)}<div class="gbm-step">📊 Chọn kì kiểm tra – ma trận CV 7991, Công nghệ ${k}</div>
+      <div class="gbm-ky">${tpls.map(t => `<button type="button" class="gbm-k${mt.src === t.id ? ' on' : ''}" data-src="${esc(t.id)}"><span>${KY_IC[t.loai] || '📄'}</span>${esc(t.loai)}</button>`).join('')}</div>`;
+    return head + `<p class="hint" style="margin:8px 0 4px">${free ? 'Gõ số câu Biết / Hiểu / Vận dụng / Đúng-Sai / Tự luận cho những bài muốn lấy; bài để trống = không lấy.' : 'Bảng đã điền sẵn số câu theo ma trận của kì đã chọn; thầy cô có thể sửa từng ô.'} Số nhỏ <small>/n</small> là số câu ngân hàng đang có.</p>
       <div class="tablewrap"><table class="mttable"><thead><tr><th>Bài học</th>${LV.map(([, t]) => `<th class="n">${t}</th>`).join('')}<th class="n">Cộng</th></tr></thead><tbody>
       ${rows.map(r => { const c = mt.cells[r.key] || {}, av = lvCount(rowPool(k, r).lesson), s = LV.reduce((a, [f]) => a + (+c[f] || 0), 0);
         return `<tr data-row="${esc(r.key)}" class="${s ? 'on' : ''}"><td>${esc(r.value)}</td>${LV.map(([f]) => `<td class="n"><input type="number" min="0" inputmode="numeric" data-c="${esc(r.key)}" data-f="${f}" value="${+c[f] || ''}" placeholder="0" class="${(+c[f] || 0) > av[f] ? 'over' : ''}"><small>/${av[f]}</small></td>`).join('')}<td class="n"><b data-s="${esc(r.key)}">${s || ''}</b></td></tr>`; }).join('')}
@@ -2864,24 +2835,20 @@ route(/^\/gv\/giaobai$/, async params => {
   /* ----- Chủ đề & mức độ ----- */
   const rndBox = k => {
     const tp = topicsOf(k), ls = lessonsOf(k);
-    return `${kChips(k)}
-      <label>Chủ đề – Công nghệ ${k}</label><div class="checks">${tp.map(t => `<label class="chk"><input type="checkbox" name="tp" value="${esc(t)}">${esc(t.replace(/^Lớp \d+ – /, ''))}</label>`).join('')}</div>
-      ${ls.length ? `<label>Hoặc bài học SGK</label><div class="lessonlist" style="max-height:260px">${ls.map(t => `<label class="lchk"><input type="checkbox" name="ls" value="${esc(t)}"><span class="grow">${esc(t)}</span><span class="n">${bank.q.filter(q => q.k === k && q.bai === t).length}</span></label>`).join('')}</div>` : ''}
+    return `${kChips(k)}<div class="gbm-step">📖 Chọn chủ đề hoặc bài học – Công nghệ ${k}</div>
+      <label>Chủ đề</label><div class="checks">${tp.map(t => `<label class="chk"><input type="checkbox" name="tp" value="${esc(t)}">${esc(t.replace(/^Lớp \d+ – /, ''))}</label>`).join('')}</div>
+      ${ls.length ? `<label>Hoặc chọn bài học SGK</label><div class="lessonlist" style="max-height:260px">${ls.map(t => `<label class="lchk"><input type="checkbox" name="ls" value="${esc(t)}"><span class="grow">${esc(t)}</span><span class="n">${bank.q.filter(q => q.k === k && q.bai === t).length}</span></label>`).join('')}</div>` : ''}
       <div class="lvgrid"><div><label for="nb">Số câu Biết</label><input id="nb" type="number" min="0" value="4"></div><div><label for="nh">Số câu Hiểu</label><input id="nh" type="number" min="0" value="4"></div>
       <div><label for="nv">Số câu Vận dụng</label><input id="nv" type="number" min="0" value="2"></div><div><label for="nd">Số câu Đúng/Sai</label><input id="nd" type="number" min="0" value="0"></div>
       <div><label for="ntl">Số câu tự luận</label><input id="ntl" type="number" min="0" value="0"></div></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="hint">Mẫu nhanh:</span><button type="button" class="btn ghost sm" data-pre="10,4,4,2">⏱ 10 phút</button><button type="button" class="btn ghost sm" data-pre="15,6,6,3">⏱ 15 phút</button><button type="button" class="btn ghost sm" data-pre="45,12,10,6">⏱ 45 phút</button></div>
       <p class="hint">Không chọn chủ đề/bài nào = lấy từ toàn bộ ngân hàng. Câu tự luận do AI chấm theo đáp án mẫu khi HS nộp.</p>`;
   };
   const renderMode = () => {
     const k = curK(), box = $('#mbox'); if (!box) return;
-    box.innerHTML = mode === 'de' ? deBox(k) : mode === 'matran' ? mxBox(k) : rndBox(k);
+    box.innerHTML = mode === 'ngaunhien' ? rndBox(k) : mxBox(k, mode === 'tuchon');
     bindK();
-    if (mode === 'de') {
-      $('#de').onchange = () => { const s = deSource(); fillLv(); if (!s) return; $('#t').value = 'Kiểm tra ' + (s.pkg ? s.pkg.shortName : s.name); $('#mi').value = s.de ? 50 : Math.min(90, Math.ceil(s.qs.length * 1.2)); };
-      LV.forEach(([f]) => { const i = $('#x_' + f); if (i) i.oninput = sumLv; });
-      fillLv();
-    }
-    if (mode === 'matran') {
+    if (mode !== 'ngaunhien') {
       $$('[data-src]').forEach(b => b.onclick = () => { readCells(); applyTpl(k, b.dataset.src); renderMode(); });
       $$('[data-c]').forEach(i => i.oninput = totals);
       if ($('#mtclr')) $('#mtclr').onclick = () => { mt.cells = {}; mt.src = ''; renderMode(); };
@@ -2890,7 +2857,6 @@ route(/^\/gv\/giaobai$/, async params => {
     if (mode === 'ngaunhien') $$('[data-pre]').forEach(b => b.onclick = () => { const [m, nb, nh, nv] = b.dataset.pre.split(','); $('#mi').value = m; $('#nb').value = nb; $('#nh').value = nh; $('#nv').value = nv; $('#nd').value = 0; $('#ntl').value = 0; $('#lbx').value = +m >= 15 ? 'Kiểm tra 15 phút' : 'Kiểm tra thường xuyên'; if (!$('#t').value) $('#t').value = 'Kiểm tra ' + m + ' phút'; toast('Đã chọn mẫu ' + m + ' phút'); });
   };
   draw();
-  api('list_matrices').then(ms => { schoolMx = ms || []; store.set('matrices', schoolMx); if (mode === 'matran' && $('#mbox')) { readCells(); renderMode(); } }).catch(() => {});
 });
 
 route(/^\/gv\/baigiao$/, async () => {
