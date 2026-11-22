@@ -1049,3 +1049,5 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .imgdrop.loading::after{content:'Đang đọc tệp…';position:absolute;inset:auto 0 8px;text-align:center;font-size:13px;font-weight:700;color:var(--brand2)}
 /* điện thoại: nút chụp/tải to, dễ bấm */
 @media (max-width:640px){.vk-pick .btn,.bv-pick .btn{flex:1;min-height:44px;font-size:15px}.vk{padding:10px}.vk-drop img{max-height:180px}}
+/* chú thích hình trong câu hỏi (bộ câu hỏi Bài 8–15 CN10, 22/11/2026) */
+.cap{display:block;font-size:12.5px;color:var(--muted);text-align:center;margin:2px 0 4px;font-style:italic}
