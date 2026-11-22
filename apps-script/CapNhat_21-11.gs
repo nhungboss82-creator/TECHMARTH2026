@@ -12,6 +12,7 @@
  *   4. update_class   : GV/Admin chuyển lớp sang đúng trường; kiểm tra trùng tên lớp trong CÙNG trường.
  *   5. practice_log / practice_logs: lưu lượt làm bài thực hành (tên, số lần, điểm/số lỗi từng lần) để GV xem;
  *                       gồm cả mọi lượt HS tự nhờ AI chấm bài vẽ (số lần nộp, số lần sửa).
+ *  14. drawPrompt_ : AI chấm theo từng tiêu chí (bang_diem), nhận bài vẽ tay hoặc vẽ máy.
  *  13. gv_regrade_drawing: AI chấm lại một bài đã nộp.
  *  12. gv_submit_drawing: GV chụp/gửi bài vẽ của HS (vẽ tay hoặc vẽ máy) để AI chấm, lưu như một lần nộp.
  *  11. ontn_candidates / set_ontn_gv: GV thêm, bớt HS lớp 12 trường mình vào danh sách ôn thi TN.
@@ -171,6 +172,30 @@ function cn2111Patch_() {
       AIChiTiet: ai ? JSON.stringify(ai).slice(0, 40000) : '', GVDiem: '', GVNhanXet: '', TrangThai: ai ? 'ai_da_cham' : 'cho_gv' };
     withLock_(() => append_('NopVe', row));
     return publicSubmission_(row);
+  };
+
+  /* 14. (22/11/2026) Lời nhắc chấm bài vẽ: bài vẽ tay HOẶC vẽ máy; AI trả thêm "bang_diem" – điểm từng tiêu chí */
+  drawPrompt_ = function (t, hasRef, hasDe) {
+    const ten = (typeof DRAW_TYPES !== 'undefined' && DRAW_TYPES[t.Loai]) || (typeof DRAW_TYPES_CU !== 'undefined' && DRAW_TYPES_CU[t.Loai]) || t.Loai;
+    const hint = (typeof DRAW_HINT !== 'undefined' && DRAW_HINT[t.Loai]) || '';
+    return [
+      'Em là giáo viên Công nghệ THPT ở Việt Nam, đang chấm bài vẽ kĩ thuật của học sinh lớp ' + t.Khoi + '. Bài làm có thể là ảnh chụp bản vẽ tay hoặc ảnh bản vẽ bằng máy tính (vẽ máy).',
+      'Loại bài: ' + ten + '.', hint,
+      'Đề bài (yêu cầu của giáo viên): ' + t.DeBai,
+      'Bảng chấm điểm của giáo viên (thang ' + t.DiemToiDa + ' điểm; mỗi dòng: tiêu chí – số điểm tối đa):\n' + t.TieuChi,
+      hasDe ? 'Có kèm ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu) của giáo viên; đối chiếu bài làm với vật thể và yêu cầu trong ảnh đề.' : '',
+      hasRef ? 'Có kèm ẢNH ĐÁP ÁN MẪU của giáo viên; so sánh bài học sinh với đáp án mẫu (đáp án mẫu KHÔNG phải bài làm).' : '',
+      'Yêu cầu khi chấm:',
+      '- Chấm theo TỪNG tiêu chí trong bảng chấm điểm; ghi vào "bang_diem" đúng thứ tự các tiêu chí: tieu_chi (chép ngắn gọn), toi_da, dat (điểm đạt, bội của 0,25), nhan_xet (ngắn). "diem" = tổng các "dat".',
+      '- Đối chiếu quy ước bản vẽ kĩ thuật theo TCVN (nét liền đậm, nét đứt cạnh khuất, nét gạch chấm mảnh đường tâm/trục; vị trí các hình chiếu; hình cắt, mặt cắt, đường gạch gạch; ghi kích thước). Chỉ nêu số hiệu TCVN khi chắc chắn.',
+      '- Mỗi lỗi sai: mô tả cụ thể vị trí trên bản vẽ, tiêu chí bị trừ, số điểm trừ, và "cach_sua": yêu cầu em sửa lại như thế nào. Xưng "em" với học sinh, giọng khích lệ.',
+      '- Với MỖI lỗi, khoanh vị trí lỗi trên ẢNH BÀI LÀM bằng "vi_tri": [ymin, xmin, ymax, xmax] theo thang 0–1000 (gốc góc trên bên trái ảnh bài làm); không xác định được thì để [].',
+      '- Nếu ảnh mờ, nghiêng, thiếu sáng hoặc không phải bài vẽ theo đề thì đặt "doc_duoc": false, diem = 0 và hướng dẫn chụp lại.',
+      '- Không khẳng định chắc chắn khi không nhìn rõ; ghi "có thể" khi chưa chắc.',
+      '- "dat_yeu_cau": true nếu đạt từ 50% thang điểm và không có lỗi nghiêm trọng.',
+      'Trả lời DUY NHẤT một đối tượng JSON, không thêm chữ nào khác, theo mẫu:',
+      '{"doc_duoc": true, "dat_yeu_cau": false, "diem": 7.5, "bang_diem": [{"tieu_chi": "…", "toi_da": 3, "dat": 2.5, "nhan_xet": "…"}], "nhan_xet_chung": "…", "diem_dung": ["…"], "loi": [{"mo_ta": "…", "tieu_chi": "…", "tru_diem": 0.5, "vi_tri": [120, 340, 260, 520], "cach_sua": "…"}], "goi_y_sua": ["…"], "y_tuong": ["…"]}'
+    ].filter(String).join('\n');
   };
 
   /* 13. GV bấm "AI chấm lại" cho một bài đã nộp (khi lần trước AI lỗi / chưa trả kết quả) */

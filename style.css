@@ -985,3 +985,43 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .rv.rv-nodi .rv-de{grid-column:1/-1;padding:6px 10px;display:flex;gap:8px;align-items:baseline}
 .rv.rv-nodi .rv-de .rv-h{margin:0;flex:none}
 @media (max-width:900px){.rv.rv-nodi{grid-template-columns:1fr}}
+/* Bài vẽ 22/11/2026: kết quả – trái chấm điểm, giữa bài làm, phải lỗi sai */
+.rv.rv-sc{grid-template-columns:minmax(210px,.8fr) minmax(0,1.7fr) minmax(230px,.95fr)}
+.rv-big{display:flex;align-items:baseline;gap:4px;padding:8px 10px;border-radius:10px;background:var(--bg2,rgba(0,0,0,.04));margin-bottom:6px}
+.rv-big span{font-size:12px;font-weight:700;color:var(--muted);margin-right:auto}
+.rv-big b{font-size:30px;line-height:1}
+.rv-big.ok b{color:var(--ok)}
+.rv-big i{font-style:normal;color:var(--muted)}
+.rv-bd{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.rv-bd th{font-size:11.5px;text-align:left;color:var(--muted);border-bottom:1px solid var(--line);padding:3px 2px}
+.rv-bd td{border-bottom:1px solid var(--line);padding:5px 2px;vertical-align:top;line-height:1.35}
+.rv-bd .n{text-align:right;white-space:nowrap}
+.rv-bd b.ok{color:var(--ok)} .rv-bd b.bad{color:var(--bad)}
+.rv-bd .hint{font-size:11.5px}
+.rv-gv{display:grid;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.rv-gv label{margin:0;font-weight:800;font-size:12.5px}
+.rv-gv #gd{width:90px}
+@media (max-width:1000px){.rv.rv-sc{grid-template-columns:minmax(200px,.8fr) minmax(0,1.6fr)}}
+@media (max-width:640px){.rv.rv-sc{grid-template-columns:1fr}}
+.bv-h1{margin:2px 0 8px;font-size:21px}
+.bv-steps{display:grid;gap:8px;margin-bottom:8px}
+@media (min-width:900px){.bv-steps{grid-template-columns:1.1fr 1fr;align-items:start}}
+.bv-st{margin:0;padding:10px 12px}
+.bv-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 8px}
+.bv-sh .lt-n{flex:none}
+.bv-form .bv-sh{margin-top:14px}
+.bv-form .bv-sh:first-child{margin-top:0}
+.bv-form textarea{min-height:80px}
+.bv-de{display:grid;gap:6px}
+.bv-de .de-img{max-height:260px;margin:0}
+.bv-de-t{white-space:pre-wrap}
+.bv-pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.bv-pick .btn{flex:1;min-width:130px}
+.bv-form .bv-pick .btn{flex:none}
+.bv-drop{min-height:90px;margin-bottom:8px;cursor:pointer}
+.bv-drop img{max-height:40vh;width:auto;max-width:100%}
+.bv-lan{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.bv-lan button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.bv-lan button.on{background:var(--brand,#2563eb);color:#fff;border-color:transparent}
+.bv-more{margin-top:12px}
+.bv-more summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--muted)}
