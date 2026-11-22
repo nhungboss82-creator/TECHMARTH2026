@@ -947,3 +947,41 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .tnmx tr.tn-sel td{background:var(--info-soft)}
 .tnmx input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer}
 .tn-danger{color:var(--bad)!important;border-color:var(--bad)!important}
+/* Bài vẽ – trang GV gọn (22/11/2026) */
+.dv-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:6px}
+.dv-hd h1{margin:0;font-size:20px}
+.dv-hd>a{flex-basis:100%;font-size:13px}
+.dv-bar{padding:8px 10px;margin-bottom:8px}
+.dv-bar .row{gap:6px;align-items:center;flex-wrap:wrap}
+.dv-up{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:10px;margin-top:8px;align-items:start}
+.dv-up label{margin-top:0}
+.dv-upi .imgdrop{min-height:140px;margin:0}
+.dv-upi .imgdrop img{max-height:46vh;width:auto;max-width:100%;object-fit:contain}
+.dv-de{margin-top:8px;font-size:14px;display:grid;gap:4px}
+.dv-mau{margin-top:8px}
+.dv-mau img{max-height:320px;max-width:100%;border-radius:8px;border:1px solid var(--line);display:block}
+.dv-list{display:grid;gap:4px}
+.dv-it{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 10px}
+.dv-it.on{padding-bottom:10px;border-color:var(--brand,#2563eb)}
+.dv-row{display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;flex-wrap:wrap}
+.dv-row b{font-size:14px}
+.dv-row .chev{color:var(--muted);font-size:12px}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.dv-it #rv .rv{gap:8px}
+.dv-it .rv-col{padding:8px}
+.rv-stage{width:fit-content;max-width:100%;margin:0 auto}
+.rv-stage img{max-height:72vh;width:auto;max-width:100%}
+.dv-it .rv-de img{max-height:240px;width:auto;max-width:100%}
+.dv-it .rv-nx{max-height:70vh}
+.dv-score{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:8px;border-radius:10px;background:var(--bg2,rgba(0,0,0,.03));border:1px solid var(--line)}
+.dv-score>div{display:flex;align-items:center;gap:4px}
+.dv-score label{margin:0;font-weight:800}
+.dv-score #gd{width:80px}
+.dv-score #gn{min-width:180px;flex:1}
+.rv-score{margin:10px 0 0;padding-top:8px;border-top:1px dashed var(--line)}
+@media (max-width:720px){.dv-up{grid-template-columns:1fr}.dv-upi{order:-1}.dv-score #ok{width:100%}}
+.rv.rv-nodi{grid-template-columns:minmax(0,1.9fr) minmax(240px,.9fr)}
+.rv.rv-nodi .rv-de{grid-column:1/-1;padding:6px 10px;display:flex;gap:8px;align-items:baseline}
+.rv.rv-nodi .rv-de .rv-h{margin:0;flex:none}
+@media (max-width:900px){.rv.rv-nodi{grid-template-columns:1fr}}

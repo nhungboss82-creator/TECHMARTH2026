@@ -12,6 +12,8 @@
  *   4. update_class   : GV/Admin chuyển lớp sang đúng trường; kiểm tra trùng tên lớp trong CÙNG trường.
  *   5. practice_log / practice_logs: lưu lượt làm bài thực hành (tên, số lần, điểm/số lỗi từng lần) để GV xem;
  *                       gồm cả mọi lượt HS tự nhờ AI chấm bài vẽ (số lần nộp, số lần sửa).
+ *  13. gv_regrade_drawing: AI chấm lại một bài đã nộp.
+ *  12. gv_submit_drawing: GV chụp/gửi bài vẽ của HS (vẽ tay hoặc vẽ máy) để AI chấm, lưu như một lần nộp.
  *  11. ontn_candidates / set_ontn_gv: GV thêm, bớt HS lớp 12 trường mình vào danh sách ôn thi TN.
  *  10. set_ontn/get_ontn: HS tích "Đăng kí ôn thi TN" (cột OnTN trong HocSinh) → GV thấy em trong Quản lý ôn thi TN.
  *   9. tn_results     : Quản lý đề luyện thi TN theo trường (GV: trường mình; Admin: chọn trường) + lượt luyện thi theo bài.
@@ -140,6 +142,56 @@ function cn2111Patch_() {
     return { on: !!req.on };
   });
   API.get_ontn = req => { const t = auth_(req, 'hs'); const h = rows_('HocSinh').find(r => r.MaHS === t.u); return { on: !!h && String(h.OnTN || '') === '1' }; };
+
+  /* 12. GV chấm hộ bài vẽ: GV chụp / gửi ảnh bài làm của một HS (vẽ tay hoặc vẽ máy) → AI chấm, lưu như một lần nộp */
+  API.gv_submit_drawing = req => {
+    const t = auth_(req, 'gv');
+    const b = rows_('BaiVe').find(r => r.MaBV === req.maBV && r.TrangThai !== 'xoa');
+    if (!b) throw new Error('Bài vẽ không tồn tại');
+    if (!req.image) throw new Error('Chưa có ảnh bài làm');
+    let hs = null;
+    if (req.maHS) { hs = rows_('HocSinh').find(r => r.MaHS === req.maHS); if (!hs) throw new Error('Không tìm thấy học sinh'); ownClass_(t, hs.MaLop); }
+    const lop = hs ? null : (req.maLop ? ownClass_(t, req.maLop) : null);
+    const ten = hs ? hs.HoTen : clean_(req.ten, 60);
+    if (!ten) throw new Error('Chọn học sinh hoặc nhập họ tên');
+    const prev = rows_('NopVe').filter(r => r.MaBV === b.MaBV && (hs ? r.MaHS === hs.MaHS : r.HoTen === ten));
+    const img = saveImage_(req.image, b.MaBV + '_' + (hs ? hs.TenDN : 'gv_' + shortId_()) + '_' + (prev.length + 1) + '.jpg');
+    let ai = null, aiErr = '';
+    try {
+      const parts = [{ text: drawPrompt_(b, !!b.AnhMau, !!b.AnhDe) }];
+      if (b.AnhDe) parts.push({ text: 'ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu của giáo viên):' }, imagePart_(b.AnhDe));
+      parts.push({ text: 'ẢNH BÀI LÀM CỦA HỌC SINH (vẽ tay hoặc vẽ máy; toạ độ vi_tri tính trên ảnh này):' }, { inline_data: { mime_type: img.mime, data: img.b64 } });
+      if (b.AnhMau) parts.push({ text: 'ẢNH ĐÁP ÁN MẪU của giáo viên (chỉ để so sánh, KHÔNG phải bài làm):' }, imagePart_(b.AnhMau));
+      ai = geminiCall_(parts);
+      ai.diem = clampScore_(ai.diem, b.DiemToiDa);
+    } catch (e) { aiErr = e.message; }
+    const row = { ThoiDiem: new Date(), MaNop: 'N' + shortId_(), MaBV: b.MaBV, MaHS: hs ? hs.MaHS : '', HoTen: ten,
+      MaLop: hs ? hs.MaLop : (lop ? lop.MaLop : ''), TenLop: hs ? hs.TenLop : (lop ? lopName_(lop.TenLop) : ''), Khoi: String(hs ? hs.Khoi : b.Khoi), Truong: hs ? hs.Truong : (lop ? lop.Truong : ''), AnhId: img.id,
+      AIDiem: ai && ai.doc_duoc !== false ? ai.diem : '', AINhanXet: ai ? clean_(ai.nhan_xet_chung, 1500) : 'Chưa có nhận xét AI: ' + aiErr,
+      AIChiTiet: ai ? JSON.stringify(ai).slice(0, 40000) : '', GVDiem: '', GVNhanXet: '', TrangThai: ai ? 'ai_da_cham' : 'cho_gv' };
+    withLock_(() => append_('NopVe', row));
+    return publicSubmission_(row);
+  };
+
+  /* 13. GV bấm "AI chấm lại" cho một bài đã nộp (khi lần trước AI lỗi / chưa trả kết quả) */
+  API.gv_regrade_drawing = req => {
+    const t = auth_(req, 'gv');
+    const s = rows_('NopVe').find(r => r.MaNop === req.maNop);
+    if (!s) throw new Error('Không tìm thấy bài nộp');
+    if (s.MaLop) ownClass_(t, s.MaLop);
+    const b = rows_('BaiVe').find(r => r.MaBV === s.MaBV);
+    if (!b) throw new Error('Bài vẽ không tồn tại');
+    const parts = [{ text: drawPrompt_(b, !!b.AnhMau, !!b.AnhDe) }];
+    if (b.AnhDe) parts.push({ text: 'ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu của giáo viên):' }, imagePart_(b.AnhDe));
+    parts.push({ text: 'ẢNH BÀI LÀM CỦA HỌC SINH (vẽ tay hoặc vẽ máy; toạ độ vi_tri tính trên ảnh này):' }, imagePart_(s.AnhId));
+    if (b.AnhMau) parts.push({ text: 'ẢNH ĐÁP ÁN MẪU của giáo viên (chỉ để so sánh, KHÔNG phải bài làm):' }, imagePart_(b.AnhMau));
+    const ai = geminiCall_(parts);
+    ai.diem = clampScore_(ai.diem, b.DiemToiDa);
+    const patch = { AIDiem: ai.doc_duoc !== false ? ai.diem : '', AINhanXet: clean_(ai.nhan_xet_chung, 1500), AIChiTiet: JSON.stringify(ai).slice(0, 40000) };
+    if (s.TrangThai !== 'da_cham') patch.TrangThai = 'ai_da_cham';
+    withLock_(() => update_('NopVe', s._r, patch));
+    return publicSubmission_(Object.assign({}, s, patch));
+  };
 
   /* 11. GV thêm / bớt học sinh vào danh sách ôn thi TN (đặt cờ OnTN) – HS lớp 12 thuộc trường của GV */
   API.ontn_candidates = req => {
