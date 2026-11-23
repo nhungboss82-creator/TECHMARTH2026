@@ -2213,6 +2213,9 @@ route(/^\/gv\/diem$/, async params => {
       rosterSort(c, students);
       $('#bd').innerHTML = `<div class="row" style="align-items:center"><h2 class="grow">Lớp ${esc(c.TenLop)} · ${students.length} học sinh</h2><a class="btn ghost sm" href="#/gv/lop/${code}">Mở lớp ›</a></div><div id="bds"></div>`;
       scoreSheet($('#bds'), c, students, results, asg.filter(a => a.DanhSachLop.includes(code)));
+      const wt = {}; results.forEach(r => String(r.sai || '').split(',').filter(Boolean).forEach(id => { const q = bank.byId[id]; if (q) wt[q.cd] = (wt[q.cd] || 0) + 1; }));
+      const tops = Object.entries(wt).sort((a, b) => b[1] - a[1]).slice(0, 8), mx = tops.length ? tops[0][1] : 1;
+      if (tops.length) $('#bd').insertAdjacentHTML('beforeend', `<h2>Chủ đề lớp hay sai nhất</h2><div class="card"><div class="bars">${tops.map(([t, n]) => `<div class="bar"><span>${esc(t.replace(/^Lớp \d+ – /, ''))}</span><span class="tr"><i style="width:${n / mx * 100}%"></i></span><span class="v">${n}</span></div>`).join('')}</div></div>`);
     } catch (e) { if ($('#bd')) errBox($('#bd'), e); }
   };
   draw();
@@ -2251,7 +2254,7 @@ function qrInto(el, text) {
 route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   if (!needGV()) return;
   setView('<div class="card empty">Đang tải…</div>');
-  let cls, students, results, asg;
+  let cls, students, results, asg, rIx = {};
   try {
     [cls, students, results, asg] = await Promise.all([api('my_classes'), api('class_students', { code }), api('class_results', { code }), api('list_assignments')]);
   } catch (e) { errBox(V, e); return; }
@@ -2287,12 +2290,9 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     const inList = new Set(roster.map(normName));
     const extra = students.filter(st => !inList.has(normName(st.HoTen)));
     const done = roster.filter(n => byName[normName(n)]).length;
-    return `<p class="hint" style="margin-top:0">${done}/${roster.length} em đã đăng ký tài khoản.</p>
-      ${extra.length ? `<div class="hsbulk rs-bulk"><label class="chk"><input type="checkbox" id="rxall"> Chọn tất cả ${extra.length} em ngoài danh sách</label><span class="hint" id="rxcnt">Tích ô ở đầu dòng các em ngoài danh sách</span><span class="grow"></span><button class="btn danger sm" id="rxdel" disabled>🚫 Bỏ khỏi lớp</button></div>` : ''}
-      <div class="tablewrap"><table><thead><tr><th class="ck"></th><th class="n">STT</th><th>Họ và tên</th><th>Tài khoản</th></tr></thead><tbody>
-      ${roster.map((n, i) => { const m = byName[normName(n)]; return `<tr><td class="ck"></td><td class="n">${i + 1}</td><td>${esc(n)}</td><td>${m ? '<span class="pill">✅ ' + esc(m.map(x => x.TenDN).join(', ')) + '</span>' : '<span class="pill warn">Chưa đăng ký</span>'}</td></tr>`; }).join('')}
-      ${extra.map(st => `<tr class="duprow"><td class="ck"><input type="checkbox" class="rxck" value="${st.MaHS}" aria-label="Chọn ${esc(st.HoTen)}"></td><td class="n">–</td><td>${esc(st.HoTen)}</td><td><span class="pill bad" title="Họ tên không khớp danh sách">Ngoài danh sách · ${esc(st.TenDN)}</span></td></tr>`).join('')}
-      </tbody></table></div>`;
+    const none = roster.filter(n => !byName[normName(n)]);
+    return `<div class="rs-sum"><b>${done}/${roster.length}</b> em đã có tài khoản.${none.length ? ` Chưa đăng ký: ${none.map(n => `<span class="pill warn">${esc(n)}</span>`).join(' ')}` : ' ✅ Đủ cả lớp.'}</div>
+      ${extra.length ? `<div class="rs-sum" style="margin-top:6px">⚠️ <b>${extra.length}</b> tài khoản không có trong danh sách lớp: ${extra.map(st => `<span class="pill bad">${esc(st.HoTen)}</span>`).join(' ')} <button class="btn sm warnbtn" id="rxpick">Tích chọn các em này</button></div>` : ''}`;
   };
   setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><a class="btn ghost sm" href="#/gv/thuchanh?lop=${code}">🧪 Lượt thực hành</a><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
     <div id="ledit"></div>
@@ -2301,35 +2301,18 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
       <div class="row" style="margin-top:8px"><button class="btn sm ghost" id="cp">📋 Sao chép link đăng ký</button></div></div><div id="qr" style="width:132px"></div></div></div>
     <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Danh sách lớp${roster.length ? ' (' + roster.length + ')' : ''}</h2><button class="btn sm ghost" id="rsEdit">✏️ ${roster.length ? 'Sửa danh sách' : 'Dán danh sách'}</button></div>
     <div class="card" id="rsBox">${rosterView()}</div>
-    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Học sinh đã đăng ký (${students.length})</h2>${extra.size ? `<button class="btn sm warnbtn" id="pickdup" title="Tích sẵn các tài khoản thừa để xoá">🧹 Xoá ${extra.size} tài khoản trùng</button>` : ''}${dupN ? `<button class="btn sm ghost" id="merge" title="Dồn kết quả làm bài về 1 tài khoản rồi xoá tài khoản thừa">🔗 Gộp kết quả & xoá trùng tên</button>` : ''}<a class="btn sm" href="javascript:void 0" id="tobd">📊 Bảng điểm & xuất Excel ↓</a></div>
+    <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow">Tài khoản học sinh (${students.length})</h2>${extra.size ? `<button class="btn sm warnbtn" id="pickdup" title="Tích sẵn các tài khoản thừa để xoá">🧹 Xoá ${extra.size} tài khoản trùng</button>` : ''}${dupN ? `<button class="btn sm ghost" id="merge" title="Dồn kết quả làm bài về 1 tài khoản rồi xoá tài khoản thừa">🔗 Gộp kết quả & xoá trùng tên</button>` : ''}<a class="btn sm" href="#/gv/diem?lop=${code}">📊 Xem điểm lớp này ›</a></div>
     ${extra.size ? `<p class="hint" style="margin-top:0">Có <b>${extra.size}</b> tài khoản thừa (cùng họ tên hoặc cùng Gmail với một tài khoản khác, đánh dấu <span class="pill warn">trùng</span>). Bấm <b>🧹 Xoá tài khoản trùng</b>: app tự tích các tài khoản thừa, giữ lại tài khoản làm nhiều bài nhất, cô xem lại rồi bấm Xoá. Muốn giữ cả kết quả của tài khoản thừa thì bấm <b>🔗 Gộp</b>.</p>` : ''}
-    <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
+    <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><button class="btn ghost sm" id="hsnone" type="button">Bỏ chọn</button><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
       <div class="tablewrap"><table class="hstable"><thead><tr><th class="ck"><input type="checkbox" id="hsall2" title="Chọn tất cả" aria-label="Chọn tất cả"></th><th class="n">STT</th><th>Họ tên</th><th>Tên ĐN / Email</th><th class="n">Lượt</th><th class="n">ĐTB</th><th>Lần cuối</th><th></th></tr></thead><tbody>
-      ${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${extra.has(s.MaHS) || dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${extra.has(s.MaHS) ? ` <span class="pill warn" title="Trùng với tài khoản ${esc(mainOf[s.MaHS].TenDN)} (giữ lại)">trùng · thừa</span>` : ''}${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
+      ${(rIx = rosterIdx({ DanhSach: roster }), '')}${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${extra.has(s.MaHS) || dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${rIx[normName(s.HoTen)] != null ? rIx[normName(s.HoTen)] + 1 : roster.length ? '–' : i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${roster.length && rIx[normName(s.HoTen)] == null ? ' <span class="pill bad" title="Họ tên không có trong danh sách lớp">ngoài DS</span>' : ''}${extra.has(s.MaHS) ? ` <span class="pill warn" title="Trùng với tài khoản ${esc(mainOf[s.MaHS].TenDN)} (giữ lại)">trùng · thừa</span>` : ''}${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td>${esc(s.TenDN)}${s.Email ? `<div class="hint">${esc(s.Email)}</div>` : ''}</td>
         <td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td>${s.lanCuoi ? dt(s.lanCuoi) : '–'}</td><td class="hsact"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp / đổi trường">✏️</button><button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 MK</button><button class="btn ghost sm delbtn" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh này">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="8"></td></tr>`; }).join('')}
-      </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>
-    <h2 id="bdh">📊 Bảng điểm theo bài / chủ đề / đề thi</h2><div id="bd"></div>
-    <h2>Chủ đề lớp hay sai nhất</h2>
-    <div class="card">${tops.length ? '<div class="bars">' + tops.map(([t, n]) => `<div class="bar"><span>${esc(t.replace(/^Lớp \d+ – /, ''))}</span><span class="tr"><i style="width:${n / maxT * 100}%"></i></span><span class="v">${n}</span></div>`).join('') + '</div>' : '<div class="empty">Chưa có dữ liệu.</div>'}
-    ${hardQ.length ? '<h3>Câu sai nhiều nhất</h3><div class="list">' + hardQ.map(([id, n]) => `<div class="item"><div class="grow">${esc(plain(bank.byId[id].s).slice(0, 150))}<div class="meta">${esc(id)} · ${n} lượt sai</div></div></div>`).join('') + '</div>' : ''}</div>
-    <h2>Bài đã giao cho lớp</h2>
-    <div class="list">${myAsg.map(a => `<a class="item" href="#/gv/bai/${a.MaBai}"><div class="grow"><b>${esc(a.TieuDe)}</b><div class="meta">${a.DanhSachCau.length} câu · ${results.filter(r => r.key === a.MaBai).length} lượt nộp</div></div>›</a>`).join('') || '<div class="card empty">Chưa giao bài cho lớp này.</div>'}</div>`);
+      </tbody></table></div><p class="hint">⏰ = 7 ngày chưa luyện tập.</p>` : '<div class="empty">Chưa có học sinh. Gửi mã lớp hoặc mã QR cho các em đăng ký.</div>'}</div>`);
   qrInto($('#qr'), joinLink(code));
   const bindRX = () => {
-    const all = $('#rxall'); if (!all) return;
-    const cks = () => $$('.rxck'), upd = () => { const n = cks().filter(x => x.checked).length; $('#rxcnt').textContent = n ? `Đã chọn ${n} em` : 'Tích ô ở đầu dòng các em ngoài danh sách'; $('#rxdel').disabled = !n; all.checked = n === cks().length; all.indeterminate = n > 0 && n < cks().length; };
-    all.onchange = () => { cks().forEach(x => { x.checked = all.checked; }); upd(); };
-    cks().forEach(x => { x.onchange = upd; });
-    $('#rxdel').onclick = async () => {
-      const ids = cks().filter(x => x.checked).map(x => x.value); if (!ids.length) return;
-      const names = ids.map(id => (students.find(s => s.MaHS === id) || {}).HoTen).filter(Boolean);
-      if (!confirm(`Bỏ ${ids.length} em khỏi lớp ${c.TenLop}?\n\n${names.join('\n')}\n\nTài khoản các em này sẽ bị xoá, không đăng nhập được nữa (kết quả cũ vẫn lưu trong bảng tính).`)) return;
-      const b = $('#rxdel'); b.disabled = true; let ok = 0; const fail = [];
-      for (const id of ids) { b.textContent = `Đang bỏ ${ok + fail.length + 1}/${ids.length}…`; try { await api('delete_student', { maHS: id }); ok++; } catch (e) { fail.push(((students.find(s => s.MaHS === id) || {}).HoTen || id) + ': ' + e.message); } }
-      toast(`Đã bỏ ${ok} em khỏi lớp` + (fail.length ? ` · ${fail.length} em chưa bỏ được` : ''));
-      if (fail.length) alert('Chưa bỏ được:\n' + fail.join('\n'));
-      reload();
-    };
+    const b = $('#rxpick'); if (!b) return;
+    b.onclick = () => { const inL = new Set(roster.map(normName)); $$('.hsck').forEach(x => { const st = students.find(y => y.MaHS === x.value); x.checked = !!st && !inL.has(normName(st.HoTen)); x.dispatchEvent(new Event('change')); });
+      const t = $('#hsbulk'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
   };
   bindRX();
   $('#rsEdit').onclick = () => {
@@ -2464,6 +2447,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
   };
   ['#hsall', '#hsall2'].forEach(id => { const x = $(id); if (x) x.onchange = () => { cks().forEach(c => { c.checked = x.checked; }); syncSel(); }; });
   cks().forEach(c => c.onchange = syncSel);
+  if ($('#hsnone')) $('#hsnone').onclick = () => { cks().forEach(c => { c.checked = false; }); syncSel(); };
   if ($('#pickdup')) $('#pickdup').onclick = () => {
     cks().forEach(x => { x.checked = extra.has(x.value); }); syncSel();
     const f = cks().find(x => x.checked); if (f) f.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2484,8 +2468,6 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     if (fail.length) alert('Chưa xoá được:\n' + fail.join('\n'));
     reload();
   };
-  $('#tobd').onclick = () => { const h = $('#bdh'); if (h) window.scrollTo({ top: h.getBoundingClientRect().top + window.scrollY - 70, behavior: 'smooth' }); };
-  scoreSheet($('#bd'), c, students, results, myAsg);
 });
 
 /* ---------- Bảng điểm lớp: mỗi bài / chủ đề / đề thi là 1 cột, GV tích chọn cột, cộng tổng & TB ở cuối ---------- */
