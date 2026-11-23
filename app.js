@@ -351,6 +351,15 @@ function render() {
   location.hash = '#/';
 }
 window.addEventListener('hashchange', render);
+/* nút "← …" quay về đúng trang vừa xem (như nút Back), nếu chưa có trang trước thì mới đi theo link */
+let navDepth = 0;
+window.addEventListener('hashchange', () => { navDepth++; });
+document.addEventListener('click', e => {
+  const a = e.target.closest && e.target.closest('a[href^="#/"]');
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || a.target) return;
+  if (!/^\s*←/.test(a.textContent || '')) return;
+  if (navDepth > 0 && history.length > 1) { e.preventDefault(); navDepth -= 2; history.back(); }
+});
 function setView(html) {
   V.innerHTML = html; math(V);
   V.classList.toggle('gbwide', /^#\/gv\/giaobai/.test(location.hash));
