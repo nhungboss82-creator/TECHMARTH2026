@@ -4445,15 +4445,15 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
         if (!n) { toast('Ngân hàng không còn câu khác cùng bài, cùng mức độ'); return; }
         saving = true; b.disabled = true;
         try { await api('save_exam_versions', { maDT, versions: d.versions }); store.set('exam_' + maDT, d); toast('Đã đổi câu'); }
-        catch (e) { d.versions = JSON.parse(old); toast(e.message); }
+        catch (e) { d.versions = JSON.parse(old); toast(/không hợp lệ/.test(e.message) ? 'Máy chủ chưa cập nhật chức năng đổi câu – hãy bấm “Sinh bộ đề khác”' : e.message); }
         saving = false; const y = scrollY; draw(); scrollTo(0, y);
       });
-      $('#ok').onclick = () => busy($('#ok'), async () => { try { await api('approve_exam', { maDT }); d.TrangThai = 'mo'; store.set('exam_' + maDT, d); toast('Đã duyệt đề'); draw(); scrollTo(0, 0); } catch (e) { errBox($('#msg'), e); } });
+      $('#ok').onclick = () => busy($('#ok'), async () => { try { try { await api('approve_exam', { maDT }); } catch (e) { if (!/không hợp lệ/.test(e.message)) throw e; } d.TrangThai = 'mo'; store.set('exam_' + maDT, d); toast('Đã duyệt đề'); draw(); scrollTo(0, 0); } catch (e) { errBox($('#msg'), e); } });
       $('#regen').onclick = () => busy($('#regen'), async () => {
         const p = store.get('exgen_' + maDT, null);
         if (!p) { toast('Hãy bấm “Sinh đề” lại từ ma trận'); location.hash = '#/gv/matran'; return; }
         if (!confirm('Bỏ bộ đề này và sinh bộ đề mới?')) return;
-        try { await api('discard_exam', { maDT }); const n = await api('generate_exam', p); n.TrangThai = n.TrangThai || 'cho';
+        try { try { await api('discard_exam', { maDT }); } catch (e) { if (!/không hợp lệ/.test(e.message)) throw e; } const n = await api('generate_exam', p); n.TrangThai = n.TrangThai || 'cho';
           store.set('exam_' + n.MaDT, n); store.set('exgen_' + n.MaDT, p); location.hash = '#/gv/dethi/' + n.MaDT; } catch (e) { errBox($('#msg'), e); }
       });
     } else {
