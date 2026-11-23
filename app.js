@@ -1988,7 +1988,7 @@ const GV_APPS = k => {
   const gv = [
     ...(k === '12' ? [A('#/gv/thitn', '📊', 'green', 'Quản lý đề luyện thi TN', 'Kết quả từng đề, câu HS hay sai', 'GV')] : []),
     A('#/gv/aisoancau?k=' + k, '🤖', 'green', 'AI soạn câu hỏi', 'Soạn câu mới theo bài, mức độ; GV duyệt', 'GV'),
-    A('#/gv/matran?k=' + k, '🧾', 'amber', 'Ma trận & đề kiểm tra', 'Ma trận GK, CK; sinh đề, in đề', 'GV'),
+    A('#/gv/matran?k=' + k, '🧾', 'amber', 'Ma trận và đề kiểm tra định kỳ', 'Theo CV 7991: giữa kì, cuối kì', 'GV'),
     ...[]
   ];
   const game = A('#/trochoi?k=' + k, '🎮', 'amber', 'Trò chơi khởi động', 'Đoán từ, ô chữ, lật ô đoán tranh', 'GV·HS');
@@ -3991,23 +3991,35 @@ const mxTotals = rows => rows.reduce((a, r) => { ['b', 'h', 'v', 'ds', 'tb', 'th
 
 route(/^\/gv\/matran$/, async params => {
   if (!needGV()) return;
-  const filterK = params ? (params.get('k') || '') : '';
-  setView(`<div class="row"><h1 class="grow">📑 Ma trận & đề kiểm tra ${filterK ? 'Khối ' + filterK : ''}</h1><a class="btn sm" href="#/gv/matran/sua${filterK ? '?k=' + filterK : ''}">+ Ma trận mới</a></div>
-    <p class="sub">Nhập ma trận theo văn bản của Sở một lần, sau đó mỗi lần bấm “Sinh đề” app tạo bộ đề mới gồm nhiều mã đề, có đáp án và mã QR chấm nhanh.</p>
-    <h2>Ma trận của trường</h2><div id="mt"><div class="card empty">Đang tải…</div></div>
-    ${(window.STC_MATRAN || []).length ? `<h2>📌 Ma trận mẫu theo CV 7991/BGDĐT</h2><p class="hint">12 câu TN nhiều lựa chọn (3 điểm) – 4 câu Đúng/Sai (4 điểm) – tự luận (3 điểm). Bấm “Dùng mẫu” để lưu thành ma trận của trường rồi sinh đề; có thể chỉnh trước khi lưu.</p>
-      <div class="list">${STC_MATRAN.filter(t => !filterK || t.khoi === filterK).map(t => { const s = mxTotals(t.rows); return `<div class="item"><div class="grow"><b>${esc(t.ten)}</b><div class="meta">${t.rows.length} bài · ${s.b + s.h + s.v} TN + ${s.ds} Đ/S + ${s.tb + s.th + s.tv} tự luận · ${t.thoiGian} phút</div></div><a class="btn sm" href="#/gv/matran/sua?mau=${t.id}">Dùng mẫu</a></div>`; }).join('')}</div>` : ''}
-    <h2>Đề đã sinh</h2><div id="dt"><div class="card empty">Đang tải…</div></div>`);
-  try {
-    const [ms, ds] = await Promise.all([api('list_matrices'), api('list_exams')]);
-    ($('#mt') || {}).innerHTML = ms.length ? '<div class="list">' + ms.map(m => {
-      const s = mxTotals(m.rows), ntl = s.tb + s.th + s.tv;
-      return `<div class="item"><div class="grow"><b>${esc(m.TenMT)}</b><div class="meta">Lớp ${esc(m.Khoi)} · ${esc(m.Loai)} · ${m.ThoiGian} phút · ${s.b + s.h + s.v} câu nhiều lựa chọn + ${s.ds} câu Đúng/Sai${ntl ? ' + ' + ntl + ' câu tự luận' : ''} · ${esc(m.TenGV)}</div></div>
-        <a class="btn ghost sm" href="#/gv/matran/sua?id=${m.MaMT}">Sửa</a><a class="btn sm" href="#/gv/sinhde?mt=${m.MaMT}">Sinh đề</a></div>`;
-    }).join('') + '</div>' : '<div class="card empty">Chưa có ma trận. Bấm “+ Ma trận mới”.</div>';
-    store.set('matrices', ms);
-    ($('#dt') || {}).innerHTML = ds.length ? '<div class="list">' + ds.map(d => `<a class="item" href="#/gv/dethi/${d.MaDT}"><div class="grow"><b>${esc(d.TieuDe)}</b> ${d.TrangThai === 'cho' ? '<span class="pill warn">⏳ Chờ duyệt</span>' : ''}<div class="meta">Lớp ${esc(d.Khoi)} · ${d.SoMaDe} mã đề · ${esc(d.TenGV)} · ${dt(d.NgayTao)}</div></div>›</a>`).join('') + '</div>' : '<div class="card empty">Chưa sinh đề nào.</div>';
-  } catch (e) { errBox($('#mt'), e); }
+  let k = params ? (params.get('k') || '') : '';
+  const KY_IC = { 'Giữa kì I': '🍂', 'Cuối kì I': '📘', 'Giữa kì II': '🌱', 'Cuối kì II': '🎓' };
+  let ds = null;
+  const draw = () => {
+    const tpls = (window.STC_MATRAN || []).filter(t => !k || t.khoi === k);
+    setView(`<h1>🧾 Ma trận và đề kiểm tra định kỳ</h1>
+      <div class="row" style="gap:6px;margin:4px 0 10px">${['', '10', '11', '12'].map(x => `<button class="btn ghost sm${x === k ? ' on' : ''}" data-k="${x}">${x ? 'Khối ' + x : 'Tất cả'}</button>`).join('')}</div>
+      <div class="mx-grid">${tpls.map(t => { const s = mxTotals(t.rows), tl = s.tb + s.th + s.tv;
+        return `<div class="card mx-c"><div class="mx-i">${KY_IC[t.loai] || '📄'}</div><div class="grow"><b>${esc(t.ten)}</b><div class="meta">${s.b + s.h + s.v} TN nhiều lựa chọn · ${s.ds} Đúng/Sai${tl ? ' · ' + tl + ' tự luận' : ''} · ${t.thoiGian} phút</div></div>
+          <button class="btn" data-sd="${t.id}">Sinh đề</button></div>`; }).join('') || '<div class="card empty">Chưa có ma trận CV 7991 cho khối này.</div>'}</div>
+      <h2>Đề đã sinh</h2><div id="dt">${ds === null ? '<div class="card empty">Đang tải…</div>' : examList()}</div>`);
+    $$('[data-k]').forEach(b => b.onclick = () => { k = b.dataset.k; draw(); });
+    $$('[data-sd]').forEach(b => b.onclick = () => busy(b, async () => {
+      const t = STC_MATRAN.find(x => x.id === b.dataset.sd);
+      try {
+        const ms = await api('list_matrices'), nm = x => String(x).replace(/[–—-]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase(), same = ms.filter(m => nm(m.TenMT) === nm(t.ten) && String(m.Khoi) === t.khoi).pop();
+        const body = { ten: t.ten, khoi: t.khoi, loai: EXAM_TYPES.includes(t.loai) ? t.loai : t.loai, thoiGian: t.thoiGian, rows: JSON.parse(JSON.stringify(t.rows)) };
+        let m = null;
+        if (same) try { m = await api('save_matrix', { matrix: Object.assign({ id: same.MaMT }, body) }); } catch (e) { m = null; }
+        if (!m || !m.MaMT) m = await api('save_matrix', { matrix: body });
+        const all = ms.filter(x => x.MaMT !== m.MaMT).concat(m); store.set('matrices', all);
+        location.hash = '#/gv/sinhde?mt=' + m.MaMT;
+      } catch (e) { toast(e.message); }
+    }));
+  };
+  const examList = () => ds.length ? '<div class="list">' + ds.filter(d => !k || String(d.Khoi) === k).map(d => `<a class="item" href="#/gv/dethi/${d.MaDT}"><div class="grow"><b>${esc(d.TieuDe)}</b> ${d.TrangThai === 'cho' ? '<span class="pill warn">⏳ Chờ duyệt</span>' : ''}<div class="meta">Lớp ${esc(d.Khoi)} · ${d.SoMaDe} mã đề · ${esc(d.TenGV)} · ${dt(d.NgayTao)}</div></div>›</a>`).join('') + '</div>' : '<div class="card empty">Chưa sinh đề nào.</div>';
+  draw();
+  try { ds = await api('list_exams'); } catch (e) { ds = []; }
+  if (/^#\/gv\/matran(\?|$)/.test(location.hash)) { const y = scrollY; draw(); scrollTo(0, y); }
 });
 
 route(/^\/gv\/matran\/sua$/, async params => {
@@ -4023,7 +4035,7 @@ route(/^\/gv\/matran\/sua$/, async params => {
     m.rows.forEach(r => { if (r.value && r.type === 'bai' && !opts.some(([t, v]) => t === 'bai' && v === r.value)) opts.unshift(['bai', r.value]); });
     const tot = mxTotals(m.rows);
     const mc = tot.b + tot.h + tot.v, ntl = tot.tb + tot.th + tot.tv, raw = mc * 0.25 + tot.ds;
-    setView(`<a href="#/gv/matran">← Ma trận & đề</a><h1>${id ? 'Sửa' : 'Tạo'} ma trận</h1>
+    setView(`<a href="#/gv/matran">← Ma trận và đề kiểm tra định kỳ</a><h1>${id ? 'Sửa' : 'Tạo'} ma trận</h1>
       <div class="card"><label for="tn">Tên ma trận</label><input id="tn" type="text" value="${esc(m.ten)}" placeholder="Ma trận cuối kì I – Công nghệ 12 (theo CV … của Sở)">
         <div class="row"><div style="width:110px"><label for="kh">Khối</label><select id="kh">${['10', '11', '12'].map(k => `<option ${k === m.khoi ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
         <div class="grow"><label for="lo">Loại</label><select id="lo">${EXAM_TYPES.map(x => `<option ${x === m.loai ? 'selected' : ''}>${x}</option>`).join('')}</select></div>
@@ -4056,7 +4068,7 @@ route(/^\/gv\/sinhde$/, params => {
   const ms = store.get('matrices', []); const mt = params.get('mt');
   const m = ms.find(x => x.MaMT === mt);
   if (!m) { location.hash = '#/gv/matran'; return; }
-  setView(`<a href="#/gv/matran">← Ma trận & đề</a><h1>Sinh đề từ ma trận</h1><p class="sub">${esc(m.TenMT)} · lớp ${esc(m.Khoi)} · ${m.ThoiGian} phút</p>
+  setView(`<a href="#/gv/matran">← Ma trận và đề kiểm tra định kỳ</a><h1>Sinh đề từ ma trận</h1><p class="sub">${esc(m.TenMT)} · lớp ${esc(m.Khoi)} · ${m.ThoiGian} phút</p>
     <div class="card"><label for="td">Tiêu đề in trên đề</label><input id="td" type="text" value="KIỂM TRA ${esc(m.Loai.toUpperCase())} – NĂM HỌC 2026–2027">
       <div class="row"><div class="grow"><label for="sm">Số mã đề</label><input id="sm" type="number" min="1" max="12" value="4"></div><div class="grow"><label for="mb">Mã đề đầu tiên (4 số, bắt đầu bằng 6)</label><input id="mb" type="number" min="6000" max="6999" value="6010"></div></div>
       <label>Cách tạo các mã đề</label><div class="checks"><label class="chk"><input type="radio" name="cd" value="khac_cau" checked>Mỗi mã đề một bộ câu khác nhau</label><label class="chk"><input type="radio" name="cd" value="dao_cau">Cùng bộ câu, chỉ đảo câu và phương án</label></div>
@@ -4432,7 +4444,7 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
   };
   const draw = () => {
     const pend = d.TrangThai === 'cho', v = d.versions[tab], { mc, tf, tl } = examParts(d, v);
-    setView(`<a href="#/gv/matran">← Ma trận & đề</a>
+    setView(`<a href="#/gv/matran">← Ma trận và đề kiểm tra định kỳ</a>
       <div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">${esc(d.TieuDe)}</h1>${pend ? '<span class="pill warn">⏳ Chờ duyệt</span>' : '<span class="pill ok">✅ Đã duyệt</span>'}</div>
       <p class="sub">Lớp ${esc(d.Khoi)} · ${d.ThoiGian} phút · ${codes.length} mã đề: ${codes.join(', ')} · ${v.ids.length} câu/đề</p>
       ${d.thieu && d.thieu.length ? `<div class="err">Ngân hàng chưa đủ câu: ${esc(d.thieu.join('; '))}</div>` : ''}

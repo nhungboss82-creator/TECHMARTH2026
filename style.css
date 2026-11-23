@@ -1236,3 +1236,6 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .dt-ops.ed>div{cursor:pointer;border:1.5px dashed #cbd5e1}.dt-ops.ed>div:hover{background:#eff6ff}
 .dt-tg{cursor:pointer;user-select:none}
 .dt-file{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid #93c5fd;background:#eff6ff}.dt-file h3{margin:0}.dt-fi{font-size:34px}
+.mx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.mx-c{display:flex;align-items:center;gap:12px;margin:0}.mx-i{font-size:30px}
+.mx-c .btn{white-space:nowrap}
