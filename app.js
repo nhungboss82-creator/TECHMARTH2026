@@ -2672,7 +2672,7 @@ route(/^\/gv\/giaobai$/, async params => {
   const draw = () => {
     const sc = isAdm ? gvSchool(allCls) : { list: allCls, html: '', bind: () => {} };
     cls = sc.list;
-    setView(`<div class="gb-head"><h1>📝 Giao bài ${targetK ? 'Khối ' + targetK : ''}</h1><span class="hint">Giao chung cả khối để HS xếp hạng chung · chỉ hiện lớp của trường ${isAdm ? 'đã chọn' : 'thầy/cô dạy'}</span></div>
+    setView(`<div class="gb-head"><h1>📝 Giao bài ${targetK ? 'Khối ' + targetK : ''}</h1></div>
       <form class="card gbf" id="f"><div class="gb-l">
         ${sc.html ? `<div class="gb-sch">${sc.html}</div>` : ''}
         <div class="gb-2"><div><label for="t">Tiêu đề</label><input id="t" type="text" required maxlength="120" placeholder="${targetK ? 'Kiểm tra Công nghệ ' + targetK : 'Kiểm tra 15 phút – Mạch điện ba pha'}" value="${esc(keep.t)}"></div>
@@ -2681,16 +2681,15 @@ route(/^\/gv\/giaobai$/, async params => {
         <div class="gb-cls">${isAdm && !cls.length ? '<div class="hint">Chọn trường ở trên để hiện các lớp.</div>' : ['10', '11', '12'].map(k => { const l = cls.filter(c => c.Khoi === k); return l.length ? `<div class="gb-kr"><b>K${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${(keep.cl ? keep.cl.includes(c.MaLop) : targetK === k) ? 'checked' : ''}>${esc(c.TenLop)}${c.MaGV === mine ? '' : ' <span class="pill">GV khác</span>'}</label>`).join('')}<button type="button" class="btn ghost sm" data-all="${k}">Cả khối</button></div></div>` : ''; }).join('') || '<div class="hint">Chưa có lớp nào trong trường.</div>'}</div>
         <div class="gb-2 gb-eq"><div><label for="mi" title="0 = không giới hạn">⏱ Số phút làm bài</label><input id="mi" type="number" min="0" max="180" value="${keep.mi || (mode === 'ngaunhien' ? 15 : 45)}"></div>
           <div><label for="at" title="0 = không giới hạn">🔁 Số lần được làm</label><input id="at" type="number" min="0" max="20" value="1"></div></div>
-        <div class="gb-time"><div class="gb-t gb-ts"><label for="st">▶ Bắt đầu <small>(trống = mở ngay)</small></label><input id="st" type="datetime-local" value="${esc(keep.st || '')}"></div>
-          <div class="gb-t gb-te"><label for="dl">■ Kết thúc <small>(trống = không hạn)</small></label><input id="dl" type="datetime-local" value="${esc(keep.dl || '')}"></div></div>
+        <div class="gb-time"><div class="gb-t gb-ts"><label for="st">▶ Bắt đầu</label><input id="st" type="datetime-local" value="${esc(keep.st || '')}"></div>
+          <div class="gb-t gb-te"><label for="dl">■ Kết thúc</label><input id="dl" type="datetime-local" value="${esc(keep.dl || '')}"></div></div>
         <div class="gb-2"><div><label for="cdd">Sau khi nộp bài</label><select id="cdd">${DIEM_MODES.map(([v, t]) => `<option value="${v}" ${v === keep.cdd ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
           <div><label for="lb">Bảng xếp hạng</label><select id="lb"><option value="ngay">Hiện ngay sau khi nộp</option><option value="sau_han">Chỉ hiện sau hạn nộp</option><option value="tat">Tắt</option></select></div></div>
-        <p class="hint" id="cddh" style="margin:2px 0 0">${DIEM_MODES.find(x => x[0] === keep.cdd)[2]}</p>
         <label for="no">Ghi chú cho HS</label><input id="no" type="text" maxlength="300" placeholder="Không bắt buộc">
         <div id="msg"></div><button class="btn block gb-go">🚀 Xem trước đề & Giao bài</button>
       </div><div class="gb-r">
         <label style="margin-top:0">Cách lấy câu hỏi</label>
-        <div class="gbm">${GB_MODES.map(([v, ic, t, d]) => `<button type="button" data-m="${v}" class="gbm-c${mode === v ? ' on' : ''}"><span class="gbm-i">${ic}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>
+        <div class="gbm">${GB_MODES.map(([v, ic, t, d]) => `<button type="button" data-m="${v}" class="gbm-c${mode === v ? ' on' : ''}"><span class="gbm-i">${ic}</span><b>${t}</b></button>`).join('')}</div>
         <div id="mbox" class="gbm-box"></div>
       </div></form>`);
     const remember = () => { keep.st = $('#st').value; keep.dl = $('#dl').value; keep.t = $('#t').value; keep.lb = $('#lbx').value; keep.cdd = $('#cdd').value; keep.mi = $('#mi').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
@@ -2792,7 +2791,7 @@ route(/^\/gv\/giaobai$/, async params => {
     window.scrollTo(0, 0);
   };
   /* ----- chọn khối (khi chưa tích lớp) ----- */
-  const kChips = k => targetK ? '' : `<div class="row" style="margin:8px 0 2px;gap:6px"><span class="hint">Khối:</span>${['10', '11', '12'].map(x => `<button type="button" class="btn ghost sm${x === k ? ' on' : ''}" data-kk="${x}">Lớp ${x}</button>`).join('')}<span class="hint">(tự theo lớp đã tích)</span></div>`;
+  const kChips = k => targetK ? '' : `<div class="row" style="margin:8px 0 2px;gap:6px"><span class="hint">Khối:</span>${['10', '11', '12'].map(x => `<button type="button" class="btn ghost sm${x === k ? ' on' : ''}" data-kk="${x}">Lớp ${x}</button>`).join('')}</div>`;
   const bindK = () => $$('[data-kk]').forEach(b => b.onclick = () => {
     const c = $$('input[name=cl]:checked');
     if (c.length && c[0].dataset.k !== b.dataset.kk) { if (!confirm('Đang tích lớp khối ' + c[0].dataset.k + '. Bỏ tích các lớp đó để chọn khối ' + b.dataset.kk + '?')) return; c.forEach(i => i.checked = false); }
@@ -2822,7 +2821,7 @@ route(/^\/gv\/giaobai$/, async params => {
     const head = free ? `${kChips(k)}<div class="gbm-step">✏️ Tự nhập số câu cho từng bài – Công nghệ ${k}</div>`
       : `${kChips(k)}<div class="gbm-step">📊 Chọn kì kiểm tra – ma trận CV 7991, Công nghệ ${k}</div>
       <div class="gbm-ky">${tpls.map(t => `<button type="button" class="gbm-k${mt.src === t.id ? ' on' : ''}" data-src="${esc(t.id)}"><span>${KY_IC[t.loai] || '📄'}</span>${esc(t.loai)}</button>`).join('')}</div>`;
-    return head + `<p class="hint" style="margin:8px 0 4px">${free ? 'Gõ số câu Biết / Hiểu / Vận dụng / Đúng-Sai / Tự luận cho những bài muốn lấy; bài để trống = không lấy.' : 'Bảng đã điền sẵn số câu theo ma trận của kì đã chọn; thầy cô có thể sửa từng ô.'} Số nhỏ <small>/n</small> là số câu ngân hàng đang có.</p>
+    return head + `
       <div class="tablewrap"><table class="mttable"><thead><tr><th>Bài học</th>${LV.map(([, t]) => `<th class="n">${t}</th>`).join('')}<th class="n">Cộng</th></tr></thead><tbody>
       ${rows.map(r => { const c = mt.cells[r.key] || {}, av = lvCount(rowPool(k, r).lesson), s = LV.reduce((a, [f]) => a + (+c[f] || 0), 0);
         return `<tr data-row="${esc(r.key)}" class="${s ? 'on' : ''}"><td>${esc(r.value)}</td>${LV.map(([f]) => `<td class="n"><input type="number" min="0" inputmode="numeric" data-c="${esc(r.key)}" data-f="${f}" value="${+c[f] || ''}" placeholder="0" class="${(+c[f] || 0) > av[f] ? 'over' : ''}"><small>/${av[f]}</small></td>`).join('')}<td class="n"><b data-s="${esc(r.key)}">${s || ''}</b></td></tr>`; }).join('')}
@@ -2849,8 +2848,7 @@ route(/^\/gv\/giaobai$/, async params => {
       <div class="lvgrid"><div><label for="nb">Số câu Biết</label><input id="nb" type="number" min="0" value="4"></div><div><label for="nh">Số câu Hiểu</label><input id="nh" type="number" min="0" value="4"></div>
       <div><label for="nv">Số câu Vận dụng</label><input id="nv" type="number" min="0" value="2"></div><div><label for="nd">Số câu Đúng/Sai</label><input id="nd" type="number" min="0" value="0"></div>
       <div><label for="ntl">Số câu tự luận</label><input id="ntl" type="number" min="0" value="0"></div></div>
-      <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="hint">Mẫu nhanh:</span><button type="button" class="btn ghost sm" data-pre="10,4,4,2">⏱ 10 phút</button><button type="button" class="btn ghost sm" data-pre="15,6,6,3">⏱ 15 phút</button><button type="button" class="btn ghost sm" data-pre="45,12,10,6">⏱ 45 phút</button></div>
-      <p class="hint">Không chọn chủ đề/bài nào = lấy từ toàn bộ ngân hàng. Câu tự luận do AI chấm theo đáp án mẫu khi HS nộp.</p>`;
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button type="button" class="btn ghost sm" data-pre="10,4,4,2">⏱ 10 phút</button><button type="button" class="btn ghost sm" data-pre="15,6,6,3">⏱ 15 phút</button><button type="button" class="btn ghost sm" data-pre="45,12,10,6">⏱ 45 phút</button></div>`;
   };
   const renderMode = () => {
     const k = curK(), box = $('#mbox'); if (!box) return;

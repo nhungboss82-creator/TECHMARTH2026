@@ -1214,3 +1214,4 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
   .gb-l .gb-cls{padding:4px 8px}
   .gb-l .gb-kr{padding:2px 0}
 }
+.gbf .gbm-c{grid-template-rows:auto;padding:12px 10px}.gbf .gbm-c .gbm-i{grid-row:auto}
