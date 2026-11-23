@@ -2633,12 +2633,13 @@ function scoreSheet(box, cls, students, results, myAsg) {
       if (!chosen.length) { toast('Hãy tích chọn ít nhất 1 cột điểm'); return; }
       // Bảng điểm gửi nhà trường: STT | Họ tên | điểm từng bài (tên cột GV đã đặt) | [Điểm TB nếu nhiều cột] | Điểm làm tròn (1 chữ số thập phân)
       const many = chosen.length > 1;
-      const head = ['STT', 'Họ và tên', ...chosen.map(x => colName(x)), ...(many ? ['Điểm TB'] : []), 'Điểm làm tròn'];
-      const body = rows.map(r => { const base = many ? r.tb : r.v[0]; return [r.i + 1, r.s.HoTen, ...r.v.map(x => x == null ? '' : x), ...(many ? [r.tb == null ? '' : Math.round(r.tb)] : []), base == null ? '' : r1(base)]; });
+      // theo đúng danh sách lớp (STT, họ tên chính thức) + điểm từng cột + Điểm TB (số nguyên)
+      const head = ['STT', 'Họ và tên', ...chosen.map(x => colName(x)), 'Điểm TB'];
+      const body = rows.map(r => [r.i + 1, r.s.HoTen, ...r.v.map(x => x == null ? '' : x), r.tb == null ? '' : Math.round(r.tb)]);
       const lop = String(cls.TenLop).replace(/[\/:*?"<>|]+/g, '-');
       xlsx('BangDiem_' + lop + (many ? '' : '_' + colName(chosen[0]).replace(/[\/:*?"<>|]+/g, '-')), [head, ...body], {
         title: ['BẢNG ĐIỂM LỚP ' + String(cls.TenLop).toUpperCase() + (cls.Truong ? ' – ' + String(cls.Truong).toUpperCase() : ''), (many ? chosen.map(x => colName(x)).join(' · ') : colName(chosen[0])) + ' · Xuất ngày ' + new Date().toLocaleDateString('vi-VN')],
-        fmt1: [head.length - 1], nameCol: 1, sheet: 'Lớp ' + lop });
+        nameCol: 1, sheet: 'Lớp ' + lop });
     };
   };
   const loadGrade = async () => {
