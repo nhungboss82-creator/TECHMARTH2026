@@ -1287,3 +1287,8 @@ h2.cls-h{margin:14px 0 6px;font-size:17px}
 .cls-sch .card label{margin:0;white-space:nowrap}
 .cls-sch select{min-height:34px;padding:4px 8px;margin:0}
 .cls-sch .card.row{flex-wrap:nowrap}.cls-sch .card.row select{min-width:0;flex:1}
+.cls-k{margin:10px 0;gap:12px}
+.rows.cls-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.rows.cls-grid > a{padding:8px 14px;gap:10px}
+.rows.cls-grid .ic{width:32px;height:32px;font-size:17px}
+@media (max-width:700px){.rows.cls-grid{grid-auto-flow:row;grid-template-columns:1fr 1fr}}
