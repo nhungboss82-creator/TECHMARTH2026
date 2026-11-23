@@ -4174,18 +4174,9 @@ async function dlPdf(title, sub, ids, withKey, onProg) { await dlPdfBlocks(title
 async function dlPdfBlocks(title, blocks, onProg) {
   await loadLib('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js', 'html2canvas');
   await loadLib('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js', 'jspdf');
-  /* dựng trong khung riêng (iframe) cho nhẹ: html2canvas chỉ sao chép khung nhỏ này, không sao chép cả trang app → nhanh hơn nhiều */
-  const html = blocks.map(b => b === '<!--PB-->' ? '<div class="dl-pb"></div>' : `<div class="dl-b">${b}</div>`).join('').replace(/ loading="lazy"/g, '');
-  let fr = null, box;
-  try {
-    fr = document.createElement('iframe'); fr.setAttribute('aria-hidden', 'true'); fr.style.cssText = 'position:fixed;left:-12000px;top:0;width:760px;height:1200px;border:0';
-    document.body.appendChild(fr);
-    const doc = fr.contentDocument, base = location.href.replace(/#.*/, '').replace(/[?].*/, '').replace(/[^/]*$/, '');
-    doc.open(); doc.write(`<!doctype html><html><head><meta charset="utf-8"><base href="${base}"><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"></head><body style="margin:0;background:#fff"><div class="dl-box" style="position:static;left:0">${html}</div></body></html>`); doc.close();
-    await Promise.race([Promise.all([...doc.querySelectorAll('link')].map(l => l.sheet ? 0 : new Promise(r => { l.onload = l.onerror = r; }))), new Promise(r => setTimeout(r, 8000))]);
-    box = doc.querySelector('.dl-box');
-  } catch (e) { if (fr) fr.remove(); fr = null; }
-  if (!box) { box = document.createElement('div'); box.className = 'dl-box'; box.innerHTML = html; document.body.appendChild(box); }
+  const box = document.createElement('div'); box.className = 'dl-box';
+  box.innerHTML = blocks.map(b => b === '<!--PB-->' ? '<div class="dl-pb"></div>' : `<div class="dl-b">${b}</div>`).join('').replace(/ loading="lazy"/g, '');
+  document.body.appendChild(box);
   try {
     await Promise.all([...box.querySelectorAll('img')].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
     try { if (window.renderMathInElement) renderMathInElement(box, { delimiters: [{ left: '\\(', right: '\\)', display: false }, { left: '\\[', right: '\\]', display: true }], throwOnError: false }); } catch (e) {}
@@ -4204,7 +4195,7 @@ async function dlPdfBlocks(title, blocks, onProg) {
     const n = pdf.getNumberOfPages();
     for (let p = 1; p <= n; p++) { pdf.setPage(p); pdf.setFontSize(9); pdf.setTextColor(120); pdf.text(p + ' / ' + n, 105, 292, { align: 'center' }); }
     pdf.save(dlFileName(title) + '.pdf');
-  } finally { if (fr) fr.remove(); else box.remove(); }
+  } finally { box.remove(); }
 }
 function docxKit(D) {
   const imgCache = {};
