@@ -1292,3 +1292,16 @@ h2.cls-h{margin:14px 0 6px;font-size:17px}
 .rows.cls-grid > a{padding:8px 14px;gap:10px}
 .rows.cls-grid .ic{width:32px;height:32px;font-size:17px}
 @media (max-width:700px){.rows.cls-grid{grid-auto-flow:row;grid-template-columns:1fr 1fr}}
+/* ===== Điểm: chọn lớp theo khối ===== */
+.dk-pick{padding:8px 12px;margin:0 0 10px}
+.dk-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-top:1px dashed #e2e8f0}
+.dk-row:first-child{border-top:0}
+.dk-row > b{width:72px;flex:none;color:#334155}
+.dk-cls{display:flex;gap:8px;flex-wrap:wrap}
+.dk-b{font:inherit;font-weight:700;font-size:14px;padding:6px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:.12s}
+.dk-row.k11 .dk-b{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+.dk-row.k12 .dk-b{border-color:#fde68a;background:#fffbeb;color:#b45309}
+.dk-b:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.dk-row .dk-b.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.dk-row.k11 .dk-b.on{background:#059669;border-color:#059669}
+.dk-row.k12 .dk-b.on{background:#d97706;border-color:#d97706}

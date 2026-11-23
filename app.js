@@ -2195,10 +2195,10 @@ route(/^\/gv\/diem$/, async params => {
     const sc = gvSchool(classes), shown = sc.list;
     if (shown.length && !shown.some(c => c.MaLop === code)) code = shown[0].MaLop;
     const ks = ['10', '11', '12'].filter(k => shown.some(c => String(c.Khoi) === k));
-    setView(`<a href="#/gv">← Trang chủ</a><h1>📊 Điểm</h1><p class="sub">Chọn lớp → tích các cột điểm cần lấy (đặt tên cột như Bài 1, KT thường xuyên, Giữa kì…) → <b>Xuất Excel</b>. Bấm vào điểm hoặc tên HS để xem chi tiết.</p>${sc.html}
+    setView(`<div class="cls-top"><a href="#/gv" class="cls-back">← Trang chủ</a><h1>📊 Điểm</h1><div class="grow cls-sch">${sc.html}</div></div>
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải…'}</div>` : !classes.length ? '<div class="card empty">Chưa có lớp.</div>'
         : !shown.length ? '<div class="card empty">Chọn trường ở trên để xem bảng điểm các lớp.</div>'
-        : `<div class="card">${ks.map(k => `<div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:4px 0"><b style="width:70px">Khối ${k}</b>${shown.filter(c => String(c.Khoi) === k).map(c => `<button class="btn ${c.MaLop === code ? '' : 'ghost'} sm" data-lop="${c.MaLop}">${esc(c.TenLop || c.MaLop)}</button>`).join('')}</div>`).join('')}</div>
+        : `<div class="card dk-pick">${ks.map(k => `<div class="dk-row k${k}"><b>Khối ${k}</b><div class="dk-cls">${shown.filter(c => String(c.Khoi) === k).sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<button class="dk-b${c.MaLop === code ? ' on' : ''}" data-lop="${c.MaLop}">${esc(c.TenLop || c.MaLop)}</button>`).join('')}</div></div>`).join('')}</div>
         <div id="bd"><div class="card empty">Đang tải bảng điểm…</div></div>`}`);
     $$('[data-lop]').forEach(b => b.onclick = () => { code = b.dataset.lop; store.set('gv_diem_lop', code); draw(); load(); });
     sc.bind(() => { draw(); load(); });
