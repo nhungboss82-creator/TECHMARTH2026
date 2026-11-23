@@ -515,3 +515,29 @@ function cn2311Exam_() {
   };
 }
 try { cn2311Exam_(); } catch (e) { console.error('CapNhat_23_11 Exam: ' + e); }
+
+/* ===== Cập nhật 23/11 (2): đếm số lần HS mở app vào học (HocSinh.LuotVao) ===== */
+function cn2311Open_() {
+  if (typeof API === 'undefined' || typeof SHEETS === 'undefined') return;
+  ['LuotVao', 'LanVaoCuoi'].forEach(c => { if (SHEETS.HocSinh.indexOf(c) < 0) SHEETS.HocSinh.push(c); });
+  const days_ = (kq, id) => { const s = {}; kq.forEach(r => { if (r.MaHS === id && r.ThoiDiem) { try { s[Utilities.formatDate(new Date(r.ThoiDiem), 'Asia/Ho_Chi_Minh', 'yyyyMMdd')] = 1; } catch (e) {} } }); return Object.keys(s).length; };
+  API.hs_open = req => {
+    const t = auth_(req, 'hs');
+    const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) return {};
+    try {
+      ensureCols_('HocSinh');
+      const h = rows_('HocSinh').find(r => r.MaHS === t.u); if (!h) return {};
+      const cur = h.LuotVao === '' || h.LuotVao == null ? days_(rows_('KetQua'), h.MaHS) : Number(h.LuotVao) || 0;
+      update_('HocSinh', h._r, { LuotVao: cur + 1, LanVaoCuoi: new Date() });
+      return { luotVao: cur + 1 };
+    } finally { lock.releaseLock(); }
+  };
+  const cs = API.class_students;
+  if (cs) API.class_students = req => {
+    const l = cs(req), hs = {}, kq = rows_('KetQua');
+    rows_('HocSinh').forEach(h => { hs[h.MaHS] = h; });
+    l.forEach(o => { const h = hs[o.MaHS] || {}; o.luotVao = h.LuotVao === '' || h.LuotVao == null ? days_(kq, o.MaHS) : Number(h.LuotVao) || 0; o.lanVaoCuoi = h.LanVaoCuoi || ''; });
+    return l;
+  };
+}
+try { cn2311Open_(); } catch (e) { console.error('CapNhat_23_11 Open: ' + e); }
