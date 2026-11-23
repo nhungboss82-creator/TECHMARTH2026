@@ -541,3 +541,23 @@ function cn2311Open_() {
   };
 }
 try { cn2311Open_(); } catch (e) { console.error('CapNhat_23_11 Open: ' + e); }
+
+/* ===== Cập nhật 23/11 (3): GV thêm học sinh vào lớp (mật khẩu PD2026, đăng nhập lần đầu phải đổi) ===== */
+function cn2311AddHS_() {
+  if (typeof API === 'undefined') return;
+  API.add_student = req => withLock_(() => {
+    const t = auth_(req, 'gv');
+    const c = ownClass_(t, req.code);
+    const name = clean_(req.name, 60);
+    if (!name) throw new Error('Hãy nhập họ tên học sinh');
+    const user = normUser_(req.username);
+    if (rows_('HocSinh').some(r => String(r.TenDN) === user)) throw new Error('Tên đăng nhập "' + user + '" đã có người dùng, hãy chọn tên khác');
+    const pw = 'PD2026', salt = Utilities.getUuid();
+    ensureCols_('HocSinh');
+    const hs = { MaHS: 'HS' + shortId_(), TenDN: user, HoTen: name, MaLop: c.MaLop, TenLop: c.TenLop, Khoi: String(c.Khoi),
+      Truong: c.Truong, Salt: salt, Hash: hash_(pw, salt), DoiMK: 1, NgayTao: new Date(), Email: '' };
+    append_('HocSinh', hs);
+    return { MaHS: hs.MaHS, TenDN: user, HoTen: name, matKhau: pw };
+  });
+}
+try { cn2311AddHS_(); } catch (e) { console.error('CapNhat_23_11 AddHS: ' + e); }

@@ -1240,3 +1240,29 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .mx-c{display:flex;align-items:center;gap:12px;margin:0}.mx-i{font-size:30px}
 .mx-c .btn{white-space:nowrap}
 .mx-card .mttable input{width:52px}
+
+/* ===== Các lớp: gọn, nhiều cột ===== */
+h2.cls-h{margin:14px 0 6px;font-size:17px}
+.rows.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;background:none;border:0;box-shadow:none;overflow:visible}
+.rows.cls-grid > a{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:8px 12px;gap:10px;border-left:5px solid #60a5fa}
+.rows.cls-grid > a:first-child{border-top:1px solid var(--line)}
+.rows.cls-grid.k11 > a{border-left-color:#34d399}.rows.cls-grid.k12 > a{border-left-color:#f59e0b}
+.rows.cls-grid .ic{width:32px;height:32px;font-size:17px;border-radius:9px}
+.rows.cls-grid .tx b{font-size:16px}.rows.cls-grid .tx span{font-size:12.5px;white-space:nowrap}
+.rows.cls-grid > a:hover{background:#f0f7ff;transform:translateY(-1px)}
+/* ===== Trang lớp: bảng tài khoản 1 dòng/HS ===== */
+.hs-compact{font-size:14px;border-collapse:collapse}
+.hs-compact th{padding:6px 8px;font-size:12.5px;background:#f1f5f9;color:#334155;white-space:nowrap;position:sticky;top:0}
+.hs-compact td{padding:3px 8px;white-space:nowrap;border-bottom:1px solid #eef2f7;line-height:1.3}
+.hs-compact tbody tr:nth-child(4n+1) td,.hs-compact tbody tr:nth-child(4n+2) td{background:#fafcff}
+.hs-compact tbody tr:hover td{background:#eef6ff}
+.hs-compact .pill{padding:0 6px;font-size:11px;line-height:18px}
+.hs-compact td.hsact .btn{padding:2px 7px;min-height:0;font-size:12.5px}
+.hs-compact a{text-decoration:none;font-weight:600;color:#1e40af}
+.hs-compact td.n b{color:#0f766e}
+.rs-sum{line-height:1.9}.rs-add{border:0;cursor:pointer;font:inherit;font-size:12.5px}
+.add-hs{border:2px solid #86efac;background:#f0fdf4}
+.add-row{display:grid;grid-template-columns:2fr 1.3fr auto;gap:10px;align-items:end}
+.add-row label{margin:6px 0 3px}
+.ok-box{margin-top:8px;padding:8px 12px;border-radius:10px;background:#dcfce7;color:#14532d}
+@media (max-width:600px){.add-row{grid-template-columns:1fr}.rows.cls-grid{grid-template-columns:1fr 1fr}}
