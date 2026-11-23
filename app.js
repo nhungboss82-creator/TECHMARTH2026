@@ -4401,12 +4401,13 @@ function examFileModal(d, qr, kind) {
 /* phương án / câu thay thế cùng bài, cùng mức độ */
 function examSwap(d, id) {
   const q = bank.byId[id]; if (!q) return null;
-  const used = new Set(d.versions.flatMap(v => v.ids));
+  const used = new Set(d.versions.flatMap(v => v.ids).concat(d.bo || []));
   const ok = x => x.t === q.t && String(x.k) === String(q.k) && !used.has(x.id) && (q.t === 'T' || x.md === q.md);
   let c = bank.q.filter(x => ok(x) && x.bai === q.bai);
   if (!c.length) c = bank.q.filter(x => ok(x) && x.cd === q.cd);
   if (!c.length) return null;
   const n = c[Math.floor(Math.random() * c.length)];
+  d.bo = (d.bo || []).concat(id);
   d.versions.forEach(v => { const i = v.ids.indexOf(id); if (i < 0) return; v.ids[i] = n.id; delete v.perm[id]; if (n.t === 'M') v.perm[n.id] = n.nd ? [0, 1, 2, 3] : [0, 1, 2, 3].sort(() => Math.random() - .5); });
   return n;
 }
