@@ -2022,10 +2022,10 @@ function gvSchool(cls) {
   // mọi trường đã biết (GV đăng ký, HS khai) đều có trong ô chọn, kể cả trường chưa có lớp
   SCHOOLS.forEach(v => { const k = schKey(v); if (k && !m[k]) m[k] = { k, names: { [v]: 1 }, n: 0, s: 0 }; });
   const ss = Object.values(m).map(x => ({ k: x.k, n: x.n, s: x.s, name: Object.keys(x.names)[0] })).sort((x, y) => x.name.localeCompare(y.name, 'vi'));
-  let k = window._admSchool || '';
+  let k = window._admSchool || (() => { try { return sessionStorage.getItem('stc_sch') || ''; } catch (e) { return ''; } })();
   if (k && !ss.some(s => s.k === k)) k = '';
   const html = `<div class="card row" style="align-items:center;gap:8px"><label for="schsel" style="margin:0"><b>🏫 Trường</b></label><select id="schsel" class="grow"><option value="">— Chọn trường để xem danh sách lớp —</option>${ss.map(s => `<option value="${esc(s.k)}" ${s.k === k ? 'selected' : ''}>${esc(s.name)} (${s.n} lớp)</option>`).join('')}</select></div>`;
-  return { list: k ? off.filter(c => schKey(c.Truong) === k) : [], self: k ? self.filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; redraw(); }; } };
+  return { list: k ? off.filter(c => schKey(c.Truong) === k) : [], self: k ? self.filter(c => schKey(c.Truong) === k) : [], html, school: k ? (ss.find(s => s.k === k) || {}).name : '', bind: redraw => { const el = $('#schsel'); if (el) el.onchange = () => { window._admSchool = el.value; try { sessionStorage.setItem('stc_sch', el.value); } catch (e) {} redraw(); }; } };
 }
 const gvClasses = async () => { if (!window._gvCls) { window._gvCls = await api('my_classes'); addSchools(window._gvCls.filter(c => !isSelfCls(c)).map(c => c.Truong)); } return window._gvCls; };
 
@@ -2137,7 +2137,6 @@ route(/^\/gv\/giaovien$/, async () => {
 /* ---- Các lớp ---- */
 route(/^\/gv\/lop$/, async () => {
   if (!needGV()) return;
-  window._admSchool = '';
   let classes = window._gvCls || null, err = '';
   const draw = () => {
     const sc = gvSchool(classes), shown = sc.list;
