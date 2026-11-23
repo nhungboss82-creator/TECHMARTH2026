@@ -1239,3 +1239,4 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .mx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
 .mx-c{display:flex;align-items:center;gap:12px;margin:0}.mx-i{font-size:30px}
 .mx-c .btn{white-space:nowrap}
+.mx-card .mttable input{width:52px}

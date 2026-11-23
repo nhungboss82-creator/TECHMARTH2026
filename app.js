@@ -3991,35 +3991,78 @@ const mxTotals = rows => rows.reduce((a, r) => { ['b', 'h', 'v', 'ds', 'tb', 'th
 
 route(/^\/gv\/matran$/, async params => {
   if (!needGV()) return;
-  let k = params ? (params.get('k') || '') : '';
+  let k = (params && params.get('k')) || '10', src = '', cells = {}, ds = null;
   const KY_IC = { 'Giữa kì I': '🍂', 'Cuối kì I': '📘', 'Giữa kì II': '🌱', 'Cuối kì II': '🎓' };
-  let ds = null;
+  const tplOf = () => (window.STC_MATRAN || []).find(t => t.id === src);
+  const setTpl = id => { src = id; cells = {}; const t = tplOf(); if (t) t.rows.forEach(r => { const c = cells[mtKey(r)] = cells[mtKey(r)] || { b: 0, h: 0, v: 0, ds: 0, tl: 0, tb: 0, th: 0, tv: 0 };
+    ['b', 'h', 'v', 'ds', 'tb', 'th', 'tv'].forEach(f => { c[f] += +r[f] || 0; }); c.tl = c.tb + c.th + c.tv; }); };
+  const first = () => { const t = (window.STC_MATRAN || []).find(x => x.khoi === k); setTpl(t ? t.id : ''); };
+  first();
+  const readCells = () => $$('[data-c]').forEach(i => { const c = cells[i.dataset.c] = cells[i.dataset.c] || { b: 0, h: 0, v: 0, ds: 0, tl: 0 }; c[i.dataset.f] = Math.max(0, +i.value || 0); });
+  const keep = { td: '', sm: 4, mb: 6010, cd: 'khac_cau' };
+  const remember = () => { if (!$('#td')) return; keep.td = $('#td').value; keep.sm = +$('#sm').value || 4; keep.mb = +$('#mb').value || 6010; keep.cd = ($('input[name=cd]:checked') || {}).value || 'khac_cau'; };
   const draw = () => {
-    const tpls = (window.STC_MATRAN || []).filter(t => !k || t.khoi === k);
+    const t = tplOf(), tpls = (window.STC_MATRAN || []).filter(x => x.khoi === k), rows = mtLessons(k);
+    const title = keep.td || (t ? `KIỂM TRA ${t.loai.toUpperCase()} – NĂM HỌC 2026–2027` : 'KIỂM TRA – NĂM HỌC 2026–2027');
     setView(`<h1>🧾 Ma trận và đề kiểm tra định kỳ</h1>
-      <div class="row" style="gap:6px;margin:4px 0 10px">${['', '10', '11', '12'].map(x => `<button class="btn ghost sm${x === k ? ' on' : ''}" data-k="${x}">${x ? 'Khối ' + x : 'Tất cả'}</button>`).join('')}</div>
-      <div class="mx-grid">${tpls.map(t => { const s = mxTotals(t.rows), tl = s.tb + s.th + s.tv;
-        return `<div class="card mx-c"><div class="mx-i">${KY_IC[t.loai] || '📄'}</div><div class="grow"><b>${esc(t.ten)}</b><div class="meta">${s.b + s.h + s.v} TN nhiều lựa chọn · ${s.ds} Đúng/Sai${tl ? ' · ' + tl + ' tự luận' : ''} · ${t.thoiGian} phút</div></div>
-          <button class="btn" data-sd="${t.id}">Sinh đề</button></div>`; }).join('') || '<div class="card empty">Chưa có ma trận CV 7991 cho khối này.</div>'}</div>
+      <div class="card mx-card">
+        <div class="gbm-step" style="margin-top:0">1. Chọn khối</div>
+        <div class="row" style="gap:6px">${['10', '11', '12'].map(x => `<button class="btn ghost sm${x === k ? ' on' : ''}" data-k="${x}">Lớp ${x}</button>`).join('')}</div>
+        <div class="gbm-step">2. Chọn kì kiểm tra – ma trận CV 7991, Công nghệ ${k}</div>
+        <div class="gbm-ky">${tpls.map(x => `<button type="button" class="gbm-k${src === x.id ? ' on' : ''}" data-src="${esc(x.id)}"><span>${KY_IC[x.loai] || '📄'}</span>${esc(x.loai)}</button>`).join('')}</div>
+        <div class="gbm-step">3. Ma trận (sửa được từng ô)</div>
+        <div class="tablewrap"><table class="mttable"><thead><tr><th>Bài học</th>${LV.map(([, x]) => `<th class="n">${x}</th>`).join('')}<th class="n">Cộng</th></tr></thead><tbody>
+        ${rows.map(r => { const c = cells[r.key] || {}, av = lvCount(rowPool(k, r).all), sm = LV.reduce((a, [f]) => a + (+c[f] || 0), 0);
+          return `<tr data-row="${esc(r.key)}" class="${sm ? 'on' : ''}"><td>${esc(r.value)}</td>${LV.map(([f]) => `<td class="n"><input type="number" min="0" inputmode="numeric" data-c="${esc(r.key)}" data-f="${f}" value="${+c[f] || ''}" placeholder="0" class="${(+c[f] || 0) > av[f] ? 'over' : ''}"><small>/${av[f]}</small></td>`).join('')}<td class="n"><b data-s="${esc(r.key)}">${sm || ''}</b></td></tr>`; }).join('')}
+        </tbody><tfoot><tr><th>Tổng số câu</th>${LV.map(([f]) => `<th class="n" data-t="${f}"></th>`).join('')}<th class="n" data-t="all"></th></tr></tfoot></table></div>
+        <div class="hint" id="mtw" style="margin-top:6px"></div>
+        <div class="gbm-step">4. Sinh đề</div>
+        <label for="td">Tiêu đề in trên đề</label><input id="td" type="text" value="${esc(title)}">
+        <div class="row"><div class="grow"><label for="sm">Số mã đề</label><input id="sm" type="number" min="1" max="12" value="${keep.sm}"></div><div class="grow"><label for="mb">Mã đề đầu tiên (4 số, bắt đầu bằng 6)</label><input id="mb" type="number" min="6000" max="6999" value="${keep.mb}"></div><div class="grow"><label for="tg">Thời gian (phút)</label><input id="tg" type="number" min="10" max="120" value="${t ? t.thoiGian : 45}"></div></div>
+        <label>Cách tạo các mã đề</label><div class="checks"><label class="chk"><input type="radio" name="cd" value="khac_cau" ${keep.cd === 'khac_cau' ? 'checked' : ''}>Mỗi mã đề một bộ câu khác nhau</label><label class="chk"><input type="radio" name="cd" value="dao_cau" ${keep.cd === 'dao_cau' ? 'checked' : ''}>Cùng bộ câu, chỉ đảo câu và phương án</label></div>
+        <div id="msg"></div><button class="btn block" id="go" style="margin-top:12px">🧾 Sinh đề</button></div>
       <h2>Đề đã sinh</h2><div id="dt">${ds === null ? '<div class="card empty">Đang tải…</div>' : examList()}</div>`);
-    $$('[data-k]').forEach(b => b.onclick = () => { k = b.dataset.k; draw(); });
-    $$('[data-sd]').forEach(b => b.onclick = () => busy(b, async () => {
-      const t = STC_MATRAN.find(x => x.id === b.dataset.sd);
+    const totals = () => {
+      readCells(); const T = { b: 0, h: 0, v: 0, ds: 0, tl: 0 }; let over = 0;
+      rows.forEach(r => { const c = cells[r.key] || {}; let sm = 0; LV.forEach(([f]) => { T[f] += +c[f] || 0; sm += +c[f] || 0; });
+        const tr = $(`tr[data-row="${CSS.escape(r.key)}"]`); if (tr) { tr.classList.toggle('on', sm > 0); const bb = $(`[data-s="${CSS.escape(r.key)}"]`, tr); if (bb) bb.textContent = sm || ''; } });
+      $$('[data-c]').forEach(i => { const o = (+i.value || 0) > +i.nextElementSibling.textContent.slice(1); i.classList.toggle('over', o); if (o) over++; });
+      LV.forEach(([f]) => { $(`[data-t="${f}"]`).textContent = T[f]; }); $('[data-t="all"]').textContent = LV.reduce((a, [f]) => a + T[f], 0);
+      const mc = T.b + T.h + T.v, raw = mc * 0.25 + T.ds;
+      $('#mtw').innerHTML = `${mc} câu nhiều lựa chọn (${fmt(mc * 0.25)} đ) · ${T.ds} câu Đúng/Sai (${fmt(T.ds)} đ) · ${T.tl} câu tự luận (${fmt(Math.max(0, 10 - raw))} đ)${over ? ` · <span style="color:var(--bad)">${over} ô vượt số câu đang có</span>` : ''}`;
+    };
+    totals();
+    $$('[data-c]').forEach(i => i.oninput = totals);
+    $$('[data-k]').forEach(b => b.onclick = () => { remember(); keep.td = ''; k = b.dataset.k; first(); draw(); });
+    $$('[data-src]').forEach(b => b.onclick = () => { remember(); keep.td = ''; setTpl(b.dataset.src); draw(); });
+    $('#go').onclick = () => busy($('#go'), async () => {
+      readCells(); remember();
+      const n = keep.sm, mb = keep.mb, t0 = tplOf();
+      if (!/^6\d{3}$/.test(String(mb)) || mb + n - 1 > 6999) { errBox($('#msg'), 'Mã đề gồm 4 chữ số, bắt đầu bằng số 6 (ví dụ 6010).'); return; }
+      const mrows = mtLessons(k).map(r => { const c = cells[r.key] || {}, tl = +c.tl || 0, same = c.tb + c.th + c.tv === tl;
+        return { type: r.type, value: r.value, fb: r.fb, b: +c.b || 0, h: +c.h || 0, v: +c.v || 0, ds: +c.ds || 0, tb: same ? +c.tb || 0 : 0, th: same ? +c.th || 0 : tl, tv: same ? +c.tv || 0 : 0 }; })
+        .filter(r => r.b + r.h + r.v + r.ds + r.tb + r.th + r.tv > 0);
+      if (!mrows.length) { errBox($('#msg'), 'Ma trận chưa có câu nào.'); return; }
+      const ten = t0 ? t0.ten : 'Ma trận Công nghệ ' + k;
+      const body = { ten, khoi: k, loai: t0 ? t0.loai : 'Giữa kì I', thoiGian: +$('#tg').value || 45, rows: mrows };
       try {
-        const ms = await api('list_matrices'), nm = x => String(x).replace(/[–—-]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase(), same = ms.filter(m => nm(m.TenMT) === nm(t.ten) && String(m.Khoi) === t.khoi).pop();
-        const body = { ten: t.ten, khoi: t.khoi, loai: EXAM_TYPES.includes(t.loai) ? t.loai : t.loai, thoiGian: t.thoiGian, rows: JSON.parse(JSON.stringify(t.rows)) };
+        const ms = await api('list_matrices'), nm = x => String(x).replace(/[–—-]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
+        const same = ms.filter(m => nm(m.TenMT) === nm(ten) && String(m.Khoi) === k).pop();
         let m = null;
         if (same) try { m = await api('save_matrix', { matrix: Object.assign({ id: same.MaMT }, body) }); } catch (e) { m = null; }
         if (!m || !m.MaMT) m = await api('save_matrix', { matrix: body });
-        const all = ms.filter(x => x.MaMT !== m.MaMT).concat(m); store.set('matrices', all);
-        location.hash = '#/gv/sinhde?mt=' + m.MaMT;
-      } catch (e) { toast(e.message); }
-    }));
+        const p = { maMT: m.MaMT, tieuDe: keep.td, soMaDe: n, maBatDau: mb, cheDo: keep.cd };
+        const d = await api('generate_exam', p); d.TrangThai = d.TrangThai || 'cho';
+        store.set('exam_' + d.MaDT, d); store.set('exgen_' + d.MaDT, p);
+        if (d.thieu && d.thieu.length) alert('Ngân hàng chưa đủ câu cho:\n' + d.thieu.join('\n') + '\nApp đã lấy lặp câu ở các mã đề để đủ số lượng.');
+        location.hash = '#/gv/dethi/' + d.MaDT;
+      } catch (e) { errBox($('#msg'), e); }
+    });
   };
-  const examList = () => ds.length ? '<div class="list">' + ds.filter(d => !k || String(d.Khoi) === k).map(d => `<a class="item" href="#/gv/dethi/${d.MaDT}"><div class="grow"><b>${esc(d.TieuDe)}</b> ${d.TrangThai === 'cho' ? '<span class="pill warn">⏳ Chờ duyệt</span>' : ''}<div class="meta">Lớp ${esc(d.Khoi)} · ${d.SoMaDe} mã đề · ${esc(d.TenGV)} · ${dt(d.NgayTao)}</div></div>›</a>`).join('') + '</div>' : '<div class="card empty">Chưa sinh đề nào.</div>';
+  const examList = () => { const l = ds.filter(d => String(d.Khoi) === k); return l.length ? '<div class="list">' + l.map(d => `<a class="item" href="#/gv/dethi/${d.MaDT}"><div class="grow"><b>${esc(d.TieuDe)}</b> ${d.TrangThai === 'cho' ? '<span class="pill warn">⏳ Chờ duyệt</span>' : ''}<div class="meta">Lớp ${esc(d.Khoi)} · ${d.SoMaDe} mã đề · ${esc(d.TenGV)} · ${dt(d.NgayTao)}</div></div>›</a>`).join('') + '</div>' : '<div class="card empty">Chưa sinh đề nào.</div>'; };
   draw();
   try { ds = await api('list_exams'); } catch (e) { ds = []; }
-  if (/^#\/gv\/matran(\?|$)/.test(location.hash)) { const y = scrollY; draw(); scrollTo(0, y); }
+  if (/^#\/gv\/matran(\?|$)/.test(location.hash) && $('#dt')) $('#dt').innerHTML = examList();
 });
 
 route(/^\/gv\/matran\/sua$/, async params => {
