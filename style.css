@@ -1266,3 +1266,8 @@ h2.cls-h{margin:14px 0 6px;font-size:17px}
 .add-row label{margin:6px 0 3px}
 .ok-box{margin-top:8px;padding:8px 12px;border-radius:10px;background:#dcfce7;color:#14532d}
 @media (max-width:600px){.add-row{grid-template-columns:1fr}.rows.cls-grid{grid-template-columns:1fr 1fr}}
+.hs-compact th{white-space:normal;line-height:1.15;vertical-align:bottom}
+.hs-compact th.n,.hs-compact td.n{text-align:center;width:1%;padding-left:6px;padding-right:6px}
+.hs-compact th.n{max-width:64px}
+.hs-compact td.hsact{width:1%;padding-right:4px}
+.hs-compact td.hsact .btn{padding:2px 6px}
