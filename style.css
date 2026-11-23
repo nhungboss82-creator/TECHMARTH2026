@@ -1215,3 +1215,20 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
   .gb-l .gb-kr{padding:2px 0}
 }
 .gbf .gbm-c{grid-template-rows:auto;padding:12px 10px}.gbf .gbm-c .gbm-i{grid-row:auto}
+
+/* ===== Đề từ ma trận: duyệt đề, QR chung ===== */
+.dt-rv{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:2px solid #fcd34d;background:#fffbeb}
+.dt-ok{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:2px solid #86efac;background:#f0fdf4}
+.dt-qr{text-align:center}.dt-qr svg{width:150px;height:150px;background:#fff;border-radius:8px}
+.dt-codes{display:flex;gap:8px;flex-wrap:wrap}.dt-codes span{font:800 20px/1 ui-monospace,monospace;background:#fff;border:2px solid #16a34a;color:#15803d;border-radius:10px;padding:8px 14px}
+.dt-tabs{margin:12px 0 0}
+.dt-q{padding:10px 0;border-top:1px solid var(--line)}.dt-q:first-of-type{border-top:0}
+.dt-qh{display:flex;align-items:center;gap:8px;margin-bottom:4px}.dt-qh .dt-sw{margin-left:auto}
+.dt-tag{font-size:12px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:2px 8px}
+.dt-ops{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:6px}
+.dt-ops>div{padding:4px 8px;border-radius:8px}.dt-ops>div.ok{background:#dcfce7;outline:2px solid #22c55e;font-weight:600}
+.dt-tf>div{padding:3px 0}.dt-ans,.dt-ex{margin-top:6px;padding:6px 10px;border-radius:8px;background:#f0fdf4;font-size:14px}.dt-ex{background:#f8fafc;color:#475569}
+.dl-keyall{border-collapse:collapse;width:100%;font-size:13px}.dl-keyall td,.dl-keyall th{border:1px solid #94a3b8;padding:3px 4px;text-align:center}
+.dl-ehd{width:100%;border-collapse:collapse}.dl-ehd td{vertical-align:top;font-size:12pt}.dl-ehd svg{width:90px;height:90px}
+.dt-pick{display:flex;gap:10px;flex-wrap:wrap}.dt-pick .btn{font-size:22px;padding:14px 22px}
+@media (max-width:600px){.dt-ops{grid-template-columns:1fr}.card .dl-keyall{display:block;overflow-x:auto}}

@@ -454,3 +454,52 @@ function cn2211BatDau_() {
   };
 }
 try { cn2211BatDau_(); } catch (e) { console.error('CapNhat_22_11 BatDau: ' + e); }
+
+/* ===== Cập nhật 23/11: duyệt đề sinh từ ma trận (DeThi.TrangThai: cho → mo), đổi câu, bỏ bộ đề ===== */
+function cn2311Exam_() {
+  if (typeof API === 'undefined') return;
+  const findDT_ = (t, maDT) => {
+    const g = teacher_(t), d = rows_('DeThi').find(r => r.MaDT === maDT && r.TrangThai !== 'xoa');
+    if (!d) throw new Error('Không tìm thấy đề');
+    if (t.r !== 'admin' && d.Truong !== g.Truong) throw new Error('Đề không thuộc trường của thầy/cô');
+    return d;
+  };
+  const ge = API.generate_exam;
+  if (ge) API.generate_exam = req => {
+    const o = ge(req);
+    const r = rows_('DeThi').find(x => x.MaDT === o.MaDT);
+    if (r) update_('DeThi', r._r, { TrangThai: 'cho' });
+    o.TrangThai = 'cho'; return o;
+  };
+  const le = API.list_exams;
+  if (le) API.list_exams = req => { const l = le(req), m = {}; rows_('DeThi').forEach(d => { m[d.MaDT] = d.TrangThai; }); l.forEach(d => { d.TrangThai = m[d.MaDT] || 'mo'; }); return l; };
+  const gx = API.get_exam;
+  if (gx) API.get_exam = req => {
+    const t = auth_(req);
+    const d = rows_('DeThi').find(r => r.MaDT === req.maDT && r.TrangThai !== 'xoa');
+    if (t.r === 'hs' && d && d.TrangThai === 'cho') throw new Error('Đề này chưa được giáo viên duyệt');
+    const o = gx(req); o.TrangThai = d ? d.TrangThai : 'mo'; return o;
+  };
+  API.approve_exam = req => { const t = auth_(req, 'gv'); const d = findDT_(t, req.maDT); update_('DeThi', d._r, { TrangThai: 'mo' }); return { ok: true }; };
+  API.discard_exam = req => {
+    const t = auth_(req, 'gv'); const d = findDT_(t, req.maDT);
+    if (d.TrangThai !== 'cho') throw new Error('Chỉ bỏ được đề đang chờ duyệt');
+    update_('DeThi', d._r, { TrangThai: 'xoa' }); return { ok: true };
+  };
+  API.save_exam_versions = req => {
+    const t = auth_(req, 'gv'); const d = findDT_(t, req.maDT);
+    if (d.TrangThai !== 'cho') throw new Error('Đề đã duyệt, không sửa được');
+    const old = JSON.parse(d.NoiDung || '[]'), nv = req.versions || [];
+    if (!Array.isArray(nv) || nv.length !== old.length) throw new Error('Dữ liệu đề không hợp lệ');
+    const ok = {}; bankRows_().forEach(q => { ok[String(q.MaCau).trim()] = 1; });
+    const clean = nv.map((v, i) => {
+      const ids = (v.ids || []).map(String).filter(id => ok[id]);
+      if (ids.length !== (old[i].ids || []).length) throw new Error('Có câu không còn trong ngân hàng');
+      const perm = {}; Object.keys(v.perm || {}).forEach(k => { if (ids.indexOf(k) >= 0) perm[k] = (v.perm[k] || []).slice(0, 4).map(Number); });
+      return { ma: old[i].ma, ids: ids, perm: perm };
+    });
+    withLock_(() => update_('DeThi', d._r, { NoiDung: JSON.stringify(clean) }));
+    return { ok: true };
+  };
+}
+try { cn2311Exam_(); } catch (e) { console.error('CapNhat_23_11 Exam: ' + e); }
