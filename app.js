@@ -2287,9 +2287,11 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     const inList = new Set(roster.map(normName));
     const extra = students.filter(st => !inList.has(normName(st.HoTen)));
     const done = roster.filter(n => byName[normName(n)]).length;
-    return `<p class="hint" style="margin-top:0">${done}/${roster.length} em đã đăng ký tài khoản.</p><div class="tablewrap"><table><thead><tr><th class="n">STT</th><th>Họ và tên</th><th>Tài khoản</th></tr></thead><tbody>
-      ${roster.map((n, i) => { const m = byName[normName(n)]; return `<tr><td class="n">${i + 1}</td><td>${esc(n)}</td><td>${m ? '<span class="pill">✅ ' + esc(m.map(x => x.TenDN).join(', ')) + '</span>' : '<span class="pill warn">Chưa đăng ký</span>'}</td></tr>`; }).join('')}
-      ${extra.map(st => `<tr><td class="n">–</td><td>${esc(st.HoTen)}</td><td><span class="pill bad" title="Họ tên không khớp danh sách">Ngoài danh sách · ${esc(st.TenDN)}</span></td></tr>`).join('')}
+    return `<p class="hint" style="margin-top:0">${done}/${roster.length} em đã đăng ký tài khoản.</p>
+      ${extra.length ? `<div class="hsbulk rs-bulk"><label class="chk"><input type="checkbox" id="rxall"> Chọn tất cả ${extra.length} em ngoài danh sách</label><span class="hint" id="rxcnt">Tích ô ở đầu dòng các em ngoài danh sách</span><span class="grow"></span><button class="btn danger sm" id="rxdel" disabled>🚫 Bỏ khỏi lớp</button></div>` : ''}
+      <div class="tablewrap"><table><thead><tr><th class="ck"></th><th class="n">STT</th><th>Họ và tên</th><th>Tài khoản</th></tr></thead><tbody>
+      ${roster.map((n, i) => { const m = byName[normName(n)]; return `<tr><td class="ck"></td><td class="n">${i + 1}</td><td>${esc(n)}</td><td>${m ? '<span class="pill">✅ ' + esc(m.map(x => x.TenDN).join(', ')) + '</span>' : '<span class="pill warn">Chưa đăng ký</span>'}</td></tr>`; }).join('')}
+      ${extra.map(st => `<tr class="duprow"><td class="ck"><input type="checkbox" class="rxck" value="${st.MaHS}" aria-label="Chọn ${esc(st.HoTen)}"></td><td class="n">–</td><td>${esc(st.HoTen)}</td><td><span class="pill bad" title="Họ tên không khớp danh sách">Ngoài danh sách · ${esc(st.TenDN)}</span></td></tr>`).join('')}
       </tbody></table></div>`;
   };
   setView(`<a href="#/gv/lop">← Các lớp</a><div class="row" style="align-items:center"><h1 class="grow" style="margin:6px 0">Lớp ${esc(c.TenLop)}</h1><a class="btn ghost sm" href="#/gv/thuchanh?lop=${code}">🧪 Lượt thực hành</a><button class="btn ghost sm" id="lsua">✏️ Sửa lớp</button><button class="btn danger sm" id="lxoa">🗑 Xoá lớp</button></div><p class="sub">Khối ${esc(c.Khoi)} · ${esc(c.Truong || '')} · ${students.length} học sinh</p>
@@ -2313,13 +2315,30 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <h2>Bài đã giao cho lớp</h2>
     <div class="list">${myAsg.map(a => `<a class="item" href="#/gv/bai/${a.MaBai}"><div class="grow"><b>${esc(a.TieuDe)}</b><div class="meta">${a.DanhSachCau.length} câu · ${results.filter(r => r.key === a.MaBai).length} lượt nộp</div></div>›</a>`).join('') || '<div class="card empty">Chưa giao bài cho lớp này.</div>'}</div>`);
   qrInto($('#qr'), joinLink(code));
+  const bindRX = () => {
+    const all = $('#rxall'); if (!all) return;
+    const cks = () => $$('.rxck'), upd = () => { const n = cks().filter(x => x.checked).length; $('#rxcnt').textContent = n ? `Đã chọn ${n} em` : 'Tích ô ở đầu dòng các em ngoài danh sách'; $('#rxdel').disabled = !n; all.checked = n === cks().length; all.indeterminate = n > 0 && n < cks().length; };
+    all.onchange = () => { cks().forEach(x => { x.checked = all.checked; }); upd(); };
+    cks().forEach(x => { x.onchange = upd; });
+    $('#rxdel').onclick = async () => {
+      const ids = cks().filter(x => x.checked).map(x => x.value); if (!ids.length) return;
+      const names = ids.map(id => (students.find(s => s.MaHS === id) || {}).HoTen).filter(Boolean);
+      if (!confirm(`Bỏ ${ids.length} em khỏi lớp ${c.TenLop}?\n\n${names.join('\n')}\n\nTài khoản các em này sẽ bị xoá, không đăng nhập được nữa (kết quả cũ vẫn lưu trong bảng tính).`)) return;
+      const b = $('#rxdel'); b.disabled = true; let ok = 0; const fail = [];
+      for (const id of ids) { b.textContent = `Đang bỏ ${ok + fail.length + 1}/${ids.length}…`; try { await api('delete_student', { maHS: id }); ok++; } catch (e) { fail.push(((students.find(s => s.MaHS === id) || {}).HoTen || id) + ': ' + e.message); } }
+      toast(`Đã bỏ ${ok} em khỏi lớp` + (fail.length ? ` · ${fail.length} em chưa bỏ được` : ''));
+      if (fail.length) alert('Chưa bỏ được:\n' + fail.join('\n'));
+      reload();
+    };
+  };
+  bindRX();
   $('#rsEdit').onclick = () => {
     $('#rsEdit').hidden = true;
     $('#rsBox').innerHTML = `<div class="hint" style="margin-top:0">${ROSTER_HINT}</div>${rosterEditor()}<div id="rsMsg"></div><div class="row" style="margin-top:10px"><button class="btn" id="rsSave">Lưu danh sách</button><button class="btn ghost" id="rsCancel" type="button">Hủy</button></div>`;
     bindRoster(roster);
-    $('#rsCancel').onclick = () => { $('#rsEdit').hidden = false; $('#rsBox').innerHTML = rosterView(); };
+    $('#rsCancel').onclick = () => { $('#rsEdit').hidden = false; $('#rsBox').innerHTML = rosterView(); bindRX(); };
     $('#rsSave').onclick = () => busy($('#rsSave'), async () => {
-      try { const r = await api('update_roster', { code, roster: getRoster() }); roster = r.DanhSach || getRoster(); window._gvCls = null; $('#rsEdit').hidden = false; $('#rsEdit').textContent = '✏️ Sửa danh sách'; $('#rsBox').innerHTML = rosterView(); toast('Đã lưu danh sách lớp'); }
+      try { const r = await api('update_roster', { code, roster: getRoster() }); roster = r.DanhSach || getRoster(); window._gvCls = null; $('#rsEdit').hidden = false; $('#rsEdit').textContent = '✏️ Sửa danh sách'; $('#rsBox').innerHTML = rosterView(); bindRX(); toast('Đã lưu danh sách lớp'); }
       catch (e) { errBox($('#rsMsg'), e); }
     });
   };
