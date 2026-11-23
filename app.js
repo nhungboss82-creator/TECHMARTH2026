@@ -2133,7 +2133,7 @@ route(/^\/gv\/lop$/, async () => {
   const draw = () => {
     const sc = gvSchool(classes), shown = sc.list;
     const ks = ['10', '11', '12'].filter(k => shown.some(c => String(c.Khoi) === k));
-    setView(`<a href="#/gv">← Trang chủ</a><div class="sechead"><h1 style="margin:6px 0">🏫 Các lớp</h1><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>${sc.html}
+    setView(`<div class="cls-top"><a href="#/gv" class="cls-back">← Trang chủ</a><h1>🏫 Các lớp</h1><div class="grow cls-sch">${sc.html}</div><a class="btn sm" href="#/gv/taolop">+ Tạo lớp</a></div>
       ${!classes ? `<div class="card empty">${err ? esc(err) : 'Đang tải danh sách lớp…'}</div>`
         : !classes.length ? '<div class="card empty">Chưa có lớp. Tạo lớp để học sinh đăng ký bằng mã lớp.<div style="margin-top:12px"><a class="btn" href="#/gv/taolop">Tạo lớp</a></div></div>'
         : session.role === 'admin' && !sc.school ? ''
