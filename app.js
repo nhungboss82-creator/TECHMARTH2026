@@ -2482,11 +2482,13 @@ function rosterRows(cls, students) {
   const used = new Set();
   const rows = ds.map((n, i) => { const g = (by[normName(n)] || []).slice().sort((a, b) => (b.soLuot || 0) - (a.soLuot || 0)); g.forEach(x => used.add(x.MaHS));
     return g.length ? Object.assign({}, g[0], { HoTen: n, _ids: g.map(x => x.MaHS) }) : { MaHS: '_ds' + i, HoTen: n, _ids: [], _chua: true }; });
-  return rows.concat(students.filter(x => !used.has(x.MaHS)).sort((a, b) => viNameCmp(a.HoTen, b.HoTen)).map(x => Object.assign({}, x, { _ids: [x.MaHS], _ngoai: true })));
+  rows.ngoai = students.filter(x => !used.has(x.MaHS));
+  return rows;
 }
 const ofHS = (s, r) => s._ids ? s._ids.includes(r.maHS) : r.maHS === s.MaHS;
 function scoreSheet(box, cls, students, results, myAsg) {
   students = rosterRows(cls, students);
+  const ngoai = students.ngoai || [];
   const ck = 'bd_' + cls.MaLop;
   // gom các lượt làm thành từng "cột": bài giao theo mã; bài học / chủ đề theo tên bài (gộp "nguyên bài" và "ôn theo bài"); đề theo mã
   const lessonK = {}; (bank.q || []).forEach(q => { [q.bai, String(q.cd || '').replace(/^Lớp \d+ – /, '')].forEach(n => { if (n && !lessonK[n]) lessonK[n] = String(q.k); }); });
@@ -2581,6 +2583,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
         <datalist id="bdsug">${SUG.map(x => `<option value="${x}">`).join('')}</datalist>
         <div class="bdngrid">${chosen.map(x => `<label><span class="hint">${esc(x.name)}</span><input list="bdsug" data-nm="${esc(x.id)}" value="${esc(names[x.id] || '')}" placeholder="${esc(x.name)}" maxlength="40"></label>`).join('')}</div></details>` : ''}
       <div class="row" style="margin-top:12px"><span class="grow hint">Đã chọn <b>${chosen.length}</b> cột · ${students.length} học sinh (xếp theo vần A–B) · bấm vào điểm hoặc tên HS để xem chi tiết</span><button class="btn sm" id="bdx">⬇ Xuất Excel</button></div></div>
+      ${ngoai.length ? `<p class="hint">Bảng điểm theo đúng danh sách lớp. Không tính ${ngoai.length} tài khoản không có trong danh sách: ${esc(ngoai.map(x => x.HoTen).join(', '))}.</p>` : ''}
       ${chosen.length && students.length ? `<div class="card"><div class="tablewrap"><table class="bdtable"><thead><tr><th>STT</th><th>Họ tên</th>${chosen.map(x => `<th class="n" title="${esc(x.name)}">${esc(shortName(x))}</th>`).join('')}<th class="n">Tổng điểm</th><th class="n">Điểm TB</th><th class="n">Hạng lớp</th>${gd ? `<th class="n" title="Xếp chung ${rows.nk} HS khối ${esc(cls.Khoi)}">Hạng khối</th>` : ''}</tr></thead><tbody>
         ${rows.map(r => `<tr><td>${r.i + 1}</td><td>${r.s._chua ? `${esc(r.s.HoTen)} <span class="hint" title="Em chưa đăng ký tài khoản trên app">· chưa có TK</span>` : `<a href="javascript:void 0" data-hs="${r.i}">${esc(r.s.HoTen)}</a>${r.s._ngoai ? ' <span class="pill warn" title="Tên tài khoản không có trong danh sách lớp">ngoài DS</span>' : ''}`}</td>${r.v.map((x, j) => `<td class="n">${x == null ? '<span class="hint">–</span>' : `<a href="javascript:void 0" class="bdcell" data-hs="${r.i}" data-cj="${j}">${fmt(x)}</a>`}</td>`).join('')}<td class="n"><b>${fmt(r.tong)}</b></td><td class="n"><b>${r.tb == null ? '–' : fmt(r.tb)}</b></td><td class="n">${r.hl}/${students.length}</td>${gd ? `<td class="n"><b>${r.hk}</b>/${rows.nk}</td>` : ''}</tr>`).join('')}</tbody></table></div>
         ${gd ? `<p class="hint">Hạng khối: xếp ${rows.nk} học sinh khối ${esc(cls.Khoi)} của trường theo Tổng điểm các cột đang chọn; bằng điểm thì đồng hạng.</p>` : ''}</div>` : ''}`;
