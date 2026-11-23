@@ -2210,7 +2210,7 @@ route(/^\/gv\/diem$/, async params => {
     try {
       const [students, results, asg] = await Promise.all([api('class_students', { code }), api('class_results', { code }), api('list_assignments')]);
       if (my !== seq || !$('#bd')) return;
-      students.sort((a, b) => viNameCmp(a.HoTen, b.HoTen));
+      rosterSort(c, students);
       $('#bd').innerHTML = `<div class="row" style="align-items:center"><h2 class="grow">Lớp ${esc(c.TenLop)} · ${students.length} học sinh</h2><a class="btn ghost sm" href="#/gv/lop/${code}">Mở lớp ›</a></div><div id="bds"></div>`;
       scoreSheet($('#bds'), c, students, results, asg.filter(a => a.DanhSachLop.includes(code)));
     } catch (e) { if ($('#bd')) errBox($('#bd'), e); }
@@ -2256,7 +2256,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     [cls, students, results, asg] = await Promise.all([api('my_classes'), api('class_students', { code }), api('class_results', { code }), api('list_assignments')]);
   } catch (e) { errBox(V, e); return; }
   const c = cls.find(x => x.MaLop === code) || { TenLop: code, Khoi: '', MaLop: code };
-  students.sort((a, b) => viNameCmp(a.HoTen, b.HoTen));
+  rosterSort(c, students);
   const nk = s => String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(), dupK = {};
   students.forEach(s => { dupK[nk(s.HoTen)] = (dupK[nk(s.HoTen)] || 0) + 1; });
   const dupN = Object.values(dupK).filter(n => n > 1).reduce((x, n) => x + n - 1, 0);
@@ -2472,7 +2472,21 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
 /* ---------- Bảng điểm lớp: mỗi bài / chủ đề / đề thi là 1 cột, GV tích chọn cột, cộng tổng & TB ở cuối ---------- */
 /* 21/11/2026: gọn còn 3 nhóm – Bài thầy cô giao · Bài học / chủ đề (chia Khối 10, 11, 12) · Đề luyện thi; bỏ "Nguyên bài học" (gộp vào bài học) và "Làm lại câu sai" */
 const BD_GROUPS = [['baigiao', '📝 Bài thầy cô giao'], ['bai', '📖 Bài học / chủ đề'], ['de', '🎓 Đề luyện thi / đề tổng hợp']];
+/* xếp HS theo danh sách lớp chính thức (Lop.DanhSach): đúng thứ tự, đúng họ tên; em chưa có tài khoản vẫn có dòng; nhiều tài khoản cùng tên gộp 1 dòng */
+const rosterIdx = cls => { const m = {}; (Array.isArray(cls.DanhSach) ? cls.DanhSach : []).forEach((n, i) => { if (!(normName(n) in m)) m[normName(n)] = i; }); return m; };
+const rosterSort = (cls, list) => { const ix = rosterIdx(cls), at = s => { const v = ix[normName(s.HoTen)]; return v == null ? 1e6 : v; }; return list.sort((a, b) => at(a) - at(b) || viNameCmp(a.HoTen, b.HoTen)); };
+function rosterRows(cls, students) {
+  const ds = Array.isArray(cls.DanhSach) ? cls.DanhSach : [];
+  if (!ds.length) return students.slice().sort((a, b) => viNameCmp(a.HoTen, b.HoTen));
+  const by = {}; students.forEach(s => { (by[normName(s.HoTen)] = by[normName(s.HoTen)] || []).push(s); });
+  const used = new Set();
+  const rows = ds.map((n, i) => { const g = (by[normName(n)] || []).slice().sort((a, b) => (b.soLuot || 0) - (a.soLuot || 0)); g.forEach(x => used.add(x.MaHS));
+    return g.length ? Object.assign({}, g[0], { HoTen: n, _ids: g.map(x => x.MaHS) }) : { MaHS: '_ds' + i, HoTen: n, _ids: [], _chua: true }; });
+  return rows.concat(students.filter(x => !used.has(x.MaHS)).sort((a, b) => viNameCmp(a.HoTen, b.HoTen)).map(x => Object.assign({}, x, { _ids: [x.MaHS], _ngoai: true })));
+}
+const ofHS = (s, r) => s._ids ? s._ids.includes(r.maHS) : r.maHS === s.MaHS;
 function scoreSheet(box, cls, students, results, myAsg) {
+  students = rosterRows(cls, students);
   const ck = 'bd_' + cls.MaLop;
   // gom các lượt làm thành từng "cột": bài giao theo mã; bài học / chủ đề theo tên bài (gộp "nguyên bài" và "ôn theo bài"); đề theo mã
   const lessonK = {}; (bank.q || []).forEach(q => { [q.bai, String(q.cd || '').replace(/^Lớp \d+ – /, '')].forEach(n => { if (n && !lessonK[n]) lessonK[n] = String(q.k); }); });
@@ -2498,7 +2512,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
   let mode = saved.mode || 'max', zero = saved.zero !== false, hk = !!saved.hk, gd = null, gdErr = '';
   const openK = new Set([String(cls.Khoi)]);
   const pick = (s, col, R) => {
-    const rs = (R || results).filter(r => r.maHS === s.MaHS && cid(r) === col.id);
+    const rs = (R || results).filter(r => ofHS(s, r) && cid(r) === col.id);
     if (!rs.length) return null;
     if (mode === 'max') return Math.max(...rs.map(r => r.diem));
     const srt = rs.slice().sort((a, b) => new Date(a.t) - new Date(b.t));
@@ -2530,7 +2544,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
   const SUG = ['Bài 1', 'Bài 2', 'Bài 3', 'Bài 4', 'Bài 5', 'Kiểm tra TX 1', 'Kiểm tra TX 2', 'Kiểm tra TX 3', 'Kiểm tra TX 4', 'Kiểm tra đợt 1', 'Kiểm tra đợt 2', 'Kiểm tra giữa kì I', 'Kiểm tra cuối kì I', 'Kiểm tra giữa kì II', 'Kiểm tra cuối kì II', 'Định kì 1', 'Định kì 2'];
   /** xem toàn bộ thông tin một HS (một cột hoặc mọi bài) */
   const detail = (s, col) => {
-    const rs = results.filter(r => r.maHS === s.MaHS && cid(r) && (!col || cid(r) === col.id)).sort((x, y) => new Date(x.t) - new Date(y.t));
+    const rs = results.filter(r => ofHS(s, r) && cid(r) && (!col || cid(r) === col.id)).sort((x, y) => new Date(x.t) - new Date(y.t));
     const byCol = {}; rs.forEach(r => { const id = cid(r); (byCol[id] = byCol[id] || []).push(r); });
     const ov = document.createElement('div'); ov.className = 'modal-ov';
     const fmtDay = t => { const d = new Date(t); return isNaN(d) ? '' : d.toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
@@ -2568,7 +2582,7 @@ function scoreSheet(box, cls, students, results, myAsg) {
         <div class="bdngrid">${chosen.map(x => `<label><span class="hint">${esc(x.name)}</span><input list="bdsug" data-nm="${esc(x.id)}" value="${esc(names[x.id] || '')}" placeholder="${esc(x.name)}" maxlength="40"></label>`).join('')}</div></details>` : ''}
       <div class="row" style="margin-top:12px"><span class="grow hint">Đã chọn <b>${chosen.length}</b> cột · ${students.length} học sinh (xếp theo vần A–B) · bấm vào điểm hoặc tên HS để xem chi tiết</span><button class="btn sm" id="bdx">⬇ Xuất Excel</button></div></div>
       ${chosen.length && students.length ? `<div class="card"><div class="tablewrap"><table class="bdtable"><thead><tr><th>STT</th><th>Họ tên</th>${chosen.map(x => `<th class="n" title="${esc(x.name)}">${esc(shortName(x))}</th>`).join('')}<th class="n">Tổng điểm</th><th class="n">Điểm TB</th><th class="n">Hạng lớp</th>${gd ? `<th class="n" title="Xếp chung ${rows.nk} HS khối ${esc(cls.Khoi)}">Hạng khối</th>` : ''}</tr></thead><tbody>
-        ${rows.map(r => `<tr><td>${r.i + 1}</td><td><a href="javascript:void 0" data-hs="${r.i}">${esc(r.s.HoTen)}</a></td>${r.v.map((x, j) => `<td class="n">${x == null ? '<span class="hint">–</span>' : `<a href="javascript:void 0" class="bdcell" data-hs="${r.i}" data-cj="${j}">${fmt(x)}</a>`}</td>`).join('')}<td class="n"><b>${fmt(r.tong)}</b></td><td class="n"><b>${r.tb == null ? '–' : fmt(r.tb)}</b></td><td class="n">${r.hl}/${students.length}</td>${gd ? `<td class="n"><b>${r.hk}</b>/${rows.nk}</td>` : ''}</tr>`).join('')}</tbody></table></div>
+        ${rows.map(r => `<tr><td>${r.i + 1}</td><td>${r.s._chua ? `${esc(r.s.HoTen)} <span class="hint" title="Em chưa đăng ký tài khoản trên app">· chưa có TK</span>` : `<a href="javascript:void 0" data-hs="${r.i}">${esc(r.s.HoTen)}</a>${r.s._ngoai ? ' <span class="pill warn" title="Tên tài khoản không có trong danh sách lớp">ngoài DS</span>' : ''}`}</td>${r.v.map((x, j) => `<td class="n">${x == null ? '<span class="hint">–</span>' : `<a href="javascript:void 0" class="bdcell" data-hs="${r.i}" data-cj="${j}">${fmt(x)}</a>`}</td>`).join('')}<td class="n"><b>${fmt(r.tong)}</b></td><td class="n"><b>${r.tb == null ? '–' : fmt(r.tb)}</b></td><td class="n">${r.hl}/${students.length}</td>${gd ? `<td class="n"><b>${r.hk}</b>/${rows.nk}</td>` : ''}</tr>`).join('')}</tbody></table></div>
         ${gd ? `<p class="hint">Hạng khối: xếp ${rows.nk} học sinh khối ${esc(cls.Khoi)} của trường theo Tổng điểm các cột đang chọn; bằng điểm thì đồng hạng.</p>` : ''}</div>` : ''}`;
     $$('[data-mode]', box).forEach(b => b.onclick = () => { mode = b.dataset.mode; draw(); });
     $$('[data-hs]', box).forEach(el => el.onclick = () => detail(students[+el.dataset.hs], el.dataset.cj != null ? chosen[+el.dataset.cj] : null));
