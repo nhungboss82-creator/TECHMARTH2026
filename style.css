@@ -1232,3 +1232,7 @@ tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
 .dl-ehd{width:100%;border-collapse:collapse}.dl-ehd td{vertical-align:top;font-size:12pt}.dl-ehd svg{width:90px;height:90px}
 .dt-pick{display:flex;gap:10px;flex-wrap:wrap}.dt-pick .btn{font-size:22px;padding:14px 22px}
 @media (max-width:600px){.dt-ops{grid-template-columns:1fr}.card .dl-keyall{display:block;overflow-x:auto}}
+.dt-act{margin-left:auto;display:flex;gap:6px}.dt-qh .dt-act .btn.on{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.dt-ops.ed>div{cursor:pointer;border:1.5px dashed #cbd5e1}.dt-ops.ed>div:hover{background:#eff6ff}
+.dt-tg{cursor:pointer;user-select:none}
+.dt-file{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid #93c5fd;background:#eff6ff}.dt-file h3{margin:0}.dt-fi{font-size:34px}

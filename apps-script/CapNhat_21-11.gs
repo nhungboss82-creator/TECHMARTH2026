@@ -486,6 +486,18 @@ function cn2311Exam_() {
     if (d.TrangThai !== 'cho') throw new Error('Chỉ bỏ được đề đang chờ duyệt');
     update_('DeThi', d._r, { TrangThai: 'xoa' }); return { ok: true };
   };
+  API.fix_answer = req => {
+    const t = auth_(req, 'gv'); teacher_(t);
+    const id = String(req.maCau || '').trim(), r = rows_('NganHang').find(q => String(q.MaCau).trim() === id);
+    if (!r) throw new Error('Không tìm thấy câu ' + id);
+    const ty = qType_(r), v = String(req.dapAn || '').toUpperCase().replace(/D/g, 'Đ').replace(/[^ABCĐS]/g, '');
+    if (ty === 'M' && !/^[ABCD]$/.test(String(req.dapAn || '').toUpperCase())) throw new Error('Đáp án phải là A, B, C hoặc D');
+    if (ty === 'T' && !/^[ĐS]{4}$/.test(v)) throw new Error('Đáp án Đúng/Sai cần đủ 4 ý');
+    if (ty === 'L') throw new Error('Câu tự luận không đổi đáp án ở đây');
+    withLock_(() => update_('NganHang', r._r, { DapAnDung: ty === 'M' ? String(req.dapAn).toUpperCase() : v }));
+    PropertiesService.getScriptProperties().setProperty('BANK_V', String(Date.now()));
+    return { ok: true };
+  };
   API.save_exam_versions = req => {
     const t = auth_(req, 'gv'); const d = findDT_(t, req.maDT);
     if (d.TrangThai !== 'cho') throw new Error('Đề đã duyệt, không sửa được');

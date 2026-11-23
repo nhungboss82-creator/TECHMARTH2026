@@ -4264,7 +4264,7 @@ async function printExam(d, which, withKey, o = {}) {
   const base = location.origin + location.pathname.replace(/[^/]*$/, '');
   const vs = which === 'all' ? d.versions : d.versions.filter(v => v.ma === which);
   const parts = [];
-  for (const v of vs) {
+  for (const v of (o.keyOnly ? [] : vs)) {
     const mc = v.ids.filter(id => bank.byId[id] && bank.byId[id].t === 'M'), tf = v.ids.filter(id => bank.byId[id] && bank.byId[id].t === 'T'), tl = v.ids.filter(id => bank.byId[id] && bank.byId[id].t === 'L');
     const qr = o.noQr ? '' : await qrSvg(o.link || (d.MaDT ? chamAllLink(d) : chamLink(d.MaDT, v.ma)), 2);
     parts.push(`<section class="page"><table class="hd"><tr><td><b>SỞ GD&amp;ĐT THÀNH PHỐ HUẾ</b><br><b>${esc((d.Truong || '').toUpperCase())}</b><br><i>(Đề có ${v.ids.length} câu)</i></td>
@@ -4304,8 +4304,9 @@ function examParts(d, v) {
   return { mc: ty('M'), tf: ty('T'), tl: ty('L') };
 }
 /* các khối HTML của cả bộ đề (PDF): mỗi mã đề một trang mới, cuối là đáp án */
-function examBlocks(d, qr) {
+function examBlocks(d, qr, kind) {
   const B = [];
+  if (kind === 'key') return examKeyBlocks(d, qr);
   d.versions.forEach((v, vi) => {
     const { mc, tf, tl } = examParts(d, v);
     if (vi) B.push('<!--PB-->');
@@ -4317,7 +4318,11 @@ function examBlocks(d, qr) {
     if (tl.length) { B.push(`<p class="dl-sec">PHẦN III. Tự luận (${fmt(Math.max(0, 10 - mc.length * 0.25 - tf.length))} điểm).</p>`); tl.forEach((id, i) => B.push(examQ(bank.byId[id], v, i + 1))); }
     B.push('<p style="text-align:center">----- HẾT -----</p>');
   });
-  B.push('<!--PB-->', `<div class="dl-t">ĐÁP ÁN – ${esc(d.TieuDe)}</div><div style="text-align:center">${qr}<div class="dl-s">Mã QR chấm bài dùng chung các mã đề ${d.versions.map(v => v.ma).join(', ')}</div></div>`);
+  return B;
+}
+function examKeyBlocks(d, qr) {
+  const B = [];
+  B.push(`<div class="dl-t">ĐÁP ÁN – ${esc(d.TieuDe)}</div><div style="text-align:center">${qr}<div class="dl-s">Mã QR chấm bài dùng chung các mã đề ${d.versions.map(v => v.ma).join(', ')}</div></div>`);
   B.push(examKeyTable(d));
   d.versions.forEach(v => { const { tl } = examParts(d, v); if (tl.length) B.push(`<p class="dl-sec">Mã đề ${v.ma} – Tự luận (đáp án mẫu)</p>` + tl.map((id, i) => `<div class="dl-e"><b>Câu ${i + 1}.</b> ${sanitize(bank.byId[id].a || '')}${bank.byId[id].e ? `<br><i>Hướng dẫn chấm: ${sanitize(bank.byId[id].e)}</i>` : ''}</div>`).join('')); });
   return B;
@@ -4334,8 +4339,8 @@ async function svgToPng(svg) {
   const b = await new Promise(r => c.toBlob(r, 'image/png'));
   return { data: await b.arrayBuffer(), w: im.width, h: im.height };
 }
-async function examPdf(d, qr, onProg) { await dlPdfBlocks(d.TieuDe + ' - ' + d.versions.map(v => v.ma).join('-'), examBlocks(d, qr), onProg); }
-async function examDocx(d, qr, onProg) {
+async function examPdf(d, qr, onProg, kind) { await dlPdfBlocks((kind === 'key' ? 'Dap an - ' : '') + d.TieuDe + ' - ' + d.versions.map(v => v.ma).join('-'), examBlocks(d, qr, kind), onProg); }
+async function examDocx(d, qr, onProg, kind) {
   const D = await loadLib('https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js', 'docx');
   const { toParas } = docxKit(D), png = qr ? await svgToPng(qr) : null;
   const P = (runs, o = {}) => new D.Paragraph(Object.assign({ children: runs, spacing: { after: 60 } }, o));
@@ -4344,7 +4349,7 @@ async function examDocx(d, qr, onProg) {
   const add = async (html, first, indent) => { for (const r of await toParas(html, first)) out.push(P(r, indent ? { indent: { left: 360 } } : {})); };
   const qrRun = s => png ? new D.ImageRun({ data: png.data, transformation: { width: s, height: s } }) : new D.TextRun('');
   const total = d.versions.reduce((s, v) => s + v.ids.length, 0); let done = 0;
-  for (const [vi, v] of d.versions.entries()) {
+  if (kind !== 'key') for (const [vi, v] of d.versions.entries()) {
     const { mc, tf, tl } = examParts(d, v), nb = { top: { style: D.BorderStyle.NONE }, bottom: { style: D.BorderStyle.NONE }, left: { style: D.BorderStyle.NONE }, right: { style: D.BorderStyle.NONE } };
     const cell = (ch, w, al) => new D.TableCell({ borders: nb, width: { size: w, type: D.WidthType.PERCENTAGE }, children: ch.map(r => new D.Paragraph({ alignment: al, children: r })) });
     if (vi) out.push(P([], { pageBreakBefore: true }));
@@ -4361,25 +4366,25 @@ async function examDocx(d, qr, onProg) {
       for (const [i, id] of tl.entries()) { const q = bank.byId[id]; await add(sanitize(q.s), [B(`Câu ${i + 1}. `), new D.TextRun({ text: `(${fmt(q.p || 1)} điểm) `, italics: true })]); if (onProg) onProg(++done, total); } }
     out.push(P([new D.TextRun('----- HẾT -----')], { alignment: C }));
   }
-  out.push(P([B('ĐÁP ÁN – ' + d.TieuDe, { size: 26 })], { pageBreakBefore: true, alignment: C }), P([qrRun(110)], { alignment: C }),
+  if (kind !== 'exam') { out.push(P([B('ĐÁP ÁN – ' + d.TieuDe, { size: 26 })], { alignment: C }), P([qrRun(110)], { alignment: C }),
     P([new D.TextRun({ text: 'Mã QR chấm bài dùng chung các mã đề ' + d.versions.map(v => v.ma).join(', '), italics: true })], { alignment: C }));
   const v0 = examParts(d, d.versions[0]), cl = t => new D.TableCell({ children: [new D.Paragraph({ alignment: C, children: [new D.TextRun({ text: String(t), size: 20 })] })] });
   out.push(new D.Table({ rows: [new D.TableRow({ children: [cl('Mã đề'), ...v0.mc.map((_, i) => cl(i + 1)), ...v0.tf.map((_, i) => cl('II.' + (i + 1)))] }),
     ...d.versions.map(v => { const { mc, tf } = examParts(d, v); return new D.TableRow({ children: [cl(v.ma), ...mc.map(id => cl(printedKey(bank.byId[id], v))), ...tf.map(id => cl(printedKey(bank.byId[id], v)))] }); })] }));
   for (const v of d.versions) { const { tl } = examParts(d, v); if (!tl.length) continue; out.push(P([B(`Mã đề ${v.ma} – Tự luận (đáp án mẫu)`)], { spacing: { before: 160 } }));
-    for (const [i, id] of tl.entries()) { const q = bank.byId[id]; await add(sanitize(q.a || ''), [B(`Câu ${i + 1}. `)]); if (q.e) await add('<i>Hướng dẫn chấm: ' + sanitize(q.e) + '</i>', null, true); } }
+    for (const [i, id] of tl.entries()) { const q = bank.byId[id]; await add(sanitize(q.a || ''), [B(`Câu ${i + 1}. `)]); if (q.e) await add('<i>Hướng dẫn chấm: ' + sanitize(q.e) + '</i>', null, true); } } }
   const doc = new D.Document({ styles: { default: { document: { run: { font: 'Times New Roman', size: 26 } } } },
     sections: [{ properties: { page: { margin: { top: 900, bottom: 900, left: 1000, right: 900 } } }, children: out }] });
   const blob = await D.Packer.toBlob(doc);
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = dlFileName(d.TieuDe + ' - ' + d.versions.map(v => v.ma).join('-')) + '.docx';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = dlFileName((kind === 'key' ? 'Dap an - ' : '') + d.TieuDe + ' - ' + d.versions.map(v => v.ma).join('-')) + '.docx';
   document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
 }
-function examFileModal(d, qr) {
+function examFileModal(d, qr, kind) {
   const ov = document.createElement('div'); ov.className = 'modal-ov';
   let f = store.get('dl_fmt', 'pdf'), on = false;
   const draw = (msg = '') => {
-    ov.innerHTML = `<div class="modal-box dl-modal"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">⬇ Tải file đề</h2><button class="btn ghost sm" data-x ${on ? 'disabled' : ''}>✕</button></div>
-      <p style="margin:8px 0 10px"><b>${esc(d.TieuDe)}</b><br><span class="hint">1 file gồm ${d.versions.length} mã đề (${d.versions.map(v => v.ma).join(', ')}) + trang đáp án và mã QR chấm bài</span></p>
+    ov.innerHTML = `<div class="modal-box dl-modal"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">⬇ ${kind === 'key' ? 'Tải file đáp án' : 'Tải file đề'}</h2><button class="btn ghost sm" data-x ${on ? 'disabled' : ''}>✕</button></div>
+      <p style="margin:8px 0 10px"><b>${esc(d.TieuDe)}</b><br><span class="hint">${kind === 'key' ? `Bảng đáp án ${d.versions.length} mã đề (${d.versions.map(v => v.ma).join(', ')}) + mã QR chấm bài` : `1 file gồm ${d.versions.length} mã đề: ${d.versions.map(v => v.ma).join(', ')}`}</span></p>
       <div class="dl-fmt">${[['pdf', '📄', 'PDF', 'In ngay'], ['docx', '📝', 'Word (.docx)', 'Sửa được']].map(([k, ic, t, s]) => `<button type="button" class="${f === k ? 'on' : ''}" data-f="${k}" ${on ? 'disabled' : ''}><span>${ic}</span><b>${t}</b><small>${s}</small></button>`).join('')}</div>
       <div id="dlmsg" class="hint" style="margin-top:8px">${msg}</div><button class="btn block" id="dlgo" ${on ? 'disabled' : ''}>${on ? '<span class="tl-spin"></span> Đang tạo file…' : '⬇ Tải về'}</button></div>`;
     ov.querySelector('[data-x]').onclick = () => { if (!on) ov.remove(); };
@@ -4387,7 +4392,7 @@ function examFileModal(d, qr) {
     ov.querySelector('#dlgo').onclick = async () => {
       on = true; draw('Đang chuẩn bị…');
       const prog = (i, n) => { const m = ov.querySelector('#dlmsg'); if (m) m.textContent = `Đang tạo file… ${Math.round(i * 100 / n)}%`; };
-      try { if (f === 'pdf') await examPdf(d, qr, prog); else await examDocx(d, qr, prog); on = false; draw('✔ Đã tạo xong – xem trong thư mục Tải xuống (Downloads).'); }
+      try { if (f === 'pdf') await examPdf(d, qr, prog, kind); else await examDocx(d, qr, prog, kind); on = false; draw('✔ Đã tạo xong – xem trong thư mục Tải xuống (Downloads).'); }
       catch (e) { on = false; draw('⚠ Chưa tạo được file: ' + esc(e.message || String(e)) + '. Kiểm tra mạng rồi thử lại.'); }
     };
   };
@@ -4411,17 +4416,18 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
   if (!d || !d.TrangThai) { if (!d) setView('<div class="card empty">Đang tải…</div>'); try { d = await api('get_exam', { maDT }); store.set('exam_' + maDT, d); } catch (e) { if (!d) { errBox(V, e); return; } } }
   if (d.versions.some(v => v.ids.some(id => !bank.byId[id]))) await syncBank(true);
   const qr = await qrSvg(chamAllLink(d), 4);
-  let tab = 0, saving = false;
+  let tab = 0, saving = false, editing = '';
   const codes = d.versions.map(v => v.ma);
   const qView = (v, id, n, pend) => {
     const q = bank.byId[id]; if (!q) return '';
-    const sw = pend ? `<button class="btn ghost sm dt-sw" data-sw="${id}" title="Thay bằng câu khác cùng bài, cùng mức độ">🔁 Đổi câu</button>` : '';
+    const ed = editing === id;
+    const sw = pend ? `<span class="dt-act"><button class="btn ghost sm${ed ? ' on' : ''}" data-fx="${id}" title="Sửa đáp án đúng của câu này">✏️ ${ed ? 'Xong' : 'Đổi đáp án'}</button><button class="btn ghost sm" data-sw="${id}" title="Thay bằng câu khác cùng bài, cùng mức độ">🔁 Đổi câu</button></span>` : '';
     const tag = `<span class="dt-tag">${esc(q.bai || q.cd || '')}${q.md ? ' · ' + esc(q.md) : ''}</span>`;
     if (q.t === 'L') return `<div class="dt-q"><div class="dt-qh"><b>Câu ${n}.</b>${tag}${sw}</div>${sanitize(q.s)}<div class="dt-ans"><b>Đáp án mẫu:</b> ${sanitize(q.a || '')}</div></div>`;
     if (q.t === 'M') { const p = v.perm[id] || [0, 1, 2, 3], k = printedKey(q, v);
-      return `<div class="dt-q"><div class="dt-qh"><b>Câu ${n}.</b>${tag}${sw}</div>${sanitize(q.s)}<div class="dt-ops">${p.map((oi, j) => `<div class="${LETTERS[j] === k ? 'ok' : ''}"><b>${LETTERS[j]}.</b> ${sanitize(q.o[oi])}</div>`).join('')}</div>${q.e ? `<div class="dt-ex">💡 ${sanitize(String(q.e))}</div>` : ''}</div>`; }
+      return `<div class="dt-q"><div class="dt-qh"><b>Câu ${n}.</b>${tag}${sw}</div>${sanitize(q.s)}<div class="dt-ops${ed ? ' ed' : ''}">${p.map((oi, j) => `<div class="${LETTERS[j] === k ? 'ok' : ''}" ${ed ? `data-setm="${id}" data-oi="${oi}"` : ''}><b>${LETTERS[j]}.</b> ${sanitize(q.o[oi])}</div>`).join('')}</div>${ed ? '<div class="hint">Bấm vào phương án đúng.</div>' : ''}${q.e ? `<div class="dt-ex">💡 ${sanitize(String(q.e))}</div>` : ''}</div>`; }
     const a = normAns(q).split('');
-    return `<div class="dt-q"><div class="dt-qh"><b>Câu ${n}.</b>${tag}${sw}</div>${sanitize(q.s)}<div class="dt-tf">${[0, 1, 2, 3].map(k => `<div><b>${'abcd'[k]})</b> ${sanitize(q.o[k])} <span class="pill ${a[k] === 'Đ' ? 'ok' : 'bad'}">${a[k] === 'Đ' ? 'Đúng' : 'Sai'}</span></div>`).join('')}</div></div>`;
+    return `<div class="dt-q"><div class="dt-qh"><b>Câu ${n}.</b>${tag}${sw}</div>${sanitize(q.s)}<div class="dt-tf">${[0, 1, 2, 3].map(k => `<div><b>${'abcd'[k]})</b> ${sanitize(q.o[k])} <span class="pill ${a[k] === 'Đ' ? 'ok' : 'bad'}${ed ? ' dt-tg' : ''}" ${ed ? `data-sett="${id}" data-k="${k}"` : ''}>${a[k] === 'Đ' ? 'Đúng' : 'Sai'}${ed ? ' ⇄' : ''}</span></div>`).join('')}</div></div>`;
   };
   const draw = () => {
     const pend = d.TrangThai === 'cho', v = d.versions[tab], { mc, tf, tl } = examParts(d, v);
@@ -4431,11 +4437,12 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
       ${d.thieu && d.thieu.length ? `<div class="err">Ngân hàng chưa đủ câu: ${esc(d.thieu.join('; '))}</div>` : ''}
       ${pend ? `<div class="card dt-rv"><div class="grow"><b>Kiểm tra đề trước khi dùng</b><div class="hint">Xem lần lượt từng mã đề: đáp án đúng tô xanh. Câu chưa ưng thì bấm 🔁 Đổi câu.</div></div>
           <button class="btn ghost" id="regen">🔄 Sinh bộ đề khác</button><button class="btn accent" id="ok">✅ Duyệt đề</button></div>`
-        : `<div class="card dt-ok"><div class="dt-qr">${qr}<div class="hint">QR chấm bài chung ${codes.length} mã đề</div></div>
-          <div class="grow"><div class="dt-codes">${codes.map(c => `<span>${c}</span>`).join('')}</div>
-          <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" id="dl">⬇ Tải file đề (PDF / Word)</button><button class="btn ghost" id="pa">🖨️ In đề</button><button class="btn ghost" id="pk">🖨️ In kèm đáp án</button><button class="btn ghost" id="ex">⬇ Đáp án Excel</button><button class="btn ghost" id="cp">🔗 Link chấm</button></div></div></div>`}
+        : `<div class="card dt-file"><div class="dt-fi">📄</div><div class="grow"><h3>File đề</h3><div class="hint">${codes.length} mã đề trong 1 file: ${codes.join(', ')}</div></div>
+            <button class="btn" id="dl">⬇ Tải file đề</button><button class="btn ghost" id="pa">🖨️ In đề</button></div>
+          <div class="card dt-ok"><div class="dt-qr">${qr}</div>
+          <div class="grow"><h3 style="margin:0 0 8px">🔑 Đáp án & mã QR chấm bài</h3><div class="dt-codes">${codes.map(c => `<span>${c}</span>`).join('')}</div><div class="hint" style="margin-top:6px">Một mã QR dùng chung cho cả ${codes.length} mã đề</div>
+          <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn accent" id="dlk">⬇ Tải file đáp án</button><button class="btn ghost" id="pk">🖨️ In đáp án</button><button class="btn ghost" id="ex">⬇ Excel</button><button class="btn ghost" id="cp">🔗 Link chấm</button></div></div></div>`}
       <div class="tabs dt-tabs">${d.versions.map((x, i) => `<button data-tab="${i}" class="${i === tab ? 'on' : ''}">Mã đề ${x.ma}</button>`).join('')}</div>
-      <div class="card"><h3 style="margin:0 0 6px">Đáp án mã đề ${v.ma}</h3>${examKeyTable({ versions: [v] })}</div>
       <div class="card" id="pv">${mc.length ? '<h3>Phần I</h3>' + mc.map((id, i) => qView(v, id, i + 1, pend)).join('') : ''}${tf.length ? '<h3>Phần II</h3>' + tf.map((id, i) => qView(v, id, i + 1, pend)).join('') : ''}${tl.length ? '<h3>Phần III</h3>' + tl.map((id, i) => qView(v, id, i + 1, pend)).join('') : ''}</div>
       <div id="msg"></div>`);
     $$('[data-tab]').forEach(b => b.onclick = () => { tab = +b.dataset.tab; draw(); });
@@ -4448,6 +4455,15 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
         catch (e) { d.versions = JSON.parse(old); toast(/không hợp lệ/.test(e.message) ? 'Máy chủ chưa cập nhật chức năng đổi câu – hãy bấm “Sinh bộ đề khác”' : e.message); }
         saving = false; const y = scrollY; draw(); scrollTo(0, y);
       });
+      $$('[data-fx]').forEach(b => b.onclick = () => { editing = editing === b.dataset.fx ? '' : b.dataset.fx; const y = scrollY; draw(); scrollTo(0, y); });
+      const fixAns = async (id, val) => {
+        if (saving) return; saving = true;
+        try { await api('fix_answer', { maCau: id, dapAn: val }); const q = bank.byId[id]; q.a = val; try { store.set('bank', { v: bank.v, q: bank.q }); } catch (e) {} toast('Đã đổi đáp án'); }
+        catch (e) { toast(/không hợp lệ/.test(e.message) ? 'Máy chủ chưa cập nhật chức năng đổi đáp án' : e.message); }
+        saving = false; const y = scrollY; draw(); scrollTo(0, y);
+      };
+      $$('[data-setm]').forEach(el => el.onclick = () => fixAns(el.dataset.setm, LETTERS[+el.dataset.oi]));
+      $$('[data-sett]').forEach(el => el.onclick = () => { const id = el.dataset.sett, a = normAns(bank.byId[id]).split(''); a[+el.dataset.k] = a[+el.dataset.k] === 'Đ' ? 'S' : 'Đ'; fixAns(id, a.join('')); });
       $('#ok').onclick = () => busy($('#ok'), async () => { try { try { await api('approve_exam', { maDT }); } catch (e) { if (!/không hợp lệ/.test(e.message)) throw e; } d.TrangThai = 'mo'; store.set('exam_' + maDT, d); toast('Đã duyệt đề'); draw(); scrollTo(0, 0); } catch (e) { errBox($('#msg'), e); } });
       $('#regen').onclick = () => busy($('#regen'), async () => {
         const p = store.get('exgen_' + maDT, null);
@@ -4457,9 +4473,10 @@ route(/^\/gv\/dethi\/(D\w+)$/, async (params, maDT) => {
           store.set('exam_' + n.MaDT, n); store.set('exgen_' + n.MaDT, p); location.hash = '#/gv/dethi/' + n.MaDT; } catch (e) { errBox($('#msg'), e); }
       });
     } else {
-      $('#dl').onclick = () => examFileModal(d, qr);
+      $('#dl').onclick = () => examFileModal(d, qr, 'exam');
+      $('#dlk').onclick = () => examFileModal(d, qr, 'key');
       $('#pa').onclick = () => printExam(d, 'all', false);
-      $('#pk').onclick = () => printExam(d, 'all', true);
+      $('#pk').onclick = () => printExam(d, 'all', true, { keyOnly: true });
       $('#cp').onclick = async () => { const l = chamAllLink(d); try { await navigator.clipboard.writeText(l); toast('Đã sao chép link chấm'); } catch (e) { prompt('Link chấm nhanh:', l); } };
       $('#ex').onclick = () => {
         const rows = d.versions.map(v => { const { mc, tf } = examParts(d, v); return ['Mã đề ' + v.ma, ...mc.map(id => printedKey(bank.byId[id], v)), ...tf.flatMap(id => printedKey(bank.byId[id], v).split(''))]; });
@@ -4484,6 +4501,7 @@ route(/^\/cham\/(D\w+)\/(\d+)$/, async (params, maDT, ma) => {
   if (!session || session.role !== 'hs') { setView('<div class="card empty">Hãy đăng nhập bằng tài khoản học sinh để chấm bài.</div>'); return; }
   setView('<div class="card empty">Đang tải đề…</div>');
   let d; try { d = await api('get_exam', { maDT, ma }); } catch (e) { errBox(V, e); return; }
+  await syncBank();
   const v = d.versions[0];
   if (v.ids.some(id => !bank.byId[id])) await syncBank(true);
   const mc = v.ids.filter(id => bank.byId[id] && bank.byId[id].t === 'M'), tf = v.ids.filter(id => bank.byId[id] && bank.byId[id].t === 'T');
