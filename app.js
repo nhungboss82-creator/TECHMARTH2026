@@ -4047,10 +4047,9 @@ route(/^\/gv\/matran$/, async params => {
       const body = { ten, khoi: k, loai: t0 ? t0.loai : 'Giữa kì I', thoiGian: +$('#tg').value || 45, rows: mrows };
       try {
         const ms = await api('list_matrices'), nm = x => String(x).replace(/[–—-]/g, '-').replace(/\s+/g, ' ').trim().toLowerCase();
-        const same = ms.filter(m => nm(m.TenMT) === nm(ten) && String(m.Khoi) === k).pop();
-        let m = null;
-        if (same) try { m = await api('save_matrix', { matrix: Object.assign({ id: same.MaMT }, body) }); } catch (e) { m = null; }
-        if (!m || !m.MaMT) m = await api('save_matrix', { matrix: body });
+        const sig = rs => JSON.stringify((rs || []).filter(r => ['b', 'h', 'v', 'ds', 'tb', 'th', 'tv'].some(f => +r[f])).map(r => [r.value, +r.b || 0, +r.h || 0, +r.v || 0, +r.ds || 0, +r.tb || 0, +r.th || 0, +r.tv || 0]));
+        let m = ms.find(x => nm(x.TenMT) === nm(ten) && String(x.Khoi) === k && sig(x.rows) === sig(mrows) && +x.ThoiGian === body.thoiGian);
+        if (!m) m = await api('save_matrix', { matrix: body });
         const p = { maMT: m.MaMT, tieuDe: keep.td, soMaDe: n, maBatDau: mb, cheDo: keep.cd };
         const d = await api('generate_exam', p); d.TrangThai = d.TrangThai || 'cho';
         store.set('exam_' + d.MaDT, d); store.set('exgen_' + d.MaDT, p);
