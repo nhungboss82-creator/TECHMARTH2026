@@ -561,3 +561,59 @@ function cn2311AddHS_() {
   });
 }
 try { cn2311AddHS_(); } catch (e) { console.error('CapNhat_23_11 AddHS: ' + e); }
+
+/* ===== Cập nhật 25/11: HS đăng ký gọn (tên đăng nhập, họ tên, trường, lớp) – chỉ trường đã có GV; Admin đăng nhập bằng tên "Admin" ===== */
+function cn2511Reg_() {
+  if (typeof API === 'undefined') return;
+  const gvOk_ = g => ['cho_duyet', 'khoa', 'tu_choi'].indexOf(String(g.TrangThai || '')) < 0;
+  const regSchools_ = () => {
+    const gv = rows_('GiaoVien').filter(gvOk_), sk = {};
+    gv.forEach(g => { const k = schoolKey_(g.Truong); if (k) sk[k] = sk[k] || String(g.Truong).trim(); });
+    const out = {};
+    rows_('Lop').forEach(c => { const k = schoolKey_(c.Truong); if (!k || !sk[k] || cn2111IsSelf_(c)) return;
+      (out[k] = out[k] || { Truong: sk[k], lop: [] }).lop.push({ MaLop: c.MaLop, TenLop: String(c.TenLop), Khoi: String(c.Khoi) }); });
+    return Object.keys(out).map(k => out[k]).sort((a, b) => a.Truong.localeCompare(b.Truong, 'vi'));
+  };
+  API.reg_schools = () => regSchools_();
+  API.register_simple = req => {
+    const code = String(req.code || '').trim().toUpperCase();
+    const c = rows_('Lop').find(r => r.MaLop === code);
+    if (!c || cn2111IsSelf_(c)) throw new Error('Không tìm thấy lớp, em chọn lại lớp nhé');
+    if (!rows_('GiaoVien').some(g => gvOk_(g) && schoolKey_(g.Truong) === schoolKey_(c.Truong))) throw new Error('Trường này chưa có giáo viên đăng ký nên chưa nhận học sinh');
+    const name = clean_(req.name, 60);
+    if (!name || name.length < 4) throw new Error('Em hãy nhập đầy đủ họ và tên');
+    const user = normUser_(req.username);
+    withLock_(() => {
+      if (rows_('HocSinh').some(r => String(r.TenDN) === user)) throw new Error('Tên đăng nhập "' + user + '" đã có người dùng, em chọn tên khác nhé');
+      const salt = Utilities.getUuid();
+      ensureCols_('HocSinh');
+      append_('HocSinh', { MaHS: 'HS' + shortId_(), TenDN: user, HoTen: name, MaLop: c.MaLop, TenLop: c.TenLop, Khoi: String(c.Khoi), Truong: c.Truong,
+        Salt: salt, Hash: hash_('PD2026', salt), DoiMK: 1, NgayTao: new Date(), Email: '' });
+    });
+    return API.login_hs({ username: user, password: 'PD2026' });
+  };
+  const lh = API.login_hs;
+  if (lh) API.login_hs = req => {
+    try { return lh(req); } catch (e) {
+      const id = String(req.username || '').trim();
+      if (!id || id.indexOf('@') > 0) throw e;
+      /* đăng nhập bằng họ và tên: so khớp không phân biệt hoa thường, khoảng trắng */
+      const nm = x => String(x || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+      const pw = String(req.password || ''), same = rows_('HocSinh').filter(r => nm(r.HoTen) === nm(id));
+      const ok = same.filter(r => hash_(pw, r.Salt) === r.Hash);
+      if (ok.length === 1) return session_('hs', ok[0]);
+      throw e;
+    }
+  };
+  const lg = API.login_gv;
+  if (lg) API.login_gv = req => {
+    if (String(req.email || '').trim().toLowerCase() === 'admin') {
+      const ad = rows_('GiaoVien').filter(g => g.VaiTro === 'admin');
+      const g = ad.find(x => String(x.Email).toLowerCase() === String(ADMIN_EMAIL_DEFAULT).toLowerCase()) || ad[0];
+      if (!g || hash_(String(req.password || ''), g.Salt) !== g.Hash) throw new Error('Sai tên đăng nhập hoặc mật khẩu');
+      return session_('admin', g);
+    }
+    return lg(req);
+  };
+}
+try { cn2511Reg_(); } catch (e) { console.error('CapNhat_25_11 Reg: ' + e); }

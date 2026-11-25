@@ -397,8 +397,8 @@ route(/^\/dangnhap$/, params => {
       <div class="hero"><h1>SmarttechCN 2026</h1><p class="sub herosub">Trợ lý dạy học và kiểm tra, đánh giá môn CNCN cấp THPT</p></div>
       <div class="tabs"><button data-t="hs" class="${tab === 'hs' ? 'on' : ''}">Học sinh</button><button data-t="gv" class="${tab === 'gv' ? 'on' : ''}">Giáo viên</button></div>
       <form class="card" id="f">
-        ${tab === 'hs' ? `<label for="u">Tên đăng nhập hoặc email</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="vd: an12pd hoặc an12pd@gmail.com"><div class="hint" style="margin-top:-4px;margin-bottom:8px">💡 <i>Lưu ý: Không nhập mã lớp vào đây. Nếu chưa có tài khoản, bấm dòng xanh bên dưới để đăng ký bằng mã chung.</i></div>`
-          : `<label for="u">Email</label><input id="u" type="email" autocomplete="username" required>`}
+        ${tab === 'hs' ? `<label for="u">Tên đăng nhập, email hoặc họ và tên</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="vd: an101 · an101@gmail.com · Nguyễn Văn An">`
+          : `<label for="u">Email (Quản trị viên: Admin)</label><input id="u" type="text" autocomplete="username" autocapitalize="none" required placeholder="vd: gv@gmail.com">`}
         <label for="p">Mật khẩu</label><input id="p" type="password" autocomplete="current-password" required>
         <div id="msg"></div>
         <div style="margin-top:14px"><button class="btn block">Đăng nhập</button></div>
@@ -417,7 +417,7 @@ route(/^\/dangnhap$/, params => {
           setSession(s); flush(); const nx = store.get('next', ''); store.del('next'); location.hash = nx || '#/';
         } catch (err) {
           const msg = (tab === 'hs' && /Sai tên đăng nhập/.test(err.message || ''))
-            ? 'Sai tên đăng nhập/email hoặc mật khẩu. Lưu ý: không nhập mã lớp vào đây. Quên mật khẩu? Bấm “Quên mật khẩu” và nhập email em đã khai để tự lấy lại.'
+            ? 'Sai tên đăng nhập/email/họ tên hoặc mật khẩu. Nếu nhiều bạn trùng họ tên, em hãy đăng nhập bằng tên đăng nhập.'
             : err;
           errBox($('#msg'), msg);
         }
@@ -570,74 +570,54 @@ function bindRoster(names) {
 const getRoster = () => $$('#rbody input').map(x => x.value.replace(/\s+/g, ' ').trim()).filter(Boolean);
 
 route(/^\/dangky$/, params => {
-  if (params.get('lop') && params.get('cach') !== 'machung') return registerByClassCode(params);
-  let classes = null, common = '', khoi = '';
-  setView(`<div class="auth"><h1>Đăng ký tài khoản học sinh</h1><p class="sub">Nhập <b>mã chung</b> thầy/cô cung cấp, sau đó chọn lớp và tự đặt mật khẩu.</p>
-    <form class="card" id="f1">
-      <label for="mc">Mã chung</label><input id="mc" type="text" maxlength="20" autocapitalize="characters" autocomplete="off" required placeholder="vd: PD2026">
-      <div id="msg1"></div>
-      <div style="margin-top:14px"><button class="btn block">Tiếp tục</button></div>
-    </form>
-    <form class="card" id="f" hidden>
-      ${schoolField('sc', CFG.SCHOOL_DEFAULT || SCHOOLS[0], '1. Trường của em')}
-      <label>2. Khối</label><div class="tabs" id="kh" style="margin:4px 0 10px">${['10', '11', '12'].map(k => `<button type="button" data-k="${k}">Khối ${k}</button>`).join('')}</div>
-      <label for="lop">3. Lớp</label><select id="lop" disabled><option value="">— Chọn khối trước —</option></select>
-      <div id="newwrap" hidden><label for="nl">Tên lớp của em</label><input id="nl" type="text" maxlength="15" autocapitalize="characters" placeholder="vd: 10/1"><div class="hint">Ghi đúng tên lớp, vd: 10/1, 11/4. Nếu lớp em đã có trong danh sách phía trên thì chọn lớp đó, không cần gõ.</div></div>
+  const pre = String(params.get('lop') || '').trim().toUpperCase();
+  let schools = [];
+  setView(`<div class="auth"><h1>Đăng ký tài khoản học sinh</h1>
+    <form class="card reg2" id="f">
+      <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" autocomplete="username" maxlength="30" placeholder="vd: an101">
+      <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới.</div>
       <label for="n">Họ và tên</label><input id="n" type="text" required maxlength="60" placeholder="Nguyễn Văn An">
-      <label for="u">Tên đăng nhập</label><input id="u" type="text" required autocapitalize="none" placeholder="vd: an.10a1" maxlength="30">
-      <div class="hint">Chữ không dấu, số, dấu chấm hoặc gạch dưới. Em dùng tên này để đăng nhập.</div>
-      <label for="em">Gmail <span class="hint">(bắt buộc – em đăng nhập bằng Gmail và <b>tự lấy lại mật khẩu</b> khi quên)</span></label><input id="em" type="email" required autocomplete="email" maxlength="80" placeholder="vd: an123@gmail.com">
-      <div class="hint">Mỗi em chỉ có một tài khoản: nếu họ tên và Gmail đã đăng ký, app sẽ báo để em đăng nhập lại.</div>
-      <label for="p1">Mật khẩu</label><input id="p1" type="password" required minlength="6" autocomplete="new-password" placeholder="Tối thiểu 6 kí tự">
-      <label for="p2">Nhập lại mật khẩu</label><input id="p2" type="password" required minlength="6" autocomplete="new-password">
+      <label for="sc">Trường</label><select id="sc" required><option value="">Đang tải danh sách trường…</option></select>
+      <label for="lop">Lớp</label><select id="lop" required disabled><option value="">— Chọn trường trước —</option></select>
+      <div class="hint">Chỉ hiện các trường đã có giáo viên đăng ký tài khoản. Mật khẩu ban đầu: <b>PD2026</b> (đổi ngay sau khi đăng ký).</div>
       <div id="msg"></div>
       <div style="margin-top:14px"><button class="btn block">Đăng ký</button></div>
     </form>
     <p class="sub" style="text-align:center"><a href="#/dangnhap">Đã có tài khoản? Đăng nhập</a></p></div>`);
-  const fill = () => {
-    const sel = $('#lop');
-    if (!khoi) { sel.disabled = true; sel.innerHTML = '<option value="">— Chọn khối trước —</option>'; return; }
-    // chỉ hiện lớp chính thức (do thầy cô tạo) của đúng trường em đã chọn
-    const sk = skNorm(schoolVal('sc'));
-    const list = (classes || []).filter(c => c.Khoi === khoi && sk && skNorm(c.Truong) === sk && !isSelfCls(c))
-      .sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }));
+  let autoU = true;
+  const toUser = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim().split(/\s+/).filter(Boolean);
+  $('#u').oninput = () => { autoU = !$('#u').value; };
+  $('#n').oninput = () => { if (!autoU) return; const a = toUser($('#n').value); if (!a.length) { $('#u').value = ''; return; }
+    const t = (($('#lop').selectedOptions[0] || {}).textContent || '').replace(/\D/g, '');
+    $('#u').value = a[a.length - 1] + a.slice(0, -1).map(w => w[0]).join('') + t; };
+  const fillLop = () => {
+    const s = schools[+$('#sc').value], sel = $('#lop');
+    if (!s) { sel.disabled = true; sel.innerHTML = '<option value="">— Chọn trường trước —</option>'; return; }
+    const by = {}; s.lop.forEach(c => (by[c.Khoi] = by[c.Khoi] || []).push(c));
     sel.disabled = false;
-    sel.innerHTML = '<option value="">— Chọn lớp —</option>' + list.map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}</option>`).join('')
-      + '<option value="__new">➕ Lớp của em chưa có – tự nhập tên lớp</option>';
-    if (!list.length) sel.value = '__new';
-    $('#newwrap').hidden = sel.value !== '__new';
+    sel.innerHTML = '<option value="">— Chọn lớp —</option>' + Object.keys(by).sort().map(k => `<optgroup label="Khối ${esc(k)}">`
+      + by[k].sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true })).map(c => `<option value="${esc(c.MaLop)}">${esc(c.TenLop)}</option>`).join('') + '</optgroup>').join('');
   };
-  $$('#kh button').forEach(b => b.onclick = () => { khoi = b.dataset.k; $$('#kh button').forEach(x => x.classList.toggle('on', x === b)); fill(); });
-  bindSchool('sc');
-  $('#sc').addEventListener('change', fill); $('#sc_k').addEventListener('input', fill);
-  $('#lop').onchange = () => { $('#newwrap').hidden = $('#lop').value !== '__new'; };
-  $('#f1').onsubmit = async e => {
-    e.preventDefault();
-    await busy($('#f1 .btn'), async () => {
-      try {
-        common = $('#mc').value.trim().toUpperCase();
-        classes = await api('common_classes', { common });
-        addSchools(classes.filter(c => !isSelfCls(c)).map(c => c.Truong));
-        $('#f1').hidden = true; $('#f').hidden = false; fill();
-        toast('Mã chung đúng! Em chọn khối và lớp nhé.');
-      } catch (err) { errBox($('#msg1'), err); }
-    });
-  };
+  $('#sc').onchange = fillLop;
+  $('#lop').onchange = () => $('#n').oninput();
+  (async () => {
+    try {
+      schools = await api('reg_schools', {});
+      if (!schools.length) { $('#sc').innerHTML = '<option value="">Chưa có trường nào có giáo viên đăng ký</option>'; return; }
+      $('#sc').innerHTML = '<option value="">— Chọn trường —</option>' + schools.map((s, i) => `<option value="${i}">${esc(s.Truong)}</option>`).join('');
+      let si = pre ? schools.findIndex(s => s.lop.some(c => c.MaLop === pre)) : -1;
+      if (si < 0 && schools.length === 1) si = 0;
+      if (si >= 0) { $('#sc').value = String(si); fillLop(); if (pre) $('#lop').value = pre; }
+    } catch (err) { $('#sc').innerHTML = '<option value="">Không tải được danh sách trường</option>'; errBox($('#msg'), err); }
+  })();
   $('#f').onsubmit = async e => {
     e.preventDefault();
-    if (!schoolVal('sc')) return errBox($('#msg'), 'Em hãy chọn trường.');
-    if (!khoi) return errBox($('#msg'), 'Em hãy chọn khối.');
-    const lop = $('#lop').value;
-    if (!lop) return errBox($('#msg'), 'Em hãy chọn lớp.');
-    if (lop === '__new' && !$('#nl').value.trim()) return errBox($('#msg'), 'Em hãy nhập tên lớp.');
-    if ($('#p1').value !== $('#p2').value) return errBox($('#msg'), 'Hai lần nhập mật khẩu chưa giống nhau.');
+    if (!$('#lop').value) return errBox($('#msg'), 'Em hãy chọn trường và lớp.');
     await busy($('#f .btn'), async () => {
       try {
-        const req = { common, khoi, name: $('#n').value.trim(), username: $('#u').value, password: $('#p1').value, email: (($('#em') || {}).value || '').trim(), school: schoolVal('sc') };
-        if (lop === '__new') req.newClass = $('#nl').value.trim(); else req.code = lop;
-        const s = await api('register_hs', req);
-        setSession(s); flush(); toast('Đăng ký thành công! Chào mừng em.'); location.hash = '#/';
-      } catch (err) { errBox($('#msg'), err); dupAccBtn($('#msg')); }
+        const s = await api('register_simple', { username: $('#u').value.trim(), name: $('#n').value.trim(), code: $('#lop').value });
+        setSession(s); flush(); toast('Đăng ký thành công! Mật khẩu ban đầu là PD2026 – em hãy đặt mật khẩu riêng.'); location.hash = '#/doimk';
+      } catch (err) { errBox($('#msg'), err); }
     });
   };
 });
