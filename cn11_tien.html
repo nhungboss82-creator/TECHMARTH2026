@@ -179,6 +179,62 @@
   @media (max-height:740px){ .ctrl-sub{display:none} .sch{padding:6px 9px} }
   .vj{display:block;white-space:normal;line-height:1.35;font-style:normal;font-size:10.5px;font-weight:700;margin-top:3px;padding-left:14px;position:relative}.vj:before{content:"";position:absolute;left:2px;top:4px;width:7px;height:7px;border-radius:50%;background:currentColor}
   .vj.ok{color:#4ade80}.vj.low{color:#fbbf24}.vj.bad{color:#f87171}
+
+  /* ===== bảng điều khiển: gọn, chữ vừa đủ đọc, luôn ở bên trái, có nút thu gọn ===== */
+  #left{width:292px;bottom:auto;padding:10px 11px;gap:7px}
+  #left::-webkit-scrollbar{width:6px}
+  #left::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+  #left .lhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+  #left .lhead span{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  #lToggle{border:1px solid var(--line);background:rgba(255,255,255,.05);color:#d5dde8;font-family:inherit;font-weight:700;font-size:12px;border-radius:9px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+  #lToggle:hover{background:rgba(255,255,255,.1)}
+  #left.mini{width:auto;padding:7px 7px 7px 12px}
+  #left.mini .scroll{display:none}
+  #left.mini .lhead span{color:#dbe3ee}
+  #left .scroll{gap:8px}
+  #left .tabs{margin-bottom:6px}
+  #left .tab{font-size:12px;padding:7px 4px}
+  #left .modes{gap:5px!important}
+  #left .mode{padding:6px 7px!important;gap:7px!important}
+  #left .mode .ic{width:26px!important;height:26px!important;border-radius:8px}
+  #left .mode .ic svg{width:16px;height:16px}
+  #left .mode .t1{font-size:12.5px!important;line-height:1.22}
+  #left .card{padding:9px 10px}
+  #left .sec-h{font-size:11px}
+  #left .ctrl-h{font-size:12.5px;white-space:normal}
+  #left .ctrl-h>span{flex:1;min-width:0;line-height:1.3}
+  #left .ctrl-h>b{flex:none;white-space:nowrap;min-width:0;font-size:12.5px}
+  #left .off-tag{font-size:10px;padding:1px 6px;margin-left:5px}
+  #left .ctrl-sub{font-size:11.5px;white-space:normal}
+  #left .vbox{font-size:12px;padding:6px 9px;margin-bottom:7px}
+  #left .vbox small{font-size:11px}
+  #left .vj{font-size:11px}
+  #left .sch{font-size:12px;padding:7px 9px}
+  #left .chip{padding:6px 9px;font-size:11.5px!important}
+  #left .views{grid-template-columns:auto auto auto;gap:5px}
+  #left .vbtn{font-size:12px;padding:7px 5px;white-space:nowrap}
+  #left .status .phase{gap:8px}
+  #left .status .pass{white-space:nowrap}
+  #left .status .pchip{min-width:0;max-width:none;flex:1;white-space:normal;line-height:1.25;font-size:12px;padding-top:5px;padding-bottom:5px}
+  #left .status .read{gap:5px}
+  #left .status .rd{padding:5px;min-width:0}
+  #left .status .rd .k{font-size:10px;letter-spacing:0;text-transform:none}
+  #left .status .rd .v{font-size:14px}
+  /* gọn thêm: bớt khoảng đệm, giữ cỡ chữ */
+  #left .scroll{gap:6px}
+  #left .card{padding:7px 9px}
+  #left .sec-h{margin-bottom:5px}
+  #left .mode{padding:5px 7px!important}
+  #left .mode .ic{width:24px!important;height:24px!important}
+  #left .chip{padding:5px 8px}
+  #left .vbtn{padding:6px 5px}
+  #left .vbox{padding:5px 8px;margin-bottom:5px}
+  #left .status .pchip{padding-top:4px;padding-bottom:4px}
+  #left .bar{margin-bottom:7px}
+  #left .status .rd{padding:4px 5px}
+  .dbtn{white-space:nowrap}
+  @media (max-width:1180px){ #left{width:292px} }
+  @media (max-width:700px){ #left{top:66px;bottom:auto;left:8px;right:auto;width:262px;max-height:none} header .kicker{display:none} header .title{font-size:12px} }
 </style>
   <script>
 /**
@@ -1259,10 +1315,23 @@
 </header>
 
 <aside id="left" class="panel">
+  <div class="lhead"><span>Bảng điều khiển</span><button id="lToggle" title="Thu gọn / mở rộng bảng điều khiển">‹ Thu gọn</button></div>
   <div class="scroll">
     <div>
       <div class="sec-h"><span>Chọn nguyên công</span><span style="color:var(--amber)">6 chế độ</span></div>
       <div class="modes" id="modes"></div>
+    </div>
+
+    <div>
+      <div class="sec-h"><span>Góc nhìn</span></div>
+      <div class="views">
+        <button class="vbtn" data-v="work">Vùng cắt</button>
+        <button class="vbtn" data-v="close">Cận mũi dao</button>
+        <button class="vbtn" data-v="top">Nhìn từ trên</button>
+        <button class="vbtn" data-v="front">Nhìn chính diện</button>
+        <button class="vbtn" data-v="all">Toàn máy</button>
+        <button class="vbtn" data-v="back">Phía sau</button>
+      </div>
     </div>
 
     <div class="card">
@@ -1291,18 +1360,6 @@
         <button class="chip on" id="cCool" style="--c:#60a5fa">Dung dịch trơn nguội</button>
         <button class="chip" id="cMach" style="--c:var(--violet)">Làm mờ thân máy</button>
         <button class="chip" id="cFollow" style="--c:#fde68a">Camera bám mũi dao</button>
-      </div>
-    </div>
-
-    <div>
-      <div class="sec-h"><span>Góc nhìn</span></div>
-      <div class="views">
-        <button class="vbtn" data-v="work">Vùng cắt</button>
-        <button class="vbtn" data-v="close">Cận mũi dao</button>
-        <button class="vbtn" data-v="top">Nhìn từ trên</button>
-        <button class="vbtn" data-v="front">Nhìn chính diện</button>
-        <button class="vbtn" data-v="all">Toàn máy</button>
-        <button class="vbtn" data-v="back">Phía sau</button>
       </div>
     </div>
 
@@ -1862,7 +1919,7 @@ const MODES = {
     pass(p, k) { const r = p.rMin + this.dk(p, k); return { A: [p.xE + 0.12, r], B: [p.xR - p.relW * 0.5, r] }; },
     ret: [0, -0.045], dir: [-1, 0, 0],
     title: 'Tiện ren trong (ren đai ốc)',
-    desc: 'Lỗ được khoan, tiện trước bằng <b>đường kính đỉnh ren trong</b> (đường kính nhỏ D<sub>1</sub>). Dao ren trong mũi <b>60°</b> lắp trên cán dài, đưa vào lỗ; vít me đồng bộ chuyển động để dao tiến <b>1 bước ren P mỗi vòng</b>. Cuối lỗ có rãnh thoát dao.',
+    desc: 'Lỗ được khoan, tiện trước bằng <b>đường kính chân ren trong</b>. Dao ren trong mũi <b>60°</b> lắp trên cán dài, đưa vào lỗ; vít me đồng bộ chuyển động để dao tiến <b>1 bước ren P mỗi vòng</b>. Cuối lỗ có rãnh thoát dao.',
     steps: ['Đưa dao vào miệng lỗ, mũi dao ngang tâm, ăn dao ra phía thành lỗ.', 'Đóng đai ốc hai nửa, dao cắt rãnh xoắn vào sâu trong lỗ.', 'Tới rãnh thoát: lùi mũi dao về phía tâm, rút ra, ăn sâu thêm lượt sau.'],
     formula: () => `P = ${fmt(state.pitch, 2)} mm · Dao lùi về phía tâm khi kết thúc lượt`,
     note: 'Phôi được bổ đôi để thấy đường ren xoắn hình thành trong lỗ.'
@@ -2067,7 +2124,7 @@ function updateChips(dt, emit) {
 // ------------------------------------------------------------------ nhãn chú thích
 const labelBox = $('labels'), LABELS = [];
 function addLabel(text, cls, color, anchor, show = () => true) {
-  const el = document.createElement('div'); el.className = 'lbl ' + cls; el.style.setProperty('--c', color); el.innerHTML = text; labelBox.appendChild(el);
+  const el = document.createElement('div'); el.className = 'lbl ' + cls; el.style.setProperty('--c', color); el.innerHTML = '<span>' + text + '</span>'; labelBox.appendChild(el);
   const L = { el, anchor, show, text }; LABELS.push(L); return L;
 }
 const v3 = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -2324,7 +2381,7 @@ function updateVectors() {
     }
     setArrow(aFeed, o, d, len);
     aFeed.userData.lp = o.clone().add(d.clone().multiplyScalar(len * 0.5)).add(v3(0, 0.07, 0));
-    if (lblFeed.text !== lab) { lblFeed.el.innerHTML = lab; lblFeed.text = lab; lblFeed.el.style.setProperty('--c', md.isFace ? '#34d399' : state.mode === 'taper' ? '#a78bfa' : '#38bdf8'); }
+    if (lblFeed.text !== lab) { lblFeed.el.innerHTML = '<span>' + lab + '</span>'; lblFeed.text = lab; lblFeed.el.style.setProperty('--c', md.isFace ? '#34d399' : state.mode === 'taper' ? '#a78bfa' : '#38bdf8'); }
   }
 }
 function updateCoolant(dt, on) {
@@ -2391,8 +2448,8 @@ function updateTexts() {
   $('fNote').textContent = md.isThread ? 'tiện ren: Vc thấp' : 'đơn vị thực (mm)';
   $('kS').innerHTML = { Sd: 'S<sub>d</sub> mm/v', Sng: 'S<sub>ng</sub> mm/v', Sch: 'S<sub>ch</sub> mm/v', P: 'P mm' }[md.feed];
   $('kD').textContent = md.ext ? 'Ø mm' : 'Ø lỗ mm';
-  lblTool.el.innerHTML = { turn: 'Dao tiện ngoài (mảnh hợp kim)', thread: 'Dao tiện ren 60°', bore: 'Dao tiện lỗ cán dài', ithread: 'Dao ren trong 60°' }[md.tool];
-  lblRaw.el.innerHTML = md.ext ? 'Phôi chưa tiện' : 'Phôi ống (đã khoan lỗ)';
+  lblTool.el.innerHTML = '<span>' + { turn: 'Dao tiện ngoài (mảnh hợp kim)', thread: 'Dao tiện ren 60°', bore: 'Dao tiện lỗ cán dài', ithread: 'Dao ren trong 60°' }[md.tool] + '</span>';
+  lblRaw.el.innerHTML = '<span>' + (md.ext ? 'Phôi chưa tiện' : 'Phôi ống (đã khoan lỗ)') + '</span>';
   const ex = {
     taper: ['Bàn dao trên xoay góc α', () => v3(tip.x + 0.06, AXIS_Y - 0.2, tip.z + 0.85)],
     thread: ['Rãnh thoát dao', () => v3(P.xSh + P.relW / 2, AXIS_Y + P.Rmaj, -0.02)],
@@ -2424,14 +2481,31 @@ function updateReadouts() {
 
 function paintSliders() { document.querySelectorAll('input[type=range]').forEach(r => { const p = (r.value - r.min) / (r.max - r.min) * 100; r.style.setProperty('--p', p + '%'); }); }
 document.addEventListener('input', paintSliders);
-// tự co cột trái để vừa màn hình, không cuộn
-function fitLeft() {
-  const sc = document.querySelector('#left .scroll'), host = $('left');
-  sc.style.transform = ''; sc.style.width = '';
-  const avail = host.clientHeight - 24, need = sc.offsetHeight;
-  const k = Math.min(1, avail / need);
-  sc.style.transform = k < 1 ? `scale(${k})` : ''; sc.style.width = k < 1 ? (100 / k) + '%' : '';
+// bảng điều khiển gọn: chữ không nhỏ hơn 88%; nếu vẫn không vừa thì cho cuộn trong bảng. Máy nằm giữa khoảng trống bên phải bảng
+function updateViewCenter() {
+  const W = innerWidth, H = innerHeight; let cx = W / 2, cy = H / 2;
+  if (W > 700) {
+    const host = $('left'), left = host.classList.contains('mini') ? 0 : host.getBoundingClientRect().right;
+    const top = document.querySelector('header').getBoundingClientRect().bottom, bottom = $('dock').getBoundingClientRect().top;
+    cx = (left + W) / 2; cy = (top + bottom) / 2;
+  }
+  camera.setViewOffset(W, H, W / 2 - cx, H / 2 - cy, W, H);
 }
+function fitLeft() {
+  const host = $('left'), sc = host.querySelector('.scroll'), hd = host.querySelector('.lhead');
+  sc.style.transform = ''; sc.style.width = ''; sc.style.marginBottom = ''; host.style.maxHeight = ''; host.style.overflowY = '';
+  host.style.top = innerWidth <= 700 ? (document.querySelector('header .brand').getBoundingClientRect().bottom + 8) + 'px' : '';
+  updateViewCenter();
+  if (host.classList.contains('mini')) return;
+  const top = host.getBoundingClientRect().top, cs = getComputedStyle(host), room = innerHeight - top - (innerWidth <= 700 ? 74 : 14);
+  const avail = room - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - hd.offsetHeight - 8;
+  const h = sc.offsetHeight, need = avail / h, k = Math.min(1, Math.max(0.88, need));
+  if (k < 1) { sc.style.transform = `scale(${k})`; sc.style.width = (100 / k) + '%'; sc.style.marginBottom = (-(1 - k) * h) + 'px'; }
+  if (need < 0.88) { host.style.maxHeight = room + 'px'; host.style.overflowY = 'auto'; }
+}
+function setMini(on) { $('left').classList.toggle('mini', on); $('lToggle').textContent = on ? 'Mở rộng ›' : '‹ Thu gọn'; fitLeft(); }
+$('lToggle').onclick = () => setMini(!$('left').classList.contains('mini'));
+if (innerWidth <= 700) setMini(true);
 addEventListener('resize', fitLeft);
 // sự kiện
 $('sVc').oninput = e => { state.vc = +e.target.value; updateTexts(); };
@@ -2502,6 +2576,7 @@ function frame() {
 buildModeList();
 selectMode('turn');
 setView('work', false);
+updateViewCenter();
 frame();
 window.__lathe = { ff(sec) { const h = 0.02; for (let t = 0; t < sec; t += h) { state.theta += TAU * revPerSec() * h; stepProgram(h); } }, state, MODES, selectMode, setView, get prog() { return prog; }, get P() { return P; }, tip };
 })();

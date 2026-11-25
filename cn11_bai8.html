@@ -6,7 +6,7 @@
 <title>Bài 8. Một số phương pháp gia công cơ khí – Công nghệ 11</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&display=swap">
 <style>
-/* Khung gộp Bài 8: thanh chọn Tiện | Phay ở trên, bài gốc (giữ nguyên 100%) chiếm phần còn lại */
+/* Khung gộp Bài 8: thanh chọn Khoan | Tiện | Phay ở trên, bài gốc (giữ nguyên 100%) chiếm phần còn lại */
 :root{--paper:#f2f6fb;--panel:#fff;--ink:#14213a;--muted:#5b6985;--line:#d8e1ee;--accent:#1d4ed8;--accent-ink:#fff}
 @media (prefers-color-scheme:dark){:root{--paper:#0d1424;--panel:#151e34;--ink:#e7eeff;--muted:#98a7c6;--line:#27334f;--accent:#60a5fa;--accent-ink:#0b1424}}
 *{box-sizing:border-box}
@@ -31,6 +31,7 @@ main iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background
 <header class="bar">
   <div class="ttl"><small>Công nghệ 11</small><b>Bài 8. Một số phương pháp gia công cơ khí</b></div>
   <nav class="tabs" aria-label="Chọn phương pháp gia công">
+    <a class="tab" href="#khoan" data-k="khoan">🪛 Phương pháp khoan</a>
     <a class="tab" href="#tien" data-k="tien">🔩 Phương pháp tiện</a>
     <a class="tab" href="#phay" data-k="phay">⚙️ Phương pháp phay</a>
   </nav>
@@ -40,14 +41,14 @@ main iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background
 (function () {
   "use strict";
   /* Mỗi phần là file bài học gốc, không sửa nội dung; chỉ mở một phần tại một thời điểm để máy chiếu chạy nhẹ */
-  var FILES = { tien: "cn11_tien.html", phay: "cn11_phay.html" }, cur = null, host = document.getElementById("m");
+  var FILES = { khoan: "cn11_khoan.html", tien: "cn11_tien.html", phay: "cn11_phay.html" }, cur = null, host = document.getElementById("m");
   function show(k) {
-    if (!FILES[k]) k = "tien";
+    if (!FILES[k]) k = "khoan";
     if (k === cur) return; cur = k;
     document.querySelectorAll(".tab").forEach(function (t) { if (t.dataset.k === k) t.setAttribute("aria-current", "page"); else t.removeAttribute("aria-current"); });
     host.innerHTML = "";
     var f = document.createElement("iframe");
-    f.src = FILES[k] + "?v=20261110b"; f.title = k === "tien" ? "Phương pháp tiện" : "Phương pháp phay";
+    f.src = FILES[k] + "?v=20261125a"; f.title = { khoan: "Phương pháp khoan", tien: "Phương pháp tiện", phay: "Phương pháp phay" }[k];
     f.setAttribute("allow", "fullscreen; autoplay");
     host.appendChild(f);
     f.addEventListener("load", function () {
