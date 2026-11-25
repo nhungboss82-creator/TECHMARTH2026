@@ -476,7 +476,8 @@ function fan(p, R, blades, m, axis = 'x') { // quạt cánh cong, quay quanh tr�
   for (let i = 0; i < blades; i++) { const h = group(g); h.rotation.x = i * TAU / blades; const b = M(bg, m, h); b.rotation.y = .42; }
   return g;
 }
-function tempColor(T, out) { const k = clamp((T - 35) / 60, 0, 1); return (out || new THREE.Color()).setHSL((215 - 215 * k) / 360, .85, .5); }
+let _tcC = null, _tcH = null;
+function tempColor(T, out) { if (!_tcC) { _tcC = new THREE.Color(0x1e88e5); _tcH = new THREE.Color(0xe53935); } const k = clamp((T - 35) / 60, 0, 1); return (out || new THREE.Color()).copy(_tcC).lerp(_tcH, k); } // nguội: xanh dương → nóng: đỏ (không qua màu xanh lá – đúng chú thích)
 // Van (dạng bi – lò xo, nhìn được bên trong)
 function valve(p, x, y, z, axis = 'y', color = 0xd6a02b) {
   const g = group(p, x, y, z);
@@ -1086,7 +1087,7 @@ const OIL = 0xf2a516, OIL_HOT = 0xff4d1a;
 
 // van an toàn bơm dầu: kiểu pít tông (con trượt) – lò xo cứng – nút ren điều chỉnh áp suất mở
 function reliefValve(p, x, y, z, flip) {
-  const g = group(p, x, y, z), a = group(g, 0, 0, 0); if (flip) a.rotation.z = Math.PI;
+  const g = group(p, x, y, z), a = group(g, 0, 0, 0); if (flip === 'x') a.rotation.z = -Math.PI / 2; else if (flip) a.rotation.z = Math.PI; // 'x': nằm ngang, dầu vào từ bên trái
   cyl(.15, .46, MT.glass(0xffffff, .3), a, 0, 0, 0, 'y', 24);                                        // lỗ xi lanh van trong thân bơm
   cyl(.155, .05, MT.cast(0x8d949b), a, 0, -.21, 0, 'y', 24);                                          // cửa dầu vào (phía áp suất cao)
   const pl = cyl(.105, .15, MT.steel(0xd5dbe0), a, 0, -.12, 0, 'y', 24);                               // pít tông van
@@ -1124,14 +1125,13 @@ MODELS.lub = {
     const R = this.R = { ang: 0, raw: 3.0, temp: 85, o4: 0, o5: 0, o7: 0 };
     const E = R.E = engineR({ oil: true, oilShell: false, tagY: -1.7, glow: false, fire: true }); E.oil.material.opacity = .4; E.oil.userData.see = true; // dầu trong các te không bị cắt bổ → thấy lưới lọc, bơm chìm trong dầu
     E.pan.scale.x = 4.3 / 3.9; E.pan.position.x = -.2; E.oil.scale.x = 4.15 / 3.8; E.oil.position.x = -.18; // các te kéo dài về phía trước, chứa trọn bơm dầu
-    E.oil.scale.y = .6 / .42; E.oil.position.y = -1.08; // mặt dầu ≈ -0,78: thìa vung dầu ở đầu to thanh truyền nhúng được vào dầu
-    E.rods.forEach(rd => { box(.05, .42, .1, MT.steel(0x8d949b), rd, 0, -E.L / 2 - .36, 0); box(.12, .04, .14, MT.steel(0x8d949b), rd, 0, -E.L / 2 - .57, .03); }); // thìa vung dầu
+    E.oil.scale.y = .6 / .42; E.oil.position.y = -1.08; // mặt dầu ≈ -0,78
     const gal = (pts, r = .055) => { const c = rpath(pts, .14); return { c, m: pipe(c, r, 0xd99a1e, { op: .55 }) }; };
     const line = (pts, r = .06) => { const c = rpath(pts, .16); return { c, m: pipe(c, r, 0x8f949a, { op: .45 }) }; };
     const W = (o, p) => [o[0] + p[0], o[1] + p[1], o[2] + (p[2] || 0)];
     part(1, 'Các te', '', [E.pan, E.oil], [1.2, -1.25, .85]);
     // 2. lưới lọc: chụp hút có lưới, nằm chìm gần đáy các te (dưới mặt dầu)
-    const st = group(null, -1.45, -1.31, .35);
+    const SX = -1.05, st = group(null, SX, -1.31, .35);
     M(new THREE.CylinderGeometry(.27, .27, .09, 32, 1, true), MT.steel(0x7d868f), st); cyl(.27, .012, MT.steel(0x6d747b), st, 0, .045, 0, 'y', 32);
     M(new THREE.CircleGeometry(.26, 32).rotateX(Math.PI / 2), mat(0x2b2b2b, { wireframe: true }), st, 0, -.044, 0);
     M(new THREE.CylinderGeometry(.26, .26, .08, 24, 3, true), mat(0x3a3a3a, { wireframe: true }), st, 0, 0, 0);
@@ -1141,7 +1141,7 @@ MODELS.lub = {
     // ---- 3. Bơm dầu kiểu bánh răng ăn khớp ngoài, đặt trong các te; nắp trước trong suốt để thấy hai bánh răng ----
     // ---- 3. Bơm dầu kiểu bánh răng ăn khớp ngoài: đặt trong các te, trục song song trục khuỷu, dẫn động bằng xích từ trục khuỷu;
     //      mặt trước có nắp trong suốt để thấy hai bánh răng; van an toàn (4) đặt ngay trên thân bơm, nối cửa ra với cửa hút ----
-    const K = 1.3, CSX = -2.22, PX = CSX + .15 * K, PY = -.79, PZ = .15, hc = .13, Rh = .21, Ri = .16, kk = Math.sqrt(Rh * Rh - hc * hc); // K: phóng to bơm cho dễ quan sát
+    const K = 1.3, CSX = -1.95, PX = CSX + .15 * K, PY = -.79, PZ = .15, hc = .13, Rh = .21, Ri = .16, kk = Math.sqrt(Rh * Rh - hc * hc); // K: phóng to bơm cho dễ quan sát
     const PW = q => [PX + q[2] * K, PY + q[1] * K, PZ + q[0] * K]; // toạ độ riêng của bơm → toạ độ chung (nắp kính quay vào trong, đĩa xích ở phía trước – trong hộp xích đầu trục khuỷu)
     const fig8 = (r, C = THREE.Shape) => { const s = new C(), b = Math.acos(hc / r); s.absarc(-hc, 0, r, b, TAU - b, false); s.absarc(hc, 0, r, Math.PI + b, 3 * Math.PI - b, false); return s; };
     const ext = (s, d, bev = 0) => { const g = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: bev > 0, bevelSize: bev, bevelThickness: bev, bevelSegments: 2, curveSegments: 24 }); g.translate(0, 0, -d / 2); return g; };
@@ -1170,20 +1170,19 @@ MODELS.lub = {
       R.chain = M(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(hull, true), 160, .016, 6, true), MT.dark(0x2f3237), null);
       label(0, 'Xích dẫn động bơm', [CSX, -.35, -.35], { near: 9 });
     }
-    part(3, 'Bơm', 'Bơm bánh răng ăn khớp ngoài, đặt trong các te, được trục khuỷu dẫn động qua xích; hai bánh răng quay ngược chiều, mang dầu theo rãnh răng sát vỏ từ cửa hút (dưới) lên cửa ra (trên).', pu, [-1.7, -1.62, 1.0]);
+    part(3, 'Bơm', 'Bơm bánh răng ăn khớp ngoài, đặt trong các te (dưới đầu trục khuỷu), được trục khuỷu dẫn động qua xích; hai bánh răng quay ngược chiều, mang dầu theo rãnh răng sát vỏ từ cửa hút (dưới) lên cửa ra (trên).', pu, [-1.45, -1.65, 1.0]);
     // dầu bị các rãnh răng mang theo sát vỏ bơm, từ cửa hút (dưới) lên cửa ra (trên)
     const pumpLane = sx => { const p = [[0, -kk - .09, 0]]; for (let a = -50; a >= -310; a -= 26) { const A = a * Math.PI / 180; p.push([sx * (-hc + .132 * Math.cos(A)), .132 * Math.sin(A), .02]); } p.push([0, kk + .09, 0]); return scurve(p.map(q => PW(q))); };
     // 2. lưới lọc đặt dưới, phía sau bơm; ống hút nối vào cửa hút
-    const pick = line([[-1.45, -1.25, .35], [-1.45, -1.19, .35], [PX, -1.19, .35], [PX, -1.19, PZ], [PX, PY - (kk + .11) * K, PZ]], .065);
+    const pick = line([[SX, -1.25, .35], [SX, -1.19, .35], [PX, -1.19, .35], [PX, -1.19, PZ], [PX, PY - (kk + .11) * K, PZ]], .065);
     label(0, 'Ống hút dầu', [-1.7, -1.45, .8], { near: 10 });
-    // 4. van an toàn bơm dầu: lắp trên thân bơm, bên cạnh hai bánh răng; nối từ cửa ra về cửa hút
-    const VX = hc + Rh + .1;
-    R.v4 = reliefValve(pu, VX, 0, 0, true); R.v4.g.scale.setScalar(.74);   // cửa vào ở trên (nối cửa ra của bơm), dầu xả xuống cửa hút
-    rbox(.12, .4, .16, .03, MT.cast(0x9aa1a8), pu, VX - .07, 0, -.06);                                     // gờ thân bơm giữ van
-    const v4L = [[0, kk + .06, -.03], [VX * .55, kk + .06, -.03], [VX, kk + .06, -.03], [VX, .12, -.03]], v4R = [[VX, -.12, -.03], [VX, -kk - .06, -.03], [VX * .55, -kk - .06, -.03], [0, -kk - .06, -.03]];
-    [v4L, v4R].forEach(q => pipe(rpath(q.map(PW), .05), .03, 0x8f949a, { op: .45 }));
-    const v4 = { c: rpath(v4L.concat(v4R).map(PW), .05) };
-    part(4, 'Van an toàn bơm dầu', 'Kiểu pít tông – lò xo cứng, có nút ren điều chỉnh áp suất mở; lắp ngay trên thân bơm. Mở khi áp suất dầu sau bơm vượt ≈ 4,5 kG/cm² (thường 4 – 5 kG/cm²), cho một phần dầu từ cửa ra quay về cửa hút của bơm.', R.v4.g, [-2.65, -.3, 1.15]);
+    // 4. van an toàn bơm dầu: nằm ngang phía trên bơm (như Hình 20.2) – nhánh rẽ từ đường dầu ra của bơm, qua van rồi quay về ống hút (trước bơm)
+    const V4Y = .05, V4R = -1.3, V4Z = 1.25;
+    R.v4 = reliefValve(null, (PX + V4R) / 2, V4Y, V4Z, 'x'); R.v4.g.scale.setScalar(.62);
+    const v4pts = [[PX, V4Y, V4Z], [V4R, V4Y, V4Z], [V4R, -1.0, V4Z], [V4R, -1.0, .35], [V4R, -1.19, .35]];
+    pipe(rpath(v4pts, .1), .03, 0x8f949a, { op: .45 });
+    const v4 = { c: rpath(v4pts, .1) };
+    part(4, 'Van an toàn bơm dầu', 'Kiểu pít tông – lò xo cứng, có nút ren điều chỉnh áp suất mở; mắc từ đường dầu ra của bơm về ống hút (trước bơm). Mở khi áp suất dầu sau bơm vượt ≈ 4,5 kG/cm² (thường 4 – 5 kG/cm²), cho một phần dầu từ cửa ra quay về cửa hút của bơm.', R.v4.g, [(PX + V4R) / 2 + .1, .55, 1.45]);
 
     // ---- 6. Lọc dầu kiểu cốc: đế lọc bắt vào thân máy, vỏ thép sơn, lõi giấy xếp nếp, ống trung tâm đục lỗ; cắt một phần để thấy bên trong ----
     // bố trí các chi tiết bên ngoài theo sơ đồ Hình 20.2 SGK, trên mặt phẳng phía trước động cơ (z = ZS): két (8) – van (7) – lọc (6) – bơm (3)
@@ -1209,7 +1208,13 @@ MODELS.lub = {
     const rp = [[.05, -.27], [.17, -.27], [.2, -.245], [.21, .19], [.185, .245], [.06, .265]].map(([a, b]) => new THREE.Vector2(a, b));
     M(new THREE.LatheGeometry(rp, 40), mat(0xc0c6cc, { metalness: .6, roughness: .3, transparent: true, opacity: .32, depthWrite: false, side: THREE.DoubleSide }), R.rotor); // vỏ rô to (trong suốt để thấy bên trong)
     for (let k = 0; k < 8; k++) { const a = k * TAU / 8; box(.012, .4, .02, MT.steel(0x9aa1a8), R.rotor, Math.sin(a) * .212, -.02, Math.cos(a) * .212).rotation.y = a; } // gân rô to (thấy rô to quay)
-    R.sludge = M(new THREE.CylinderGeometry(.2, .2, .4, 32, 1, true), mat(0x4e342e, { transparent: true, opacity: .25, depthWrite: false, side: THREE.DoubleSide }), R.rotor, 0, -.03, 0); // cặn bẩn bám thành rô to
+    R.sludge = M(new THREE.CylinderGeometry(.2, .2, .4, 32, 1, true), mat(0x1c1612, { transparent: true, opacity: .25, depthWrite: false, side: THREE.DoubleSide }), R.rotor, 0, -.03, 0); // cặn bẩn bám thành rô to
+    // đáy bầu lọc: lớp cặn đen + các hạt sạn nhỏ màu đen lắng ở đáy rô to và đáy vỏ
+    cyl(.195, .035, mat(0x0d0b0a, { roughness: .95 }), R.rotor, 0, -.25, 0, 'y', 32); cyl(.25, .03, mat(0x111010, { roughness: .95 }), fi, 0, -.375, 0, 'y', 32);
+    { const n = 150, grit = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.011, 0), mat(0x050505, { roughness: 1 }), n), m4 = new THREE.Matrix4();
+      for (let i = 0; i < n; i++) { const a = Math.random() * TAU, onWall = i % 3 > 0, r = onWall ? .19 - Math.random() * .015 : Math.sqrt(Math.random()) * .18, y = onWall ? -.23 + Math.pow(Math.random(), 2) * .3 : -.228;
+        const sc = .6 + Math.random() * 1.1; m4.makeScale(sc, sc, sc).setPosition(Math.cos(a) * r, y, Math.sin(a) * r); grit.setMatrixAt(i, m4); }
+      R.rotor.add(grit); }
     cyl(.055, .46, mat(0xd5d9dd, { transparent: true, opacity: .45, metalness: .5 }), R.rotor, 0, 0, 0, 'y', 20);                  // ống giữa (dầu sạch đi lên)
     [0, Math.PI].forEach(a => { const nz = group(R.rotor, Math.cos(a) * .15, -.27, -Math.sin(a) * .15); nz.rotation.y = a;
       cyl(.022, .1, MT.copper(0xc9a227), nz, 0, 0, .04, 'z', 12); });                                            // 2 lỗ phun (vòi phun tiếp tuyến)
@@ -1224,18 +1229,18 @@ MODELS.lub = {
     const drain = line([[FX, CY - .4, FZ], [FX, -.62, FZ], [-2.2, -.62, FZ], [-2.2, -.62, .6], [-2.2, -.75, .6]], .045);
     label(0, 'Dầu từ lỗ phun về các te', [FX + .55, -.5, FZ + .1], { near: 7.5 });
     R.v5 = ballValve(null, FX, -.85, FZ, true);                                                                   // van (5) nằm dưới bầu lọc, nối tắt từ đường dầu của bơm sang đường ra của lọc
-    const v5 = line([[PX, -.3, FZ], [PX, -.85, FZ], [FX - .55, -.85, FZ], [FX - .55, FY, FZ]], .04);
+    const v5 = line([[PX, -.3, FZ], [PX, -.85, FZ], [TX, -.85, FZ], [TX, FY, FZ]], .04);                       // nối vào chân đường đứng có van (7)
     part(5, 'Van an toàn lọc dầu', 'Kiểu van bi – lò xo yếu. Mở khi lọc bị tắc, chênh lệch áp suất trước – sau lọc khoảng 0,6 – 1 kG/cm²; dầu đi tắt lên đường dầu chính.', R.v5.g, [FX - .75, -1.05, FZ + .1]);
 
     // ---- 7. Van khống chế: nằm trên đường thẳng từ lọc vào đường dầu chính; két (8) mắc song song với van ----
     R.v7 = valve(null, TX, .65, FZ, 'y');                                                                          // van (7) trên đường đứng từ lọc lên đường dầu chính
-    part(7, 'Van khống chế lưu lượng dầu qua két làm mát', 'Dầu nguội: van mở, dầu đi thẳng lên đường dầu chính. Dầu quá nóng (khoảng 80 °C – theo SGK): van đóng một phần, dầu phải đi qua két làm mát (8).', R.v7.g, [TX + .1, .45, FZ + .3]);
+    part(7, 'Van khống chế lưu lượng dầu qua két làm mát', 'Dầu nguội: van mở, dầu đi thẳng lên đường dầu chính. Dầu quá nóng (khoảng 80 °C – theo SGK): van đóng một phần, dầu phải đi qua két làm mát (8).', R.v7.g, [TX + .5, 1.28, FZ + .3]);
     const fOut = gal([[FX - .36, FY, FZ], [TX, FY, FZ]]);                                                         // đường ra của lọc → chỗ rẽ T1
     const v7m = gal([[TX, FY, FZ], [TX, GY, FZ]]);                                                                 // đường đứng qua van (7) → chỗ rẽ T2
 
     // ---- 8. Két làm mát dầu: đặt ở phía trước động cơ, mặt két đón gió thổi từ trước ra sau (như két nước); giàn ống dẹt xen cánh tản nhiệt, hai bình hai bên ----
     // két đặt đứng phía trước động cơ (như két nước), mặt két quay về phía trước đón gió
-    const KX = -4.07, KY = .65, KZ = ZS, KW = .7, KH = .9, KT = .15, nT = 6, pt = KH / nT, tth = .042, KA = 0, ka = Math.cos(KA), kb = Math.sin(KA);
+    const KX = -3.8, KY = .65, KW = 1.25, KH = 1.3, KZ = ZS - (KW / 2 + .22), KT = .2, nT = 8, pt = KH / nT, tth = .042, KA = -Math.PI / 2, ka = Math.cos(KA), kb = Math.sin(KA);
     const kg = group(null, KX, KY, KZ), sideM = MT.alu(0xb4bac1); kg.rotation.y = KA;             // toạ độ riêng: x dọc chiều rộng két, z vuông góc mặt két
     const KW2 = (l) => [KX + l[0] * ka + l[2] * kb, KY + l[1], KZ - l[0] * kb + l[2] * ka];       // đổi toạ độ riêng của két → toạ độ chung
     const ftex = finTex(); ftex.wrapS = ftex.wrapT = THREE.RepeatWrapping; ftex.repeat.set(KW / .3, (pt - tth) / .3);
@@ -1252,22 +1257,22 @@ MODELS.lub = {
     [-1, 1].forEach(sd => rbox(.1, KH + .1, KT + .06, .04, tkM, kg, sd * (KW / 2 + .05), 0, 0));
     box(.104, .012, KT + .064, MT.dark(0x55585e), kg, KW / 2 + .05, 0, 0);    // vách ngăn trong bình phải (2 lượt dầu): vào ở trên, ra ở dưới
     [.3, -.3].forEach(y => { cyl(.045, .12, MT.alu(), kg, KW / 2 + .16, y, 0, 'x', 16); cyl(.062, .04, MT.steel(0xa7aeb5), kg, KW / 2 + .12, y, 0, 'x', 6); });
-    part(8, 'Két làm mát', '', kg, [KX - .1, KY + 1.05, KZ + .1]);
+    part(8, 'Két làm mát', '', kg, [KX - .35, KY + 1.15, KZ]);
     // dầu nóng từ sau bầu lọc (trước van 7) → cửa vào ở dưới két; dầu đã làm mát ra ở trên két → vào thẳng đường dầu chính (10)
     // dầu nóng: từ chỗ rẽ ngay sau bầu lọc đi lên, chạy thẳng sang cửa vào ở trên két; dầu đã làm mát: ra ở dưới két, chạy về vào đường dầu chính (10)
     // két (8) mắc song song với van (7): dầu từ chỗ rẽ T1 vào ở dưới két, ra ở trên két về chỗ rẽ T2 (như Hình 20.2)
     const cE = KW / 2 + .22, Ci = KW2([cE, -.3, 0]), Co = KW2([cE, .3, 0]);
-    const cIn = rpath([[TX, FY, FZ], Ci]), cRet = rpath([Co, [TX, GY, FZ]]);
+    const cIn = rpath([[TX, FY, FZ], Ci]), cRet = rpath([Co, [TX, GY, FZ]]);  // két quay 90°: hai đầu nối nằm đúng trên mặt phẳng sơ đồ
     const mIn = pipe(cIn, .05, 0x5f6368, { op: .45 }), mRet = pipe(cRet, .05, 0x5f6368, { op: .45 });
-    part('_kin', 'Đường dầu đến két làm mát', 'Khi dầu nóng (van 7 đóng), dầu sau bầu lọc theo đường này sang két làm mát (8).', mIn, [TX - .45, FY - .3, FZ + .2]);
+    part('_kin', 'Đường dầu đến két làm mát', 'Khi dầu nóng (van 7 đóng), dầu sau bầu lọc theo đường này sang két làm mát (8).', mIn, [TX - .25, FY - .35, FZ + .3]);
     part('_kret', 'Đường dầu từ két làm mát về', 'Dầu đã được làm nguội ở két (8) theo đường này trở về, nhập vào đường dầu chính (10).', mRet, [TX - .3, GY + .2, FZ + .45]);
     [.3, -.3].forEach(y => clamp2(kg, cE - .03, y, 0, .05, 'x'));
 
     const m10f = gal([[TX, GY, FZ], [-2.2, GY, FZ], [-2.2, GY, .55], [-2.0, GY, .55]], .07), m10b = gal([[-2.0, GY, .55], [2.0, GY, .55]], .07);
     part(10, 'Đường dầu chính', 'Lỗ khoan dọc thành thân máy, phía trên trục khuỷu; từ đây dầu theo các đường dầu phụ xuống các cổ trục khuỷu (11) và lên nắp máy (12), (13). Mô hình vẽ thành ống trong suốt để dễ quan sát dòng dầu.', [m10f.m, m10b.m], [2.35, .7, .95]);
     gal([[TX, GY, FZ], [TX, 1.42, FZ]], .03); // ống dẫn lên đồng hồ: chứa dầu có áp suất, dầu không chảy qua
-    R.gauge = gauge(null, TX, 1.78, FZ, 8, 5, 'kG/cm²');
-    part(9, 'Đồng hồ báo áp suất dầu', 'Đầu đo lắp vào đường dầu chính trên thân máy; đồng hồ đặt trên bảng đồng hồ trước người lái (mô hình vẽ gần động cơ để dễ quan sát).', R.gauge.g, [TX + .2, 2.4, FZ]);
+    R.gauge = gauge(null, TX, 1.62, FZ, 8, 5, 'kG/cm²'); R.gauge.g.scale.setScalar(.65); // đồng hồ nhỏ lại
+    part(9, 'Đồng hồ báo áp suất dầu', 'Đầu đo lắp vào đường dầu chính trên thân máy; đồng hồ đặt trên bảng đồng hồ trước người lái (mô hình vẽ gần động cơ để dễ quan sát).', R.gauge.g, [TX + .2, 2.15, FZ]);
     const l11 = [-2, -1, 0, 1, 2].map(x => gal([[x, GY, .55], [x, GY, .3], [x, .45, .3], [x, .19, .06]], .04)); // khoan qua vách ngăn xuống ổ trục chính
     part(11, 'Đường dầu phụ', '', l11.map(o => o.m), [1.2, -.35, .9], { at: [1, .3, .3] });
     const l12 = gal([[-2.0, GY, .55], [-2.04, GY, .62], [-2.04, 2.22, .62], [-2.04, 2.22, .26], [1.8, 2.22, .26]], .045);
@@ -1299,12 +1304,11 @@ MODELS.lub = {
       R.f['k' + i] = flow(rpath([KW2([a[0], a[1], 0]), KW2([b[0], b[1], 0])]), { key: 'v7cool', n: 7, size: .026, speed: .5, on: false, colorAt: t => mix(up ? t * .5 : .5 + t * .5) }); });
     R.f.kL = flow(rpath([KW2([-KW / 2 - .05, .3, 0]), KW2([-KW / 2 - .05, -.3, 0])]), { key: 'v7cool', n: 5, size: .03, speed: .5, on: false, colorAt: () => mix(.5) });
     // gió (do xe chạy / quạt) thổi qua mặt két từ trước ra sau
-    [-.3, -.1, .1, .3].forEach(y => [-.2, .2].forEach(x => flow(rpath([KW2([x, y, .9]), KW2([x, y, -.5])]), { key: 'kair', color: 0x9ad7f5, n: 4, size: .03, speed: .7 })));
+    [-.45, -.15, .15, .45].forEach(y => [-.35, 0, .35].forEach(x => flow(rpath([KW2([x, y, .9]), KW2([x, y, -.4])]), { key: 'kair', color: 0x9ad7f5, n: 4, size: .03, speed: .7 })));
     l11.forEach((o, i) => R.f['l11' + i] = flow(o.c, { key: 'l11', colorAt: mc, n: 4, speed: .8 }));
-    // dầu bị thìa vung dầu hắt lên thành xi lanh, chốt pít tông (bôi trơn kiểu vung té)
-    R.splash = E.xs.map(x => [[-.3, -.32], [.25, -.28], [-.05, .34], [.32, .3]].map(([dx, z0]) => flow(scurve([[x + dx * .2, -.8, z0 * .4], [x + dx * .5, -.35, z0 * .9], [x + dx * .9, .1, z0 * 1.15], [x + dx * 1.1, .5, z0 * 1.2]]), { key: 'splash', color: OIL, n: 5, size: .04, speed: 2.4, on: false })));
-    label(0, 'Thìa vung dầu', E.rods[0], { off: [-.55, -.95, .45], near: 7.5 });
-    [0, 1.6, 3.2, 4.7].forEach((a, i) => R.f['suck' + i] = flow(rpath([[-1.45 + Math.cos(a) * .55, -1.31, .35 + Math.sin(a) * .3], [-1.45 + Math.cos(a) * .2, -1.31, .35 + Math.sin(a) * .12], [-1.45, -1.24, .35]]), { key: 'pick', color: OIL, n: 4, size: .04, speed: .6 })); // dầu trong các te bị hút vào lưới lọc
+    // dầu rỉ ra ở chốt khuỷu bị văng ra khi trục khuỷu quay, hắt lên thành xi lanh, chốt pít tông (bôi trơn kiểu vung té)
+    R.splash = E.xs.map(x => [[-.3, -.32], [.25, -.28], [-.05, .34], [.32, .3]].map(([dx, z0]) => flow(scurve([[x + dx * .2, -.38, z0 * .4], [x + dx * .5, -.2, z0 * .9], [x + dx * .9, .1, z0 * 1.15], [x + dx * 1.1, .5, z0 * 1.2]]), { key: 'splash', color: OIL, n: 5, size: .04, speed: 2.4, on: false })));
+    [0, 1.6, 3.2, 4.7].forEach((a, i) => R.f['suck' + i] = flow(rpath([[SX + Math.cos(a) * .55, -1.31, .35 + Math.sin(a) * .3], [SX + Math.cos(a) * .2, -1.31, .35 + Math.sin(a) * .12], [SX, -1.24, .35]]), { key: 'pick', color: OIL, n: 4, size: .04, speed: .6 })); // dầu trong các te bị hút vào lưới lọc
     // dầu sau khi bôi trơn rỉ ra ở các cổ trục, đầu to thanh truyền rồi nhỏ giọt rơi xuống các te (rơi nhanh dần)
     R.ripple = [];
     [-2, -1, 0, 1, 2].forEach((x, i) => [.13, -.1].forEach((z, j) => { const k = i * 2 + j;
@@ -1322,7 +1326,7 @@ MODELS.lub = {
     const R = this.R, k = Math.min(1, dt * 2.2);
     R.ang += dt * TAU * .9 * Math.min(S.rpm, 1.6); R.E.set(R.ang);
     R.ripple.forEach((r, i) => { const ph = (R.tR = (i ? R.tR : (R.tR || 0) + dt)) * 1.15 + i * .37, f = ph % 1; r.scale.setScalar(.3 + f * 1.7); r.material.opacity = .5 * (1 - f); }); // gợn sóng chỗ giọt dầu rơi xuống mặt dầu
-    R.splash.forEach((fl, i) => { const nb = Math.cos(R.ang + R.E.ph[i]) < -.82; fl.forEach(x => { x.target = nb ? 1 : 0; }); }); // thìa vung dầu nhúng vào dầu ở gần điểm chết dưới → hắt dầu lên
+    R.splash.forEach((fl, i) => { const nb = Math.cos(R.ang + R.E.ph[i]) < -.82; fl.forEach(x => { x.target = nb ? 1 : 0; }); }); // chốt khuỷu ở gần điểm thấp nhất: dầu văng raới → hắt dầu lên
     R.g1.rotation.z = -R.ang * .82; R.g2.rotation.z = R.ang * .82 + TAU / 20; // tỉ số truyền xích ≈ 0,82 // bánh trái quay thuận chiều kim đồng hồ: dầu được mang theo sát vỏ từ cửa hút lên cửa ra
     const raw = S.cs === 'press' ? 6.9 : (.8 + 1.5 * S.rpm * 1.5) * clamp(1 + (85 - R.temp) * .006, .85, 1.3); // áp suất dầu tăng theo số vòng quay: ≈ 2 kG/cm² ở 800 v/ph, ≈ 3–4 kG/cm² ở 1500–2000 v/ph
     R.raw += (raw - R.raw) * k;
@@ -1339,15 +1343,15 @@ MODELS.lub = {
     f.v5.target = R.o5; f.v4.target = R.o4; f.v7main.target = 1 - .85 * R.o7;
     Object.values(f).forEach(x => { if (x.key === 'filt' || x.key === 'drain') x.target = 1 - R.o5; else if (x.key === 'v7cool') x.target = R.o7; });
     Object.values(f).forEach(x => x.mul = S.rpm * (x.key === 'filt' ? 1 - .6 * R.o5 : 1));
-    hud('p', `${P.toFixed(1)}<small>kG/cm²</small>`, P / 8, P > 5.05 ? '<span style="color:#e53935">Vượt giá trị cho phép</span>' : P < 1 ? '<span style="color:#f59e0b">Áp suất thấp</span>' : 'Bình thường (≈ 1,5 – 4,5 kG/cm²)', P > 5.05 ? '#e53935' : '#1f9d55');
+    hud('p', `${P.toFixed(1)}<small>kG/cm²</small>`, P / 8, P > 5.05 ? '<span style="color:#e53935">Vượt giá trị cho phép – van (4) mở, dầu quay về trước bơm</span>' : R.o4 > .05 ? '<span style="color:#f59e0b">Quá cao – van (4) mở, dầu quay về trước bơm</span>' : P < 1 ? '<span style="color:#f59e0b">Áp suất thấp</span>' : 'Bình thường (≈ 1,5 – 4,5 kG/cm²)', P > 5.05 ? '#e53935' : R.o4 > .05 ? '#f59e0b' : '#1f9d55');
     hud('t', `${Math.round(R.temp)}<small>°C</small>`, (R.temp - 40) / 90, R.temp > 120 ? '<span style="color:#e53935">Dầu quá nóng</span>' : R.temp >= 80 ? 'Quá nóng (≥ 80 °C) – dầu đi qua két làm mát' : 'Dưới 80 °C – dầu đi thẳng qua van (7)', R.temp > 100 ? '#ff4d1a' : '#f2a516');
     const st = (o, a, b) => o > .1 ? `<b style="color:#1f9d55">${a}</b>` : b;
     hud('v', '', null, `Van (4): ${st(R.o4, 'mở', 'đóng')} · Van (5): ${st(R.o5, 'mở', 'đóng')}<br>Van (7): ${R.o7 > .1 ? '<b style="color:#ff7a1a">đóng bớt</b>' : 'mở thông'}`);
   },
   steps: [
-    { t: 'Bơm (3): hai bánh răng ăn khớp quay ngược chiều, hút dầu từ các te (1) qua lưới lọc (2), mang dầu theo rãnh răng sát vỏ bơm rồi đẩy lên.', hl: [1, 2, 3], focus: ['pick'], set: { cs: 'normal', rpm: 1, oilT: 70 }, view: { pos: [1.4, .1, 2.6], target: [-1.9, -.75, .2], size: [3.2, 1.9] }, dur: 8 },
+    { t: 'Bơm (3): hai bánh răng ăn khớp quay ngược chiều, hút dầu từ các te (1) qua lưới lọc (2), mang dầu theo rãnh răng sát vỏ bơm rồi đẩy lên.', hl: [1, 2, 3], focus: ['pick'], set: { cs: 'normal', rpm: 1, oilT: 70 }, view: { pos: [1.6, .1, 2.7], target: [-1.65, -.6, .3], size: [3.4, 2.1] }, dur: 8 },
     { t: 'Dầu qua bầu lọc ly tâm (6): rô to quay nhanh, cặn bẩn văng ra bám vào thành rô to; dầu sạch qua van (7) vào đường dầu chính (10).', hl: [6, 7, 10], focus: ['p2f', 'filt', 'jet', 'drain', 'v7main', 'main'], set: { cs: 'normal' } },
-    { t: 'Dầu theo các đường dầu phụ (11), (12), (13) đến cổ trục khuỷu, chốt khuỷu, trục cam… Thìa vung dầu ở đầu to thanh truyền nhúng vào dầu, hắt dầu lên thành xi lanh (vung té). Dầu chảy về các te (1).', hl: [11, 12, 13, 1], focus: ['main', 'l11', 'l12', 'l13', 'l14', 'drip'], set: { cs: 'normal' } },
+    { t: 'Dầu theo các đường dầu phụ (11), (12), (13) đến cổ trục khuỷu, chốt khuỷu, trục cam… Dầu ở chốt khuỷu văng ra khi trục khuỷu quay, hắt lên thành xi lanh (vung té). Dầu chảy về các te (1).', hl: [11, 12, 13, 1], focus: ['main', 'l11', 'l12', 'l13', 'l14', 'drip'], set: { cs: 'normal' } },
     { t: 'Áp suất dầu quá cao (vượt ≈ 4,5 kG/cm²): van (4) mở, một phần dầu quay về trước bơm.', hl: [4, 9], focus: ['v4'], set: { cs: 'press' }, dur: 8 },
     { t: 'Bầu lọc (6) bị tắc: van (5) mở, dầu đi tắt lên đường dầu chính.', hl: [5, 6], focus: ['v5'], set: { cs: 'clog' }, dur: 8 },
     { t: 'Nhiệt độ dầu quá cao (khoảng 80 °C): van (7) đóng một phần, dầu đi qua két làm mát (8) rồi tiếp tục đến các đường dầu (10), (11), (12), (13).', hl: [7, 8], focus: ['v7cool', 'v7main', 'main'], set: { cs: 'normal', oilT: 95 }, dur: 9 }
@@ -1650,7 +1654,7 @@ function aimAt(obj, from, to) { const d = to.clone().sub(from).normalize(); obj.
 // ---------- 1a. Bộ chế hoà khí (Hình 20.5) ----------
 MODELS.carb = {
   hid: 'nhien-lieu', tab: 'Xăng – chế hoà khí', name: 'Hệ thống nhiên liệu dùng bộ chế hoà khí', fig: 'Theo Hình 20.5 – SGK tr. 103',
-  view: { pos: [-1.2, .8, 14.6], target: [-.3, -.75, 0], size: [10.6, 7.2] }, floor: -4.4, gw: 12, gd: 6,
+  view: { pos: [-1.2, .8, 14.6], target: [-.55, -1.0, 0], size: [11.8, 7.2] }, floor: -4.0, gw: 12, gd: 6,
   init: { thr: 35, pump: true },
   legend: [['#2f7fd8', 'Xăng'], ['#cfe9ff', 'Không khí'], ['#7fd6f2', 'Hoà khí'], ['#9e9e9e', 'Khí thải']],
   hud: [{ id: 'lv', k: 'Mức xăng trong buồng phao', bar: 1 }, { id: 'en', k: 'Động cơ' }, { id: 'mx', k: 'Lượng hoà khí nạp vào', bar: 1 }],
@@ -1661,8 +1665,10 @@ MODELS.carb = {
   build(S) {
     const R = this.R = { L: .25, run: 1, ang: 0, rpmV: 1 };
     const BX = 1.3, FX = .33;
+    // tỉ lệ: bộ chế hoà khí thu nhỏ quanh mặt bích chân (BX, −1); thùng xăng to hơn; động cơ to hơn – cho cân đối với pít tông
+    const CS = .75, CW = p => [BX + (p[0] - BX) * CS, -1 + (p[1] + 1) * CS, (p[2] || 0) * CS], TS = 1.5;
     // 1. thùng xăng (cắt bổ)
-    const tank = group(null, -4.6, .3, 0);
+    const tank = group(null, -3.85 - .7 * TS, -.2 + .42 * TS, 0); tank.scale.setScalar(TS);
     const tb = rbox(1.5, 1.1, 1.0, .3, MT.paint(0xc62828, { metalness: .45, roughness: .32 }), tank);
     { const nk = cyl(.1, .32, MT.steel(0xa9b0b7), tank, -.42, .68, 0, 'y', 20); nk.rotation.z = .35; const cp = cyl(.15, .07, MT.dark(0x2a2c30), tank, -.48, .85, 0, 'y', 24); cp.rotation.z = .35; } // cổ đổ xăng, nắp
     cyl(.05, .25, MT.steel(), tank, .7, -.42, 0, 'x'); M(new THREE.CylinderGeometry(.08, .08, .26, 16, 3, true).rotateZ(Math.PI / 2), mat(0xeeeeee, { wireframe: true }), tank, .5, -.42, -.1); // cửa ra + lưới lọc
@@ -1670,7 +1676,7 @@ MODELS.carb = {
     R.gauge = group(tank, .25, .0, -.15); box(.42, .015, .015, MT.steel(), R.gauge, -.21, 0, 0); box(.16, .07, .12, MT.paint(0xffffff), R.gauge, -.42, 0, 0);
     R.tfuel = box(1.38, .62, .88, mat(FUEL, { transparent: true, opacity: .6, depthWrite: false }), tank, 0, -.2, 0);
     shell([tb, R.tfuel]);
-    part(1, 'Thùng xăng', '', [tb, R.tfuel], [-4.75, 1.3, .5], { fix: true });
+    part(1, 'Thùng xăng', '', [tb, R.tfuel], [-5.15, 1.95, .7], { fix: true });
     // 2. lọc xăng, 3. bơm xăng
     // ---- 2. lọc xăng kiểu ống nối trên đường xăng: vỏ nhựa trong suốt, hai đầu côn có ống nối khía chống tuột, lõi giấy xếp nếp màu vàng nhạt ----
     const fl = group(null, -3.05, -.2, 0), clr = mat(0xeaf6ff, { transparent: true, opacity: .2, roughness: .05, metalness: 0, depthWrite: false, side: THREE.DoubleSide });
@@ -1710,9 +1716,11 @@ MODELS.carb = {
     R.pcam = group(pu, -.46, -.64, 0); cyl(.11, .12, MT.steel(0x9aa1a8), R.pcam, .04, 0, 0, 'z', 24); cyl(.035, .3, MT.steel(), R.pcam, 0, 0, 0, 'z', 12); // cam lệch tâm (trục cam)
     label(0, 'Cam lệch tâm', [-2.62, -1.05, .4], { near: 8 }); label(0, 'Màng bơm', [-1.4, -.33, .3], { near: 8 });
     part(3, 'Bơm xăng', 'Bơm kiểu màng dẫn động bằng cam lệch tâm: màng đi xuống – van hút mở, xăng vào; lò xo đẩy màng lên – van đẩy mở, xăng lên buồng phao.', pu, [-1.35, -1.1, .4]);
-    const cFeed = rpath([[-3.85, -.2], [-1.25, -.2], [-1.25, 1.3], [FX + .2, 1.3], [FX + .2, .97]], .2);
-    [rpath([[-3.85, -.2], [-3.53, -.2]]), rpath([[-2.57, -.2], [-2.46, -.2]]), rpath([[-1.44, -.2], [-1.25, -.2], [-1.25, 1.3], [FX + .2, 1.3], [FX + .2, .97]], .2)]
+    const BI = CW([FX + .2, .97]), BT = CW([FX + .2, 1.3]); // cửa vào buồng phao (sau khi thu nhỏ)
+    const cFeed = rpath([[-3.85, -.2], [-1.25, -.2], [-1.25, BT[1]], [BI[0], BT[1]], [BI[0], BI[1]]], .2);
+    [rpath([[-3.85, -.2], [-3.53, -.2]]), rpath([[-2.57, -.2], [-2.46, -.2]]), rpath([[-1.44, -.2], [-1.25, -.2], [-1.25, BT[1]], [BI[0], BT[1]], [BI[0], BI[1]]], .2)]
       .forEach(c => pipe(c, .055, 0x2a2b2f, { op: .5 })); // ống xăng nối vào các đầu nối (không xuyên qua lọc và bơm)
+    const kidsC = new Set(root.children), labC = labels.length; // mọi thứ của bộ chế hoà khí tạo từ đây sẽ đưa vào nhóm thu nhỏ
     // 4. buồng phao (gắn bên thân bộ chế hoà khí, cắt bổ)
     const bowl = rbox(1.0, 1.3, .85, .12, MT.cast(0xb5bac0), null, FX, .3, 0);
     R.cfuel = box(.92, .6, .76, mat(FUEL, { transparent: true, opacity: .6, depthWrite: false }), null, FX, 0, 0);
@@ -1763,10 +1771,13 @@ MODELS.carb = {
     R.thr = group(null, BX, -.48, 0); cyl(rAt(-.48) - .01, .03, MT.steel(0x9aa0a6), R.thr); cyl(.03, 1.15, MT.steel(), R.thr, 0, 0, 0, 'z');
     R.lever = box(.3, .05, .05, MT.steel(), R.thr, .15, 0, .58);
     part(7, 'Bướm ga', '', R.thr, [BX + .75, -.5, .4]);
+    const cg = group(null, BX * (1 - CS), -1 * (1 - CS), 0); cg.scale.setScalar(CS); R.cg = cg;
+    root.children.filter(o => !kidsC.has(o) && o !== cg).forEach(o => cg.add(o));
+    labels.slice(labC).forEach(L => { if (L.obj) { if (L.off) L.off.multiplyScalar(CS); } else { const q = CW([L.pos.x, L.pos.y, L.pos.z]); L.pos.set(q[0], q[1], q[2]); } });
     // đường ống nạp + động cơ một xi lanh (cắt bổ)
     const man = pipe(rpath([[BX, -1.05], [BX, -1.3], [3.15, -1.3], [3.55, -1.5]], .25), .22, 0xb8bdc2, { op: 1, mat: MT.cast(0xb8bdc2) });
     // động cơ thu nhỏ quanh cửa nạp (3.55, −1.5) cho đúng tỉ lệ với thùng xăng, bơm xăng
-    const ES = .58, EA = [3.55, -1.5], eg = group(null, EA[0] * (1 - ES), EA[1] * (1 - ES), 0); eg.scale.setScalar(ES);
+    const ES = .8, EA = [3.55, -1.5], eg = group(null, EA[0] * (1 - ES), EA[1] * (1 - ES), 0); eg.scale.setScalar(ES);
     const EW = p => [EA[0] + (p[0] - EA[0]) * ES, EA[1] + (p[1] - EA[1]) * ES, p[2] * ES];
     shell(man);
     label(0, 'Đường ống nạp', [2.3, -1.75, .4]);
@@ -1786,13 +1797,13 @@ MODELS.carb = {
     // ---- dòng chảy
     R.cAir = new THREE.Color(0xcfe9ff); R.cMix = new THREE.Color(MIXC); R.mixC = new THREE.Color(MIXC); R.fuelOK = 1;
     R.fFeed = flow(cFeed, { key: 'feed', color: FUEL, dens: 22, size: .022, jitter: .018 });
-    R.fTank = flow(rpath([[-4.6, -.1], [-3.85, -.2]]), { key: 'feed', color: FUEL, n: 16, size: .022, jitter: .018 });
+    R.fTank = flow(rpath([[-4.95, -.12], [-3.85, -.2]]), { key: 'feed', color: FUEL, n: 16, size: .022, jitter: .018 });
     R.fJet = flow(cJet, { key: 'jet', color: FUEL, dens: 26, size: .018, jitter: .012, speed: .8 });
     // xăng ra khỏi vòi phun bị dòng không khí tốc độ cao xé thành các hạt li ti, toả đều khắp họng rồi hoà vào không khí
     R.spray = [...Array(10)].map((_, k) => { const a = k * TAU / 10 + .3, sr = .55 + .45 * (k % 2);
       return flow(scurve([[BX - .02, .7, 0], [BX + .03 * Math.cos(a), .62, .03 * Math.sin(a)], [BX + .11 * sr * Math.cos(a), .38, .11 * sr * Math.sin(a)], [BX + .17 * sr * Math.cos(a), .02, .17 * sr * Math.sin(a)], [BX + .23 * sr * Math.cos(a), -.42, .23 * sr * Math.sin(a)]]),
         { key: 'jet', n: 34, size: .016, jitter: .035, speed: 1.3, colorAt: t => _c.setHex(0x3d8fe0).lerp(R.cMix, clamp(t * 1.3, 0, 1)), sizeAt: t => 1.2 - t * .65 }); });
-    label(0, 'Hoà khí', [BX + .62, .08, .4]);
+    label(0, 'Hoà khí', CW([BX + .75, -.2, .4]), { near: 9 });
     R.air = [];
     // không khí: vào cổ hút gió → vòng quanh khe giữa vỏ và lõi lọc → xuyên qua lõi giấy vào giữa → xuống họng khuếch tán
     [[.25, 0, .6], [.25, 2.1, -.6], [.25, 4.2, 1.5], [.62, .5, -1.5], [.62, 2.6, 2.5], [.62, 4.7, -2.5], [.45, 1.2, 3.0], [.45, 3.6, -3.0]].forEach(([k, ph, th]) => {
@@ -1802,6 +1813,7 @@ MODELS.carb = {
       const c = scurve(pts), len = c.getLength(), y0 = 2.1; let pl = 0; for (let j = 1; j < pre.length; j++) pl += V(...pre[j]).distanceTo(V(...pre[j - 1])); const t0 = pl / len;
       R.air.push(flow(c, { key: 'air', n: 44, size: .022, jitter: .02, speed: .55, speedAt: t => t < t0 ? 1 : Math.pow(.3 / rAt(y0 - (t - t0) / (1 - t0) * 3.05), 1.4), colorAt: t => { const y = t < t0 ? 2.3 : y0 - (t - t0) / (1 - t0) * 3.05; return y > .62 ? R.cAir : _c.copy(R.cAir).lerp(R.cMix, clamp((.62 - y) / .22, 0, 1) * R.fuelOK); } }));
     });
+    [R.fJet, ...R.spray, ...R.air].forEach(f => R.cg.add(f.im));   // dòng xăng, sương xăng, không khí trong bộ chế hoà khí theo nhóm thu nhỏ
     R.mix = [-.12, 0, .12].map(dz => flow(rpath([[BX + dz, -.95, dz], [BX + dz, -1.3, dz], [3.15, -1.3 + dz * .5, dz], [3.55, -1.5, dz]], .25), { key: 'mix', n: 60, size: .02, jitter: .08, speed: 1.2, colorAt: () => R.mixC }));
     R.cylF = flow(scurve([[3.6, -1.6, 0], [3.75, -1.9, .2], [4.1, -2.0, -.2], [3.8, -1.85, 0]]), { key: 'mix', parent: eg, n: 45, size: .032, jitter: .1, speed: 1, colorAt: () => R.mixC });
     R.chg = M(new THREE.CylinderGeometry(.56, .56, 1, 36).translate(0, -.5, 0), new THREE.MeshBasicMaterial({ color: MIXC, transparent: true, opacity: 0, depthWrite: false }), eg, 3.9, -1.6, 0);
@@ -2276,8 +2288,10 @@ MODELS.start = {
     part(1, 'Bạc trục khuỷu', 'Ổ đỡ các cổ trục khuỷu, giúp trục khuỷu quay êm, giảm ma sát.', brg, [.6, -2.5, .6]);
     // ===== 7. acquy 12 V, 8. khoá khởi động =====
     const btex = new THREE.TextureLoader().load(BAT_IMG); btex.encoding = THREE.sRGBEncoding; btex.anisotropy = 4;
-    const bat = new THREE.Sprite(new THREE.SpriteMaterial({ map: btex, transparent: true })); bat.scale.set(2.2, 1.88, 1); bat.position.set(-3.9, 2.25, 0); root.add(bat);
-    part(7, 'Acquy', 'Nguồn điện một chiều 12 V cung cấp dòng điện cho rơ le và động cơ điện.', bat, [-5.05, 2.2, .7], { right: true });
+    const bat = new THREE.Sprite(new THREE.SpriteMaterial({ map: btex, transparent: true })); const BS = .7, BC = [-3.9, 2.25], BW = (x, y) => [BC[0] + (x - BC[0]) * BS, BC[1] + (y - BC[1]) * BS]; // acquy thu nhỏ quanh tâm; BW: vị trí cọc bình sau khi thu nhỏ
+    bat.scale.set(2.2 * BS, 1.88 * BS, 1); bat.position.set(BC[0], BC[1], 0); root.add(bat);
+    part(7, 'Acquy', 'Nguồn điện một chiều 12 V cung cấp dòng điện cho rơ le và động cơ điện.', bat, [-4.95, 2.05, .7], { right: true });
+    const bP = BW(-3.02, 3.09), bM = BW(-2.98, 3.02), bN = BW(-4.63, 2.95);
     const ks = group(null, -2.0, 3.45, 0); box(.75, .08, .3, MT.dark(0x37474f), ks, 0, -.06, -.1);
     cyl(.05, .12, MT.copper(), ks, -.25, 0, 0); cyl(.05, .12, MT.copper(), ks, .25, 0, 0);
     R.blade = group(ks, 0, 0, -.06); box(.56, .05, .05, MT.copper(0xffb300), R.blade, 0, 0, 0);
@@ -2288,10 +2302,10 @@ MODELS.start = {
     part(8, 'Khoá khởi động', 'Mở khoá: nối mạch điện điều khiển từ acquy tới rơ le. Tắt khoá: ngắt mạch.', ks, [-2.0, 3.95, .3]);
     // ===== dây điện =====
     const wire = (pts, col = 0xd32f2f, r = .025) => { const c = rpath(pts, .12); pipe(c, r, col, { op: .9 }); return c; };
-    const cC1 = wire([[-3.02, 3.09, .12], [-3.02, 3.45, .12], [-3.02, 3.45, 0], [-2.25, 3.45, 0]]);
+    const cC1 = wire([[bP[0], bP[1], .12], [bP[0], 3.45, .12], [bP[0], 3.45, 0], [-2.25, 3.45, 0]]);
     const p50 = T([-.85, SY + .47]), p30 = T([-1.3, SY + .13]), pG = T([-2.4, -.45]); const cC2 = wire([[-1.75, 3.45], [p50[0], 3.45], [p50[0], p50[1]]]);
-    const cM1 = wire([[-2.98, 3.02, .3], [-2.98, p30[1], .3], [p30[0] - .14, p30[1], .32], [p30[0] - .14, p30[1], 0], [p30[0], p30[1], 0]], 0xb71c1c, .045);
-    const cG = wire([[pG[0], pG[1], 0], [-5.1, pG[1], 0], [-5.1, 3.3, .12], [-4.63, 3.3, .12], [-4.63, 2.95, .12]], 0x222222, .035);
+    const cM1 = wire([[bM[0], bM[1], .3], [bM[0], p30[1], .3], [p30[0] - .14, p30[1], .32], [p30[0] - .14, p30[1], 0], [p30[0], p30[1], 0]], 0xb71c1c, .045);
+    const cG = wire([[pG[0], pG[1], 0], [-5.1, pG[1], 0], [-5.1, 3.3, .12], [bN[0], 3.3, .12], [bN[0], bN[1], .12]], 0x222222, .035);
     // ===== dòng điện =====
     root = SG;
     const helix = []; for (let i = 0; i <= 60; i++) { const u = i / 60, a = u * TAU * 5; helix.push([-.45 + u * .75, SY + Math.cos(a) * .37, Math.sin(a) * .37]); }
@@ -2559,7 +2573,7 @@ function honeyTex(n, col, line, mode) {
 // ---------- 2. EGR + DOC + DPF trên động cơ Diesel (Hình 20.11) ----------
 MODELS.egr = {
   hid: 'khi-thai', tab: 'EGR + DOC + DPF (Diesel)', name: 'Hệ thống luân hồi khí thải EGR kết hợp DOC và DPF', fig: 'Theo Hình 20.11 – SGK tr. 107',
-  view: { pos: [3.4, 4.6, 12.2], target: [1.6, .45, .2], size: [11.4, 5.2] }, floor: -1.42, gw: 14, gd: 7, cutZ: 1.0,
+  view: { pos: [3.4, 4.6, 12.2], target: [1.6, .55, .2], size: [11.4, 5.4] }, floor: -1.42, gw: 14, gd: 7, cutZ: 0, // động cơ cắt bổ để thấy pít tông và sự cháy
   init: { egr: 50, cooler: true },
   legend: [['#1c1c1c', 'Muội than (PM)'], ['#e53935', 'CO'], ['#fbc02d', 'HC'], ['#8d5a3b', 'NO'], ['#cfd8dc', 'CO₂'], ['#4fc3f7', 'H₂O'], ['#ff7043', 'NO₂'], ['#9adfff', 'Khí nạp mới']],
   hud: [{ id: 'nox', k: 'NOx thải ra (so với khi đóng van EGR)', bar: 1 }, { id: 'pm', k: 'Muội than giữ lại trong DPF', bar: 1 }],
@@ -2572,7 +2586,7 @@ MODELS.egr = {
   build(S) {
     initSpc(); _v2c = new THREE.Color();
     const R = this.R = { soot: .15, regen: 0, A: 0 };
-    const E = R.E = engineR({ shell: false, strokes: false, glow: false });
+    const E = R.E = engineR({ strokes: false, glow: false, fire: 'diesel' });
     part(1, 'Động cơ đốt trong (Diesel)', '', [E.block, E.head, E.cover], [-1.3, -.85, .9]);
     // ống góp nạp (phía sau) + đường nạp
     const plen = cyl(.3, 4.6, MT.cast(0xb8bdc2), null, 0, 2.55, -1.25, 'x');
@@ -2585,17 +2599,17 @@ MODELS.egr = {
     pipe(rpath([[2.4, 1.55, 1.05], [2.6, 1.55, 1.05], [2.6, -.55, 1.05], [2.85, -.55, 1.05]], .3), .17, 0x7b6a60, { op: .55 });
     label(0, 'Ống góp xả', [1.2, 1.95, 1.3]);
     // 3. DOC, 4. DPF (vỏ cắt bổ)
-    const can = cyl(.6, 2.6, MT.steel(0xc3c9cf), null, 4.15, -.55, 1.05, 'x', 44); shell(can);
+    const can = cyl(.6, 2.6, MT.steel(0xc3c9cf), null, 4.15, -.55, 1.05, 'x', 44); R.canMs = [can]; R.canPl = [new THREE.Plane(V(0, 0, -1), 1.05)]; // mặt cắt riêng qua trục bầu xử lí
     [2.85, 5.45].forEach(x => cyl(.28, .1, MT.steel(0x8d949b), null, x, -.55, 1.05, 'x'));
     const docSide = new THREE.MeshStandardMaterial({ map: honeyTex(14, '#d9d2c3', '#a89f8c', 'stripe') });
     const docCap = new THREE.MeshStandardMaterial({ map: honeyTex(12, '#e3dccb', '#9d9482') });
     const doc = M(new THREE.CylinderGeometry(.55, .55, 1.1, 36).rotateZ(-Math.PI / 2), [docSide, docCap, docCap], null, 3.55, -.55, 1.05);
-    shell(doc);
+    R.canMs.push(doc);
     part(3, 'Bộ xử lí oxi hoá DOC', '', doc, [2.7, -1.45, 1.4]);
     R.dpfCap = new THREE.MeshStandardMaterial({ map: honeyTex(10, '#efeae0', '#3b3b3b', 'check') });
     const dpfSide = new THREE.MeshStandardMaterial({ map: honeyTex(14, '#cfc8ba', '#8f887a', 'stripe') });
     const dpf = M(new THREE.CylinderGeometry(.55, .55, 1.1, 36).rotateZ(-Math.PI / 2), [dpfSide, R.dpfCap, R.dpfCap], null, 4.8, -.55, 1.05);
-    shell(dpf);
+    R.canMs.push(dpf); R.canCut = null;
     part(4, 'Bộ lọc hạt DPF', '', dpf, [4.9, .35, 1.4]);
     R.dpfCaps = [dpf.material[1], dpf.material[2]];
     R.dots = new THREE.InstancedMesh(new THREE.SphereGeometry(.03, 6, 5), new THREE.MeshBasicMaterial({ color: 0x111111 }), 160);
@@ -2607,19 +2621,19 @@ MODELS.egr = {
       part('_dp', 'Cảm biến chênh áp DPF', 'Đo chênh lệch áp suất khí thải trước và sau bộ lọc DPF. Muội than bám nhiều → chênh áp tăng → bộ điều khiển cho đốt muội than (tái sinh DPF).', dp, [5.6, 1.05, 1.1]); }
     const mOut = pipe(rpath([[5.45, -.55, 1.05], [7.0, -.55, 1.05]]), .17, 0x8d8f94, { op: .55 });
     part(7, 'Đường thải ra môi trường', '', mOut, [5.85, -1.3, 1.05]);
-    // 5. van EGR, 6. két làm mát khí luân hồi
-    const egrPts = [[5.7, -.55, 1.05], [5.7, -1.05, 1.35], [-2.9, -1.05, 1.35], [-2.9, -.55, 1.35], [-2.9, 1.65, 1.35], [-2.9, 2.0, .6], [-2.9, 2.55, -1.25], [-2.3, 2.55, -1.25]];
+    // 5. van EGR, 6. két làm mát khí luân hồi: lấy một phần khí thải ngay ở ống góp xả → két làm mát (6) → van EGR (5) → đường nạp (2)
+    const egrPts = [[2.4, 1.55, 1.05], [2.4, 2.3, 1.35], [1.25, 2.3, 1.35], [-1.25, 2.3, 1.35], [-2.95, 2.3, 1.35], [-2.95, 2.55, .2], [-2.95, 2.55, -1.25], [-2.3, 2.55, -1.25]];
     const cEgr = rpath(egrPts, .28), tE = polyT(egrPts);
-    pipe(rpath(egrPts.slice(0, 4), .28), .13, 0xb0bec5, { op: .5 }); pipe(rpath(egrPts.slice(4), .28), .13, 0xb0bec5, { op: .5 });
-    const cool = group(null, -2.9, .55, 1.35);
-    rbox(.6, 2.2, .7, .1, MT.steel(0x9fb3bd), cool);
-    for (let i = 0; i < 14; i++) box(.64, .025, .74, MT.alu(0xb2dfdb), cool, 0, -.95 + i * .145, 0);
-    pipe(rpath([[-3.5, -.3, 1.6], [-3.2, -.3, 1.6], [-3.2, -.3, 1.35]], .1), .06, 0x1e88e5, { op: .8 }); pipe(rpath([[-3.2, 1.4, 1.35], [-3.2, 1.4, 1.6], [-3.5, 1.4, 1.6]], .1), .06, 0x1e88e5, { op: .8 });
-    part(6, 'Két làm mát khí luân hồi EGR', '', cool, [-2.9, 1.95, 1.75]);
-    label(0, 'Nước làm mát', [-3.95, .55, 1.6], { near: 9 });
-    R.vg = group(null, -2.9, 2.02, .55); cyl(.24, .45, MT.steel(0x78909c), R.vg, 0, 0, 0, 'z'); R.vdisk = cyl(.17, .03, MT.paint(0xef5350), R.vg, 0, 0, 0, 'z');
-    rbox(.42, .42, .42, .08, MT.black(), R.vg, 0, .4, 0);
-    part(5, 'Van luân hồi EGR', '', R.vg, [-2.25, 2.95, .55]);
+    pipe(rpath(egrPts.slice(0, 3), .28), .13, 0xb0bec5, { op: .5 }); pipe(rpath(egrPts.slice(3), .28), .13, 0xb0bec5, { op: .5 });
+    const cool = group(null, 0, 2.3, 1.35); cool.rotation.z = Math.PI / 2;                     // két nằm ngang phía trên ống góp xả
+    rbox(.6, 2.5, .7, .1, MT.steel(0x9fb3bd), cool);
+    for (let i = 0; i < 16; i++) box(.64, .025, .74, MT.alu(0xb2dfdb), cool, 0, -1.1 + i * .147, 0);
+    pipe(rpath([[-1.0, 2.95, 1.35], [-1.0, 2.62, 1.35]], .1), .06, 0x1e88e5, { op: .8 }); pipe(rpath([[1.0, 2.62, 1.35], [1.0, 2.95, 1.35]], .1), .06, 0x1e88e5, { op: .8 });
+    part(6, 'Két làm mát khí luân hồi EGR', 'Nước làm mát của động cơ chảy qua két, hạ nhiệt độ khí luân hồi trước khi vào xi lanh (khí mát hơn → nhiệt độ cháy thấp hơn → ít NOx).', cool, [.3, 3.35, 1.5]);
+    label(0, 'Nước làm mát', [-1.55, 3.15, 1.4], { near: 9 });
+    R.vg = group(null, -2.3, 2.3, 1.35); cyl(.24, .45, MT.steel(0x78909c), R.vg, 0, 0, 0, 'x'); R.vdisk = cyl(.17, .03, MT.paint(0xef5350), R.vg, 0, 0, 0, 'x');
+    rbox(.42, .42, .42, .08, MT.black(), R.vg, 0, .42, 0);
+    part(5, 'Van luân hồi EGR', 'Bộ điều khiển mở van nhiều hay ít để đưa lượng khí thải phù hợp trở lại đường nạp; đóng van khi động cơ nguội hoặc chạy hết tải.', R.vg, [-2.55, 3.25, 1.35]);
     // dòng khí
     R.fIn = flow(rpath([[4.6, 2.55, -1.25], [-1.9, 2.55, -1.25]]), { key: 'air', color: 0x9adfff, dens: 5, size: .055, jitter: .1 });
     E.xs.forEach(x => flow(rpath([[x, 2.55, -1.25], [x, 2.45, -1.15], [x, 2.15, -.95], [x, 2.05, -.84]], .15), { key: 'air', color: 0x9adfff, n: 5, size: .05 }));
@@ -2634,12 +2648,13 @@ MODELS.egr = {
         sizeAt: (t, i) => sp(f.seeds[i]) === 'soot' && t > tDpf ? 0 : 1 });
       return f;
     });
-    R.fEgr = flow(cEgr, { key: 'egr', n: 44, size: .06, speed: 1.1, colorAt: (t, i) => { const s = R.fEgr.seeds[i]; const base = s < .3 ? spc.CO2 : s < .55 ? spc.H2O : s < .65 ? spc.NO2 : spc.gas; if (t < tE[3]) return _c.copy(base).lerp(_v2c.set(0xff5252), .45); if (t < tE[4]) return _c.copy(base).lerp(_v2c.set(0xff5252), .45 * (1 - (S.cooler ? (t - tE[3]) / (tE[4] - tE[3]) : 0))); return S.cooler ? base : _c.copy(base).lerp(_v2c.set(0xff5252), .45); } });
+    R.fEgr = flow(cEgr, { key: 'egr', n: 44, size: .06, speed: 1.1, colorAt: (t, i) => { const s = R.fEgr.seeds[i]; const base = s < .3 ? spc.CO2 : s < .55 ? spc.H2O : s < .65 ? spc.NO2 : spc.gas; if (t < tE[2]) return _c.copy(base).lerp(_v2c.set(0xff5252), .45); if (t < tE[3]) return _c.copy(base).lerp(_v2c.set(0xff5252), .45 * (1 - (S.cooler ? (t - tE[2]) / (tE[3] - tE[2]) : 0))); return S.cooler ? base : _c.copy(base).lerp(_v2c.set(0xff5252), .45); } });
   },
   update(dt, t, S) {
     const R = this.R, e = S.egr / 100;
     R.A += dt * TAU * .8; R.E.set(R.A);
-    R.vdisk.rotation.x = (1 - e) * (Math.PI / 2) * .95;
+    R.vdisk.rotation.y = e * (Math.PI / 2) * .9;   // e = 0: đĩa chắn ngang dòng (đóng), e = 1: đĩa nằm dọc dòng (mở)
+    if (R.canCut !== App.xray) { R.canCut = App.xray; R.canMs.forEach(ms => [].concat(ms.material).forEach(m => { m.clippingPlanes = App.xray ? R.canPl : []; m.side = THREE.DoubleSide; m.needsUpdate = true; })); }
     R.fEgr.target = e > .02 ? .2 + .8 * e : 0; R.fEgr.mul = .5 + e;
     if (R.regen > 0) { R.regen -= dt; R.soot = Math.max(0, R.soot - dt * .4); R.regenGlow.material.opacity = .35 + .2 * Math.sin(t * 20); }
     else { R.regenGlow.material.opacity = 0; R.soot = Math.min(1, R.soot + dt * .012); }
@@ -2653,7 +2668,7 @@ MODELS.egr = {
     { t: 'Khí thải từ động cơ qua ống góp xả vào bộ DOC (3).', hl: [1, 3], focus: ['ex'] },
     { t: 'Trong DOC: CO, HC, NO bị oxi hoá thành CO₂, H₂O, NO₂.', hl: [3], focus: ['ex'], dur: 8 },
     { t: 'Bộ lọc DPF (4) giữ lại muội than, hạt mịn (PM); khí sạch ra ngoài (7).', hl: [4, 7], focus: ['ex'], dur: 8 },
-    { t: 'Van EGR (5) đưa một phần khí thải sau DPF trở lại đường nạp (2).', hl: [5, 2], focus: ['egr', 'air'], set: { egr: 70 }, dur: 8 },
+    { t: 'Van EGR (5) đưa một phần khí thải từ ống góp xả, qua két làm mát (6), trở lại đường nạp (2) – hoà với không khí nạp, làm giảm nhiệt độ cháy nên giảm NOx.', hl: [5, 6, 2], focus: ['egr', 'air'], set: { egr: 70 }, dur: 9 },
     { t: 'Khí luân hồi được làm mát ở két (6) trước khi vào xi lanh.', hl: [6], focus: ['egr'], set: { cooler: true }, dur: 8 }
   ]
 };
