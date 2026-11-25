@@ -191,6 +191,62 @@
   #pip{position:fixed;top:84px;right:14px;width:330px;height:210px;border-radius:16px;border:1.5px solid rgba(253,230,138,.55);box-shadow:0 0 0 4px rgba(253,230,138,.08),0 16px 34px -10px rgba(0,0,0,.7);z-index:6;pointer-events:none}
   #pip span{position:absolute;left:10px;top:8px;font-size:10.5px;font-weight:700;color:#fde68a;background:rgba(10,14,24,.7);padding:3px 8px;border-radius:999px;letter-spacing:.03em}
   @media (max-width:980px){ #pip{width:240px;height:150px} }
+
+  /* ===== bảng điều khiển: gọn, chữ vừa đủ đọc, luôn ở bên trái, có nút thu gọn ===== */
+  #left{width:292px;bottom:auto;padding:10px 11px;gap:7px}
+  #left::-webkit-scrollbar{width:6px}
+  #left::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}
+  #left .lhead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none}
+  #left .lhead span{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  #lToggle{border:1px solid var(--line);background:rgba(255,255,255,.05);color:#d5dde8;font-family:inherit;font-weight:700;font-size:12px;border-radius:9px;padding:5px 10px;cursor:pointer;white-space:nowrap}
+  #lToggle:hover{background:rgba(255,255,255,.1)}
+  #left.mini{width:auto;padding:7px 7px 7px 12px}
+  #left.mini .scroll{display:none}
+  #left.mini .lhead span{color:#dbe3ee}
+  #left .scroll{gap:8px}
+  #left .tabs{margin-bottom:6px}
+  #left .tab{font-size:12px;padding:7px 4px}
+  #left .modes{gap:5px!important}
+  #left .mode{padding:6px 7px!important;gap:7px!important}
+  #left .mode .ic{width:26px!important;height:26px!important;border-radius:8px}
+  #left .mode .ic svg{width:16px;height:16px}
+  #left .mode .t1{font-size:12.5px!important;line-height:1.22}
+  #left .card{padding:9px 10px}
+  #left .sec-h{font-size:11px}
+  #left .ctrl-h{font-size:12.5px;white-space:normal}
+  #left .ctrl-h>span{flex:1;min-width:0;line-height:1.3}
+  #left .ctrl-h>b{flex:none;white-space:nowrap;min-width:0;font-size:12.5px}
+  #left .off-tag{font-size:10px;padding:1px 6px;margin-left:5px}
+  #left .ctrl-sub{font-size:11.5px;white-space:normal}
+  #left .vbox{font-size:12px;padding:6px 9px;margin-bottom:7px}
+  #left .vbox small{font-size:11px}
+  #left .vj{font-size:11px}
+  #left .sch{font-size:12px;padding:7px 9px}
+  #left .chip{padding:6px 9px;font-size:11.5px!important}
+  #left .views{grid-template-columns:auto auto auto;gap:5px}
+  #left .vbtn{font-size:12px;padding:7px 5px;white-space:nowrap}
+  #left .status .phase{gap:8px}
+  #left .status .pass{white-space:nowrap}
+  #left .status .pchip{min-width:0;max-width:none;flex:1;white-space:normal;line-height:1.25;font-size:12px;padding-top:5px;padding-bottom:5px}
+  #left .status .read{gap:5px}
+  #left .status .rd{padding:5px;min-width:0}
+  #left .status .rd .k{font-size:10px;letter-spacing:0;text-transform:none}
+  #left .status .rd .v{font-size:14px}
+  /* gọn thêm: bớt khoảng đệm, giữ cỡ chữ */
+  #left .scroll{gap:6px}
+  #left .card{padding:7px 9px}
+  #left .sec-h{margin-bottom:5px}
+  #left .mode{padding:5px 7px!important}
+  #left .mode .ic{width:24px!important;height:24px!important}
+  #left .chip{padding:5px 8px}
+  #left .vbtn{padding:6px 5px}
+  #left .vbox{padding:5px 8px;margin-bottom:5px}
+  #left .status .pchip{padding-top:4px;padding-bottom:4px}
+  #left .bar{margin-bottom:7px}
+  #left .status .rd{padding:4px 5px}
+  .dbtn{white-space:nowrap}
+  @media (max-width:1180px){ #left{width:292px} }
+  @media (max-width:700px){ #left{top:66px;bottom:auto;left:8px;right:auto;width:262px;max-height:none} header .kicker{display:none} header .title{font-size:12px} }
 </style>
   <script>
 /**
@@ -1272,10 +1328,23 @@
 </header>
 
 <aside id="left" class="panel">
+  <div class="lhead"><span>Bảng điều khiển</span><button id="lToggle" title="Thu gọn / mở rộng bảng điều khiển">‹ Thu gọn</button></div>
   <div class="scroll">
     <div>
       <div class="tabs"><button class="tab on" id="tabBasic">Nguyên công cơ bản</button><button class="tab" id="tabProd">Sản phẩm phay</button></div>
       <div class="modes" id="modes"></div>
+    </div>
+
+    <div>
+      <div class="sec-h"><span>Góc nhìn</span></div>
+      <div class="views">
+        <button class="vbtn" data-v="work">Vùng cắt</button>
+        <button class="vbtn" data-v="close">Cận dao</button>
+        <button class="vbtn" data-v="top">Nhìn từ trên</button>
+        <button class="vbtn" data-v="front">Nhìn chính diện</button>
+        <button class="vbtn" data-v="all">Toàn máy</button>
+        <button class="vbtn" data-v="side">Bên cạnh</button>
+      </div>
     </div>
 
     <div class="card">
@@ -1302,18 +1371,6 @@
         <button class="chip on" id="cChip" style="--c:var(--amber)">Phoi</button>
         <button class="chip on" id="cCool" style="--c:#60a5fa">Dung dịch trơn nguội</button>
         <button class="chip" id="cMach" style="--c:var(--violet)">Làm mờ thân máy</button>
-      </div>
-    </div>
-
-    <div>
-      <div class="sec-h"><span>Góc nhìn</span></div>
-      <div class="views">
-        <button class="vbtn" data-v="work">Vùng cắt</button>
-        <button class="vbtn" data-v="close">Cận dao</button>
-        <button class="vbtn" data-v="top">Nhìn từ trên</button>
-        <button class="vbtn" data-v="front">Nhìn chính diện</button>
-        <button class="vbtn" data-v="all">Toàn máy</button>
-        <button class="vbtn" data-v="side">Bên cạnh</button>
       </div>
     </div>
 
@@ -1606,8 +1663,8 @@ const MODES = {
     plan() { const t = tVis(), D = 0.12, N = Math.ceil(D / t - 1e-6), v = LV / 2 - 0.12 + 0.08, mv = [];
       // mọi lượt đều phay nghịch (thành bậc ở bên phải hướng dao đi) – an toàn trên máy vạn năng có khe hở vít me
       for (let k = 1; k <= N; k++) { const y = H0 - Math.min(D, k * t);
-        mv.push(R_([0.78, y + 0.1, v], k), R_([0.78, y, v], k, 'Nâng bàn – ăn dao t'), F_([-0.78, y, v], k), R_([-0.78, y + 0.1, v], k, 'Hạ bàn'), R_([0.78, y + 0.1, v], k, 'Chạy nhanh về đầu bàn')); }
-      mv.push(R_([0.78, H0 + 0.15, v], N, 'Hạ bàn')); return { mv, N }; } },
+        mv.push(R_([-0.78, y + 0.1, v], k), R_([-0.78, y, v], k, 'Nâng bàn – ăn dao t'), F_([0.78, y, v], k), R_([0.78, y + 0.1, v], k, 'Hạ bàn'), R_([-0.78, y + 0.1, v], k, 'Chạy nhanh về đầu bàn')); }
+      mv.push(R_([-0.78, H0 + 0.15, v], N, 'Hạ bàn')); return { mv, N }; } },
   slot: { order: 3, name: 'Phay rãnh', col: '#a78bfa', tool: 'end16', vc: 60, sz: 0.04, t: 5, usesT: true,
     plan() { const t = tVis(), D = 0.1, N = Math.ceil(D / t - 1e-6), mv = [];
       for (let k = 1; k <= N; k++) { const y = H0 - Math.min(D, k * t), dir = k % 2 ? 1 : -1, s = -0.78 * dir;
@@ -1622,8 +1679,8 @@ const MODES = {
         mv.push(R_([u0, H0 + 0.15, vs[0]], k, 'Rút dao')); }
       return { mv, N }; } },
   chamfer: { order: 5, name: 'Phay vát cạnh', col: '#f472b6', tool: 'chamfer', vc: 60, sz: 0.04, t: 5, usesT: true, tLabel: 'Cạnh vát c',
-    plan() { const c = tVis(), y = H0 - c, a = LU / 2, b = LV / 2, mv = [], s = [-a - 0.15, y, -b];
-      mv.push(R_([s[0], H0 + 0.15, -b], 1), R_(s, 1, 'Nâng bàn'), F_([a, y, -b], 1), F_([a, y, b], 1), F_([-a, y, b], 1), F_([-a, y, -b - 0.15], 1), R_([-a, H0 + 0.15, -b - 0.15], 1, 'Hạ bàn'));
+    plan() { const c = tVis(), y = H0 - c, a = LU / 2, b = LV / 2, mv = [], s = [-a - 0.15, y, b];
+      mv.push(R_([s[0], H0 + 0.15, b], 1), R_(s, 1, 'Nâng bàn'), F_([a, y, b], 1), F_([a, y, -b], 1), F_([-a, y, -b], 1), F_([-a, y, b + 0.15], 1), R_([-a, H0 + 0.15, b + 0.15], 1, 'Hạ bàn'));
       return { mv, N: 1 }; } },
   drill: { order: 6, name: 'Khoan lỗ', col: '#2dd4bf', tool: 'center', vc: 25, sz: 0.1, t: 0, usesT: false, isDrill: true,
     plan() { const holes = [[-0.35, -0.15], [0.35, -0.15], [0.35, 0.15], [-0.35, 0.15]], depth = 0.25, peck = 0.1, mv = [];
@@ -1707,6 +1764,7 @@ function resetKind() {
   jawF.position.set(0, md.shaft ? 0.3 : 0.2, md.shaft ? -0.28 : -0.36); jaw.position.set(0, md.shaft ? 0.3 : 0.2, md.shaft ? 0.28 : 0.36);
   resetWork();
   if (kind === 'prism') { prStages = md.stages(); setPrismStage(0); }
+  buildProfile(state.mode);
   if (kind === 'gear') { fillers.forEach(f => { f.visible = true; setMatPlanes(f.userData.mats, cutPlanes()); }); setMatPlanes([gearSpin.userData.gearMat], cutPlanes()); gearSpin.rotation.x = -0.5 * TAU / GZ; crank.rotation.z = 0; }
   if (state.curTool !== md.tool) { buildTool(md.tool); buildNArc(); buildHose(); updateTexts(); }
 }
@@ -1775,7 +1833,7 @@ function updateChips(dt, emit) {
         for (let tries = 0; tries < 3 && !ok; tries++) {
           if (T.spinZ) { const th = PI + Math.random() * PI * 0.5; ok = true; c.life = 0.5 + Math.random() * 0.5;
             cPos[i * 3] = DISK_R * Math.cos(th); cPos[i * 3 + 1] = TY + DISK_R + DISK_R * Math.sin(th); cPos[i * 3 + 2] = (Math.random() - 0.5) * DISK_W;
-            c.v.set(Math.min(0.9, w * 0.2) * Math.sin(th) * -1 + 0.2, 0.5 + Math.random() * 0.7, (Math.random() - 0.5) * 0.6); break; }
+            c.v.set(Math.min(0.9, w * 0.2) * Math.sin(th) - 0.1, 0.5 + Math.random() * 0.7, (Math.random() - 0.5) * 0.6); break; }
           const th = Math.random() * TAU, r = mode().isDrill ? T.R * Math.random() : T.R, u = pos.x + r * Math.cos(th), v = pos.z + r * Math.sin(th);
           const top = hAt(u, v); if (top < 0 && !mode().isDrill) continue;
           ok = true; c.life = 0.5 + Math.random() * 0.6;
@@ -1817,6 +1875,7 @@ function updateCoolant(on) {
 const planeCut = new THREE.Plane(v3(0, 0, -1), 0);   // giữ nửa phía sau (z <= ...)
 function applyCut() {
   wpMat.clippingPlanes = state.cutUser ? [planeCut] : []; wpMat.needsUpdate = true;
+  if (profMat) { profMat.clippingPlanes = state.cutUser ? [planeCut] : []; profMat.needsUpdate = true; }
   if (typeof prBefore !== 'undefined') {
     if (prBefore) setMatPlanes(prBefore.userData.mats, cutPlanes());
     fillers.forEach(f => setMatPlanes(f.userData.mats, cutPlanes())); setMatPlanes([gearSpin.userData.gearMat], cutPlanes());
@@ -1825,7 +1884,7 @@ function applyCut() {
 
 // ------------------------------------------------------------------ nhãn tên gọi
 const labelBox = $('labels'), LABELS = [];
-function addLabel(text, cls, color, anchor, show = () => true) { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.style.setProperty('--c', color); el.innerHTML = text; labelBox.appendChild(el); const L = { el, anchor, show, text }; LABELS.push(L); return L; }
+function addLabel(text, cls, color, anchor, show = () => true) { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.style.setProperty('--c', color); el.innerHTML = '<span>' + text + '</span>'; labelBox.appendChild(el); const L = { el, anchor, show, text }; LABELS.push(L); return L; }
 const wp = (u, y, v) => v3(table.position.x + u, knee.position.y + KOFF + y, saddle.position.z + v);
 addLabel('1 · Thân máy', 'part', '#38a9b8', () => v3(0.45, 1.6, -0.7));
 addLabel('2 · Đầu phay – trục chính', 'part', '#38a9b8', () => v3(0.35, 3.45, 0.36));
@@ -2118,7 +2177,7 @@ const GX = { slab: { name: 'Dao phay trụ', use: 'mặt phẳng (máy phay ngan
   tap: { name: 'Mũi taro', use: 'cắt ren trong lỗ', build(g) {
     cyl(M.carbide, 0.045, 0.035, 0.03, 0, 0.015, 0, g, 24);
     cyl(M.carbide, 0.045, 0.045, 0.22, 0, 0.14, 0, g, 24);
-    g.add(helixTube(0.047, 0.01, 0.25, 9, 0, 0.007, M.coat, 300));
+    g.add(helixTube(0.047, 0.01, 0.25, -9, 0, 0.007, M.coat, 300));
     for (let k = 0; k < 4; k++) { const p = new THREE.Group(); p.rotation.y = k * TAU / 4; box(M.darker, 0.02, 0.24, 0.02, 0.045, 0.13, 0, p); g.add(p); }
     cyl(M.steel, 0.035, 0.035, 0.2, 0, 0.35, 0, g, 20); box(M.steel, 0.05, 0.05, 0.05, 0, 0.47, 0, g); } },
 };
@@ -2177,15 +2236,15 @@ function endMillReal(g, R, fl, L, n = 4, coat = MR.tin, helix = 35) {
   cyl(MR.carb, R * 0.96, R * 0.75, 0.02, 0, fl + 0.01, 0, g, 40);
   shankTo(g, R * 0.97, fl + 0.02, L); return L;
 }
-Object.assign(TOOLS.end16, { build(g) { return endMillReal(g, 0.08, 0.32, 0.62, 4, MR.tin, 35); } });
-Object.assign(TOOLS.end12, { build(g) { return endMillReal(g, 0.06, 0.26, 0.55, 4, MR.tialn, 35); } });
-Object.assign(TOOLS.key, { build(g) { return endMillReal(g, 0.06, 0.2, 0.5, 2, MR.carb, 30); } });
+Object.assign(TOOLS.end16, { build(g) { return endMillReal(g, 0.08, 0.32, 0.62, 4, MR.tin, -35); } });
+Object.assign(TOOLS.end12, { build(g) { return endMillReal(g, 0.06, 0.26, 0.55, 4, MR.tialn, -35); } });
+Object.assign(TOOLS.key, { build(g) { return endMillReal(g, 0.06, 0.2, 0.5, 2, MR.carb, -30); } });
 Object.assign(TOOLS.ball, { build(g) {
-  const R = 0.05; meshOf(flutedBody(R, 0.24, 2, 30, y => (y < R ? Math.sqrt(Math.max(0, 1 - Math.pow((R - y) / R, 2))) : 1), 0.55, 0.3), MR.tialn, g);
+  const R = 0.05; meshOf(flutedBody(R, 0.24, 2, -30, y => (y < R ? Math.sqrt(Math.max(0, 1 - Math.pow((R - y) / R, 2))) : 1), 0.55, 0.3), MR.tialn, g);
   cyl(MR.carb, R * 0.96, R * 0.75, 0.02, 0, 0.25, 0, g, 40); shankTo(g, R, 0.26, 0.5); return 0.5; } });
 Object.assign(TOOLS.drill, { build(g) {
   const R = 0.06, tip = R * Math.tan(31 * PI / 180);
-  meshOf(flutedBody(R, 0.5, 2, 30, y => (y < tip ? y / tip : 1), 0.38, 0.42), MR.tin, g);
+  meshOf(flutedBody(R, 0.5, 2, -30, y => (y < tip ? y / tip : 1), 0.38, 0.42), MR.tin, g);
   shankTo(g, R * 0.98, 0.5, 0.75); return 0.75; } });
 Object.assign(TOOLS.chamfer, { build(g) {
   meshOf(flutedBody(0.1, 0.1, 4, 0, y => Math.max(0.03, y / 0.1), 0.7, 0.25), MR.tin, g);
@@ -2228,10 +2287,151 @@ Object.assign(GX.modDisk, { build(g) {
   const d = meshOf(toothedDisk(0.15, 0.05, 12, 0.055, 0.035), MR.hss, g); d.rotation.y = PI / 2; d.position.y = 0.2;
   cylX(MR.hss, 0.035, 0.45, 0, 0.2, 0, g, 20); } });
 
+// ================================================================== DAO RIÊNG TỪNG LOẠI (sửa: trước đây dao trụ, dao đĩa, dao chữ T, dao môđun, mũi khoan trông giống nhau)
+const MRX = { black: std('#3a3e46', 0.32, 0.88, { envMapIntensity: 1.3 }), gap: std('#0f1217', 0.6, 0.4) };
+// thân dao có tiết diện tuỳ ý, xoắn theo trục y (y = 0 là mũi), có nắp hai đầu
+function sweptBody(len, helixDeg, R, sect, scale = () => 1, NS = 120, shade = null) {
+  const NY = Math.max(30, Math.round(len / 0.005)), k = Math.tan(helixDeg * PI / 180) / R, pos = [], idx = [], col = [];
+  for (let i = 0; i <= NY; i++) { const y = len * i / NY, s = Math.max(0.0005, scale(y)); for (let j = 0; j <= NS; j++) { const th = j / NS * TAU, r = sect(th) * s, a = th + y * k; pos.push(r * Math.cos(a), y, r * Math.sin(a)); if (shade) { const c = shade(th); col.push(c, c, c); } } }
+  for (let i = 0; i < NY; i++) for (let j = 0; j < NS; j++) { const a = i * (NS + 1) + j, b = a + NS + 1; idx.push(a, b, a + 1, a + 1, b, b + 1); }
+  const c0 = pos.length / 3; pos.push(0, 0, 0); for (let j = 0; j < NS; j++) idx.push(c0, j + 1, j);
+  const c1 = pos.length / 3, t0 = NY * (NS + 1); pos.push(0, len, 0); for (let j = 0; j < NS; j++) idx.push(c1, t0 + j, t0 + j + 1);
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  if (shade) { col.push(1, 1, 1, 1, 1, 1); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); }
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+// rãnh thẳng của mũi khoan tâm: 2 rãnh đối xứng, đáy rãnh tô tối để dễ nhận ra
+const cdFlute = th => { const a = Math.abs(Math.atan2(Math.sin(th), Math.cos(th))), d = Math.min(a, PI - a), w = 0.62; return d < w ? 1 - 0.55 * Math.sqrt(1 - (d / w) * (d / w)) : 1; };
+const cdShade = th => { const a = Math.abs(Math.atan2(Math.sin(th), Math.cos(th))), d = Math.min(a, PI - a), w = 0.62; return d < w ? 0.3 + 0.7 * Math.pow(d / w, 2) : 1; };
+const hssV = MR.hss.clone(); hssV.vertexColors = true;
+// tiết diện mũi khoan xoắn: 2 cạnh viền hẹp, lưng dao hạ thấp, 2 rãnh phoi rộng và sâu, lõi mảnh
+function drillSection(R) {
+  return phi => { const P = PI, f = ((phi % P) + P) % P;
+    if (f < 0.07 * P) return R;
+    if (f < 0.38 * P) return R * 0.92;
+    const t = (f - 0.38 * P) / (0.62 * P); return R - (R - R * 0.26) * Math.pow(Math.sin(PI * Math.pow(t, 0.8)), 0.8); };
+}
+function twistDrill(g, R, fl, L, mat) {
+  const tip = R * Math.tan(31 * PI / 180);               // mũi 118°
+  meshOf(sweptBody(fl, -30, R, drillSection(R), y => (y < tip ? y / tip : 1)), mat, g);
+  cyl(mat, R * 0.92, R * 0.78, 0.03, 0, fl + 0.015, 0, g, 40);   // chỗ rãnh thoát ra cán
+  shankTo(g, R * 0.96, fl + 0.03, L);
+}
+// mũi khoan tâm: thân ngắn, HAI đầu giống nhau; mỗi đầu có chốt dẫn hướng nhỏ, côn 60° và 2 rãnh thẳng
+function centerDrill(g, L, rp, rb, mat) {
+  const c = (rb - rp) * 1.732, p = rp * 2.6, e = p + c, t0 = rp * 0.7;
+  const prof = y => (y < t0 ? rp * (0.2 + 0.8 * y / t0) : y < p ? rp : y < e ? rp + (rb - rp) * (y - p) / c : rb);
+  [0, 1].forEach(k => { const m = meshOf(sweptBody(e + 0.012, 0, 1, cdFlute, prof, 96, cdShade), hssV, g); if (k) { m.rotation.z = PI; m.position.y = L; } });
+  cyl(mat, rb, rb, L - 2 * e, 0, L / 2, 0, g, 48);
+}
+// ---- DAO GẮN MẢNH HỢP KIM (theo dao thật): thân thép có hốc thoát phoi sâu trước mỗi răng, mảnh hợp kim bắt vít ở đầu răng
+Object.assign(MRX, { steel: std('#aeb4bc', 0.3, 0.92, { envMapIntensity: 1.25 }), ins: std('#4f5869', 0.26, 0.8, { envMapIntensity: 1.3 }) });
+function pocketBodyShape(Rb, z, rg) {
+  const s = new THREE.Shape(), P = TAU / z; let first = true;
+  const add = (a, r) => { const x = r * Math.cos(a), y = r * Math.sin(a); if (first) { s.moveTo(x, y); first = false; } else s.lineTo(x, y); };
+  for (let i = 0; i < z; i++) { const a0 = i * P;
+    for (let k = 0; k <= 16; k++) { const f = 0.5 * k / 16; add(a0 + f * P, Rb * (1 - 0.05 * f / 0.5)); }                          // lưng răng
+    for (let k = 1; k <= 8; k++) { const u = k / 8; add(a0 + (0.5 + 0.18 * u) * P, lerp(Rb * 0.95, rg * 1.05, u * u * (3 - 2 * u))); }
+    for (let k = 1; k <= 12; k++) { const f = 0.68 + 0.26 * k / 12, u = (f - 0.84) / 0.12; add(a0 + f * P, rg * (1 + 0.06 * u * u)); }  // đáy hốc phoi
+    add(a0 + 0.965 * P, rg * 1.13); add(a0 + 0.982 * P, lerp(rg, Rb, 0.5)); add(a0 + 0.994 * P, lerp(rg, Rb, 0.88));                 // mặt trước răng
+  }
+  s.closePath(); return s;
+}
+// trục dao = trục z của nhóm p; stagger: mảnh so le hai mặt bên (cắt cả 3 mặt), không so le: mảnh phủ hết bề rộng
+function insertCutter(p, R, W, z, o = {}) {
+  const Rb = R - 0.011, rg = R * (o.rg || 0.66), P = TAU / z, iL = Math.min(0.05, R * 0.28);
+  const geo = new THREE.ExtrudeGeometry(pocketBodyShape(Rb, z, rg), { depth: W - 0.004, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 1, curveSegments: 4 });
+  geo.translate(0, 0, -(W - 0.004) / 2); meshOf(geo, MRX.steel, p);
+  for (let i = 0; i < z; i++) { const q = new THREE.Group(); q.rotation.z = i * P; p.add(q);
+    const s = o.stagger ? (i % 2 ? 1 : -1) : 0, iw = o.stagger ? W * 0.56 : W + 0.006, zc = s * (W / 2 - iw / 2 + 0.004), xc = R - iL / 2;
+    box(MRX.steel, iL * 0.9, 0.012, iw * 0.9, xc - 0.004, 0.006, zc, q);                                        // gờ đỡ mảnh
+    box(MRX.ins, iL, 0.015, iw, xc, -0.0075, zc, q);                                                           // mảnh hợp kim
+    cyl(MRX.gap, 0.0065, 0.0065, 0.003, xc - 0.003, -0.0155, zc, q, 12); }                                    // vít kẹp mảnh
+  if (o.bore) { cylZ(MRX.steel, R * 0.5, W + 0.008, 0, 0, 0, p, 64); cylZ(MRX.steel, R * 0.32, W + 0.022, 0, 0, 0, p, 48);
+    cylZ(MRX.gap, o.bore, W + 0.026, 0, 0, 0, p, 32); box(MRX.gap, 0.014, 0.012, W + 0.027, 0, o.bore + 0.004, 0, p); }
+}
+// 1) DAO PHAY TRỤ (máy phay ngang): trụ dài, nhiều răng xoắn sâu, lỗ lắp trục gá có rãnh then
+Object.assign(GX.slab, { build(g) {
+  const R = 0.12, L = 0.34, y0 = 0.2;
+  const b = meshOf(flutedBody(R, L, 8, 40, () => 1, 0.66, 0.13, 8 * 30), MR.hss, g); b.rotation.z = PI / 2; b.position.set(L / 2, y0, 0);
+  [-1, 1].forEach(s => { cylX(MR.hss, R * 0.64, 0.004, s * (L / 2 + 0.001), y0, 0, g, 48); cylX(MRX.gap, 0.036, 0.006, s * (L / 2 + 0.003), y0, 0, g, 32);
+    box(MRX.gap, 0.007, 0.016, 0.022, s * (L / 2 + 0.003), y0 + 0.04, 0, g);
+    cylX(M.chrome, 0.055, 0.035, s * (L / 2 + 0.02), y0, 0, g, 40); });           // vòng đệm trục gá
+  cylX(MR.hss, 0.03, 0.46, 0, y0, 0, g, 24); } });
+// 2) DAO PHAY ĐĨA BA MẶT CẮT (gắn mảnh so le): mảnh hợp kim xen kẽ nhô ra hai mặt bên → cắt đáy rãnh và cả hai thành rãnh
+function sideFaceCutter(g, R, W, z, y0) {
+  const d = new THREE.Group(); d.position.y = y0; d.rotation.y = PI / 2; g.add(d);
+  insertCutter(d, R, W, z, { stagger: true, bore: 0.033 }); return d;
+}
+Object.assign(GX.disk3, { build(g) { sideFaceCutter(g, 0.17, 0.07, 8, 0.2); cylX(MR.hss, 0.033, 0.42, 0, 0.2, 0, g, 20);
+  [-1, 1].forEach(s => cylX(M.chrome, 0.05, 0.03, s * 0.062, 0.2, 0, g, 32)); } });
+// 3) DAO PHAY MÔĐUN DẠNG ĐĨA: nhìn cạnh, mỗi răng có biên dạng cong (chân rộng, đỉnh hẹp tròn) đúng hình rãnh giữa hai răng bánh răng
+Object.assign(GX.modDisk, { build(g) {
+  const d = new THREE.Group(); d.position.y = 0.2; g.add(d); const z = 10, H = 0.066, hb = 0.032, ht = 0.009, r0 = 0.086, tt = 0.05;
+  cylX(MR.hss, r0 + 0.003, 2 * hb, 0, 0, 0, d, 64); cylX(MR.hss, 0.058, 2 * hb + 0.018, 0, 0, 0, d, 40);
+  const sp = new THREE.Shape(); sp.moveTo(-hb, 0); sp.bezierCurveTo(-hb, H * 0.42, -ht * 1.8, H * 0.84, -ht, H); sp.quadraticCurveTo(0, H + 0.008, ht, H); sp.bezierCurveTo(ht * 1.8, H * 0.84, hb, H * 0.42, hb, 0); sp.closePath();
+  const tg = new THREE.ExtrudeGeometry(sp, { depth: tt, bevelEnabled: false, curveSegments: 12 }); tg.translate(0, r0 - 0.003, -tt);
+  for (let i = 0; i < z; i++) { const p = new THREE.Group(); p.rotation.x = i / z * TAU; d.add(p); p.add(sh(new THREE.Mesh(tg, MR.hss))); }
+  cylX(MR.hss, 0.033, 0.36, 0, 0.2, 0, g, 20); [-1, 1].forEach(s => cylX(M.chrome, 0.048, 0.03, s * (hb + 0.03), 0.2, 0, g, 32)); } });
+// 4) DAO PHAY RÃNH CHỮ T (gắn mảnh): đầu dao dạng đĩa có hốc phoi sâu, mảnh hợp kim so le cắt chu vi và hai mặt; cổ nhỏ lọt rãnh, cán trụ
+Object.assign(TOOLS.tslot, { build(g) {
+  const R = 0.13, W = 0.1, h = new THREE.Group(); h.position.y = W / 2; h.rotation.x = PI / 2; h.scale.y = -1; g.add(h);
+  insertCutter(h, R, W, 6, { stagger: true, rg: 0.64 });
+  cyl(MRX.steel, 0.07, 0.07, W - 0.004, 0, W / 2, 0, g, 40);                       // lõi đầu dao
+  cyl(MRX.gap, 0.012, 0.012, 0.004, 0, 0.0005, 0, g, 6);                            // lỗ lục giác giữa mặt đầu
+  cyl(MRX.steel, 0.045, 0.055, 0.03, 0, W + 0.014, 0, g, 32); cyl(MRX.steel, 0.045, 0.045, 0.2, 0, 0.2, 0, g, 28); cyl(MRX.steel, 0.045, 0.08, 0.04, 0, 0.32, 0, g, 28);
+  shankTo(g, 0.08, 0.34, 0.52); return 0.52; } });
+// 5) MŨI KHOAN XOẮN (thép gió nhuộm đen) – khác hẳn dao phay ngón: 2 rãnh sâu, cạnh viền hẹp, mũi 118°
+Object.assign(TOOLS.drill, { build(g) { twistDrill(g, 0.06, 0.5, 0.75, MRX.black); return 0.75; } });
+Object.assign(TOOLS.center, { build(g) { centerDrill(g, 0.4, 0.015, 0.05, MR.hss); return 0.4; } });
+Object.assign(GX.center, { build(g) { centerDrill(g, 0.4, 0.015, 0.05, MR.hss); } });
+// ---- MẢNH HỢP KIM VUÔNG KIỂU SE..1204 (giống dao thật): 4 cạnh cắt, 4 góc vát phẳng (mép sửa đáy), mặt bên thu nhỏ về phía đáy (góc sau dương),
+//      mặt trước có rãnh bẻ phoi chạy dọc cạnh cắt, lỗ côn giữa và vít Torx kẹp mảnh
+Object.assign(MRX, { groove: std('#3b3324', 0.45, 0.7, { envMapIntensity: 1.2 }), screw: std('#1f2329', 0.3, 0.9, { envMapIntensity: 1.3 }) });
+function octShape(h, c, hole) {
+  const s = new THREE.Shape(), pts = [[h - c, h], [h, h - c], [h, c - h], [h - c, -h], [c - h, -h], [-h, c - h], [-h, h - c], [c - h, h]];
+  s.moveTo(...pts[0]); for (let i = 1; i < 8; i++) s.lineTo(...pts[i]); s.closePath();
+  if (hole) { const p = new THREE.Path(), k = hole / h; p.moveTo(pts[0][0] * k, pts[0][1] * k); for (let i = 7; i >= 1; i--) p.lineTo(pts[i][0] * k, pts[i][1] * k); p.closePath(); s.holes.push(p); }
+  return s;
+}
+// mặt trước (mặt thoát phoi) hướng theo +Z của nhóm trả về, mặt tì ở z = 0
+function makeInsert(a, th, mat = MR.tin) {
+  const g = new THREE.Group(), h = a / 2, c = a * 0.12;
+  const geo = new THREE.ExtrudeGeometry(octShape(h, c), { depth: th - 0.003, bevelEnabled: true, bevelThickness: 0.0015, bevelSize: 0.0015, bevelSegments: 2, curveSegments: 2 });
+  geo.translate(0, 0, 0.0015); const P = geo.attributes.position;
+  for (let i = 0; i < P.count; i++) { const k = 0.8 + 0.2 * Math.min(1, Math.max(0, P.getZ(i) / th)); P.setXY(i, P.getX(i) * k, P.getY(i) * k); }   // góc sau dương
+  geo.computeVertexNormals(); g.add(sh(new THREE.Mesh(geo, mat)));
+  const gr = new THREE.Mesh(new THREE.ShapeGeometry(octShape(h * 0.8, c * 0.8, h * 0.6)), MRX.groove); gr.position.z = th + 0.0004; g.add(gr);   // rãnh bẻ phoi
+  const cs = new THREE.Mesh(new THREE.CircleGeometry(a * 0.2, 28), MRX.gap); cs.position.z = th + 0.0006; g.add(cs);                           // lỗ côn
+  const hd = new THREE.Mesh(new THREE.CylinderGeometry(a * 0.15, a * 0.17, 0.004, 28), MRX.screw); hd.rotation.x = PI / 2; hd.position.z = th + 0.0015; g.add(hd);
+  const tx = new THREE.Mesh(new THREE.CircleGeometry(a * 0.065, 6), MRX.gap); tx.position.z = th + 0.0036; g.add(tx);                         // lỗ Torx
+  return g;
+}
+// 6) DAO PHAY MẶT ĐẦU Ø63 GẮN MẢNH 45° (dạng đầu dao lắp trục gá): thân thép, phần dưới vát 45°, trước mỗi mảnh có hốc thoát phoi,
+//    mảnh hợp kim vuông phủ TiN đặt nghiêng 45° bắt vít ở chu vi đáy; mặt trên có trục gá với rãnh then dẫn động
+Object.assign(TOOLS.face, { z: 5, build(g) {
+  const R = 0.315, z = 5, Rb = 0.335, rg = 0.2, zl = 0.03, zt = 0.13, a = 0.085, hd = a / Math.SQRT2, r0 = R - 0.025;
+  const h = new THREE.Group(); h.rotation.x = -PI / 2; g.add(h);                       // trục đùn của hình = trục dao (hướng lên)
+  const geo = new THREE.ExtrudeGeometry(pocketBodyShape(Rb, z, rg), { depth: zt - zl, steps: 16, bevelEnabled: false, curveSegments: 4 });
+  geo.translate(0, 0, zl); const P = geo.attributes.position;
+  for (let i = 0; i < P.count; i++) { const x = P.getX(i), y = P.getY(i), zz = P.getZ(i), r = Math.hypot(x, y), rc = r0 - 0.012 + (zz - zl) * 1.0;
+    if (r > rc && r > 1e-6) { const k = rc / r; P.setXY(i, x * k, y * k); } }                  // phần dưới vát 45° theo lưỡi cắt
+  geo.computeVertexNormals(); meshOf(geo, MRX.steel, h);
+  cyl(MRX.steel, Rb, Rb, 0.07, 0, zt + 0.033, 0, g, 96); cyl(MRX.steel, Rb - 0.014, Rb, 0.014, 0, zt + 0.075, 0, g, 96);   // phần trên tròn đặc, vát mép
+  cyl(MRX.gap, 0.075, 0.075, 0.004, 0, zl - 0.001, 0, g, 40); cyl(MRX.steel, 0.115, 0.115, 0.002, 0, zl - 0.0005, 0, g, 48);              // lỗ bậc bắt vít ở mặt đáy
+  for (let i = 0; i < z; i++) { const q = new THREE.Group(); q.rotation.z = i * TAU / z; h.add(q);
+    const io = new THREE.Group(); io.position.set(r0 + 0.004, -0.001, (a / 2) * Math.SQRT2 - (a * 0.12) / Math.SQRT2); io.rotation.x = PI / 2; q.add(io);
+    const ii = makeInsert(a, 0.046); ii.rotation.z = PI / 4; io.add(ii);                       // mảnh vuông đặt chéo: lưỡi cắt chính 45°, góc vát dưới cùng nằm ngang = mép sửa đáy
+    box(MRX.steel, a * 0.8, 0.012, a * 0.8, r0 - 0.012, 0.004, hd + 0.004, q).rotation.y = PI / 4; }   // ổ đỡ mảnh
+  const top = zt + 0.082;                                                                     // trục gá dao + rãnh then dẫn động
+  cyl(MRX.steel, 0.15, 0.15, 0.09, 0, top + 0.045, 0, g, 48); cyl(MRX.steel, 0.13, 0.15, 0.012, 0, top + 0.096, 0, g, 48);
+  [-1, 1].forEach(s => box(MRX.gap, 0.05, 0.04, 0.035, s * 0.13, top + 0.02, 0, g));
+  return top + 0.102; } });
+
 (function buildGallery() {
   box(M.darker, 4.4, 0.85, 1.3, 0, 0.425, 0, gallery);
   box(M.table, 4.44, 0.04, 1.34, 0, 0.87, 0, gallery);
-  box(M.guard, 4.4, 1.3, 0.04, 0, 1.55, -0.65, gallery);
+  box(M.dark, 4.4, 1.3, 0.04, 0, 1.55, -0.65, gallery);
   box(M.paintLt, 4.4, 0.03, 0.06, 0, 2.2, -0.62, gallery);
   const perRow = Math.ceil(GALLERY.length / 2);
   GALLERY.forEach((it, i) => {
@@ -2251,7 +2451,7 @@ const galLabels = galItems.map(gi => {
   const el = document.createElement('div'); el.className = 'lbl gal' + (gi.row ? ' below' : ''); el.style.setProperty('--c', '#f0b43c');
   el.innerHTML = `<b>${gi.it.name}</b><span>${gi.it.use}</span>`; labelBox.appendChild(el); return { el, gi };
 });
-let galleryOn = false;
+let galleryOn = false; gallery.visible = false;
 function updateGallery(dt) {
   galItems.forEach((g, i) => { g.spin.rotation.y += dt * (0.5 + (i % 3) * 0.12); });
   const show = galleryOn;
@@ -2391,6 +2591,17 @@ Object.assign(TOOLS.woodruff, { build(g) {
   const d = meshOf(toothedDisk(WR, WW, 12, 0.025, 0), MR.tin, g); d.rotation.x = PI / 2; d.position.y = WW / 2;
   cyl(MR.hss, 0.028, 0.028, 0.14, 0, WW + 0.07, 0, g, 24); shankTo(g, 0.05, WW + 0.14, 0.42); return 0.42; } });
 
+// dao phay đĩa trên đầu phay ngang: loại gắn mảnh hợp kim, thân thép có hốc thoát phoi sâu, lắp trên trục gá
+Object.assign(TOOLS.disk, { build(g) {
+  const rotor = new THREE.Group(); rotor.name = 'rotor'; rotor.position.set(0, DISK_R, 0); g.add(rotor);
+  insertCutter(rotor, DISK_R, DISK_W, 6, { bore: 0.035 });                      // thân thép, 6 răng, mảnh hợp kim phủ hết bề rộng
+  cylZ(MR.hss, 0.035, 0.36, 0, 0, -0.12, rotor, 24);
+  cylZ(M.chrome, 0.065, 0.03, 0, 0, -DISK_W / 2 - 0.028, rotor, 32); cylZ(M.chrome, 0.065, 0.03, 0, 0, DISK_W / 2 + 0.028, rotor, 32);
+  cylZ(M.blackox, 0.045, 0.03, 0, 0, 0.075, rotor, 6);
+  box(M.paint, 0.24, 0.5, 0.16, 0, DISK_R + 0.2, -0.3, g); box(M.paintLt, 0.25, 0.02, 0.17, 0, DISK_R + 0.45, -0.3, g);
+  box(M.paint, 0.24, 0.12, 0.42, 0, DISK_R + 0.52, -0.15, g); cyl(M.blackox, 0.11, 0.11, 0.04, 0, DISK_R + 0.6, 0, g, 40);
+  return DISK_R + 0.62; } });
+
 // ------------------------------------------------------------------ camera
 const VIEWS = {
   work: () => [[1.7, TY + 0.85, 2.7], [-0.05, TY - 0.2, 0]],
@@ -2399,7 +2610,7 @@ const VIEWS = {
   front: () => [[0, TY + 0.35, 2.9], [0, TY - 0.1, 0]],
   all: () => [[3.6, 3.2, 5.2], [0, 1.8, -0.3]],
   side: () => [[3.0, TY + 0.6, 0.2], [0, TY - 0.1, 0]],
-  gallery: () => [[5.0, 2.6, 5.35], [5.0, 1.08, 0]],
+  gallery: () => [[5.2, 2.75, 6.1], [5.2, 1.12, 0]],
 };
 let camTween = null;
 function setView(v, anim = true) { const [p, t] = VIEWS[v](); if (!anim) { camTween = null; camera.position.set(...p); controls.target.set(...t); controls.update(); return; } camTween = { t: 0, p0: camera.position.clone(), t0: controls.target.clone(), p1: v3(...p), t1: v3(...t) }; }
@@ -2416,7 +2627,7 @@ function buildModeList() {
 }
 function resetAll(keepCam) {
   state.curTool = null; buildTool(mode().tool); resetKind(); buildProgram(); buildNArc(); buildHose(); placeTables(); updateTexts();
-  if (!keepCam) setView('work', false);
+  if (!keepCam) setView(mode().view || 'work', false);
 }
 function selectMode(k) {
   setGallery(false);
@@ -2459,11 +2670,31 @@ function updateReadouts() {
 }
 function paintSliders() { document.querySelectorAll('input[type=range]').forEach(r => r.style.setProperty('--p', ((r.value - r.min) / (r.max - r.min) * 100) + '%')); }
 document.addEventListener('input', paintSliders);
-function fitLeft() {
-  const sc = document.querySelector('#left .scroll'), host = $('left'); sc.style.transform = ''; sc.style.width = '';
-  const k = Math.min(1, (host.clientHeight - 24) / sc.offsetHeight);
-  sc.style.transform = k < 1 ? `scale(${k})` : ''; sc.style.width = k < 1 ? (100 / k) + '%' : '';
+// bảng điều khiển gọn: chữ không nhỏ hơn 88%; nếu vẫn không vừa thì cho cuộn trong bảng. Máy nằm giữa khoảng trống bên phải bảng
+function updateViewCenter() {
+  const W = innerWidth, H = innerHeight; let cx = W / 2, cy = H / 2;
+  if (W > 700) {
+    const host = $('left'), left = host.classList.contains('mini') ? 0 : host.getBoundingClientRect().right;
+    const top = document.querySelector('header').getBoundingClientRect().bottom, bottom = $('dock').getBoundingClientRect().top;
+    cx = (left + W) / 2; cy = (top + bottom) / 2;
+  }
+  camera.setViewOffset(W, H, W / 2 - cx, H / 2 - cy, W, H);
 }
+function fitLeft() {
+  const host = $('left'), sc = host.querySelector('.scroll'), hd = host.querySelector('.lhead');
+  sc.style.transform = ''; sc.style.width = ''; sc.style.marginBottom = ''; host.style.maxHeight = ''; host.style.overflowY = '';
+  host.style.top = innerWidth <= 700 ? (document.querySelector('header .brand').getBoundingClientRect().bottom + 8) + 'px' : '';
+  updateViewCenter();
+  if (host.classList.contains('mini')) return;
+  const top = host.getBoundingClientRect().top, cs = getComputedStyle(host), room = innerHeight - top - (innerWidth <= 700 ? 74 : 14);
+  const avail = room - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - hd.offsetHeight - 8;
+  const h = sc.offsetHeight, need = avail / h, k = Math.min(1, Math.max(0.88, need));
+  if (k < 1) { sc.style.transform = `scale(${k})`; sc.style.width = (100 / k) + '%'; sc.style.marginBottom = (-(1 - k) * h) + 'px'; }
+  if (need < 0.88) { host.style.maxHeight = room + 'px'; host.style.overflowY = 'auto'; }
+}
+function setMini(on) { $('left').classList.toggle('mini', on); $('lToggle').textContent = on ? 'Mở rộng ›' : '‹ Thu gọn'; fitLeft(); }
+$('lToggle').onclick = () => setMini(!$('left').classList.contains('mini'));
+if (innerWidth <= 700) setMini(true);
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); fitLeft(); });
 $('sN').oninput = e => { state.n = +e.target.value; updateTexts(); };
 $('sS').oninput = e => { state.S = +e.target.value; updateTexts(); };
@@ -2478,7 +2709,7 @@ function setPlaying(p) { state.playing = p; $('tPlay').textContent = p ? 'Tạm 
 $('bPlay').onclick = () => setPlaying(!state.playing);
 $('bRestart').onclick = () => { resetAll(true); setPlaying(true); };
 document.querySelectorAll('.vbtn').forEach(b => b.onclick = () => { setGallery(false); setView(b.dataset.v); });
-function setGallery(on) { galleryOn = on; $('bGal').classList.toggle('on', on); $('tGal').textContent = on ? 'Về máy phay' : 'Bộ dao phay'; }
+function setGallery(on) { galleryOn = on; gallery.visible = on; $('bGal').classList.toggle('on', on); $('tGal').textContent = on ? 'Về máy phay' : 'Bộ dao phay'; }
 $('bGal').onclick = () => { setGallery(!galleryOn); setView(galleryOn ? 'gallery' : 'work'); };
 $('tabBasic').onclick = () => { state.tab = 'basic'; buildModeList(); selectMode('face'); };
 $('tabProd').onclick = () => { state.tab = 'prod'; buildModeList(); selectMode('dovetailP'); };
@@ -2512,7 +2743,26 @@ function frame() {
   controls.update(); renderer.render(scene, camera); renderPIP(); updateLabels();
   readT += raw; if (readT > 0.15) { readT = 0; updateReadouts(); }
 }
-buildModeList(); selectMode('face'); frame();
+// ================================================================== PHÂN BIỆT PHAY RÃNH CHỮ NHẬT / PHAY RÃNH CHỮ T
+// vạch dấu tiết diện rãnh (đường màu) trên hai mặt đầu phôi + góc nhìn chếch từ đầu phôi để thấy rõ hình chữ nhật / chữ T
+VIEWS.slotEnd = () => [[-2.15, TY + 0.72, 2.25], [-0.3, TY - 0.14, 0]];
+var PROFILES = {
+  slot: { col: '#c4b5fd', pts: [[0.08, H0], [0.08, H0 - 0.1], [-0.08, H0 - 0.1], [-0.08, H0]] },
+  tslotP: { col: '#7dd3fc', pts: [[0.06, H0], [0.06, 0.2], [0.13, 0.2], [0.13, 0.1], [-0.13, 0.1], [-0.13, 0.2], [-0.06, 0.2], [-0.06, H0]] },
+};
+var profG = null, profMat = null;
+function buildProfile(k) {
+  if (!profG) { profG = new THREE.Group(); workG.add(profG); profMat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false }); }
+  profG.children.slice().forEach(o => { profG.remove(o); o.geometry.dispose(); });
+  const P = PROFILES[k]; profG.visible = !!P; if (!P) return;
+  profMat.color.set(P.col); profMat.clippingPlanes = cutPlanes(); profMat.needsUpdate = true;
+  [-1, 1].forEach(sx => { const x = sx * (LU / 2 + 0.004);
+    for (let i = 0; i < P.pts.length - 1; i++) { const [v0, y0] = P.pts[i], [v1, y1] = P.pts[i + 1], L = Math.hypot(v1 - v0, y1 - y0);
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.005, 0.009 + (y1 !== y0 ? L : 0), 0.009 + (v1 !== v0 ? L : 0)), profMat);
+      m.position.set(x, (y0 + y1) / 2, (v0 + v1) / 2); profG.add(m); } });
+}
+MODES.slot.view = 'slotEnd'; MODES.tslotP.view = 'slotEnd';
+buildModeList(); selectMode('face'); updateViewCenter(); frame();
 window.__mill = { ff(sec) { const h = 0.02; for (let t = 0; t < sec; t += h) { state.spin += TAU * revPerSec() * h; stepProgram(h); } flush(); }, state, selectMode, setView, get prog() { return prog; } };
 })();
 
