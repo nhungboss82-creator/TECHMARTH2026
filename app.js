@@ -416,7 +416,7 @@ route(/^\/dangnhap$/, params => {
             : await api('login_gv', { email: $('#u').value, password: $('#p').value });
           setSession(s); flush(); const nx = store.get('next', ''); store.del('next'); location.hash = nx || '#/';
         } catch (err) {
-          const msg = (tab === 'hs' && /Sai tên đăng nhập/.test(err.message || ''))
+          const msg = (tab === 'hs' && /Sai tên đăng nhập|Tên đăng nhập 3/.test(err.message || ''))
             ? 'Sai tên đăng nhập/email/họ tên hoặc mật khẩu. Nếu nhiều bạn trùng họ tên, em hãy đăng nhập bằng tên đăng nhập.'
             : err;
           errBox($('#msg'), msg);
