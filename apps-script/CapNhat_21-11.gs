@@ -566,20 +566,25 @@ try { cn2311AddHS_(); } catch (e) { console.error('CapNhat_23_11 AddHS: ' + e); 
 function cn2511Reg_() {
   if (typeof API === 'undefined') return;
   const gvOk_ = g => ['cho_duyet', 'khoa', 'tu_choi'].indexOf(String(g.TrangThai || '')) < 0;
+  const sKey_ = x => String(schoolKey_(x) || x || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
   const regSchools_ = () => {
     const gv = rows_('GiaoVien').filter(gvOk_), sk = {};
-    gv.forEach(g => { const k = schoolKey_(g.Truong); if (k) sk[k] = sk[k] || String(g.Truong).trim(); });
-    const out = {};
-    rows_('Lop').forEach(c => { const k = schoolKey_(c.Truong); if (!k || !sk[k] || cn2111IsSelf_(c)) return;
-      (out[k] = out[k] || { Truong: sk[k], lop: [] }).lop.push({ MaLop: c.MaLop, TenLop: String(c.TenLop), Khoi: String(c.Khoi) }); });
-    return Object.keys(out).map(k => out[k]).sort((a, b) => a.Truong.localeCompare(b.Truong, 'vi'));
+    gv.forEach(g => { const k = sKey_(g.Truong); if (k) sk[k] = sk[k] || String(g.Truong).trim(); });
+    const out = {}, cls = rows_('Lop');
+    cls.forEach(c => { const k = sKey_(c.Truong); if (k && sk[k] && !out[k]) out[k] = { Truong: String(c.Truong).trim(), lop: [], seen: {} }; });
+    /* lớp chính thức trước, lớp HS tự khai sau; trùng tên lớp trong cùng trường thì chỉ giữ 1 */
+    cls.slice().sort((a, b) => (cn2111IsSelf_(a) ? 1 : 0) - (cn2111IsSelf_(b) ? 1 : 0)).forEach(c => {
+      const o = out[sKey_(c.Truong)]; if (!o) return;
+      const t = String(c.TenLop).replace(/\s+/g, '').toUpperCase(); if (!t || o.seen[t]) return; o.seen[t] = 1;
+      o.lop.push({ MaLop: c.MaLop, TenLop: String(c.TenLop), Khoi: String(c.Khoi) }); });
+    return Object.keys(out).map(k => ({ Truong: out[k].Truong, lop: out[k].lop })).sort((a, b) => a.Truong.localeCompare(b.Truong, 'vi'));
   };
   API.reg_schools = () => regSchools_();
   API.register_simple = req => {
     const code = String(req.code || '').trim().toUpperCase();
     const c = rows_('Lop').find(r => r.MaLop === code);
-    if (!c || cn2111IsSelf_(c)) throw new Error('Không tìm thấy lớp, em chọn lại lớp nhé');
-    if (!rows_('GiaoVien').some(g => gvOk_(g) && schoolKey_(g.Truong) === schoolKey_(c.Truong))) throw new Error('Trường này chưa có giáo viên đăng ký nên chưa nhận học sinh');
+    if (!c) throw new Error('Không tìm thấy lớp, em chọn lại lớp nhé');
+    if (!rows_('GiaoVien').some(g => gvOk_(g) && sKey_(g.Truong) === sKey_(c.Truong))) throw new Error('Trường này chưa có giáo viên đăng ký nên chưa nhận học sinh');
     const name = clean_(req.name, 60);
     if (!name || name.length < 4) throw new Error('Em hãy nhập đầy đủ họ và tên');
     const user = normUser_(req.username);
