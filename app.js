@@ -5490,7 +5490,7 @@ route(/^\/hcvg$/, params => {
           <canvas id="hc3d" class="hc3d"></canvas>
           <div class="hvctl">
             ${step === 'unfold' ? `<label class="hvrange">Lật <input id="tt" type="range" min="0" max="100" value="100"></label><button class="btn ghost sm" id="replay">▶ Lật lại</button>` : step === 'project' ? '<button class="btn ghost sm" id="reproj">▶ Chiếu lại</button><span class="hvhint">Lần lượt: đứng → bằng → cạnh</span>' : '<span class="hvhint">🖱️ Kéo để xoay · cuộn để phóng to</span>'}
-            <span class="grow"></span><button class="btn ghost sm" id="iso">↺ Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">👁 Nhìn thẳng từ trước</button></div>
+            <span class="grow"></span><button class="btn ghost sm" id="iso">↺ Góc nhìn ban đầu</button><button class="btn ghost sm" id="fr">👁 Từ trước</button><button class="btn ghost sm" id="lf">⬅ Từ trái</button><button class="btn ghost sm" id="rt">➡ Từ phải</button><button class="btn ghost sm" id="tp">⬇ Từ trên</button><button class="btn ghost sm" id="bk">↩ Từ sau</button></div>
         </section>
         <aside class="hvinfo">
           <div class="hvmeth"><span>${m === 1 ? 'Phương pháp chiếu góc thứ nhất' : 'Phương pháp chiếu góc thứ ba'}</span><b>Hình ${oi + 1}. ${esc(hcShort(O.ten))}</b></div>
@@ -5509,6 +5509,8 @@ route(/^\/hcvg$/, params => {
     if ($('#tt')) $('#tt').oninput = e => sc.setT(+e.target.value / 100);
     if ($('#replay')) $('#replay').onclick = () => { sc.set({ show: 'planes', t: 0 }); sc.iso(); setTimeout(() => sc.unfold(), 700); };
     $('#iso').onclick = () => sc.iso(); $('#fr').onclick = () => sc.view(0, 0);
+    $('#lf').onclick = () => sc.view(Math.PI / 2, 0); $('#rt').onclick = () => sc.view(-Math.PI / 2, 0);
+    $('#tp').onclick = () => sc.view(0, 1.5707); $('#bk').onclick = () => sc.view(Math.PI, 0);
   };
   /* ---- So sánh ---- */
   const drawSS = () => {
