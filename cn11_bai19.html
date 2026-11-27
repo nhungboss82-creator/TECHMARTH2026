@@ -1763,16 +1763,21 @@ function fitView(objs,dir,opt){opt=opt||{};scene.updateMatrixWorld(true);const b
     const x=Math.abs(q.dot(rt)),y=Math.abs(q.dot(up)),z=q.dot(d);need=Math.max(need,z+x/tH,z+y/tV);}
   need*=opt.margin||1.06;flyTo(c.clone().add(d.multiplyScalar(need)),c);}   // tâm xoay = tâm mô hình
 /* ---- trang So sánh: mỗi cơ cấu xoay tại chỗ quanh tâm của nó (kiểu Bài 10) ---- */
-const CR={t:'both',spin:false,rot:{ohv:{yaw:0,pitch:0},sv:{yaw:0,pitch:0}}};
+const CR={t:'both',spin:false,q:{ohv:new THREE.Quaternion(),sv:new THREE.Quaternion()}};
+// xoay tự do kiểu trackball: kéo ngang quay quanh trục đứng của màn hình, kéo dọc quay quanh trục ngang → nghiêng được mọi hướng
+function tball(q,dx,dy){const r=V3(1,0,0).applyQuaternion(camera.quaternion),u=V3(0,1,0).applyQuaternion(camera.quaternion);
+  q.premultiply(new THREE.Quaternion().setFromAxisAngle(u,dx*0.01).multiply(new THREE.Quaternion().setFromAxisAngle(r,dy*0.01))).normalize();}
+const ER={ohv:new THREE.Quaternion(),sv:new THREE.Quaternion()};   // góc xoay/nghiêng của cơ cấu ở trang Xupap treo / Xupap đặt
+function engPose(k){const E=ENG[k];cmpCenter(E);const q=ER[k];E.g.quaternion.copy(q);E.g.position.copy(E.c0).sub(E.c0.clone().applyQuaternion(q));}
 const CMPX={ohv:2.35,sv:-2.35};
 function cmpCenter(E){if(E.c0)return;const q=E.g.quaternion.clone(),p=E.g.position.clone();E.g.quaternion.identity();E.g.position.set(0,0,0);E.g.updateMatrixWorld(true);
   const b=new THREE.Box3().setFromObject(E.housing),c=b.getCenter(new THREE.Vector3());E.g.worldToLocal(c);const bt=E.g.worldToLocal(new THREE.Vector3(0,b.min.y,0)).y;
   E.c0=c;E.bot=bt-0.35;E.g.quaternion.copy(q);E.g.position.copy(p);}
-function cmpPose(){['ohv','sv'].forEach(k=>{const E=ENG[k],r=CR.rot[k];cmpCenter(E);
-  const q=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),-r.pitch).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),r.yaw));
+function cmpPose(){['ohv','sv'].forEach(k=>{const E=ENG[k];cmpCenter(E);
+  const q=CR.q[k];
   E.g.quaternion.copy(q);E.g.position.set(CMPX[k],0,0).add(E.c0).sub(E.c0.clone().applyQuaternion(q));});}
-function cmpRotate(dx,dy){(CR.t==='both'?['ohv','sv']:[CR.t]).forEach(k=>{const r=CR.rot[k];r.yaw+=dx*0.01;r.pitch=Math.max(-1.45,Math.min(1.45,r.pitch+dy*0.01));});cmpPose();}
-function cmpReset(){['ohv','sv'].forEach(k=>{CR.rot[k].yaw=0;CR.rot[k].pitch=0;});cmpPose();}
+function cmpRotate(dx,dy){(CR.t==='both'?['ohv','sv']:[CR.t]).forEach(k=>tball(CR.q[k],dx,dy));cmpPose();}
+function cmpReset(){['ohv','sv'].forEach(k=>CR.q[k].identity());cmpPose();}
 function cmpSel(k,fromMenu){CR.t=(k===CR.t&&!fromMenu)?'both':k;renderUI();}
 function cmpTags(){const T=$('cmpTags');if(page!=='cmp'){T.style.display='none';return;}T.style.display='';
   T.querySelectorAll('.ctag').forEach(el=>{const k=el.dataset.ct,E=ENG[k];if(!E.c0)return;const p=page2.localToWorld(new THREE.Vector3(CMPX[k]+E.c0.x,E.bot,E.c0.z)).project(camera);   // tên ghim ngay dưới chân cơ cấu, không nghiêng theo mô hình
@@ -1798,11 +1803,11 @@ const CUT_S=[['Pít tông','Pít tông là khối tròn xoay từ thân lên t�
   ['Hình cắt','Nửa còn lại cho thấy cấu tạo bên trong: đỉnh, đầu có rãnh xéc măng, thân, bệ chốt, chốt pít tông và khoang trong. Mặt cắt được kẻ gạch. Kéo chuột để xoay xem bên trong.']];
 const CUT_C=['#ef4444','#f59e0b','#10b981','#3b82f6'];
 function fadeFront(op){pFront.g.traverse(o=>{if(o.isMesh)mats(o).forEach(m=>{m.transparent=op<1;m.opacity=op;m.depthWrite=op>=1;m.needsUpdate=true;});});}
-const ECUT_S={ohv:[['Cơ cấu','Cơ cấu phân phối khí xupap treo được bao kín trong thân máy, nắp máy và các te. Kéo chuột để xoay, quan sát từ bên ngoài.'],
+const ECUT_S={ohv:[['Cơ cấu','Cơ cấu phân phối khí xupap treo được bao kín trong thân máy, nắp máy và các te. Kéo chuột phải để xoay – nghiêng cả cơ cấu, quan sát từ bên ngoài; kéo chuột trái để cơ cấu chạy.'],
     ['Mặt phẳng cắt','Dùng mặt phẳng cắt tưởng tượng A đi qua trục xi lanh, song song với trục khuỷu.'],
     ['Bỏ nửa trước','Bỏ phần vỏ máy nằm giữa người quan sát và mặt phẳng cắt A.'],
     ['Hình cắt','Thấy rõ xupap treo trên nắp máy, cò mổ, đũa đẩy, con đội, trục cam; mặt cắt vỏ máy được kẻ gạch. Ấn vào tên chi tiết hoặc ấn vào chi tiết để xem. Bấm ▶ Chạy để xem hoạt động.']],
-  sv:[['Cơ cấu','Cơ cấu phân phối khí xupap đặt được bao kín trong thân máy, nắp máy và các te. Kéo chuột để xoay, quan sát từ bên ngoài.'],
+  sv:[['Cơ cấu','Cơ cấu phân phối khí xupap đặt được bao kín trong thân máy, nắp máy và các te. Kéo chuột phải để xoay – nghiêng cả cơ cấu, quan sát từ bên ngoài; kéo chuột trái để cơ cấu chạy.'],
     ['Mặt phẳng cắt','Dùng mặt phẳng cắt tưởng tượng A đi qua trục xi lanh, song song với trục khuỷu.'],
     ['Bỏ nửa trước','Bỏ phần vỏ máy nằm giữa người quan sát và mặt phẳng cắt A.'],
     ['Hình cắt','Thấy rõ xupap đặt trong thân máy cạnh xi lanh, con đội, trục cam ngay dưới con đội, buồng cháy lệch bên; mặt cắt vỏ máy được kẻ gạch. Ấn vào tên chi tiết hoặc ấn vào chi tiết để xem. Bấm ▶ Chạy để xem hoạt động.']]};
@@ -1877,9 +1882,9 @@ function engFocus(pg){const m=pg==='cmp'?'all':EST[pg].mode;return m!=='all'&&m!
 function paintEng(pg){const fc=engFocus(pg);
   paintGroup(page2,o=>{const it=o.userData.item;if(fc)return fc.includes(it)?1:(isShell(o)?0.12:0.3);return XR.on&&isShell(o)?0.14:1;});}
 function paintMech(){paintGroup(block1,o=>XR.on&&o.userData.info!=='mainbrg'?0.14:1);}
-function engApply(pg){ESET.hidden.clear();clearGlow();
+function engApply(pg){ESET.hidden.clear();clearGlow();if(EST[pg])EST[pg].man=false;
   if(pg==='cmp'){ENG.ohv.g.visible=ENG.sv.g.visible=true;cmpPose();}
-  else{['ohv','sv'].forEach(k=>{ENG[k].g.quaternion.identity();ENG[k].g.position.set(0,0,0);});ENG.ohv.g.visible=pg==='ohv';ENG.sv.g.visible=pg==='sv';}
+  else{['ohv','sv'].forEach(k=>engPose(k));ENG.ohv.g.visible=pg==='ohv';ENG.sv.g.visible=pg==='sv';}
   const fc=engFocus(pg);if(fc)ESET.hidden.add('gas');
   page2.traverse(m=>{if(m.isMesh&&m.userData.item)m.visible=!ESET.hidden.has(m.userData.item);});
   if(pg!=='cmp'){const m=EST[pg].mode;playing=m==='run';setAuto(false);}else{playing=true;setAuto(false);}
@@ -1910,7 +1915,7 @@ function renderMenu(){let h='';menu.classList.remove('wide');
     h+=`<div class="sec">Cấu tạo – chọn chi tiết</div>`;ENG_MENU[page].forEach(([k,t],i)=>h+=mi(k,t,m===k,i+1));
     h+=`<div class="sec">Hoạt động</div>`+mi('run','▶ Nguyên lý hoạt động',m==='run','⚙','run');}
   else if(page==='cmp'){h+=`<h2>So sánh xupap treo – xupap đặt</h2><div class="sec">Chọn cơ cấu để xoay</div>`+mi('cr_both','Cả hai cơ cấu',CR.t==='both','⇆')+mi('cr_ohv','Xupap treo',CR.t==='ohv',1)+mi('cr_sv','Xupap đặt',CR.t==='sv',2)+
-    `<div class="sec">Góc nhìn</div>`+mi('cr_reset','Đưa về góc ban đầu',false,'↺')+`<div class="note">Kéo chuột (trái hoặc phải): xoay cơ cấu đang chọn tại chỗ. Nhấp vào cơ cấu hoặc tên của nó để chọn. Lăn chuột: phóng to/thu nhỏ.</div>`;}
+    `<div class="sec">Góc nhìn</div>`+mi('cr_reset','Đưa về góc ban đầu',false,'↺')+`<div class="note">Kéo vào chi tiết chuyển động (pít tông, trục cam, xupap…): quay cả hai cơ cấu bằng tay. Kéo chỗ trống/vỏ máy: xoay – nghiêng cơ cấu đang chọn theo mọi hướng. Nhấp vào cơ cấu hoặc tên của nó để chọn. Lăn chuột: phóng to/thu nhỏ.</div>`;}
   menu.innerHTML=h;fitMenu();}
 menu.addEventListener('click',e=>{
   const ck=e.target.closest('input[data-ck]');
@@ -1932,7 +1937,7 @@ const hud=$('hud');
 function updateHUD(){
   if(page==='mech'&&MST.state==='assembled'){const deg=((theta1%360)+360)%360;let h=`<h4>Góc quay trục khuỷu: ${deg.toFixed(0)}° · Thứ tự nổ 1-3-4-2</h4>`;
     [0,1,2,3].forEach(i=>{const si=strokeIdx(theta1-FIRE_DELAY[i]);h+=`<div class="row"><span>Xi lanh ${i+1}</span><span class="chip" style="background:${STROKES[si].c}">${STROKES[si].n}</span></div>`;});hud.innerHTML=h;hud.style.display='block';return;}
-  if(page==='cmp'||((page==='ohv'||page==='sv')&&EST[page].mode==='run')){const phi=((theta2%720)+720)%720,si=strokeIdx(phi),li=liftIn(theta2)>0.004,le=liftEx(theta2)>0.004;
+  if(page==='cmp'||((page==='ohv'||page==='sv')&&(EST[page].mode==='run'||EST[page].man))){const phi=((theta2%720)+720)%720,si=strokeIdx(phi),li=liftIn(theta2)>0.004,le=liftEx(theta2)>0.004;
     const arcs=STROKES.map((s,i)=>{const p=a=>{const t=(a-90)*D2R;return [60+46*Math.cos(t),60+46*Math.sin(t)];};const q0=p(i*90),q1=p(i*90+90);return `<path d="M${q0[0]} ${q0[1]} A46 46 0 0 1 ${q1[0]} ${q1[1]}" stroke="${s.c}" stroke-width="${i===si?14:9}" fill="none" opacity="${i===si?1:.45}"/>`;}).join('');
     const na=phi/2;hud.innerHTML=`<div style="display:flex;gap:12px;align-items:center"><svg width="104" height="104" viewBox="0 0 120 120">${arcs}<line x1="60" y1="60" x2="${60+40*Math.sin(na*D2R)}" y2="${60-40*Math.cos(na*D2R)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="60" r="5" fill="#fff"/></svg>
       <div><div class="chip" style="background:${STROKES[si].c};display:inline-block;margin-bottom:6px">Kì ${STROKES[si].n}</div><div class="row"><span>Trục khuỷu</span><b>${phi.toFixed(0)}°</b></div><div class="row"><span>Trục cam</span><b>${(phi/2).toFixed(0)}°</b></div>
@@ -1970,7 +1975,7 @@ function hidePopRender(){const P=$('hidePop'),L=HLIST[page];$('tHide').style.dis
   const b=$('tHide').getBoundingClientRect(),ft=$('ctrl').getBoundingClientRect(),w=P.offsetWidth||330;
   P.style.left=Math.max(8,Math.min(innerWidth-w-8,b.left+b.width/2-w/2))+'px';P.style.bottom=(innerHeight-ft.top+8)+'px';}
 function renderUI(){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===page));
-  renderCutBar();$('bPlay').textContent=playing?'⏸ Dừng':'▶ Chạy';const mechP=['mech','ohv','sv','cmp'].includes(page);$('playCtl').style.display=mechP?'flex':'none';$('tXray').style.display=mechP?'':'none';renderMenu();if(renderUI.mp!==mechP){renderUI.mp=mechP;resize();}hidePopRender();}
+  renderCutBar();$('hint').textContent=hintText();$('bPlay').textContent=playing?'⏸ Dừng':'▶ Chạy';const mechP=['mech','ohv','sv','cmp'].includes(page);$('playCtl').style.display=mechP?'flex':'none';$('tXray').style.display=mechP?'':'none';renderMenu();if(renderUI.mp!==mechP){renderUI.mp=mechP;resize();}hidePopRender();}
 function clearGlow(){glowList.forEach(m=>setEm(m,0,0,0));glowList=[];}
 function goPage(p){clearGlow();if(p!==page)$('hidePop').classList.remove('on');page=p;controls.enabled=!DET.includes(p)&&p!=='cmp';   // 3 trang chi tiết dùng bộ xoay kiểu Bài 10 bên dưới
   if(HGRP[p])applyHidden(p);Object.values(groups).forEach(g=>g.visible=false);groups[p].visible=true;setLights();glowList=[];
@@ -1990,14 +1995,15 @@ $('tXray').onclick=()=>setXray(!XR.on);
 $('cutbar').addEventListener('click',e=>{const b=e.target.closest('[data-cs]'),c=curCut();if(b&&c)c.go(+b.dataset.cs);});
 $('cbNx').onclick=()=>{const c=curCut();if(c)c.go(Math.min(4,c.get()+1));};
 $('cbRp').onclick=()=>{const c=curCut();if(!c)return;if(c.get()===4){c.go(3);tween(0.01,2.1,()=>{if(c.get()===3)c.go(4,false);});}else c.go(c.get());};
-$('cbIso').onclick=()=>VIEW[page]();
+const resetTilt=()=>{if(page==='ohv'||page==='sv'){ER[page].identity();engPose(page);}};
+$('cbIso').onclick=()=>{resetTilt();VIEW[page]();};
 $('cbFr').onclick=()=>$('bFront').onclick();
 $('cbX').onclick=()=>{const c=curCut();if(c)c.exit();renderUI();};
 $('tLabel').onclick=()=>{showLabels=!showLabels;$('tLabel').classList.toggle('on',showLabels);};
-$('bView').onclick=()=>VIEW[page]();
+$('bView').onclick=()=>{if(page==='crank'){CRK.deg=0;crankD.rotation.x=0;}resetTilt();VIEW[page]();};
 // nhìn thẳng từ phía trước (mặt chính của từng mô hình)
 const FRONT={piston:()=>V3(0,0.04,1),rod:()=>RST.focus==='dauto'?V3(1,0.05,0.9):V3(1,0.04,0),crank:()=>V3(0,0.04,1),mech:()=>V3(0,0.04,1),ohv:()=>V3(0,0.04,-1),sv:()=>V3(0,0.04,-1),cmp:()=>V3(0,0.04,-1)};
-$('bFront').onclick=()=>{if(page==='cmp')cmpReset();fitView([groups[page]],FRONT[page](),{pad:page==='cmp'?90:150});};
+$('bFront').onclick=()=>{if(page==='cmp')cmpReset();resetTilt();fitView([groups[page]],FRONT[page](),{pad:page==='cmp'?90:150});};
 const zoomBy=f=>{cam=null;const t=controls.target,v=camera.position.clone().sub(t),d=Math.min(controls.maxDistance,Math.max(controls.minDistance,v.length()*f));camera.position.copy(t).add(v.setLength(d));controls.update();};
 $('zIn').onclick=()=>zoomBy(1/1.2);$('zOut').onclick=()=>zoomBy(1.2);
 $('tBg').onclick=()=>{const d=document.body.classList.toggle('dark');$('tBg').classList.toggle('on',d);renderer.toneMappingExposure=d?0.95:1.0;};
@@ -2013,7 +2019,7 @@ const NAME={front:'Vỏ máy – ấn để cắt xem bên trong',pbody:'Đầu 
 const ray=new THREE.Raycaster(),mv=new THREE.Vector2();
 function hitAt(e){const r=canvas.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,camera);
   return ray.intersectObject(groups[page],true).find(h=>{const m=h.object;if(m.userData.noPick||m.userData.ov||!m.userData.info)return false;if(mats(m)[0].transparent&&mats(m)[0].opacity<0.2)return false;let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;})||null;}
-function pick(e){const h=hitAt(e);
+function pick(h){
   if(!h)return null;let n=NAME[h.object.userData.info]||'';if(h.object.userData.info==='valve')n=partOf(h.object)==='valveEx'?'Xupap thải':'Xupap nạp';return n;}
 const tipEl=$('tipName');let hoverEv=null,hoverT=0;
 canvas.addEventListener('pointermove',e=>{hoverEv=e;});
@@ -2047,15 +2053,68 @@ let downP=null;
 canvas.addEventListener('pointerdown',e=>{downP={x:e.clientX,y:e.clientY,t:performance.now(),b:e.button};});
 canvas.addEventListener('pointerup',e=>{if(!downP)return;const dx=e.clientX-downP.x,dy=e.clientY-downP.y,ok=downP.b===0&&dx*dx+dy*dy<36&&performance.now()-downP.t<500;downP=null;if(ok)clickPick(e);});
 function clickPick(e){const h=hitAt(e);if(!h)return;const o=h.object,info=o.userData.info;let k;
-  if(page==='ohv'||page==='sv'){const it=o.userData.item;k={piston:'tkt',rod:'tkt',crank:'tkt',case:'block',spark:'head'}[it]||it;if(info==='front'){engCutStep(page,Math.min(4,EST[page].cs+1));return;}   // ấn vào vỏ máy → sang bước cắt tiếp theoif(!ENG_MENU[page].some(x=>x[0]===k))return;if(EST[page].cs&&EST[page].cs<3)EST[page].cs=4;
+  if(page==='ohv'||page==='sv'){const it=o.userData.item;k={piston:'tkt',rod:'tkt',crank:'tkt',case:'block',spark:'head'}[it]||it;if(info==='front'){engCutStep(page,Math.min(4,EST[page].cs+1));return;}   // ấn vào vỏ máy → sang bước cắt tiếp theo
+    if(!ENG_MENU[page].some(x=>x[0]===k))return;if(EST[page].cs&&EST[page].cs<3)EST[page].cs=4;
     EST[page].mode=EST[page].mode===k?'all':k;engApply(page);engView(page);}
   else if(page==='piston'){if(PST.focus==='dinhs')return;k={pbody:'dau',xecmangkhi:'dau',xecmangdau:'dau',lothoatdau:'dau',pskirt:'than',boss:'than',chotpt:'than',phanh:'than',bacchot:'than'}[info];if(!k)return;PST.focus=PST.focus===k?'all':k;pistonApply();}
   else if(page==='rod'){k={daunho:'daunho',bacnho:'daunho',than:'than',dauto:'dauto',napdauto:'dauto',bac:'bac',bulong:'bulong'}[info];if(!k)return;RST.focus=RST.focus===k?'all':k;rodApply();}
   else if(page==='crank'){k={chotkhuyu:'chotkhuyu',cokhuyu:'cokhuyu',makhuyu:'makhuyu',doitrong:'doitrong',dautruc:'dautruc',duoitruc:'duoitruc',lodau:'lodau',flywheel:'banhda',vanhrang:'banhda'}[info];if(!k)return;CST.focus=CST.focus===k?'all':k;crankApply();}
   else if(page==='cmp'){let q=o;while(q&&q!==ENG.ohv.g&&q!==ENG.sv.g)q=q.parent;if(!q)return;cmpSel(q===ENG.ohv.g?'ohv':'sv');return;}
   else return;renderUI();}canvas.addEventListener('pointerleave',()=>{hoverEv=null;tipEl.style.display='none';});
-function updateHover(dt){hoverT+=dt;if(!hoverEv||hoverT<0.06)return;hoverT=0;if(hoverEv.buttons){tipEl.style.display='none';return;}const n=pick(hoverEv);
-  if(!n){tipEl.style.display='none';return;}tipEl.textContent=n;tipEl.style.display='block';tipEl.style.left=(hoverEv.clientX+16)+'px';tipEl.style.top=(hoverEv.clientY+14)+'px';}
+function updateHover(dt){hoverT+=dt;if(!hoverEv||hoverT<0.06)return;hoverT=0;if(hoverEv.buttons){tipEl.style.display='none';return;}
+  const h=hitAt(hoverEv),G=grabTarget(h);canvas.style.cursor=G||isValvePg()?ROT_CUR:'';let n=pick(h);
+  if(!n){tipEl.style.display='none';return;}if(G)n+=' · kéo để quay';tipEl.textContent=n;tipEl.style.display='block';tipEl.style.left=(hoverEv.clientX+16)+'px';tipEl.style.top=(hoverEv.clientY+14)+'px';}
+
+/* ===================== QUAY CHI TIẾT BẰNG CHUỘT =====================
+   Giữ chuột trái (hoặc 1 ngón tay) lên một chi tiết chuyển động rồi kéo: cả cơ cấu quay theo tay.
+   – Trang Lắp ghép (đã lắp), Xupap treo, Xupap đặt, So sánh: kéo pít tông, thanh truyền, trục khuỷu, bánh đà,
+     bánh răng, trục cam, con đội, đũa đẩy, cò mổ, xupap… → trục khuỷu quay, mọi chi tiết chạy đúng động học.
+   – Trang Trục khuỷu: kéo trục khuỷu / bánh đà → trục quay quanh đường tâm của nó.
+   Điểm vừa nắm luôn bám theo con trỏ (tính theo hướng chuyển động thật của điểm đó trên màn hình),
+   nên nhìn từ góc nào cũng kéo được tự nhiên. Kéo chỗ trống (hoặc vỏ máy, chuột phải) vẫn xoay 360° như cũ. */
+const ROT_CUR="url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M21.5 15a7.5 7.5 0 1 1-2.4-7' fill='none' stroke='white' stroke-width='5' stroke-linecap='round'/><path d='M21.5 15a7.5 7.5 0 1 1-2.4-7' fill='none' stroke='%231d4f9e' stroke-width='2.4' stroke-linecap='round'/><path d='M23.5 3.5v7.5h-7.5z' fill='%231d4f9e' stroke='white' stroke-width='1.3' stroke-linejoin='round'/></svg>\") 14 14, pointer";
+const ENG_MOVE=['piston','rod','crank','gear','cam','tappet','pushrod','rocker','spring','valveIn','valveEx'];
+const CRK={deg:0};
+function engOf(o){while(o){if(o===ENG.ohv.g)return ENG.ohv;if(o===ENG.sv.g)return ENG.sv;o=o.parent;}return null;}
+function upTo(o,list){while(o){const i=list.indexOf(o);if(i>=0)return i;o=o.parent;}return -1;}
+function grabTarget(h){if(!h)return null;const m=h.object;let G=null;
+  if(page==='mech'){if(MST.state!=='assembled')return null;const p=partOf(m);if(!['piston','rod','crank','flywheel'].includes(p))return null;
+    let i=upTo(m,pistons);if(i<0)i=upTo(m,rods);let t=THROWS[Math.max(i,0)];
+    if(i<0){const lp=crank1.worldToLocal(h.point.clone());THROWS.forEach(q=>{if(Math.abs(q.x-lp.x)<Math.abs(t.x-lp.x))t=q;});}
+    G={ref:[crank1,V3(t.x,t.s*R,0)],get:()=>theta1,pose:v=>setAssembled(v),set:v=>{theta1=v;setAssembled(v);}};}
+  else if(page==='ohv'||page==='sv'||page==='cmp'){if(!ENG_MOVE.includes(m.userData.item))return null;const E=engOf(m);if(!E)return null;
+    G={ref:[E.crank,V3(0,R,0)],get:()=>theta2,pose:v=>updateEngine(E,v,0),set:(v,d)=>{theta2=v;updateEngine(ENG.ohv,v,d);updateEngine(ENG.sv,v,d);if(page!=='cmp')EST[page].man=true;}};}
+  else if(page==='crank'){const p=partOf(m);if(p!=='crank'&&p!=='flywheel')return null;
+    G={ref:[crankD,V3(THROWS[0].x,R,0)],get:()=>CRK.deg,pose:v=>{crankD.rotation.x=v*D2R;},set:v=>{CRK.deg=v;crankD.rotation.x=v*D2R;}};}
+  if(G){G.m=m;m.updateWorldMatrix(true,false);G.lp=m.worldToLocal(h.point.clone());}return G;}
+// trang Xupap treo / Xupap đặt: kéo chuột trái ở bất kỳ đâu → cơ cấu chạy theo tay (kéo sang phải hoặc lên trên = quay tiến)
+function freeG(){return {free:true,get:()=>theta2,set:(v,d)=>{theta2=v;updateEngine(ENG.ohv,v,d);updateEngine(ENG.sv,v,d);EST[page].man=true;}};}
+const isValvePg=()=>page==='ohv'||page==='sv';
+function scrPt(o,lp){o.updateWorldMatrix(true,false);const p=o.localToWorld(lp.clone()).project(camera);return [(p.x*0.5+0.5)*innerWidth,(-p.y*0.5+0.5)*innerHeight];}
+// tìm góc quay sao cho điểm đang nắm (và chốt khuỷu) dịch đúng theo con trỏ – bình phương tối thiểu trên vận tốc màn hình
+function partDrag(G,dx,dy){if(G.rot){if(page===G.rot){tball(ER[G.rot],dx,dy);engPose(G.rot);}return;}if(G.free){const d=Math.max(-12,Math.min(12,(dx-dy)*0.7));G.set(G.get()+d,Math.abs(d));return;}const th=G.get(),P=[[G.m,G.lp],G.ref],a=P.map(q=>scrPt(q[0],q[1]));G.pose(th+1);const b=P.map(q=>scrPt(q[0],q[1]));G.pose(th);
+  let num=0,den=0;a.forEach((p,i)=>{const vx=b[i][0]-p[0],vy=b[i][1]-p[1];num+=dx*vx+dy*vy;den+=vx*vx+vy*vy;});
+  let d=den>0.04?num/den:-dy*0.6;d=Math.max(-12,Math.min(12,d));G.set(th+d,Math.abs(d));}
+const PD={on:null};
+addEventListener('pointerdown',e=>{if(e.target!==canvas||PD.on)return;let G=null;
+  if(isValvePg()&&(e.button===2||(e.button===0&&e.shiftKey)))G={rot:page};   // chuột phải (hoặc Shift + chuột trái): xoay – nghiêng cả cơ cấu
+  else{if(e.button!==0)return;G=grabTarget(hitAt(e));if(!G&&isValvePg())G=freeG();}if(!G)return;
+  e.stopPropagation();e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch(x){}
+  const hp=$('hidePop');if(hp.classList.contains('on')){hp.classList.remove('on');hidePopRender();}
+  PD.on={G,id:e.pointerId,x:e.clientX,y:e.clientY,x0:e.clientX,y0:e.clientY,t:performance.now(),ar:controls.autoRotate};
+  controls.autoRotate=false;cam=null;tipEl.style.display='none';canvas.classList.add('drag');
+  if(playing&&page!=='crank'&&!G.rot){playing=false;renderUI();}},true);
+addEventListener('pointermove',e=>{const D=PD.on;if(!D||e.pointerId!==D.id)return;e.stopPropagation();
+  const dx=e.clientX-D.x,dy=e.clientY-D.y;if(!dx&&!dy)return;D.x=e.clientX;D.y=e.clientY;partDrag(D.G,dx,dy);},true);
+const pdEnd=e=>{const D=PD.on;if(!D||e.pointerId!==D.id)return;e.stopPropagation();PD.on=null;controls.autoRotate=D.ar;canvas.classList.remove('drag');
+  try{canvas.releasePointerCapture(e.pointerId);}catch(x){}
+  const mx=e.clientX-D.x0,my=e.clientY-D.y0;if(e.type==='pointerup'&&!D.G.rot&&mx*mx+my*my<36&&performance.now()-D.t<500)clickPick(e);};   // chỉ nhấp (không kéo) → vẫn chọn chi tiết như cũ
+['pointerup','pointercancel'].forEach(t=>addEventListener(t,pdEnd,true));
+function hintText(){const r='Kéo chỗ trống: xoay 360° · Lăn chuột: phóng to/thu nhỏ';
+  if(isValvePg())return '🖐 Kéo chuột trái (ở bất kỳ đâu): cơ cấu phân phối khí chạy theo tay · Kéo chuột phải: xoay – nghiêng cả cơ cấu theo mọi hướng · Lăn chuột: phóng to/thu nhỏ · Nhấp vào chi tiết: xem chi tiết đó';
+  if((page==='mech'&&MST.state==='assembled')||page==='cmp')return '🖐 Kéo pít tông, trục khuỷu, bánh đà, trục cam, xupap…: quay cơ cấu bằng tay · '+r;
+  if(page==='crank')return '🖐 Kéo trục khuỷu hoặc bánh đà: quay quanh đường tâm trục · '+r+' · Nhấp vào chi tiết: phóng tới chi tiết đó';
+  return 'Kéo chuột (trái hoặc phải): xoay 360° · Lăn chuột: phóng to/thu nhỏ · Nhấp vào chi tiết: phóng tới chi tiết đó';}
 
 /* ===================== LOOP ===================== */
 function resize(){const w=innerWidth,h=innerHeight;renderer.setSize(w,h,false);controls.rotateSpeed=0.01*h/(2*Math.PI);   // 0,01 rad cho mỗi điểm ảnh kéo – đúng như Bài 10
@@ -2089,7 +2148,7 @@ function tickBody(now){const dt=Math.min(0.05,(now-last)/1000);last=now;clock+=d
     rodS.g.position.x=RT.xS;rodO.g.position.x=-RT.xS;iSec.position.set(0.75,0.45+L*0.55,0);}
   if(page==='mech'&&MST.state==='assembled'){if(playing)theta1+=speed*dt;setAssembled(theta1);}
   if(['ohv','sv','cmp'].includes(page)){const adv=playing?speed*dt:0;theta2+=adv;updateEngine(ENG.ohv,theta2,adv);updateEngine(ENG.sv,theta2,adv);}
-  if(page==='cmp'&&CR.spin&&!(typeof DG!=='undefined'&&DG.on)){(CR.t==='both'?['ohv','sv']:[CR.t]).forEach(k=>CR.rot[k].yaw+=dt*0.6);cmpPose();}
+  if(page==='cmp'&&CR.spin&&!(typeof DG!=='undefined'&&DG.on)){(CR.t==='both'?['ohv','sv']:[CR.t]).forEach(k=>CR.q[k].premultiply(new THREE.Quaternion().setFromAxisAngle(V3(0,1,0),dt*0.6)));cmpPose();}
   const gi=0.45+0.35*Math.sin(clock*4);glowList.forEach(m=>setEm(m,0.03*gi,0.12*gi,0.32*gi));
   try{updateHover(dt);}catch(e){}controls.update();setLights();renderer.render(scene,camera);try{cmpTags();}catch(e){}try{updateLabels();}catch(e){}hudT+=dt;if(hudT>0.08){hudT=0;updateHUD();}}
 // start
