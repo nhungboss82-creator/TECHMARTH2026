@@ -847,6 +847,520 @@ body.hvfs .qbar{top:0;margin-bottom:10px}
 .hvsheet svg{display:block;width:100%;height:auto;max-height:34vh}
 @media (max-height:800px){.hvsheet svg{max-height:28vh}}
 
+/* ===== Cập nhật 21/11/2026 ===== */
+.selfcls summary{cursor:pointer;list-style:revert}
+.selfrow{flex-wrap:wrap;gap:8px;align-items:center}
+.selfrow .grow{min-width:140px}
+.selfrow select{flex:0 1 230px;width:auto;max-width:100%;margin:0}
+/* Mục thu gọn (accordion): bấm mục nào mở mục đó, bấm lại để thu gọn */
+.acc{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.acc-sec{background:var(--card,#fff);border:1px solid var(--line,#e3e8ef);border-radius:14px;overflow:hidden;transition:box-shadow .2s}
+.acc-sec.open{box-shadow:0 6px 22px rgba(15,40,80,.10);border-color:var(--brand2,#2f6fde)}
+.acc-h{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;padding:14px 16px;cursor:pointer}
+.acc-h:focus-visible{outline:3px solid var(--brand2,#2f6fde);outline-offset:-3px}
+.acc-ic{font-size:1.5em;width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:var(--info-soft,#eaf2ff);flex:none}
+.acc-tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.acc-tx span{color:var(--muted,#64748b);font-size:.9em}
+.acc-chev{font-size:1.1em;color:var(--muted,#64748b);flex:none;width:28px;text-align:center}
+.acc-b{padding:0 12px 12px}
+.acc-b .rows{margin:0}
+.lt-n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--info-soft,#eaf2ff);color:var(--brand2,#2f6fde);flex:none}
+.lt-step.on .lt-n{background:var(--brand2,#2f6fde);color:#fff}
+.lt-khoi{margin:0}
+.lt-n.done{background:var(--ok,#16a34a);color:#fff}
+.tl-acc .tl-types{margin:0 0 10px}
+.tl-acc textarea{width:100%;min-height:90px}
+/* Lượt thực hành */
+.th-bai summary{cursor:pointer;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.th-bai .tblwrap{overflow-x:auto;margin-top:8px}
+.th-t{width:100%;border-collapse:collapse;font-size:.92em}
+.th-t th,.th-t td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+.th-t th{color:var(--muted);font-weight:600;white-space:nowrap}
+.th-t .n{text-align:center;white-space:nowrap}
+.th-sc{display:flex;flex-wrap:wrap;gap:4px}
+.th-sc .pill{margin:0}
+/* AI chấm bài vẽ – gọn, dùng tốt trên điện thoại */
+.tl-h1{margin:6px 0 4px;font-size:1.35em}
+.tl-pick{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 8px}
+.tl-big{min-height:56px;font-size:1.05em;display:flex;align-items:center;justify-content:center}
+.tl-drop{min-height:54px}
+.tl-acc .tl-de{max-height:none}
+.tl-acc #go{min-height:52px;font-size:1.08em}
+.tl-spin{display:inline-block;width:16px;height:16px;border:3px solid var(--line);border-top-color:var(--brand2);border-radius:50%;animation:tlspin 1s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes tlspin{to{transform:rotate(360deg)}}
+@media (max-width:640px){
+  .tl-acc .acc-h{padding:12px}
+  .tl-acc .acc-b{padding:0 8px 10px}
+  .tl-acc .tl-types{display:flex;overflow-x:auto;flex-wrap:nowrap;gap:6px;padding-bottom:4px}
+  .tl-acc .tl-types button{flex:none}
+  .tl-acc .acc-tx span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,1fr)}
+@media (max-width:640px){.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(2,1fr)}}
+.gh-app .gh-tx b{display:block}
+/* AI chấm bài vẽ tự luyện: 2 cột – bài làm có khoanh lỗi | chỗ sai cần vẽ lại */
+.rv.rv-tl{grid-template-columns:minmax(0,1.6fr) minmax(240px,1fr)}
+@media (max-width:1000px){.rv.rv-tl{grid-template-columns:1fr}.rv.rv-tl .rv-nx{order:-1;grid-column:auto}}
+.gv-hd summary{cursor:pointer}
+.gv-hd-l{margin:8px 0 0;padding-left:20px;line-height:1.6}
+.bdtitle{padding:8px 10px;border-radius:10px}
+.bdk{margin:6px 0 0 10px}
+.bdk>summary{list-style:none;cursor:pointer}
+.bdk>summary::-webkit-details-marker{display:none}
+.bdk>summary .bdhead{background:var(--card);border:1px solid var(--line)}
+.bdk[open]>summary .bdhead{border-color:var(--brand2)}
+.bdkh{display:flex;align-items:center;gap:8px}
+.bdkt{all:unset;flex:1;display:flex;align-items:center;gap:8px;cursor:pointer}
+.bdkt b{flex:1}
+/* bảng HS × đề luyện thi TN */
+.tnmx table{border-collapse:collapse;min-width:100%}
+.tnmx th,.tnmx td{white-space:nowrap}
+.tnmx .tnmx-name{position:sticky;left:0;background:var(--card);z-index:1}
+.tncell{all:unset;cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;min-width:54px;padding:4px 6px;border-radius:8px;background:var(--info-soft);line-height:1.15}
+.tncell b{font-size:1.05em}
+.tncell small{font-size:.75em;color:var(--muted)}
+.tncell.ok{background:var(--ok-soft)}
+.tncell.bad{background:var(--bad-soft)}
+.tncell:hover{outline:2px solid var(--brand2)}
+.tnmx th{vertical-align:middle}
+.tnmx .tnmx-de{border-left:2px solid var(--line);text-align:center}
+.tnmx .tnmx-sub{font-weight:500;font-size:.85em}
+.tnmx thead tr:nth-child(2) th:nth-child(3n+1),.tnmx td.tnmx-l{border-left:2px solid var(--line)}
+.tn-ok{color:var(--ok)}.tn-bad{color:var(--bad)}
+.tn-ren{all:unset;cursor:pointer;opacity:.45;font-size:.85em;padding:0 2px}
+.tn-ren:hover,.tn-ren:focus-visible{opacity:1}
+.ontn{display:flex;gap:12px;align-items:center;cursor:pointer;border:2px solid var(--brand2)}
+.ontn input{width:22px;height:22px;flex:none;margin:0}
+.ontn>span{display:flex;flex-direction:column}
+/* GV xem bài làm đề luyện thi: nguyên bộ đề, câu sai ✘ đỏ, đáp án đúng ✔ xanh */
+.stufull{display:flex;flex-direction:column;gap:10px;max-height:none}
+.stq{border:2px solid var(--line);border-radius:12px;padding:6px 8px;background:var(--card)}
+.stq.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.stq.bad{border-color:var(--bad)}
+.stq .stmark{font-weight:700;font-size:.9em;margin:2px 4px 4px}
+.stq.ok .stmark{color:var(--ok)}.stq.bad .stmark{color:var(--bad)}.stq.skip .stmark{color:var(--muted)}
+.stq .qcard{margin:0;box-shadow:none;border:0;padding:4px}
+.stq .qhead .qnum{display:none}
+.stq .opt.right{border-color:var(--ok)!important;background:var(--ok-soft)!important}
+.stq .opt.wrong{border-color:var(--bad)!important;background:var(--bad-soft)!important}
+.stq .opt.right .tx::after{content:" ✔";color:var(--ok);font-weight:800}
+.stq .opt.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
+.stq .tfi.right{background:var(--ok-soft)}
+.stq .tfi.wrong{background:var(--bad-soft)}
+.stq .tfi.right .tx::after{content:" ✔";color:var(--ok);font-weight:800}
+.stq .tfi.wrong .tx::after{content:" ✘";color:var(--bad);font-weight:800}
+.tnstat{margin-top:12px}.tnstat>summary{cursor:pointer;margin-bottom:6px}
+.tnmx td a{text-decoration:none}
+.tn-del{all:unset;cursor:pointer;font-size:.78em;font-weight:600;color:var(--bad);border:1px solid var(--bad);border-radius:6px;padding:1px 6px;margin-left:6px;background:var(--bad-soft)}
+.tn-del:hover,.tn-del:focus-visible{background:var(--bad);color:#fff}
+tr.dex>td{background:var(--bg,#f6f8fb);padding:10px}
+.tnmx tr.tn-sel td{background:var(--info-soft)}
+.tnmx input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer}
+.tn-danger{color:var(--bad)!important;border-color:var(--bad)!important}
+/* Bài vẽ – trang GV gọn (22/11/2026) */
+.dv-hd{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:6px}
+.dv-hd h1{margin:0;font-size:20px}
+.dv-hd>a{flex-basis:100%;font-size:13px}
+.dv-bar{padding:8px 10px;margin-bottom:8px}
+.dv-bar .row{gap:6px;align-items:center;flex-wrap:wrap}
+.dv-up{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:10px;margin-top:8px;align-items:start}
+.dv-up label{margin-top:0}
+.dv-upi .imgdrop{min-height:140px;margin:0}
+.dv-upi .imgdrop img{max-height:46vh;width:auto;max-width:100%;object-fit:contain}
+.dv-de{margin-top:8px;font-size:14px;display:grid;gap:4px}
+.dv-mau{margin-top:8px}
+.dv-mau img{max-height:320px;max-width:100%;border-radius:8px;border:1px solid var(--line);display:block}
+.dv-list{display:grid;gap:4px}
+.dv-it{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 10px}
+.dv-it.on{padding-bottom:10px;border-color:var(--brand,#2563eb)}
+.dv-row{display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;flex-wrap:wrap}
+.dv-row b{font-size:14px}
+.dv-row .chev{color:var(--muted);font-size:12px}
+.pill.bad{background:var(--bad-soft);color:var(--bad)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.dv-it #rv .rv{gap:8px}
+.dv-it .rv-col{padding:8px}
+.rv-stage{width:fit-content;max-width:100%;margin:0 auto}
+.rv-stage img{max-height:72vh;width:auto;max-width:100%}
+.dv-it .rv-de img{max-height:240px;width:auto;max-width:100%}
+.dv-it .rv-nx{max-height:70vh}
+.dv-score{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:8px;border-radius:10px;background:var(--bg2,rgba(0,0,0,.03));border:1px solid var(--line)}
+.dv-score>div{display:flex;align-items:center;gap:4px}
+.dv-score label{margin:0;font-weight:800}
+.dv-score #gd{width:80px}
+.dv-score #gn{min-width:180px;flex:1}
+.rv-score{margin:10px 0 0;padding-top:8px;border-top:1px dashed var(--line)}
+@media (max-width:720px){.dv-up{grid-template-columns:1fr}.dv-upi{order:-1}.dv-score #ok{width:100%}}
+.rv.rv-nodi{grid-template-columns:minmax(0,1.9fr) minmax(240px,.9fr)}
+.rv.rv-nodi .rv-de{grid-column:1/-1;padding:6px 10px;display:flex;gap:8px;align-items:baseline}
+.rv.rv-nodi .rv-de .rv-h{margin:0;flex:none}
+@media (max-width:900px){.rv.rv-nodi{grid-template-columns:1fr}}
+/* Bài vẽ 22/11/2026: kết quả – trái chấm điểm, giữa bài làm, phải lỗi sai */
+.rv.rv-sc{grid-template-columns:minmax(210px,.8fr) minmax(0,1.7fr) minmax(230px,.95fr)}
+.rv-big{display:flex;align-items:baseline;gap:4px;padding:8px 10px;border-radius:10px;background:var(--bg2,rgba(0,0,0,.04));margin-bottom:6px}
+.rv-big span{font-size:12px;font-weight:700;color:var(--muted);margin-right:auto}
+.rv-big b{font-size:30px;line-height:1}
+.rv-big.ok b{color:var(--ok)}
+.rv-big i{font-style:normal;color:var(--muted)}
+.rv-bd{width:100%;border-collapse:collapse;font-size:13px;margin-top:4px}
+.rv-bd th{font-size:11.5px;text-align:left;color:var(--muted);border-bottom:1px solid var(--line);padding:3px 2px}
+.rv-bd td{border-bottom:1px solid var(--line);padding:5px 2px;vertical-align:top;line-height:1.35}
+.rv-bd .n{text-align:right;white-space:nowrap}
+.rv-bd b.ok{color:var(--ok)} .rv-bd b.bad{color:var(--bad)}
+.rv-bd .hint{font-size:11.5px}
+.rv-gv{display:grid;gap:6px;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)}
+.rv-gv label{margin:0;font-weight:800;font-size:12.5px}
+.rv-gv #gd{width:90px}
+@media (max-width:1000px){.rv.rv-sc{grid-template-columns:minmax(200px,.8fr) minmax(0,1.6fr)}}
+@media (max-width:640px){.rv.rv-sc{grid-template-columns:1fr}}
+.bv-h1{margin:2px 0 8px;font-size:21px}
+.bv-steps{display:grid;gap:8px;margin-bottom:8px}
+@media (min-width:900px){.bv-steps{grid-template-columns:1.1fr 1fr;align-items:start}}
+.bv-st{margin:0;padding:10px 12px}
+.bv-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 8px}
+.bv-sh .lt-n{flex:none}
+.bv-form .bv-sh{margin-top:14px}
+.bv-form .bv-sh:first-child{margin-top:0}
+.bv-form textarea{min-height:80px}
+.bv-de{display:grid;gap:6px}
+.bv-de .de-img{max-height:260px;margin:0}
+.bv-de-t{white-space:pre-wrap}
+.bv-pick{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.bv-pick .btn{flex:1;min-width:130px}
+.bv-form .bv-pick .btn{flex:none}
+.bv-drop{min-height:90px;margin-bottom:8px;cursor:pointer}
+.bv-drop img{max-height:40vh;width:auto;max-width:100%}
+.bv-lan{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.bv-lan button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:3px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.bv-lan button.on{background:var(--brand,#2563eb);color:#fff;border-color:transparent}
+.bv-more{margin-top:12px}
+.bv-more summary{cursor:pointer;font-weight:700;font-size:13.5px;color:var(--muted)}
+/* Bài vẽ – AI chấm: một trang chung (22/11/2026) */
+.vk{padding:12px 14px}
+.vk .bv-sh{margin:10px 0 6px}
+.vk .bv-sh:first-child{margin-top:0}
+.vk-2{display:grid;gap:4px 16px}
+@media (min-width:760px){.vk-2{grid-template-columns:1fr 1fr}}
+.vk-pick{display:flex;gap:6px;margin-bottom:6px}
+.vk-drop{min-height:84px;cursor:pointer;margin:0 0 6px;position:relative}
+.vk-drop img{max-height:220px;width:auto;max-width:100%;display:block;margin:0 auto}
+.vk textarea{min-height:52px;margin:0}
+.vk #go{margin-top:10px}
+.vk-kq{padding:10px 12px;margin-top:10px}
+.vk-ban{font-weight:800;font-size:16px;padding:10px 12px;border-radius:10px;margin-bottom:8px}
+.vk-ban.ok{background:var(--ok-soft);color:var(--ok);font-size:19px;text-align:center}
+.vk-ban.bad{background:var(--bad-soft);color:var(--bad)}
+.vk-kq .rv-nx>.rv-verdict{display:none}
+.vk-more{margin-top:10px;padding:8px 12px}
+.vk-more summary{cursor:pointer;font-weight:700}
+.vk .tl-types{flex-wrap:wrap;overflow:visible}
+.vk-kq.noerr .rv{grid-template-columns:1fr}.vk-kq.noerr .rv-nx{display:none}
+.imgdrop.loading{opacity:.6;pointer-events:none;position:relative}
+.imgdrop.loading::after{content:'Đang đọc tệp…';position:absolute;inset:auto 0 8px;text-align:center;font-size:13px;font-weight:700;color:var(--brand2)}
+/* điện thoại: nút chụp/tải to, dễ bấm */
+@media (max-width:640px){.vk-pick .btn,.bv-pick .btn{flex:1;min-height:44px;font-size:15px}.vk{padding:10px}.vk-drop img{max-height:180px}}
+/* chú thích hình trong câu hỏi (bộ câu hỏi Bài 8–15 CN10, 22/11/2026) */
+.cap{display:block;font-size:12.5px;color:var(--muted);text-align:center;margin:2px 0 4px;font-style:italic}
+/* Tải đề về máy – PDF / Word (22/11/2026) */
+.dl-modal{max-width:440px}
+.dl-fmt{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dl-fmt button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 8px;border:2px solid var(--line);border-radius:12px;background:var(--card);font:inherit;cursor:pointer}
+.dl-fmt button span{font-size:26px}.dl-fmt button small{color:var(--muted);font-size:12px;text-align:center}
+.dl-fmt button.on{border-color:var(--brand,#2563eb);background:var(--brand-soft,rgba(37,99,235,.07))}
+.dl-box{position:fixed;left:-12000px;top:0;width:700px;background:#fff;color:#000;font-family:"Times New Roman",serif;font-size:16px;line-height:1.4}
+.dl-box .dl-b{padding:2px 4px}
+.dl-box .dl-hd{text-align:center;border-bottom:1px solid #000;padding-bottom:6px;margin-bottom:4px}
+.dl-box .dl-t{font-weight:700;font-size:19px;text-align:center;text-transform:uppercase}
+.dl-box .dl-s{font-size:14px;margin-top:3px}
+.dl-box .dl-sec{font-weight:700;margin:8px 0 2px}
+.dl-box .q{margin:3px 0}
+.dl-box .ops{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px}
+.dl-box img.pic{display:block;max-width:75%;max-height:250px;width:auto;height:auto;margin:4px auto}
+.dl-box .cap{display:block;font-size:13px;text-align:center;font-style:italic;color:#333}
+.dl-box table.dl-key{border-collapse:collapse;margin:2px 0}.dl-box table.dl-key td{border:1px solid #000;padding:2px 8px;text-align:center;font-size:14px;min-width:32px}
+.dl-box .dl-e{font-size:14.5px;margin:2px 0}
+/* ===== Bài vẽ – AI chấm: điểm theo tiêu chí, nhật ký (22/11/2026) ===== */
+.vk-who{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:flex-end;padding:8px 10px;margin:-2px 0 10px;border-radius:10px;background:var(--bg2,rgba(37,99,235,.05));border:1px solid var(--line)}
+.vk-who label{display:flex;flex-direction:column;gap:3px;margin:0;font-size:12.5px;font-weight:700;flex:1;min-width:140px}
+.vk-who label:last-child{flex:0 0 110px;min-width:90px}
+.vk-who input{margin:0}
+.vk-me{font-size:15px}
+.vk-tcbtn{margin-left:auto;border:0;background:none;color:var(--brand,#2563eb);font:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:2px 4px}
+.vk-tc{list-style:none;margin:8px 0 4px;padding:0;display:grid;gap:6px;counter-reset:tc}
+@media (min-width:760px){.vk-tc{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
+.vk-tc li{counter-increment:tc;padding:8px 10px;border-radius:10px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--brand,#2563eb)}
+.vk-tc li div{display:flex;gap:6px;align-items:baseline}
+.vk-tc li div b{flex:1;font-size:13.5px}
+.vk-tc li div b::before{content:counter(tc) ". ";color:var(--brand,#2563eb)}
+.vk-tc li p{margin:3px 0 0;font-size:12.5px;color:var(--muted);line-height:1.4}
+.vk-pt{flex:none;font-size:12px;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--brand-soft,rgba(37,99,235,.1));color:var(--brand,#2563eb)}
+.vk-kqh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;margin-bottom:8px}
+.vk-kqh b{font-size:16px}
+.vk-res{display:grid;gap:12px}
+@media (min-width:900px){.vk-res{grid-template-columns:minmax(300px,380px) minmax(0,1fr);align-items:start}}
+.vk-left{display:grid;gap:8px}
+.vk-score{--c:var(--muted);width:118px;height:118px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--line) 0)}
+.vk-score>div{width:96px;height:96px;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.vk-score b{font-size:34px;line-height:1;color:var(--c)}
+.vk-score span{font-size:11.5px;color:var(--muted);font-weight:700}
+.vk-score.ok{--c:var(--ok)}.vk-score.mid{--c:#d97706}.vk-score.bad{--c:var(--bad)}
+.vk-left .vk-ban{margin:0;text-align:center;font-size:15px}
+.vk-nx{margin:0;font-size:13.5px;line-height:1.45;color:var(--text);background:var(--bg2,rgba(0,0,0,.03));padding:8px 10px;border-radius:10px}
+.vk-sec{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);margin:4px 0 2px}
+.vk-crit{display:grid;gap:7px}
+.vk-c{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);border-left:4px solid var(--line)}
+.vk-c.ok{border-left-color:var(--ok)}.vk-c.mid{border-left-color:#d97706}.vk-c.bad{border-left-color:var(--bad)}
+.vk-ch{display:flex;align-items:center;gap:7px}
+.vk-ch b{flex:1;font-size:13.5px;line-height:1.3}
+.vk-ci{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:800;background:var(--bg2,#eef2ff);color:var(--muted)}
+.vk-cs{flex:none;font-weight:800;font-size:15px}.vk-cs small{font-weight:600;color:var(--muted);font-size:11.5px}
+.vk-c.ok .vk-cs{color:var(--ok)}.vk-c.mid .vk-cs{color:#d97706}.vk-c.bad .vk-cs{color:var(--bad)}
+.vk-bar{height:5px;border-radius:9px;background:var(--line);margin:6px 0 4px;overflow:hidden}
+.vk-bar i{display:block;height:100%;border-radius:9px;background:var(--muted)}
+.vk-c.ok .vk-bar i{background:var(--ok)}.vk-c.mid .vk-bar i{background:#d97706}.vk-c.bad .vk-bar i{background:var(--bad)}
+.vk-c p{margin:3px 0 0;font-size:12.8px;line-height:1.4;color:var(--muted)}
+.vk-c p.vk-hd{color:var(--text);background:rgba(217,119,6,.08);padding:5px 7px;border-radius:7px}
+.vk-right{min-width:0}
+.vk-right .rv{margin-top:2px}
+.vk-log{margin-top:10px;padding:10px 12px}
+.vk-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.vk-tbl th{text-align:left;font-size:11.5px;color:var(--muted);font-weight:800;border-bottom:1px solid var(--line);padding:5px 6px;white-space:nowrap}
+.vk-tbl td{border-bottom:1px solid var(--line);padding:6px;vertical-align:top}
+.vk-tbl td.vk-de{max-width:260px;color:var(--muted);font-size:12.5px}
+.vk-tbl b.ok{color:var(--ok)}.vk-tbl b.mid{color:#d97706}.vk-tbl b.bad{color:var(--bad)}
+.vk-log .btn{margin-top:8px}
+@media (max-width:640px){.vk-tbl td.vk-de{max-width:120px}.vk-tbl{font-size:12px}}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media (max-width:640px){.vk-tbl .vk-de{display:none}}
+
+/* ===== Giao bài: 3 cách lấy câu hỏi ===== */
+.gbm{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:6px 0 4px}
+.gbm-c{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:14px 10px;border:2px solid var(--line,#e2e8f0);border-radius:14px;background:#fff;cursor:pointer;font:inherit;color:inherit;transition:.15s}
+.gbm-c:hover{border-color:#93c5fd;transform:translateY(-1px)}
+.gbm-c .gbm-i{font-size:28px;line-height:1}
+.gbm-c b{font-size:15px}
+.gbm-c small{color:#64748b;font-size:12.5px;line-height:1.3}
+.gbm-c.on{border-color:#2563eb;background:linear-gradient(180deg,#eff6ff,#dbeafe);box-shadow:0 4px 14px rgba(37,99,235,.18)}
+.gbm-c.on b{color:#1d4ed8}
+.gbm-box{border:1px solid #dbeafe;background:#f8fbff;border-radius:14px;padding:4px 14px 12px;margin-top:8px}
+.gbm-step{font-weight:700;color:#1e3a8a;margin:10px 0 6px;font-size:15px}
+.gbm-ky{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gbm-k{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;border:2px solid #e2e8f0;border-radius:12px;background:#fff;font:inherit;font-weight:600;cursor:pointer;color:#334155}
+.gbm-k span{font-size:22px}
+.gbm-k.on{border-color:#16a34a;background:#f0fdf4;color:#15803d;box-shadow:0 3px 10px rgba(22,163,74,.15)}
+@media (max-width:600px){.gbm{grid-template-columns:1fr}.gbm-c{flex-direction:row;text-align:left;padding:10px 12px;gap:10px}.gbm-c small{display:block}.gbm-c b{min-width:0}.gbm-ky{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:600px){.gbm-c{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px}.gbm-c .gbm-i{grid-row:1/3}}
+
+/* ===== Giao bài: toàn màn hình, gọn ===== */
+.view.gbwide{max-width:none;padding:10px 14px calc(var(--tab) + 20px)}
+@media (min-width:980px){body:not(.focus) .view.gbwide{margin-left:100px;margin-right:6px}}
+.gb-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 8px}
+.gb-head h1{margin:0;font-size:24px}
+.gbf{display:grid;grid-template-columns:minmax(360px,440px) minmax(0,1fr);gap:18px;padding:14px 16px;margin:0}
+.gbf label:not(.chk):not(.lchk){margin:10px 0 4px;font-size:13.5px}
+.gbf .chk,.gbf .lchk{margin:0}
+.gbf .lchk{padding:5px 8px}
+.gbf input:not([type=checkbox]):not([type=radio]),.gbf select{padding:8px 10px;min-height:38px}
+.gb-l{min-width:0}.gb-r{min-width:0;border-left:1px solid var(--line);padding-left:18px}
+.gb-sch .card{box-shadow:none;border:0;padding:0;margin:0;background:none}
+.gb-sch label{margin-top:0}
+.gb-2{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.gb-3{display:grid;grid-template-columns:1fr 1fr 1.6fr;gap:10px}
+.gb-cls{border:1px solid var(--line);border-radius:12px;padding:6px 8px;background:#fafcff}
+.gb-kr{display:flex;align-items:flex-start;gap:8px;padding:4px 0}
+.gb-kr+.gb-kr{border-top:1px dashed var(--line)}
+.gb-kr>b{min-width:30px;padding-top:7px;color:#1e3a8a}
+.gb-kr .checks{gap:5px}
+.gb-kr .chk{padding:4px 8px;font-size:13.5px}
+.gb-go{margin-top:12px}
+.gbf .gbm{gap:8px;margin:2px 0 0}
+.gbf .gbm-c{padding:10px 8px}
+.gbf .gbm-box{margin-top:8px;padding:2px 12px 10px}
+.gbf .gbm-step{margin:8px 0 4px}
+.gbf .mttable td,.gbf .mttable th{padding:3px 6px}
+.gbf .mttable input{min-height:30px;padding:4px;width:48px}
+.gbf .lessonlist{max-height:none!important;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:2px 10px}
+.gbf .lvgrid{grid-template-columns:repeat(5,1fr);gap:8px}
+@media (max-width:980px){.gbf{grid-template-columns:1fr;gap:6px}.gb-r{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:6px}}
+@media (max-width:560px){.gb-3{grid-template-columns:1fr 1fr}.gb-3>div:last-child{grid-column:1/-1}.gb-2{grid-template-columns:1fr}.gbf .lvgrid{grid-template-columns:repeat(2,1fr)}.gbf{padding:10px}}
+@media (min-width:981px){.gb-l{position:sticky;top:64px;align-self:start}}
+.gbf .mttable td.n{white-space:nowrap}
+.gbf .mttable small{display:inline;margin-left:2px}
+.gbf .gbm-k{flex-direction:row;justify-content:center;gap:6px;padding:8px 6px}
+.gbf .gbm-k span{font-size:18px}
+.gbf .gbm-c{display:grid;grid-template-columns:auto 1fr;column-gap:10px;text-align:left;align-items:center}
+.gbf .gbm-c .gbm-i{grid-row:1/3;font-size:26px}
+.gb-2.gb-eq{grid-template-columns:1fr 1fr}
+.gb-kr .chk{padding:3px 8px;min-height:0;font-size:13.5px}
+.gb-kr .chk .pill{padding:1px 6px;font-size:11px}
+.gb-kr .btn.sm{padding:3px 10px;min-height:0}
+.gh-head .spacer{flex:1}
+.gh-auto{border:1.5px solid var(--line2,#cbd5e1);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;color:#334155;margin-left:6px;white-space:nowrap}
+.gh-auto.on{border-color:#16a34a;background:#f0fdf4;color:#15803d}
+@media (max-width:560px){.gh-head{flex-wrap:wrap}.gh-auto{padding:4px 9px;font-size:12px}}
+/* Giao bài: vừa 1 màn hình, ngày bắt đầu / kết thúc 2 màu */
+.gb-time{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.gb-t{border-radius:12px;padding:6px 8px 8px;border:1.5px solid}
+.gb-t label{margin:0 0 4px!important;font-size:13px!important}
+.gb-t label small{font-weight:500;opacity:.75}
+.gb-t input{width:100%;background:#fff;font-size:14px;padding:6px 8px!important;min-height:34px!important}
+.gb-ts{background:#f0fdf4;border-color:#86efac}.gb-ts label{color:#15803d}.gb-ts input{border-color:#86efac}
+.gb-te{background:#fef2f2;border-color:#fca5a5}.gb-te label{color:#b91c1c}.gb-te input{border-color:#fca5a5}
+@media (min-width:981px){
+  .view.gbwide{padding-bottom:8px}
+  .gbf{height:calc(100vh - 128px);min-height:520px;grid-template-rows:minmax(0,1fr)}
+  .gb-l,.gb-r{min-height:0;align-self:stretch!important}
+  .gb-l,.gb-r{overflow:auto;position:static!important;scrollbar-width:thin;padding-right:4px}
+  .gbf label:not(.chk):not(.lchk){margin:7px 0 3px;font-size:13px}
+  .gbf .gb-l input:not([type=checkbox]),.gbf .gb-l select{min-height:34px;padding:6px 9px;font-size:14px}
+  .gb-l .hint{font-size:12px}
+  .gb-go{margin-top:10px;padding:10px}
+}
+@media (max-width:420px){.gb-time{grid-template-columns:1fr}}
+.gb-t{min-width:0}.gb-t input{box-sizing:border-box;max-width:100%;min-width:0}
+@media (min-width:981px){
+  .gbf{grid-template-columns:minmax(400px,470px) minmax(0,1fr)}
+  .gb-l #cddh{display:none}
+  .gb-l .gb-cls{padding:4px 8px}
+  .gb-l .gb-kr{padding:2px 0}
+}
+.gbf .gbm-c{grid-template-rows:auto;padding:12px 10px}.gbf .gbm-c .gbm-i{grid-row:auto}
+
+/* ===== Đề từ ma trận: duyệt đề, QR chung ===== */
+.dt-rv{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:2px solid #fcd34d;background:#fffbeb}
+.dt-ok{display:flex;gap:16px;align-items:center;flex-wrap:wrap;border:2px solid #86efac;background:#f0fdf4}
+.dt-qr{text-align:center}.dt-qr svg{width:150px;height:150px;background:#fff;border-radius:8px}
+.dt-codes{display:flex;gap:8px;flex-wrap:wrap}.dt-codes span{font:800 20px/1 ui-monospace,monospace;background:#fff;border:2px solid #16a34a;color:#15803d;border-radius:10px;padding:8px 14px}
+.dt-tabs{margin:12px 0 0}
+.dt-q{padding:10px 0;border-top:1px solid var(--line)}.dt-q:first-of-type{border-top:0}
+.dt-qh{display:flex;align-items:center;gap:8px;margin-bottom:4px}.dt-qh .dt-sw{margin-left:auto}
+.dt-tag{font-size:12px;color:#64748b;background:#f1f5f9;border-radius:999px;padding:2px 8px}
+.dt-ops{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-top:6px}
+.dt-ops>div{padding:4px 8px;border-radius:8px}.dt-ops>div.ok{background:#dcfce7;outline:2px solid #22c55e;font-weight:600}
+.dt-tf>div{padding:3px 0}.dt-ans,.dt-ex{margin-top:6px;padding:6px 10px;border-radius:8px;background:#f0fdf4;font-size:14px}.dt-ex{background:#f8fafc;color:#475569}
+.dl-keyall{border-collapse:collapse;width:100%;font-size:13px}.dl-keyall td,.dl-keyall th{border:1px solid #94a3b8;padding:3px 4px;text-align:center}
+.dl-ehd{width:100%;border-collapse:collapse}.dl-ehd td{vertical-align:top;font-size:12pt}.dl-ehd svg{width:90px;height:90px}
+.dt-pick{display:flex;gap:10px;flex-wrap:wrap}.dt-pick .btn{font-size:22px;padding:14px 22px}
+@media (max-width:600px){.dt-ops{grid-template-columns:1fr}.card .dl-keyall{display:block;overflow-x:auto}}
+.dt-act{margin-left:auto;display:flex;gap:6px}.dt-qh .dt-act .btn.on{background:#fef3c7;border-color:#f59e0b;color:#92400e}
+.dt-ops.ed>div{cursor:pointer;border:1.5px dashed #cbd5e1}.dt-ops.ed>div:hover{background:#eff6ff}
+.dt-tg{cursor:pointer;user-select:none}
+.dt-file{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:2px solid #93c5fd;background:#eff6ff}.dt-file h3{margin:0}.dt-fi{font-size:34px}
+.mx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}
+.mx-c{display:flex;align-items:center;gap:12px;margin:0}.mx-i{font-size:30px}
+.mx-c .btn{white-space:nowrap}
+.mx-card .mttable input{width:52px}
+
+/* ===== Các lớp: gọn, nhiều cột ===== */
+h2.cls-h{margin:14px 0 6px;font-size:17px}
+.rows.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;background:none;border:0;box-shadow:none;overflow:visible}
+.rows.cls-grid > a{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:8px 12px;gap:10px;border-left:5px solid #60a5fa}
+.rows.cls-grid > a:first-child{border-top:1px solid var(--line)}
+.rows.cls-grid.k11 > a{border-left-color:#34d399}.rows.cls-grid.k12 > a{border-left-color:#f59e0b}
+.rows.cls-grid .ic{width:32px;height:32px;font-size:17px;border-radius:9px}
+.rows.cls-grid .tx b{font-size:16px}.rows.cls-grid .tx span{font-size:12.5px;white-space:nowrap}
+.rows.cls-grid > a:hover{background:#f0f7ff;transform:translateY(-1px)}
+/* ===== Trang lớp: bảng tài khoản 1 dòng/HS ===== */
+.hs-compact{font-size:14px;border-collapse:collapse}
+.hs-compact th{padding:6px 8px;font-size:12.5px;background:#f1f5f9;color:#334155;white-space:nowrap;position:sticky;top:0}
+.hs-compact td{padding:3px 8px;white-space:nowrap;border-bottom:1px solid #eef2f7;line-height:1.3}
+.hs-compact tbody tr:nth-child(4n+1) td,.hs-compact tbody tr:nth-child(4n+2) td{background:#fafcff}
+.hs-compact tbody tr:hover td{background:#eef6ff}
+.hs-compact .pill{padding:0 6px;font-size:11px;line-height:18px}
+.hs-compact td.hsact .btn{padding:2px 7px;min-height:0;font-size:12.5px}
+.hs-compact a{text-decoration:none;font-weight:600;color:#1e40af}
+.hs-compact td.n b{color:#0f766e}
+.rs-sum{line-height:1.9}.rs-add{border:0;cursor:pointer;font:inherit;font-size:12.5px}
+.add-hs{border:2px solid #86efac;background:#f0fdf4}
+.add-row{display:grid;grid-template-columns:2fr 1.3fr auto;gap:10px;align-items:end}
+.add-row label{margin:6px 0 3px}
+.ok-box{margin-top:8px;padding:8px 12px;border-radius:10px;background:#dcfce7;color:#14532d}
+@media (max-width:600px){.add-row{grid-template-columns:1fr}.rows.cls-grid{grid-template-columns:1fr 1fr}}
+.hs-compact th{white-space:normal;line-height:1.15;vertical-align:bottom}
+.hs-compact th.n,.hs-compact td.n{text-align:center;width:1%;padding-left:6px;padding-right:6px}
+.hs-compact th.n{max-width:64px}
+.hs-compact td.hsact{width:1%;padding-right:4px}
+.hs-compact td.hsact .btn{padding:2px 6px}
+.cls-k{display:grid;grid-template-columns:78px 1fr;gap:8px;align-items:start;margin:6px 0}
+.cls-k h2.cls-h{margin:0;padding-top:9px;font-size:15px;color:#334155}
+.rows.cls-grid{gap:6px}
+.rows.cls-grid > a{padding:5px 10px;gap:8px}
+.rows.cls-grid .ic{width:28px;height:28px;font-size:15px}
+.rows.cls-grid .tx b{font-size:15px;line-height:1.2}.rows.cls-grid .tx span{font-size:12px;line-height:1.3}
+.rows.cls-grid .chev{font-size:18px}
+@media (max-width:600px){.cls-k{grid-template-columns:1fr;gap:4px}.cls-k h2.cls-h{padding-top:0}}
+.cls-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 6px}
+.cls-top h1{margin:0;font-size:24px;white-space:nowrap}
+.cls-top .cls-back{font-size:14px;white-space:nowrap}
+.cls-sch{min-width:240px}
+.cls-sch .card{margin:0;padding:6px 10px;display:flex;align-items:center;gap:8px;box-shadow:none}
+.cls-sch .card label{margin:0;white-space:nowrap}
+.cls-sch select{min-height:34px;padding:4px 8px;margin:0}
+.cls-sch .card.row{flex-wrap:nowrap}.cls-sch .card.row select{min-width:0;flex:1}
+.cls-k{margin:10px 0;gap:12px}
+.rows.cls-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
+.rows.cls-grid > a{padding:8px 14px;gap:10px}
+.rows.cls-grid .ic{width:32px;height:32px;font-size:17px}
+@media (max-width:700px){.rows.cls-grid{grid-auto-flow:row;grid-template-columns:1fr 1fr}}
+/* ===== Điểm: chọn lớp theo khối ===== */
+.dk-pick{padding:8px 12px;margin:0 0 10px}
+.dk-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-top:1px dashed #e2e8f0}
+.dk-row:first-child{border-top:0}
+.dk-row > b{width:72px;flex:none;color:#334155}
+.dk-cls{display:flex;gap:8px;flex-wrap:wrap}
+.dk-b{font:inherit;font-weight:700;font-size:14px;padding:6px 16px;border-radius:999px;cursor:pointer;border:1.5px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;transition:.12s}
+.dk-row.k11 .dk-b{border-color:#a7f3d0;background:#ecfdf5;color:#047857}
+.dk-row.k12 .dk-b{border-color:#fde68a;background:#fffbeb;color:#b45309}
+.dk-b:hover{transform:translateY(-1px);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.dk-row .dk-b.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.dk-row.k11 .dk-b.on{background:#059669;border-color:#059669}
+.dk-row.k12 .dk-b.on{background:#d97706;border-color:#d97706}
+.rows.cls-grid{grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-columns:auto;min-width:0}
+.cls-k{grid-template-columns:78px minmax(0,1fr)}
+@media (max-width:700px){.rows.cls-grid{grid-template-columns:1fr 1fr}}
+/* ===== Trang lớp: phần đầu gọn ===== */
+.lop-hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px}
+.lop-hd h1{margin:0;font-size:24px;white-space:nowrap}
+.lop-sub{white-space:nowrap}
+.lop-info{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;margin-bottom:8px}
+.lop-info .card{margin:0;padding:10px 14px}
+.lop-code{display:flex;gap:12px;align-items:center}
+.lop-code .code{font-size:22px;letter-spacing:3px;margin:0}
+.lop-code .btn{margin-top:4px}
+.lop-qr{width:92px;flex:none}.lop-qr svg,.lop-qr img,.lop-qr canvas{width:92px!important;height:92px!important;display:block}
+.lop-ds{border-left:4px solid #f59e0b}
+.lop-ds .rs-sum{line-height:1.7;font-size:14px}
+.lop-pg h2.lop-h2{margin:6px 0;font-size:18px}
+.lop-pg .card{margin-bottom:8px}
+@media (max-width:760px){.lop-info{grid-template-columns:1fr}}
+/* ===== Trang chủ GV: gọn, giữ nội dung ===== */
+.gh-hero{padding:14px 18px;margin:0 0 10px}
+.gh-hero h1{margin:6px 0 0;font-size:clamp(20px,4vw,26px)}
+.gh-stats{margin-top:10px;gap:8px}
+.gh-stat{padding:6px 10px}
+.gh-stat b{font-size:clamp(18px,3.6vw,22px)}
+.gh-head{margin:12px 2px 6px}
+.gh-head h2{font-size:17px}
+.gh-tiles{gap:8px}
+.gh-tile{min-height:0;padding:10px 12px;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;row-gap:0;align-items:center}
+.gh-tile .gh-ic{grid-row:1/3;width:40px;height:40px;font-size:20px;border-radius:12px}
+.gh-tile b{margin:0;font-size:15.5px}
+.gh-khoi{gap:8px}
+.gh-khoi button{flex-direction:row;justify-content:center;gap:8px;padding:8px 6px;border-radius:14px}
+.gh-khoi button .gh-kic{font-size:20px}
+.gh-khoi button>span:last-child{font-size:11.5px}
+@media (min-width:980px){
+  .gh-hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px}
+  .gh-stats{margin-top:0;grid-template-columns:repeat(4,minmax(110px,auto))}
+}
+@media (min-width:980px){
+  .gh-hero{grid-template-columns:minmax(320px,1fr) auto}
+  .gh-stats,.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,118px)}
+  .gh-stat span{font-size:11px}
+}
+@media (min-width:980px){.gh-stats,.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,104px);gap:6px}.gh-hero{padding-right:14px}}
+@media (max-width:700px){.gh-khoi button{flex-direction:column;gap:2px;padding:8px 4px}}
+
 </style>
 </head>
 <body>
@@ -1510,7 +2024,336 @@ function hcPaint(ctx, w, h, faces, P, V, dp, o = {}) {
   ctx.globalAlpha = 1;
   return vis;
 }
+let hcHatch = null;
+function hcHatchPat(ctx, dp) {
+  if (hcHatch && hcHatch.dp === dp) return ctx.createPattern(hcHatch.cv, 'repeat');
+  const s = Math.round(8 * dp), cv = Object.assign(document.createElement('canvas'), { width: s, height: s }), c = cv.getContext('2d');
+  c.fillStyle = '#fde3d8'; c.fillRect(0, 0, s, s); c.strokeStyle = '#9b1c1c'; c.lineWidth = 1.3 * dp;
+  c.beginPath(); c.moveTo(0, s); c.lineTo(s, 0); c.moveTo(-s / 2, s / 2); c.lineTo(s / 2, -s / 2); c.moveTo(s / 2, s * 1.5); c.lineTo(s * 1.5, s / 2); c.stroke();
+  hcHatch = { dp, cv }; return ctx.createPattern(cv, 'repeat');
+}
+/** đa giác 3D (vẽ phủ): fill = màu | 'hatch' */
+function hcPoly3(ctx, P, pts, dp, fill, alpha, stroke, lw, dash) {
+  ctx.beginPath(); pts.forEach((p, i) => { const q = P(p); i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]); }); ctx.closePath();
+  if (fill) { ctx.globalAlpha = alpha == null ? 1 : alpha; ctx.fillStyle = fill === 'hatch' ? hcHatchPat(ctx, dp) : fill; ctx.fill(); ctx.globalAlpha = 1; }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw * dp; ctx.setLineDash(dash ? dash.map(v => v * dp) : []); ctx.stroke(); ctx.setLineDash([]); }
+}
+function hcTag(ctx, x, y, text, col, dp) {
+  ctx.font = `700 ${Math.round(12.5 * dp)}px system-ui,sans-serif`; ctx.textAlign = 'center';
+  const tw = ctx.measureText(text).width + 14 * dp;
+  x = Math.max(tw / 2 + 2, Math.min(ctx.canvas.width - tw / 2 - 2, x));
+  ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - tw / 2, y - 15 * dp, tw, 20 * dp, 10 * dp) : ctx.rect(x - tw / 2, y - 15 * dp, tw, 20 * dp); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.fillText(text, x, y); ctx.textAlign = 'left';
+}
 
+/** khung nhìn 3D xoay được: nhiều lớp vật thể (vật thể, phần bị cắt bỏ…) + lớp vẽ phủ */
+function HCView(canvas, opt) {
+  const ctx = canvas.getContext('2d');
+  const st = { yaw: opt.yaw == null ? 0.62 : opt.yaw, pitch: opt.pitch == null ? 0.42 : opt.pitch, zoom: 1 };
+  const o = Object.assign({ layers: [], fit: [] }, opt);
+  let raf = 0;
+  const rows = (yw, pt) => { const cy = Math.cos(yw), sy = Math.sin(yw), cp = Math.cos(pt), sp = Math.sin(pt); return { R1: [cy, -sy, 0], R2: [sy * sp, cy * sp, cp], V: [sy * cp, cy * cp, -sp] }; };
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const draw = () => {
+    const Wc = canvas.width, Hc = canvas.height, dp = window.devicePixelRatio || 1;
+    const F0 = rows(o.yaw0 == null ? (opt.yaw == null ? 0.62 : opt.yaw) : o.yaw0, o.pitch0 == null ? (opt.pitch == null ? 0.42 : opt.pitch) : o.pitch0);
+    const pts = o.fit.length ? o.fit : [[0, 0, 0], [1, 1, 1]];
+    const mn = [0, 1, 2].map(i => Math.min(...pts.map(p => p[i]))), mx = [0, 1, 2].map(i => Math.max(...pts.map(p => p[i]))), cen = mn.map((v, i) => (v + mx[i]) / 2);
+    const corners = [0, 1].flatMap(i => [0, 1].flatMap(j => [0, 1].map(l => [[mn, mx][i][0], [mn, mx][j][1], [mn, mx][l][2]])));
+    let ex = 0.1, ez = 0.1; corners.forEach(p => { const d = [p[0] - cen[0], p[1] - cen[1], p[2] - cen[2]]; ex = Math.max(ex, Math.abs(dot(F0.R1, d))); ez = Math.max(ez, Math.abs(dot(F0.R2, d))); });
+    const k = Math.min(Wc / (ex * 2.25), (Hc - 26 * dp) / (ez * 2.25)) * st.zoom, M = rows(st.yaw, st.pitch);
+    const P = p => { const d = [p[0] - cen[0], p[1] - cen[1], p[2] - cen[2]]; return [Wc / 2 + dot(M.R1, d) * k, Hc / 2 - dot(M.R2, d) * k, dot(M.V, d)]; };
+    ctx.clearRect(0, 0, Wc, Hc);
+    if (o.under) o.under(ctx, P, dp, k);
+    o.layers.forEach(L => {
+      const al = L.alpha == null ? 1 : L.alpha; if (!L.F || al <= 0.01) return;
+      const off = L.off, PP = off ? p => P([p[0] + off[0], p[1] + off[1], p[2] + off[2]]) : P;
+      hcPaint(ctx, Wc | 0, Hc | 0, L.F, PP, M.V, dp, { alpha: al, k });
+    });
+    if (o.over) o.over(ctx, P, dp, k);
+  };
+  const fit = () => { const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1; canvas.width = Math.max(200, r.width * d); canvas.height = Math.max(160, r.height * d); draw(); };
+  let drag = null; const pts = new Map();
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]); drag = { x: e.clientX, y: e.clientY, d: null }; });
+  canvas.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pts.size === 2) { const [p, q] = [...pts.values()], d = Math.hypot(p[0] - q[0], p[1] - q[1]); if (drag.d) st.zoom = Math.max(0.5, Math.min(3, st.zoom * d / drag.d)); drag.d = d; draw(); return; }
+    st.yaw += (e.clientX - drag.x) * 0.01; st.pitch = Math.max(-1.55, Math.min(1.55, st.pitch + (e.clientY - drag.y) * 0.01)); drag.x = e.clientX; drag.y = e.clientY; draw();
+  });
+  const up = e => { pts.delete(e.pointerId); if (!pts.size) drag = null; };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+  canvas.addEventListener('wheel', e => { e.preventDefault(); st.zoom = Math.max(0.5, Math.min(3, st.zoom * (e.deltaY < 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+  window.addEventListener('resize', fit);
+  setTimeout(fit, 0);
+  const ease = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+  return {
+    st,
+    set(p) { Object.assign(o, p); draw(); },
+    put(p) { Object.assign(o, p); },
+    redraw: draw,
+    /** chạy hoạt cảnh: fn(e) với e từ 0→1 (đã làm mượt) */
+    anim(fn, ms, done) { cancelAnimationFrame(raf); const t0 = performance.now(); const step = now => { const kk = Math.min(1, (now - t0) / ms); fn(ease(kk)); draw(); if (kk < 1) raf = requestAnimationFrame(step); else if (done) done(); }; raf = requestAnimationFrame(step); },
+    view(yaw, pitch, ms = 700, done) { const y0 = st.yaw, p0 = st.pitch; let dy = yaw - y0; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); this.anim(e => { st.yaw = y0 + dy * e; st.pitch = p0 + (pitch - p0) * e; }, ms, done); },
+    destroy() { cancelAnimationFrame(raf); window.removeEventListener('resize', fit); }
+  };
+}
+
+/* ================= KHỐI 10 – VẬT THỂ CHO HÌNH CẮT, MẶT CẮT ================= */
+/* ================= KHỐI 10 – THƯ VIỆN VẬT THỂ MỚI (tự sinh hình chiếu, nét thấy / nét khuất, hình cắt) ================= */
+const HCX = (() => {
+  const { extrude, prep, circ } = HC.G;
+  const R4 = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+  const xz = L => L.map(v => [v[1], v[0], v[2] || 0]);
+  /* khối = danh sách "mảnh": {ax, out, holes, c0, c1} – đa giác (có lỗ) đùn theo trục ax */
+  const Z = (out, holes, z0, z1) => ({ ax: 'z', out, holes: holes || [], c0: z0, c1: z1 });
+  const Yp = (outXZ, holesXZ, y0, y1) => ({ ax: 'y', out: xz(outXZ), holes: (holesXZ || []).map(xz), c0: y0, c1: y1 });
+  const Xp = (outYZ, holes, x0, x1) => ({ ax: 'x', out: outYZ, holes: holes || [], c0: x0, c1: x1 });
+  const C = (x, y, r, n = 28) => circ(x, y, r, n);
+  const solid = (pcs, noHoles) => pcs.flatMap(p => extrude(p.ax, p.out, noHoles ? [] : p.holes, p.c0, p.c1));
+  /* ---- cắt khối bằng mặt phẳng y = c, giữ phía y ≥ c (ge) hoặc y ≤ c ---- */
+  const clip = (P, i, c, ge) => {
+    const inn = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9, out = [];
+    P.forEach((a, k) => {
+      const b = P[(k + 1) % P.length], ia = inn(a), ib = inn(b), s = a[2] || 0;
+      if (ia) out.push([a[0], a[1], s]);
+      if (ia !== ib) { const t = (c - a[i]) / (b[i] - a[i]), q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; q[i] = c; out.push([q[0], q[1], ia ? 0 : s]); }
+    });
+    const r = [];
+    out.forEach(p => { const l = r[r.length - 1]; if (l && Math.abs(l[0] - p[0]) < 1e-7 && Math.abs(l[1] - p[1]) < 1e-7) l[2] = p[2]; else r.push(p); });
+    while (r.length > 1 && Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-7 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-7) { r[r.length - 1][2] = r[0][2]; r.shift(); }
+    return r.length >= 3 ? r : null;
+  };
+  const onL = (v, i, c) => Math.abs(v[i] - c) < 1e-6;
+  /** ghép lỗ cắt ngang đường cắt vào đường bao ngoài (lỗ thành rãnh hở) */
+  const splice = (O, H, i, c) => {
+    const j = 1 - i, n = H.length;
+    let hi = -1; for (let k = 0; k < n; k++) if (onL(H[k], i, c) && onL(H[(k + 1) % n], i, c)) { hi = k; break; }
+    if (hi < 0) return O;
+    const path = []; for (let k = 1; k <= n; k++) path.push(H[(hi + k) % n].slice());   // từ H[hi+1] vòng tới H[hi]
+    const lo = Math.min(path[0][j], path[n - 1][j]), hi2 = Math.max(path[0][j], path[n - 1][j]);
+    for (let k = 0; k < O.length; k++) {
+      const a = O[k], b = O[(k + 1) % O.length];
+      if (!(onL(a, i, c) && onL(b, i, c))) continue;
+      if (Math.min(a[j], b[j]) - 1e-6 > lo || Math.max(a[j], b[j]) + 1e-6 < hi2) continue;
+      let pth = path.map(v => [v[0], v[1], v[2] || 0]);
+      if (Math.abs(path[0][j] - a[j]) > Math.abs(path[n - 1][j] - a[j])) { const m = n - 1; pth = path.map((_, k) => [path[m - k][0], path[m - k][1], k < m ? path[m - k - 1][2] || 0 : 0]); }
+      pth[pth.length - 1][2] = 0;
+      return [...O.slice(0, k + 1).map((v, m) => m === k ? [v[0], v[1], 0] : v), ...pth, ...O.slice(k + 1)];
+    }
+    return O;
+  };
+  /** cắt các mảnh bằng mặt phẳng (trục axis = c), giữ phía ≥ c (ge) hoặc ≤ c; trả về danh sách mảnh mới */
+  const IDX = { z: { x: 0, y: 1 }, x: { y: 0, z: 1 }, y: { z: 0, x: 1 } };
+  const clipPieces = (pcs, axis, c, ge, noHoles) => pcs.flatMap(p => {
+    if (p.ax === axis) { const c0 = ge ? Math.max(p.c0, c) : p.c0, c1 = ge ? p.c1 : Math.min(p.c1, c); return c1 > c0 + 1e-9 ? [{ ...p, holes: noHoles ? [] : p.holes, c0, c1 }] : []; }
+    const i = IDX[p.ax][axis], inside = v => ge ? v[i] >= c - 1e-9 : v[i] <= c + 1e-9;
+    let O = clip(p.out.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (!O) return [];
+    const keep = [];
+    (noHoles ? [] : p.holes).forEach(h => {
+      const ins = h.filter(inside).length, strict = h.filter(v => ge ? v[i] > c + 1e-6 : v[i] < c - 1e-6).length;
+      if (ins === h.length && !h.some(v => onL(v, i, c))) keep.push(h);
+      else if (strict > 0) { const Hc = clip(h.map(v => [v[0], v[1], v[2] || 0]), i, c, ge); if (Hc) O = splice(O, Hc, i, c); }
+    });
+    return [{ ...p, out: O, holes: keep }];
+  });
+  const cutSolid = (pcs, c, ge, noHoles) => solid(clipPieces(pcs, 'y', c, ge, noHoles));
+  const markAx = (F, k, v, s) => { F.forEach(f => { if (Math.abs(f.n[k] - s) < 1e-6 && f.pts.every(p => Math.abs(p[k] - v) < 1e-6)) f.cut = 1; }); return F; };
+  const mark = (F, c, s = -1) => { F.forEach(f => { if (Math.abs(f.n[1] - s) < 1e-6 && f.pts.every(p => Math.abs(p[1] - c) < 1e-6)) f.cut = 1; }); return F; };
+  /* ---- tự sinh hình chiếu: chiếu các cạnh, xét thấy / khuất bằng tia chiếu ---- */
+  const VIEW = {
+    front: (O) => ({ d: [0, 1, 0], uv: p => [p[0], p[2]], W: O.W, H: O.H }),
+    top: (O) => ({ d: [0, 0, -1], uv: p => [p[0], p[1]], W: O.W, H: O.D }),
+    side: (O) => ({ d: [1, 0, 0], uv: p => [O.D - p[1], p[2]], W: O.D, H: O.H }),
+    right: (O) => ({ d: [-1, 0, 0], uv: p => [p[1], p[2]], W: O.D, H: O.H }),
+    back: (O) => ({ d: [0, -1, 0], uv: p => [O.W - p[0], p[2]], W: O.W, H: O.H }),
+    bottom: (O) => ({ d: [0, 0, 1], uv: p => [p[0], O.D - p[1]], W: O.W, H: O.D })
+  };
+  const prepOcc = F => F.map(f => {
+    const ax = [0, 1, 2].sort((a, b) => Math.abs(f.n[b]) - Math.abs(f.n[a]))[0], u = (ax + 1) % 3, w = (ax + 2) % 3;
+    const all = f.loops.flat(), mn = [0, 1, 2].map(k => Math.min(...all.map(p => p[k]))), mx = [0, 1, 2].map(k => Math.max(...all.map(p => p[k])));
+    return { n: f.n, d0: f.n[0] * f.pts[0][0] + f.n[1] * f.pts[0][1] + f.n[2] * f.pts[0][2], u, w, loops: f.loops, mn, mx };
+  });
+  const occluded = (G, p, V) => {
+    const ai = V.d[0] ? 0 : V.d[1] ? 1 : 2, sg = V.d[ai], o1 = (ai + 1) % 3, o2 = (ai + 2) % 3;
+    for (const g of G) {
+      if (Math.abs(g.n[ai]) < 1e-9) continue;
+      if (p[o1] < g.mn[o1] - 1e-6 || p[o1] > g.mx[o1] + 1e-6 || p[o2] < g.mn[o2] - 1e-6 || p[o2] > g.mx[o2] + 1e-6) continue;
+      const s = (g.d0 - g.n[o1] * p[o1] - g.n[o2] * p[o2]) / g.n[ai], t = (s - p[ai]) * -sg;
+      if (t <= 1e-4) continue;
+      const h = p.slice(); h[ai] = s;
+      let inn = false;
+      g.loops.forEach(L => L.forEach((a, k) => { const b = L[(k + 1) % L.length]; if ((a[g.w] > h[g.w]) !== (b[g.w] > h[g.w]) && h[g.u] < (b[g.u] - a[g.u]) * (h[g.w] - a[g.w]) / (b[g.w] - a[g.w]) + a[g.u]) inn = !inn; }));
+      if (inn) return true;
+    }
+    return false;
+  };
+  const front = (f, d) => f.n[0] * d[0] + f.n[1] * d[1] + f.n[2] * d[2] < 0;
+  /** các đoạn thẳng của hình chiếu: [{p:[[u,v],[u,v]], k:'v'|'h'}] */
+  function lines(F, O, kind, hidden = true) {
+    const V = VIEW[kind](O), G = prepOcc(F), segs = [];
+    F.forEach(f => { (f.edges || []).forEach(e => segs.push(e)); (f.sil || []).forEach(s => { if (front(f, V.d) !== front(s.g, V.d)) segs.push([s.a, s.b]); }); });
+    const vis = [], hid = [];
+    segs.forEach(([a, b]) => {
+      const A = V.uv(a), B = V.uv(b); if (Math.hypot(B[0] - A[0], B[1] - A[1]) < 1e-6) return;
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / 0.06));
+      let run = null;
+      for (let k = 0; k < n; k++) {
+        const t0 = k / n, t1 = (k + 1) / n, m = a.map((v, j) => v + (b[j] - v) * (t0 + t1) / 2), v = !occluded(G, m, V);
+        const P0 = [A[0] + (B[0] - A[0]) * t0, A[1] + (B[1] - A[1]) * t0], P1 = [A[0] + (B[0] - A[0]) * t1, A[1] + (B[1] - A[1]) * t1];
+        if (run && run.v === v) run.b = P1; else { if (run) (run.v ? vis : hid).push([run.a, run.b]); run = { v, a: P0, b: P1 }; }
+      }
+      if (run) (run.v ? vis : hid).push([run.a, run.b]);
+    });
+    const near = (q, s) => { const [a, b] = s, ab = [b[0] - a[0], b[1] - a[1]], l2 = ab[0] ** 2 + ab[1] ** 2, t = Math.max(0, Math.min(1, ((q[0] - a[0]) * ab[0] + (q[1] - a[1]) * ab[1]) / l2)); return Math.hypot(q[0] - a[0] - ab[0] * t, q[1] - a[1] - ab[1] * t) < 2e-3; };
+    const out = vis.map(s => ({ p: s, k: 'v' }));
+    if (hidden) hid.forEach(([a, b]) => {
+      const n = Math.max(1, Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 0.06)); let run = null;
+      for (let k = 0; k < n; k++) {
+        const P0 = [a[0] + (b[0] - a[0]) * k / n, a[1] + (b[1] - a[1]) * k / n], P1 = [a[0] + (b[0] - a[0]) * (k + 1) / n, a[1] + (b[1] - a[1]) * (k + 1) / n], m = [(P0[0] + P1[0]) / 2, (P0[1] + P1[1]) / 2];
+        const cov = vis.some(s => near(m, s));
+        if (!cov) { if (run) run[1] = P1; else run = [P0, P1]; } else if (run) { out.push({ p: run, k: 'h' }); run = null; }
+      }
+      if (run) out.push({ p: run, k: 'h' });
+    });
+    // bỏ đoạn trùng nhau (hai đoạn nét đứt chồng lệch pha sẽ trông như nét liền); nét khuất nằm trong nét khuất khác cũng bỏ
+    const seen = new Set(), uniq = [];
+    out.forEach(s => { const P = s.p.map(q => q.map(v => (Math.round(v * 1000) / 1000).toFixed(3))).map(q => q.join(',')).sort(), key = s.k + P.join(';'); if (!seen.has(key)) { seen.add(key); uniq.push(s); } });
+    const H = uniq.filter(s => s.k === 'h'), Vv = uniq.filter(s => s.k === 'v');
+    const inside = (s, t) => near(s.p[0], t.p) && near(s.p[1], t.p);
+    const keepH = H.filter((s, i) => !H.some((t, j) => j !== i && inside(s, t) && !(inside(t, s) && j > i)));
+    return { it: [...Vv, ...keepH], W: V.W, H: V.H, V };
+  }
+  /** đường tâm của các lỗ / trụ */
+  function axesIt(O, kind) {
+    const V = VIEW[kind](O), it = [];
+    (O.axes || []).forEach(a => {
+      const dir = { x: [1, 0, 0], y: [0, 1, 0], z: [0, 0, 1] }[a.ax], along = Math.abs(dir[0] * V.d[0] + dir[1] * V.d[1] + dir[2] * V.d[2]) > 0.5;
+      const P = V.uv(a.c);
+      if (along) { const e = a.r + 0.3; it.push({ p: [[P[0] - e, P[1]], [P[0] + e, P[1]]], k: 'c' }, { p: [[P[0], P[1] - e], [P[0], P[1] + e]], k: 'c' }); }
+      else { const q0 = a.c.slice(), q1 = a.c.slice(); const k2 = dir.indexOf(1); q0[k2] = a.a[0] - 0.3; q1[k2] = a.a[1] + 0.3; it.push({ p: [V.uv(q0), V.uv(q1)], k: 'c' }); }
+    });
+    return it;
+  }
+  const sig = it => it.filter(x => x.p).map(x => x.k + x.p.map(q => q.map(v => v.toFixed(2)).join(',')).sort().join(';')).sort().join('|');
+  /* ---- danh sách vật thể (theo hình thầy cô gửi) ---- */
+  const AP = (cx, cy, r, a0, a1, n) => { const P = HC.G.arcPts(cx, cy, r, a0, a1, n); P[P.length - 1][2] = 0; return P; };
+  const DEF = [
+    { id: 'goivat', ten: 'Gối đỡ có vát', W: 3.4, D: 2.6, H: 3, axes: [{ c: [1.3, 1.3, 0.35], ax: 'z', r: 0.6, a: [0, 0.7] }],
+      pcs: [Z([...AP(1.3, 1.3, 1.3, 90, 270, 18), [3.4, 0, 0], [3.4, 2.6, 0]], [C(1.3, 1.3, 0.6)], 0, 0.7),
+        Xp([[0, 0.7], [2.6, 0.7], [2.6, 3], [2.0, 3], [1.3, 1.7], [0.6, 3], [0, 3]], [], 2.6, 3.4)] },
+    { id: 'khoighep', ten: 'Khối ghép có rãnh', W: 3, D: 2.4, H: 3,
+      pcs: [Yp([[0, 0], [3, 0], [3, 3], [2, 3], [2, 2.2], [1, 2.2], [1, 3], [0, 3]], [], 1.4, 2.4), Z(R4(0, 0, 1, 1.4), [], 0, 1.4), Z(R4(2, 0, 3, 1.4), [], 0, 1.4)] },
+    { id: 'taitreo', ten: 'Tai treo có lỗ', W: 3.8, D: 1.4, H: 3.2, axes: [{ c: [2.2, 0.7, 1.6], ax: 'y', r: 0.8, a: [0, 1.4] }],
+      pcs: [Yp([[1, 0], [2.2, 0, 1], ...AP(2.2, 1.6, 1.6, -90, 90, 24).slice(1), [1, 3.2]], [C(2.2, 1.6, 0.8)], 0, 1.4),
+        Yp([[0, 0], [1, 0], [1, 3.2], [0, 3.2], [0, 2.4], [0.6, 2.4], [0.6, 0.8], [0, 0.8]], [], 0, 1.4)] },
+    { id: 'khoilo', ten: 'Khối có lỗ tròn', W: 3.2, D: 1.6, H: 3.4, axes: [{ c: [1.2, 0.8, 1.4], ax: 'y', r: 0.75, a: [0, 1.6] }],
+      pcs: [Yp([[0, 0], [3.2, 0], [3.2, 1.8], [2.2, 1.8], [2.2, 3.4], [0, 3.4]], [C(1.2, 1.4, 0.75)], 0, 1.6)] },
+    { id: 'ranhhop', ten: 'Khối có rãnh hộp', W: 4, D: 3.2, H: 2.6,
+      pcs: [Z(R4(0, 0, 4, 3.2), [], 0, 0.8), Z(R4(0, 1.6, 2.4, 3.2), [R4(0.5, 2.0, 1.9, 2.8)], 0.8, 2.6)] },
+    { id: 'hopchong', ten: 'Khối hộp chồng', W: 4, D: 3, H: 2.6,
+      pcs: [Z(R4(0, 0, 4, 3), [], 0, 1), Z(R4(1, 1.2, 2.6, 3), [], 1, 2.6)] },
+    { id: 'hocvuong', ten: 'Khối có hốc vuông', W: 4.4, D: 3, H: 1.5, c: 1.5,
+      pcs: [Z(R4(0, 0, 4.4, 3), [], 0, 0.7), Z([[0.6, 0.6], [4.4, 0.6], [4.4, 2.2], [3.6, 2.2], [3.6, 3], [0.6, 3]], [R4(1.7, 1.0, 2.9, 2.0)], 0.7, 1.5)] },
+    { id: 'loranh2', ten: 'Khối có lỗ và hai rãnh', W: 4.4, D: 3, H: 1.5, c: 1.5, sym: 1, axes: [{ c: [2.2, 1.5, 0.75], ax: 'z', r: 0.5, a: [0, 1.5] }],
+      pcs: [Z([[0, 0], [4.4, 0], [4.4, 1], [3.8, 1], [3.8, 2], [4.4, 2], [4.4, 3], [0, 3], [0, 2], [0.6, 2], [0.6, 1], [0, 1]], [C(2.2, 1.5, 0.5)], 0, 0.6), Z(R4(1, 0, 3.4, 3), [C(2.2, 1.5, 0.5)], 0.6, 1.5)] },
+    { id: 'loranh1', ten: 'Khối có lỗ và một rãnh', W: 4.4, D: 3, H: 1.5, c: 1.5, axes: [{ c: [2.6, 1.5, 0.75], ax: 'z', r: 0.5, a: [0, 1.5] }],
+      pcs: [Z([[0, 0], [4.4, 0], [4.4, 3], [0, 3], [0, 2], [0.6, 2], [0.6, 1], [0, 1]], [C(2.6, 1.5, 0.5)], 0, 0.6), Z([[1, 0], [4.4, 0], [4.4, 3], [1, 3]], [C(2.6, 1.5, 0.5)], 0.6, 1.5)] },
+    { id: 'giaU', ten: 'Giá có rãnh chữ U', W: 4, D: 3.6, H: 3, c: 1.0,
+      pcs: [Z(R4(0, 0, 4, 3.6), [R4(1.6, 0.6, 3.2, 1.4)], 0, 0.8), Yp([[0, 0.8], [4, 0.8], [4, 3], [2.9, 3], [2.9, 2.1], [1.6, 2.1], [1.6, 3], [0, 3]], [], 2.8, 3.6), Z(R4(0, 0, 0.8, 2.8), [], 0.8, 2.2)] },
+    { id: 'trurong', ten: 'Đế có trụ rỗng', W: 3.6, D: 3.2, H: 2.2, c: 1.6, axes: [{ c: [1.8, 1.6, 1.1], ax: 'z', r: 0.6, a: [0, 2.2] }],
+      pcs: [Z([[0, 0], [1.4, 0], [1.4, 0.4], [2.2, 0.4], [2.2, 0], [3.6, 0], [3.6, 3.2], [0, 3.2], [0, 1.4], [0.4, 1.4], [0.4, 0.9], [0, 0.9]], [C(1.8, 1.6, 0.6)], 0, 0.8), Z(C(1.8, 1.6, 1.15, 32), [C(1.8, 1.6, 0.6)], 0.8, 2.2)] },
+    { id: 'tru2go', ten: 'Đế có trụ và hai gờ', W: 5, D: 3, H: 1.9, c: 1.5, axes: [{ c: [2.6, 1.5, 0.95], ax: 'z', r: 0.5, a: [0, 1.9] }],
+      pcs: [Z(R4(0, 0, 5, 3), [C(2.6, 1.5, 0.5)], 0, 0.5), Z(C(2.6, 1.5, 1.15, 32), [C(2.6, 1.5, 0.5)], 0.5, 1.9), Z(R4(0.3, 2.1, 1.7, 2.6), [], 0.5, 0.85), Z(R4(3.5, 0.4, 4.9, 0.9), [], 0.5, 0.85)] },
+    { id: 'bacranh', ten: 'Khối bậc có rãnh', W: 5, D: 2.2, H: 2.8,
+      pcs: [Z([[0, 0], [5, 0], [5, 0.8], [4.3, 0.8], [4.3, 1.4], [5, 1.4], [5, 2.2], [0, 2.2]], [], 0, 1.2), Xp([[0, 1.2], [2.2, 1.2], [2.2, 2.8], [1.5, 2.8], [1.5, 2.3], [0.8, 2.3], [0.8, 2.8], [0, 2.8]], [], 0, 1.8)] }
+  ];
+  const WHY = { right: 'Đây là hình nhìn từ phải (hình chiếu cạnh là hình nhìn từ trái).', back: 'Đây là hình nhìn từ phía sau.', bottom: 'Đây là hình nhìn từ dưới lên, không phải hình chiếu bằng (nhìn từ trên xuống).' };
+  /* vật thể cho Bài 9, 11 (cùng dạng với HC.OBJ) */
+  const mk9 = d => {
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, sym: d.sym, axes: d.axes, faces: () => solid(d.pcs), _dis: [] };
+    let F = null, V = null;
+    Object.defineProperty(o, 'F', { get: () => F || (F = prep(solid(d.pcs))) });
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const mkv = k => { const r = lines(o.F, o, k); return { W: r.W, H: r.H, it: [...r.it, ...axesIt(o, k)] }; };
+      V = { front: mkv('front'), top: mkv('top'), side: mkv('side') };
+      const used = [sig(V.front.it), sig(V.top.it), sig(V.side.it)];
+      ['right', 'bottom', 'back'].forEach(k => { if (o._dis.length >= 2) return; const v = mkv(k), s = sig(v.it); if (used.includes(s)) return; used.push(s); v.why = WHY[k]; V[k] = v; o._dis.push(k); });
+      return V;
+    } });
+    Object.defineProperty(o, 'dis', { get: () => (o.views, o._dis) });
+    return o;
+  };
+  const OBJ9 = DEF.map(mk9);
+  /* vật thể cho Bài 10 – hình cắt toàn bộ (mặt phẳng cắt y = c) */
+  const trace = (W, c) => [{ p: [[-0.75, c], [-0.15, c]], k: 'm' }, { p: [[W + 0.15, c], [W + 0.75, c]], k: 'm' }, { ar: [-0.45, c, 0, 0.7] }, { ar: [W + 0.45, c, 0, 0.7] }, { tx: [-0.82, c + 0.55, 'A'] }, { tx: [W + 0.82, c + 0.55, 'A'] }];
+  const mk10 = d => {
+    const c = d.c != null ? d.c : d.D / 2, o9 = OBJ9.find(x => x.id === d.id);
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, c, axes: d.axes,
+      full: () => solid(d.pcs), cut: () => mark(cutSolid(d.pcs, c, true), c), ghost: () => cutSolid(d.pcs, c, false) };
+    let V = null;
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const Fc = prep(mark(cutSolid(d.pcs, c, true), c)), Ff = prep(mark(cutSolid(d.pcs, c, true, true), c));
+      const uv = p => [p[0], p[2]], fills = F => F.filter(f => f.cut).map(f => f.loops.map(L => L.map(uv)));
+      const fillIt = F => ({ f: fills(F).flat() });
+      const ax = axesIt(o, 'front'), H2 = d.H + 0.9, AA = { tx: [d.W / 2, d.H + 0.55, 'A – A'] };
+      const secL = lines(Fc, o, 'front', false).it, fullL = o9.views.front.it.filter(x => x.k !== 'c');
+      const outline = Fc.filter(f => f.cut).flatMap(f => f.loops.flatMap(L => L.map((p, k) => ({ p: [uv(p), uv(L[(k + 1) % L.length])], k: 'v' }))));
+      V = {
+        front: o9.views.front,
+        sec: { W: d.W, H: H2, it: [fillIt(Fc), ...secL, ...ax, AA] },
+        x1: { W: d.W, H: H2, it: [fillIt(Ff), ...secL, ...ax, AA], why: 'Lỗ, rãnh là khoảng trống (không có vật liệu) nên không được kẻ gạch.' },
+        x2: { W: d.W, H: H2, it: [...o9.views.front.it, AA], why: 'Đây vẫn là hình chiếu đứng (có nét đứt), chưa có mặt cắt kẻ gạch.' },
+        x3: { W: d.W, H: H2, it: [fillIt(Fc), ...fullL, ...ax, AA], why: 'Sau khi cắt, các đường bao bên trong đã thấy được nên phải vẽ nét liền đậm, không vẽ nét đứt.' },
+        x4: { W: d.W, H: H2, it: [fillIt(Fc), ...outline, ...ax, AA], why: 'Phần vật thể phía sau mặt phẳng cắt vẫn còn các cạnh thấy được – hình cắt phải vẽ cả các cạnh đó.' },
+        top: { u0: -1.2, W: d.W + 2.4, H: d.D, it: [...o9.views.top.it, ...trace(d.W, c)] }
+      };
+      if (sig(V.x4.it) === sig(V.sec.it)) delete V.x4;
+      return V;
+    } });
+    return o;
+  };
+  /* hình cắt một nửa: bỏ 1/4 vật thể phía trước bên phải (x ≥ X, y ≤ c) */
+  const mkHalf = d => {
+    const c = d.c, X = d.X, P = d.pcs;
+    const halfP = nh => { const back = clipPieces(P, 'y', c, true, nh), front = clipPieces(P, 'y', c, false, nh);
+      const A1 = clipPieces(back, 'x', X, false), A2 = clipPieces(back, 'x', X, true), B = clipPieces(front, 'x', X, false);
+      return [...solid(A1), ...markAx(solid(A2), 1, c, -1), ...markAx(solid(B), 0, X, 1)]; };
+    const o = { id: d.id, ten: d.ten, W: d.W, D: d.D, H: d.H, c, cx: X, axes: d.axes,
+      full: () => solid(P), half: () => halfP(false), ghostHalf: () => solid(clipPieces(clipPieces(P, 'y', c, false), 'x', X, true)) };
+    let V = null;
+    Object.defineProperty(o, 'views', { get: () => {
+      if (V) return V;
+      const uv = p => [p[0], p[2]], H2 = d.H + 0.5;
+      const fillOf = F => ({ f: F.filter(f => f.cut && Math.abs(f.n[1] + 1) < 1e-6).flatMap(f => f.loops.map(L => L.map(uv))) });
+      const Fh = prep(halfP(false)), Fn = prep(halfP(true)), Ff = prep(solid(P)), Fc = prep(mark(solid(clipPieces(P, 'y', c, true)), c));
+      const onAxis = s => Math.abs(s.p[0][0] - X) < 1e-4 && Math.abs(s.p[1][0] - X) < 1e-4;
+      const hl = lines(Fh, o, 'front', false).it.filter(s => !onAxis(s));
+      const ax = [...axesIt(o, 'front'), { p: [[X, -0.35], [X, d.H + 0.35]], k: 'c' }];
+      const fr = lines(Ff, o, 'front', true).it;
+      V = {
+        front: { W: d.W, H: H2, it: [...fr, ...ax] },
+        half: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...ax] },
+        hx1: { W: d.W, H: H2, it: [fillOf(Fh), ...hl, ...fr.filter(s => s.k === 'h' && s.p[0][0] < X - 1e-4 && s.p[1][0] < X - 1e-4), ...ax], why: 'Ở nửa hình chiếu không vẽ nét đứt, vì cấu tạo bên trong đã thể hiện ở nửa hình cắt.' },
+        hx2: { W: d.W, H: H2, it: [{ f: Fc.filter(f => f.cut).flatMap(f => f.loops.map(L => L.map(uv))) }, ...lines(Fc, o, 'front', false).it, ...ax], why: 'Đây là hình cắt toàn bộ (cả hai nửa đều cắt), không phải hình cắt một nửa.' },
+        hx3: { W: d.W, H: H2, it: [fillOf(Fn), ...hl, ...ax], why: 'Lỗ là khoảng trống (không có vật liệu) nên không được kẻ gạch.' }
+      };
+      return V;
+    } });
+    return o;
+  };
+  const HALF = [mkHalf({ id: 'bp107', ten: 'Đế có ống trụ (SGK H.10.7)', W: 4.4, D: 3.2, H: 2.8, c: 1.6, X: 2.2,
+    axes: [{ c: [2.2, 1.6, 1.4], ax: 'z', r: 0.6, a: [0, 2.8] }, { c: [0.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }, { c: [3.7, 1.6, 0.4], ax: 'z', r: 0.3, a: [0, 0.8] }],
+    pcs: [Z(R4(0, 0, 4.4, 3.2), [C(2.2, 1.6, 0.6), C(0.7, 1.6, 0.3, 20), C(3.7, 1.6, 0.3, 20)], 0, 0.8), Z(C(2.2, 1.6, 1.15, 32), [C(2.2, 1.6, 0.6)], 0.8, 2.8)] })];
+  const SEC = ['loranh2', 'hocvuong', 'trurong', 'tru2go', 'loranh1'];
+  const OBJ10 = DEF.filter(d => SEC.includes(d.id)).map(mk10);
+  return { OBJ9, OBJ10, SEC, HALF, K: { Yp, R4, solid, cutSolid, mark, lines, prep } };
+})();
+HC.OBJ.splice(2, 0, ...HCX.OBJ9.slice(0, 3));
+HC.OBJ.push(...HCX.OBJ9.slice(3));
+
+/* ---- dùng chung cho luyện tập hình chiếu: sinh phương án nhiễu ---- */
 const HCQ = (() => {
   const flipIt = (it, W, H, fu, fv) => it.map(x => {
     const U = u => fu ? W - u : u, Vv = v => fv ? H - v : v;
