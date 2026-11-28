@@ -1383,3 +1383,10 @@ body.modal-open{overflow:hidden}
 .imgdrop .imgdrop-pk{margin-top:6px;cursor:pointer}
 .imgdrop.has .imgdrop-pk{position:absolute;left:6px;top:6px;margin:0;background:rgba(255,255,255,.92)}
 .imgdrop.has .imgdrop-rd{position:absolute;left:0;right:0;bottom:6px;background:rgba(240,253,244,.95);padding:4px}
+/* 28/11/2026: Giao bài nhanh */
+.gn textarea#nd{min-height:110px}
+.gn .gn-k{display:flex;gap:10px;align-items:flex-start;margin:4px 0}
+.gn .gn-k b{min-width:34px;padding-top:6px}
+.gn-cta{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;border:2px solid #c7d2fe;background:linear-gradient(90deg,#eef2ff,#fff)}
+.gn-cta:hover{border-color:#6366f1}
+.gn-cta .gn-ic{font-size:30px}

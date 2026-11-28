@@ -924,3 +924,35 @@ function cn2811Scope_() {
   };
 }
 try { cn2811Scope_(); } catch (e) { console.error('CapNhat_28_11 Scope: ' + e); }
+
+/* ===== Cập nhật 28/11: Giao bài nhanh – giao bài (nội dung + hình + hạn nộp) cho mọi khối 10, 11, 12; HS gửi bài làm, AI chấm =====
+ * Viết lại create_drawing_task (bản gốc chỉ cho khối 10); các kiểm tra khác giữ nguyên. Thiếu tiêu chí thì dùng tiêu chí chung của app.
+ */
+function cn2811Nhanh_() {
+  if (typeof API === 'undefined' || !API.create_drawing_task) return;
+  API.create_drawing_task = req => {
+    const t = auth_(req, 'gv');
+    const g = teacher_(t);
+    const a = req.task || {};
+    const lops = rows_('Lop').filter(c => (a.classes || []).indexOf(c.MaLop) >= 0 && (t.r === 'admin' || schoolKey_(c.Truong) === schoolKey_(g.Truong)));
+    if (!lops.length) throw new Error('Hãy chọn ít nhất một lớp');
+    if (lops.some(c => String(c.Khoi) !== String(lops[0].Khoi))) throw new Error('Mỗi lần chỉ giao cho các lớp cùng một khối');
+    const loai = DRAW_TYPES[a.loai] ? a.loai : 'hinhchieu';
+    if (!clean_(a.deBai, 2000)) throw new Error('Hãy nhập nội dung bài');
+    const tieuChi = clean_(a.tieuChi, 3000) || 'Làm đúng, đủ yêu cầu của đề – 6 điểm\nĐúng quy ước, kí hiệu, thuật ngữ theo SGK và TCVN – 2 điểm\nTrình bày rõ ràng, sạch đẹp – 2 điểm';
+    let anhMau = '';
+    if (a.anhMau) anhMau = saveImage_(a.anhMau, 'MAU_' + Date.now() + '.jpg').id;
+    let anhDe = '';
+    if (a.anhDe) anhDe = saveImage_(a.anhDe, 'DE_' + Date.now() + '.jpg').id;
+    return withLock_(() => {
+      const b = { MaBV: 'V' + shortId_(), TieuDe: clean_(a.title, 120) || 'Bài tập', MaGV: g.MaGV, TenGV: g.HoTen, Truong: g.Truong,
+        Khoi: String(lops[0].Khoi), DanhSachLop: lops.map(c => c.MaLop).join(','), Loai: loai, DeBai: clean_(a.deBai, 2000),
+        TieuChi: tieuChi, DiemToiDa: Math.max(1, Math.min(10, Number(a.diemToiDa) || 10)), AnhMau: anhMau, AnhDe: anhDe,
+        SoLan: Math.max(0, Number(a.attempts) || 0), HanNop: a.deadline || '', NgayTao: new Date(), TrangThai: 'mo' };
+      ensureCols_('BaiVe');
+      append_('BaiVe', b);
+      return publicDrawTask_(b);
+    });
+  };
+}
+try { cn2811Nhanh_(); } catch (e) { console.error('CapNhat_28_11 Nhanh: ' + e); }

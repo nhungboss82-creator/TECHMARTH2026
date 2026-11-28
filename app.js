@@ -2715,6 +2715,7 @@ route(/^\/gv\/giaobai$/, async params => {
     const sc = isAdm ? gvSchool(allCls) : { list: allCls, html: '', bind: () => {} };
     cls = sc.list;
     setView(`<div class="gb-head"><h1>📝 Giao bài ${targetK ? 'Khối ' + targetK : ''}</h1></div>
+      <a class="card gn-cta" href="#/gv/giaonhanh"><span class="gn-ic">📨</span><span class="grow"><b>Giao bài nhanh</b></span><span class="btn sm">Mở ›</span></a>
       <form class="card gbf" id="f"><div class="gb-l">
         ${sc.html ? `<div class="gb-sch">${sc.html}</div>` : ''}
         <div class="gb-2"><div><label for="t">Tiêu đề</label><input id="t" type="text" required maxlength="120" placeholder="${targetK ? 'Kiểm tra Công nghệ ' + targetK : 'Kiểm tra 15 phút – Mạch điện ba pha'}" value="${esc(keep.t)}"></div>
@@ -3171,6 +3172,56 @@ function aiReportHtml(r) {
     <p class="hint">Tên học sinh không gửi cho AI; AI chỉ nhận số liệu thống kê đã ẩn danh. Nhận xét của AI để thầy cô tham khảo.</p></div>`;
 }
 
+/* ================= 28/11/2026: GIAO BÀI NHANH – chỉ nội dung + 1 hình + lớp + hạn nộp → HS gửi bài làm → AI chấm =================
+   Dùng chung máy chủ của "Bài vẽ – AI chấm": HS chụp / tải bài làm, AI chấm thang 10 theo quy định của app, mỗi HS nộp tối đa 2 lần,
+   GV xem điểm cao nhất. Loại bài tự nhận theo nội dung (hình chiếu vuông góc / trục đo / hình cắt / phối cảnh / bản vẽ xây dựng). */
+const loaiTuNoiDung = s => { s = String(s || '').toLowerCase();
+  return /trục đo/.test(s) ? 'trucdo' : /hình cắt|mặt cắt/.test(s) ? 'hinhcat' : /phối cảnh/.test(s) ? 'phoicanh' : /xây dựng|mặt bằng|nhà ở/.test(s) ? 'xaydung' : /thiết kế|phác thảo/.test(s) ? 'thietke' : 'hinhchieu'; };
+route(/^\/gv\/giaonhanh$/, async () => {
+  if (!needGV()) return;
+  setView('<div class="card empty">Đang tải…</div>');
+  const isAdmin = session.role === 'admin';
+  let all; try { all = isAdmin ? await gvClasses() : await api('school_classes'); } catch (e) { errBox(V, e); return; }
+  const keep = { nd: '', cl: [], dl: '' }; let anh = null;
+  const unpaste = pasteImgTo('gnimg'); cleanup = unpaste;
+  const draw = () => {
+    const sc = isAdmin ? gvSchool(all) : { list: all, html: '', bind: () => {} };
+    const cls = sc.list;
+    setView(`<a href="#/gv/giaobai">← Giao bài</a><h1>📨 Giao bài nhanh</h1>
+      <form class="card gn" id="f">${sc.html}
+        <label for="nd">① Nội dung bài</label>
+        <textarea id="nd" required placeholder="VD: Hãy vẽ hình chiếu vuông góc của vật thể dưới đây.">${esc(keep.nd)}</textarea>
+        <label>② Hình</label>
+        ${imgDrop('gnimg', 'Dán, chụp hoặc chọn hình', '', anh)}
+        <label>③ Giao cho lớp</label>
+        ${cls.length ? ['10', '11', '12'].map(k => { const l = cls.filter(c => String(c.Khoi) === k); return l.length ? `<div class="gn-k"><b>K${k}</b><div class="checks">${l.map(c => `<label class="chk"><input type="checkbox" name="cl" value="${c.MaLop}" data-k="${k}" ${keep.cl.includes(c.MaLop) ? 'checked' : ''}>${esc(c.TenLop)}</label>`).join('')}</div></div>` : ''; }).join('')
+          : `<div class="hint">${isAdmin ? 'Chọn trường ở trên để hiện các lớp.' : 'Trường chưa có lớp.'}</div>`}
+        <label for="dl">④ Hạn nộp</label><input id="dl" type="datetime-local" value="${esc(keep.dl)}" style="max-width:280px">
+        <div id="msg"></div><button class="btn block" id="go" style="margin-top:12px">📨 Chuyển bài cho HS</button></form>`);
+    const save = () => { keep.nd = $('#nd').value; keep.dl = $('#dl').value; keep.cl = $$('input[name=cl]:checked').map(i => i.value); };
+    sc.bind(() => { save(); keep.cl = []; draw(); });
+    bindImgDrop('gnimg', v => { save(); anh = v; draw(); });
+    $('#f').onsubmit = async e => {
+      e.preventDefault(); save();
+      const nd = keep.nd.trim(), ks = new Set($$('input[name=cl]:checked').map(i => i.dataset.k));
+      if (!nd) { errBox($('#msg'), 'Hãy ghi nội dung bài'); return; }
+      if (!keep.cl.length) { errBox($('#msg'), 'Hãy chọn ít nhất một lớp'); return; }
+      if (ks.size > 1) { errBox($('#msg'), 'Mỗi lần chỉ giao cho các lớp cùng một khối'); return; }
+      if (keep.dl && new Date(keep.dl) <= new Date()) { errBox($('#msg'), 'Hạn nộp phải sau thời điểm hiện tại'); return; }
+      const loai = loaiTuNoiDung(nd);
+      await busy($('#go'), async () => {
+        try {
+          const t = await api('create_drawing_task', { task: { title: nd.split('\n')[0].slice(0, 80), classes: keep.cl, loai, deBai: nd, tieuChi: DRAW_SAMPLE[loai],
+            diemToiDa: 10, attempts: 2, deadline: keep.dl ? new Date(keep.dl).toISOString() : '', anhDe: anh } });
+          if (anh) drwImgCache['d_' + t.MaBV] = anh;
+          unpaste(); toast('Đã chuyển bài cho HS'); location.hash = '#/gv/baive/' + t.MaBV;
+        } catch (err) { errBox($('#msg'), err); }
+      });
+    };
+  };
+  draw();
+});
+
 /* ================= GV tự soạn câu (dùng ở trang Thêm câu hỏi và ngay trong trang Giao bài) =================
    28/11/2026: chèn hình vào câu hỏi (chụp / tải tệp / dán ảnh), mặc định câu chỉ trường mình thấy */
 const AI_TU_CHAM = 'GV không ghi đáp án mẫu. AI chấm theo kiến thức SGK Công nghệ: đúng, đủ ý, đúng thuật ngữ thì cho điểm tối đa; thiếu ý hoặc sai thì trừ điểm tương ứng.';
@@ -3530,7 +3581,7 @@ function imgDrop(id, title, hint, val) {
   const pm = PASTE_MODE();
   return `<div class="imgdrop${val ? ' has' : ''}${pm ? ' pm' : ''}" id="${id}" tabindex="0" role="button" aria-label="${esc(title)}">
     ${val ? `<img src="${val}" alt="${esc(title)}"><button type="button" class="imgdrop-x" data-x="${id}" title="Bỏ ảnh">✕</button>`
-      : `<span class="imgdrop-ic">🖼️</span><b>${esc(title)}</b><span class="hint">${pm ? 'Bấm vào ô này rồi nhấn <b>Ctrl+V</b> (hoặc chuột phải → <b>Dán</b>) · kéo thả tệp vào đây' : hint}</span>`}
+      : `<span class="imgdrop-ic">🖼️</span><b>${esc(title)}</b>${hint ? `<span class="hint">${pm ? 'Bấm vào ô rồi Ctrl+V để dán' : hint}</span>` : ''}`}
     ${pm ? `<span class="imgdrop-rd" contenteditable="false">✅ Đã chọn ô – nhấn Ctrl+V để dán ${val ? '(thay hình)' : ''}</span><button type="button" class="btn ghost sm imgdrop-pk" data-pick contenteditable="false">📁 Chọn tệp…</button>` : ''}
     <input type="file" accept="${FILE_ACCEPT}" hidden></div>`;
 }
