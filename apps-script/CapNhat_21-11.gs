@@ -1451,3 +1451,83 @@ function cn2811ChamVe2_() {
   }
 }
 try { cn2811ChamVe2_(); } catch (e) { console.error('CapNhat_28_11 ChamVe2: ' + e); }
+
+/* ===== Cập nhật 28/11 (8): BÁO HS LÀM LẠI BÀI CHƯA ĐẠT YÊU CẦU =====
+ * Bài giao có câu tự luận YÊU CẦU VẼ mà lần nộp gần nhất của HS không có ảnh bài vẽ
+ * → my_assignments gắn "lamLai" (câu nào, vì sao) và cho HS thêm 1 lượt làm lại (kể cả khi đã hết số lần làm).
+ * Khi HS nộp lại có ảnh bài vẽ thì thông báo tự hết.
+ */
+function cn2811LamLai_() {
+  if (typeof API === 'undefined') return;
+  const RE = /\[\[ANH:([\w-]{10,})\]\]/;
+  const canVe_ = s => /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(String(s || ''));
+  /* các câu yêu cầu vẽ trong danh sách mã câu */
+  const veIds_ = ids => {
+    const want = {}; ids.forEach(id => { want[id] = 1; });
+    const out = {};
+    bankRows_().forEach(q => { const id = String(q.MaCau).trim(); if (want[id] && /tự\s*luận|tu\s*luan|essay/i.test(String(q.DangThuc || '')) && canVe_(plainText_(q.NoiDungCau))) out[id] = 1; });
+    return out;
+  };
+  /* lần nộp gần nhất của HS thiếu ảnh ở câu yêu cầu vẽ → { cau: [số thứ tự câu], ly_do } */
+  const idsOf_ = b => String(b.DanhSachCau || '').split(',').map(x => x.trim()).filter(Boolean);
+  const check_ = (b, maHS, kq, sh, ci, ve) => {
+    const ids = idsOf_(b);
+    if (!ids.length || ci < 1) return null;
+    if (!ids.some(id => ve[id])) return null;
+    const att = kq.filter(r => r.MaBai === b.MaBai && r.MaHS === maHS);
+    if (!att.length) return null;
+    const last = att.reduce((a, r) => (Number(r.LanThu) || 0) >= (Number(a.LanThu) || 0) ? r : a, att[0]);
+    let ans = {}; try { ans = JSON.parse(String(sh.getRange(last._r, ci).getValue() || '{}')); } catch (e) { return null; }
+    const thieu = []; ids.forEach((id, i) => { if (ve[id] && !RE.test(String(ans[id] || ''))) thieu.push(i + 1); });
+    return thieu.length ? { cau: thieu, ly_do: 'Câu ' + thieu.join(', ') + ' yêu cầu vẽ nhưng em chưa nộp ảnh bài vẽ. Em vẽ ra giấy, chụp ảnh nộp lại nhé.' } : null;
+  };
+  const ctx_ = () => { const sh = sheet_('KetQua'); const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String); return { sh: sh, ci: head.indexOf('ChiTiet') + 1 }; };
+
+  const ma = API.my_assignments;
+  if (ma) API.my_assignments = req => {
+    const l = ma(req);
+    try {
+      const t = auth_(req, 'hs'), bg = {};
+      rows_('BaiGiao').forEach(b => { bg[b.MaBai] = b; });
+      const done = (l || []).filter(o => o.soLanDaLam && bg[o.MaBai]);
+      if (!done.length) return l;
+      const ve = veIds_([].concat.apply([], done.map(o => idsOf_(bg[o.MaBai]))));
+      if (!Object.keys(ve).length) return l;
+      const c = ctx_(), kq = rows_('KetQua');
+      done.forEach(o => {
+        const r = check_(bg[o.MaBai], t.u, kq, c.sh, c.ci, ve);
+        if (!r) return;
+        o.lamLai = r;
+        if (Number(o.SoLan) > 0 && o.soLanDaLam >= Number(o.SoLan)) o.SoLan = o.soLanDaLam + 1;
+      });
+    } catch (e) { console.error('lamLai: ' + e); }
+    return l;
+  };
+  /* nộp lại: được thêm 1 lượt khi lần trước thiếu ảnh bài vẽ */
+  const sb = API.submit;
+  if (sb) API.submit = req => {
+    const s = (req && req.result) || {};
+    if (s.loai !== 'baigiao') return sb(req);
+    let extra = false;
+    try {
+      const t = auth_(req, 'hs'), b = rows_('BaiGiao').find(r => r.MaBai === String(s.key || ''));
+      if (b && Number(b.SoLan) > 0) { const ve = veIds_(idsOf_(b)); if (Object.keys(ve).length) { const c = ctx_(); extra = !!check_(b, t.u, rows_('KetQua'), c.sh, c.ci, ve); } }
+    } catch (e) {}
+    if (!extra) return sb(req);
+    const r0 = rows_;
+    rows_ = name => { const l = r0(name); if (name === 'BaiGiao') l.forEach(b => { if (b.MaBai === String(s.key || '') && Number(b.SoLan) > 0) b.SoLan = Number(b.SoLan) + 1; }); return l; };
+    try { return sb(req); } finally { rows_ = r0; }
+  };
+  /* GV: danh sách HS cần làm lại của một bài */
+  API.redo_list = req => {
+    const t = auth_(req, 'gv'), g = teacher_(t);
+    const b = rows_('BaiGiao').find(r => r.MaBai === String(req.maBai || ''));
+    if (!b) throw new Error('Không tìm thấy bài');
+    if (t.r !== 'admin' && b.MaGV !== g.MaGV && !(schoolKey_(g.Truong) && schoolKey_(b.Truong) === schoolKey_(g.Truong))) throw new Error('Bài này thuộc trường khác');
+    const ve = veIds_(idsOf_(b)); if (!Object.keys(ve).length) return [];
+    const c = ctx_(), kq = rows_('KetQua').filter(r => r.MaBai === b.MaBai), seen = {}, out = [];
+    kq.forEach(r => { if (seen[r.MaHS]) return; seen[r.MaHS] = 1; const x = check_(b, r.MaHS, kq, c.sh, c.ci, ve); if (x) out.push({ MaHS: r.MaHS, HoTen: r.HoTen, cau: x.cau }); });
+    return out;
+  };
+}
+try { cn2811LamLai_(); } catch (e) { console.error('CapNhat_28_11 LamLai: ' + e); }

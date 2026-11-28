@@ -840,7 +840,7 @@ async function homeTodo(box) {
     if (!box.isConnected) return;
     quiz = Array.isArray(quiz) ? quiz : []; drw = Array.isArray(drw) ? drw : [];
     const items = [
-      ...quiz.filter(a => !a.soLanDaLam && !lateOf(a.HanNop)).map(a => ({ ic: '📝', c: '', t: a.TieuDe, m: [a.LoaiBai, (a.soCau || a.DanhSachCau.length) + ' câu', a.chuaMo && a.BatDau ? '🔒 mở ' + dt(a.BatDau) : '', a.HanNop ? 'hạn ' + dt(a.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baigiao?mo=' + a.MaBai })),
+      ...quiz.filter(a => (!a.soLanDaLam || a.lamLai) && !lateOf(a.HanNop)).map(a => ({ ic: a.lamLai ? '⚠️' : '📝', c: '', t: (a.lamLai ? 'Làm lại: ' : '') + a.TieuDe, m: [a.lamLai ? 'Bài chưa đạt yêu cầu' : '', a.LoaiBai, (a.soCau || a.DanhSachCau.length) + ' câu', a.chuaMo && a.BatDau ? '🔒 mở ' + dt(a.BatDau) : '', a.HanNop ? 'hạn ' + dt(a.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baigiao?mo=' + a.MaBai })),
       ...drw.filter(t => !t.bai.length && !lateOf(t.HanNop)).map(t => ({ ic: t.Loai === 'thietke' ? '💡' : '✏️', c: 'amber', t: t.TieuDe, m: [t.Loai === 'thietke' ? 'Thiết kế kĩ thuật' : 'Bài tập vẽ', t.HanNop ? 'hạn ' + dt(t.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baive/' + t.MaBV }))];
     setTabDot(items.length);
     if (!items.length) { box.innerHTML = `<div class="card empty">${err ? esc(err) : 'Em đã làm hết bài thầy cô giao. Ôn thêm bên dưới nhé!'}</div>`; return; }
@@ -1034,7 +1034,7 @@ async function homeTasks(box, openId) {
   const draw = () => {
     const quiz = Array.isArray(st.quiz) ? st.quiz : [], drw = Array.isArray(st.drw) ? st.drw : [];
     const ve = drw.filter(t => t.Loai !== 'thietke'), tk = drw.filter(t => t.Loai === 'thietke');
-    const pq = quiz.filter(a => !a.soLanDaLam && !lateOf(a.HanNop)).length;
+    const pq = quiz.filter(a => (!a.soLanDaLam || a.lamLai) && !lateOf(a.HanNop)).length;
     const pd = l => l.filter(t => !t.bai.length && !lateOf(t.HanNop)).length;
     const tabs = [['quiz', '📝 Bài kiểm tra', quiz, pq], ['ve', '✏️ Bài tập vẽ', ve, pd(ve)], ['tk', '💡 Thiết kế kĩ thuật', tk, pd(tk)]];
     if (!st.tab) { const f = tabs.find(t => t[3]); st.tab = f ? f[0] : 'quiz'; }
@@ -1051,9 +1051,10 @@ async function homeTasks(box, openId) {
           ${a.MoTa ? `<div class="meta">📌 ${esc(a.MoTa)}</div>` : ''}
           <div class="row" style="margin-top:4px">${a.soLanDaLam ? (a.choDiem ? `<span class="pill ok">Đã nộp ${a.soLanDaLam} lần</span><span class="pill warn">⏳ Chờ cả lớp nộp (${a.choDiem.nop}/${a.choDiem.si}) mới có điểm</span>` : `<span class="pill ok">Đã làm ${a.soLanDaLam} lần · cao nhất ${fmt(a.diemCao)}</span>`) : '<span class="pill warn">Chưa làm</span>'}
           ${a.CheDoDiem === 'diem' ? '<span class="pill">Chỉ xem điểm</span>' : a.CheDoDiem === 'calop' && !a.soLanDaLam ? '<span class="pill">Cả lớp nộp xong mới có điểm</span>' : ''}
-          ${late ? '<span class="pill bad">Hết hạn</span>' : ''}${wait ? `<span class="pill warn">🔒 Mở lúc ${dt(a.BatDau)}</span>` : ''}</div></div>
+          ${late ? '<span class="pill bad">Hết hạn</span>' : ''}${wait ? `<span class="pill warn">🔒 Mở lúc ${dt(a.BatDau)}</span>` : ''}</div>
+          ${a.lamLai ? `<div class="redo-box">⚠️ <b>Bài chưa đạt yêu cầu – em làm lại nhé.</b> ${esc(a.lamLai.ly_do || '')}</div>` : ''}</div>
           <div class="row">${a.soLanDaLam && a.BangXepHang !== 'tat' && !a.choDiem ? `<a class="btn ghost sm" href="#/bxh?key=${encodeURIComponent(a.MaBai)}&t=${encodeURIComponent(a.TieuDe)}">🏆</a>` : ''}
-          <button class="btn sm" data-i="${i}" ${late || out || wait ? 'disabled' : ''}>${out ? 'Hết lượt' : wait ? 'Chưa mở' : 'Làm bài'}</button></div></div>`;
+          <button class="btn sm${a.lamLai ? ' warnbtn' : ''}" data-i="${i}" ${late || out || wait ? 'disabled' : ''}>${out ? 'Hết lượt' : wait ? 'Chưa mở' : a.lamLai ? 'Làm lại' : 'Làm bài'}</button></div></div>`;
       }).join('') + '</div>' : '<div class="card empty">Chưa có bài kiểm tra nào được giao.</div>';
     } else {
       const l = cur[2], isTK = cur[0] === 'tk';
@@ -3116,6 +3117,8 @@ async function xemBaiHS(a, maHS, ten) {
     const at = L[k], ans = at.ans || {}, tl = ans._tl || {};
     $('#xbb').innerHTML = `${L.length > 1 ? `<div class="bv-lan" style="margin-bottom:8px">${L.map((x, i) => `<button type="button" class="${i === k ? 'on' : ''}" data-xk="${i}">Lần ${x.lan} · ${fmt(x.diem)}đ</button>`).join('')}</div>` : ''}
       <div class="hint" style="margin-bottom:8px">Lần ${at.lan} · nộp ${dt(at.t)} · <b>${fmt(at.diem)} điểm</b></div>
+      ${(() => { const miss = a.DanhSachCau.map((id, i) => needVe(bank.byId[id]) && !essImgs(ans[id]).length ? i + 1 : 0).filter(Boolean);
+        return miss.length && k === L.length - 1 ? `<div class="redo-box">⚠️ <b>Bài chưa đạt yêu cầu:</b> câu ${miss.join(', ')} yêu cầu vẽ nhưng HS chưa nộp ảnh bài vẽ. App đã báo em này làm lại (được thêm 1 lượt).</div>` : ''; })()}
       ${a.DanhSachCau.map((id, i) => one(id, i + 1, ans[id], tl[id])).join('')}`;
     $$('[data-xk]', m).forEach(b => b.onclick = () => { k = +b.dataset.xk; draw(); });
     math($('#xbb'));
