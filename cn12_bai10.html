@@ -314,6 +314,14 @@ body[data-lesson=b8]{--lc:#2563EB}body[data-lesson=b9]{--lc:#EA580C}body[data-le
 #lessonNav button[data-l=b8]{--c:#2563EB}#lessonNav button[data-l=b9]{--c:#EA580C}#lessonNav button[data-l=b10]{--c:#7C3AED}#lessonNav button[data-l=free]{--c:#0D9488}
 #lessonNav button:hover{background:color-mix(in srgb,var(--c) 20%,white);color:var(--c);transform:translateY(-1px)}
 #lessonNav button.on{background:var(--c);color:#fff;border-color:var(--c);box-shadow:0 4px 12px color-mix(in srgb,var(--c) 45%,transparent)}
+/* hàng trên: Bài 10 · Thực hành lắp mạch điện + 2 trang */
+#lessonNav{flex-direction:column;align-items:flex-start;gap:4px;padding:0}
+#lessonNav .lhead{display:flex;align-items:center;gap:8px;font:700 18px/1 var(--f-label);color:#5B21B6;white-space:nowrap}
+#lessonNav .lhead .lb{background:#7C3AED;color:#fff;border-radius:7px;padding:3px 9px;font-size:16px}
+#lessonNav .lpages{display:flex;gap:6px}
+#lessonNav .lpages button{font-size:14.5px;padding:5px 11px}
+@media (max-width:1700px){#lessonNav .lpages button{font-size:13px;padding:4px 8px}#lessonNav .lhead{font-size:15px}}
+@media (max-width:1366px){#lessonNav .lpages button{font-size:12px;padding:3px 6px}}
 /* ---------- khung Nhiệm vụ bên phải: gọn, nhỏ, thu gọn được ---------- */
 .insp{width:290px!important;transition:width .25s ease}
 .tabs{margin:8px 8px 0!important;padding:2px!important}
@@ -361,10 +369,6 @@ body.rp-min .rpToggle::after{content:" Nhiệm vụ";font:600 13px var(--f-label
 </head>
 <body>
 <header class="top">
-  <div class="brand">
-    <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" rx="9" fill="#172434"/><path d="M8 13h8M8 23h8" stroke="#D42A2F" stroke-width="2.6" stroke-linecap="round"/><path d="M8 23h8" stroke="#1F5FD1" stroke-width="2.6" stroke-linecap="round"/><circle cx="16" cy="13" r="2.2" fill="#fff"/><circle cx="16" cy="23" r="2.2" fill="#fff"/><path d="M16 13l9 -4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/><circle cx="27" cy="13" r="2.2" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M16 23h12" stroke="#A35A1F" stroke-width="2.6" stroke-linecap="round"/></svg>
-    <div><div class="brand-t">Chủ đề: Hệ thống điện gia đình</div><div class="brand-s">Công nghệ 12, Kết nối tri thức, Chương III</div></div>
-  </div>
   <nav class="seg" id="lessonNav" aria-label="Chọn bài"></nav>
   <div class="who">
     <label class="sr" for="stName">Họ và tên học sinh</label><input class="field" id="stName" placeholder="Họ và tên">
@@ -545,7 +549,7 @@ const DEF = {
   sw3: { name: 'Công tắc 3 cực (2 chiều)', group: 'Đóng cắt & bảo vệ', hot: 1, prefix: 'K', kind: 'sw3', w: 60, h: 48,
     terms: [{ id: 'c', x: -30, y: 0, n: 'Cực chung (C)' }, { id: 'x1', x: 30, y: -12, n: 'Cực 1' }, { id: 'x2', x: 30, y: 12, n: 'Cực 2' }],
     params: [{ k: 'r', label: 'Dòng định mức', opts: ropts([6, 10, 16]), def: 10 }],
-    info: 'Cực chung C luôn nối với 1 trong 2 cực còn lại. Dùng 2 công tắc 3 cực để bật/tắt 1 đèn ở 2 nơi (đèn cầu thang, đèn sân – Bài 10).',
+    info: 'Cực chung C luôn nối với 1 trong 2 cực còn lại. Dùng 2 công tắc 3 cực để bật/tắt 1 đèn ở 2 nơi (đèn cầu thang, đèn sân).',
     draw: d => { const p = d.st.pos || 0; return `
       <rect x="-22" y="-22" width="44" height="44" rx="7" fill="#fff" ${B}/>
       <line x1="-30" y1="0" x2="-8" y2="0" stroke="#0f172a" stroke-width="2"/>
@@ -653,7 +657,7 @@ const DEF = {
   sw4: { name: 'Công tắc đảo chiều (4 cực)', group: 'Đóng cắt & bảo vệ', prefix: 'K', kind: 'sw4', w: 60, h: 48,
     terms: [{ id: 'a1', x: -30, y: -12, n: 'Cực a1' }, { id: 'a2', x: -30, y: 12, n: 'Cực a2' }, { id: 'b1', x: 30, y: -12, n: 'Cực b1' }, { id: 'b2', x: 30, y: 12, n: 'Cực b2' }],
     params: [{ k: 'r', label: 'Dòng định mức', opts: ropts([6, 10, 16]), def: 10 }],
-    info: 'Lắp giữa 2 công tắc 3 cực để điều khiển 1 đèn từ 3 vị trí trở lên (mở rộng Bài 10). Vị trí 1: a1–b1, a2–b2; vị trí 2: a1–b2, a2–b1.',
+    info: 'Lắp giữa 2 công tắc 3 cực để điều khiển 1 đèn từ 3 vị trí trở lên (mở rộng). Vị trí 1: a1–b1, a2–b2; vị trí 2: a1–b2, a2–b1.',
     draw: d => { const p = d.st.pos || 0; return `<rect x="-22" y="-22" width="44" height="44" rx="7" fill="#fff" ${B}/>
       ${[-12, 12].map(y => `<line x1="-30" y1="${y}" x2="-8" y2="${y}" stroke="#0f172a" stroke-width="2"/><line x1="8" y1="${y}" x2="30" y2="${y}" stroke="#0f172a" stroke-width="2"/><circle cx="-8" cy="${y}" r="2.2" fill="#0f172a"/><circle cx="8" cy="${y}" r="2.2" fill="#0f172a"/>`).join('')}
       ${p ? '<line x1="-8" y1="-12" x2="8" y2="12" stroke="#16a34a" stroke-width="2.4"/><line x1="-8" y1="12" x2="8" y2="-12" stroke="#16a34a" stroke-width="2.4"/>' : '<line x1="-8" y1="-12" x2="8" y2="-12" stroke="#16a34a" stroke-width="2.4"/><line x1="-8" y1="12" x2="8" y2="12" stroke="#16a34a" stroke-width="2.4"/>'}`; } },
@@ -873,7 +877,7 @@ const loadP = d => KIND(d.type) === 'load' ? d.p.P : 0;
    2. BÀI HỌC – nhiệm vụ, vùng bố trí, yêu cầu chấm điểm
    ===================================================================== */
 const LESSONS = {
-  b10: { tab: 'Bài 10', title: 'Bài 10. Thiết kế và lắp đặt mạch điện điều khiển trong gia đình', pages: 'SGK tr. 50–52',
+  b10: { tab: 'Mạch điện hai công tắc điều khiển 1 bóng đèn', title: 'Mạch điện hai công tắc điều khiển 1 bóng đèn', pages: 'Bài 10. Thiết kế và lắp đặt mạch điện điều khiển trong gia đình · SGK tr. 50–52',
     zones: [{ id: 'luoi', n: 'TỦ ĐIỆN NGOÀI TRỜI (lắp sẵn 🔒)', x: 20, y: 40, w: 460, h: 240, c: '#fed7aa' },
       { id: 'tu', n: 'TỦ ĐIỆN TRONG NHÀ (aptomat tổng, aptomat nhánh)', x: 20, y: 300, w: 360, h: 280, c: '#bae6fd' },
       { id: 'cong', n: 'CỔNG NHÀ', x: 40, y: 600, w: 330, h: 360, c: '#fde68a' },
@@ -902,10 +906,15 @@ const LESSONS = {
       { id: 'r6', pts: 1, t: 'Vượt qua kiểm tra an toàn điện' },
       { id: 'r7', pts: 1, t: 'Đã dùng đồng hồ đo kiểm tra thông mạch trước khi đóng điện' },
       { id: 'r8', pts: 1, t: 'Đã vận hành thử: bật/tắt đèn được từ cả 2 công tắc khi có điện' }] },
-  free: { tab: 'Thực hành lắp mạch điện gia đình', title: 'Thực hành lắp mạch điện gia đình', pages: 'Tự thiết kế',
-    zones: [{ id: 'luoi', n: 'LƯỚI ĐIỆN', x: 20, y: 40, w: 200, h: 260, c: '#fed7aa' }],
-    task: 'Tự thiết kế và lắp mạch điện gia đình từ kho thiết bị: lưới điện → công tơ → aptomat tổng → aptomat nhánh → công tắc, ổ cắm → tải.<br><br><b>Chọn đúng thiết bị, đúng thông số, mạch hoạt động tốt</b> là đạt <b>điểm tuyệt đối (10 điểm)</b>.<br>Điểm được tính từ khi em bấm <b>Kiểm tra an toàn điện</b>: sau đó mỗi lỗi phải sửa bị trừ <b>0,25 điểm</b>.<br><b>Mỗi thiết bị thừa</b> (lấy ra mà không đấu dây) bị trừ <b>0,25 điểm</b>.<br>⏱ Thời gian làm bài: <b>45 phút</b>, đếm ngược từ khi em chọn thiết bị đầu tiên. Hết giờ, bài tự động được chấm điểm.',
-    hints: ['Gợi ý: mạch chuông cửa (nút nhấn + chuông), đèn hành lang 3 vị trí (2 công tắc 3 cực + 1 công tắc đảo chiều), đèn cảm biến.'], reqs: [] }
+  free: { tab: 'Thực hành mạch điện gia đình', title: 'Thực hành mạch điện gia đình', pages: 'Bài 10. Thiết kế và lắp đặt mạch điện điều khiển trong gia đình · tự thiết kế',
+    zones: [{ id: 'luoi', n: 'LƯỚI ĐIỆN – TỦ ĐIỆN TỔNG (công tơ, aptomat tổng – lắp sẵn 🔒)', x: 20, y: 40, w: 460, h: 240, c: '#fed7aa' }],
+    // lưới điện + tủ điện tổng (công tơ, aptomat tổng 2 cực) lắp sẵn – giống Trang 1
+    src: { x: 100, y: 170, sc: 1.4 },
+    fixed: [{ type: 'congto', x: 270, y: 170, p: { r: 40 }, sc: 1.4 }, { type: 'apt2', x: 420, y: 180, p: { r: 10 }, sc: 1.4, label: 'AT tổng', editable: 1 }],
+    fixedW: [[0, 'L', 1, 't1', 'L', 2.5, [[185, 149], [185, 250], [232, 250]]], [0, 'N', 1, 't3', 'N', 2.5, [[175, 191], [175, 262], [283, 262]]],
+      [1, 't2', 2, 'li', 'L', 2.5, [[257, 242], [350, 242], [350, 100], [403, 100]]], [1, 't4', 2, 'ni', 'N', 2.5, [[308, 236], [338, 236], [338, 88], [437, 88]]]],
+    task: 'Tự thiết kế và lắp mạch điện gia đình từ kho thiết bị. <b>Lưới điện và tủ điện tổng</b> (công tơ + aptomat tổng 2 cực) 🔒 <b>đã lắp sẵn</b>: em lắp tiếp từ <b>2 cực RA của aptomat tổng</b> → aptomat nhánh → công tắc, ổ cắm → tải. Có thể đổi dòng định mức aptomat tổng cho phù hợp tổng công suất.<br><br><b>Chọn đúng thiết bị, đúng thông số, mạch hoạt động tốt</b> là đạt <b>điểm tuyệt đối (10 điểm)</b>.<br>Điểm được tính từ khi em bấm <b>Kiểm tra an toàn điện</b>: sau đó mỗi lỗi phải sửa bị trừ <b>0,25 điểm</b>.<br><b>Mỗi thiết bị thừa</b> (lấy ra mà không đấu dây) bị trừ <b>0,25 điểm</b>.<br>⏱ Thời gian làm bài: <b>45 phút</b>, đếm ngược từ khi em chọn thiết bị đầu tiên. Hết giờ, bài tự động được chấm điểm.',
+    hints: ['Lấy điện từ cực RA của aptomat tổng (L – dây đỏ, N – dây xanh), qua aptomat nhánh rồi mới tới công tắc, ổ cắm.', 'Gợi ý: mạch chuông cửa (nút nhấn + chuông), đèn hành lang 3 vị trí (2 công tắc 3 cực + 1 công tắc đảo chiều), đèn cảm biến.'], reqs: [] }
 };
 const LESSON = () => LESSONS[state.lesson];
 
@@ -1129,7 +1138,7 @@ function runSafety() {
       state.devices.forEach(d => {
         const k = KIND(d.type); const I = devI(base, d); const r = rating(d); if (!r || I < 1e-3) return;
         if ((k === 'apt1' || k === 'apt2' || k === 'fuse') && I > r + 1e-6) { ratingErr++; addP(`${d.label} ${r} A nhỏ hơn dòng điện tính toán ${vn(I, 2)} A → sẽ nhảy/đứt khi dùng đủ tải. Chọn loại có I_đm ≥ ${vn(I, 2)} A.`, [d.id], 'rating', paramDiag(d, 'r', pickOpt(d, I), `Dòng tính toán qua ${d.label} là ${vn(I, 2)} A.`)); }
-        else if ((k === 'apt1' || k === 'apt2') && !d.fixed && r > 2.5 * I && r > 10) addP(`${d.label} ${r} A quá lớn so với dòng tính toán ${vn(I, 2)} A → bảo vệ kém nhạy, dây có thể quá tải mà aptomat chưa cắt.`, [d.id], 'rating', paramDiag(d, 'r', pickOpt(d, I), `Dòng tính toán qua ${d.label} là ${vn(I, 2)} A.`));
+        else if ((k === 'apt1' || k === 'apt2') && (!d.fixed || d.editable) && r > 2.5 * I && r > 10) addP(`${d.label} ${r} A quá lớn so với dòng tính toán ${vn(I, 2)} A → bảo vệ kém nhạy, dây có thể quá tải mà aptomat chưa cắt.`, [d.id], 'rating', paramDiag(d, 'r', pickOpt(d, I), `Dòng tính toán qua ${d.label} là ${vn(I, 2)} A.`));
         if (['sw2', 'sw3', 'sw4', 'push', 'pir', 'outlet', 'knife', 'meter'].includes(k) && I > r + 1e-6) { ratingErr++; addP(`${d.label} (${DEF[d.type].name}) định mức ${k === 'meter' ? 'tối đa ' + r : r} A nhưng dòng tính toán là ${vn(I, 2)} A → quá tải, nóng chảy tiếp điểm.`, [d.id], 'rating', paramDiag(d, 'r', pickOpt(d, I), `Dòng tính toán qua ${d.label} là ${vn(I, 2)} A.`)); }
       });
       let wErr = 0, wWarn = 0;
@@ -1855,7 +1864,7 @@ function titleBlock() {
     <line x1="${x + 392}" y1="${y + 40}" x2="${x + 392}" y2="${y + hgt}" stroke="#172434" stroke-width="1.2"/>
     <line x1="${x + 452}" y1="${y + 40}" x2="${x + 452}" y2="${y + hgt}" stroke="#172434" stroke-width="1.2"/>
     ${leg.map((l, i) => `<line x1="${x + 12}" y1="${y + 18 + i * 22}" x2="${x + 46}" y2="${y + 18 + i * 22}" stroke="${l[0]}" stroke-width="5" stroke-linecap="round"/><text x="${x + 56}" y="${y + 23 + i * 22}" font-size="14" font-weight="600">${l[1]}</text>`).join('')}
-    <text x="${x + 184}" y="${y + 27}" font-size="19" font-weight="700">${esc(L.title.length > 40 ? L.title.slice(0, 39) + '…' : L.title)}</text>
+    <text x="${x + 184}" y="${y + 27}" font-size="${L.title.length > 44 ? 13.5 : L.title.length > 36 ? 16 : 19}" font-weight="700">${esc(L.title.length > 54 ? L.title.slice(0, 53) + '…' : L.title)}</text>
     <text x="${x + 184}" y="${y + 55}" font-size="12" fill="#7C8A98">Người lắp</text><text x="${x + 184}" y="${y + 73}" font-size="16" font-weight="600">${nm}</text>
     <text x="${x + 400}" y="${y + 55}" font-size="12" fill="#7C8A98">Lớp</text><text x="${x + 400}" y="${y + 73}" font-size="16" font-weight="600">${cl}</text>
     <text x="${x + 460}" y="${y + 55}" font-size="12" fill="#7C8A98">Ngày</text><text x="${x + 460}" y="${y + 73}" font-size="15" font-weight="600">${today}</text></g>`;
@@ -1871,7 +1880,9 @@ setInterval(() => { if (state.fx.length) renderSvg(); }, 400);
    9. GIAO DIỆN – kho, thanh bước, bảng phải
    ===================================================================== */
 function renderNav() {
-  $('#lessonNav').innerHTML = Object.entries(LESSONS).filter(([k]) => ['b10', 'free'].includes(k)).map(([k, l]) => `<button data-l="${k}" class="${(state.compare ? state.compare.lesson : state.lesson) === k ? 'on' : ''}">${l.tab}</button>`).join('');
+  const cur = state.compare ? state.compare.lesson : state.lesson;
+  $('#lessonNav').innerHTML = `<div class="lhead"><span class="lb">Bài 10</span>Thiết kế và lắp đặt mạch điện điều khiển trong gia đình</div><div class="lpages">` +
+    ['b10', 'free'].map(k => `<button data-l="${k}" class="${cur === k ? 'on' : ''}" title="${esc(LESSONS[k].title)}">${LESSONS[k].tab}</button>`).join('') + '</div>';
 }
 function renderCatalog() {
   const q = ($('#search').value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd');
@@ -1893,7 +1904,7 @@ function renderCatalog() {
 }
 function stepStatus() {
   const L = LESSON(); const devs = state.devices.filter(d => !['nguon', 'jn'].includes(d.type));
-  let chosen = devs.length >= 2, placed = chosen;
+  let chosen = devs.filter(d => !d.fixed).length >= 2, placed = chosen;
   if (state.lesson === 'b10') { chosen = devs.filter(d => d.type === 'sw3').length >= 2 && devs.some(isLamp) && devs.some(isProt); placed = chosen && devs.some(d => d.type === 'sw3' && inZone(d, 'cong')) && devs.some(d => d.type === 'sw3' && inZone(d, 'hien')); }
   const wiredOk = chosen && devs.filter(d => (!d.fixed || wired(d)) && KIND(d.type) !== 'bus').every(fullyWired) && devs.some(d => isLoadish(d) && fullyWired(d));
   return [!!state.flags.read, chosen, placed, wiredOk, safetyValid(), !!state.flags.powerRuns, !!state.flags.graded];
@@ -1997,7 +2008,7 @@ function propPanel() {
       <div class="box">Dòng điện cho phép: <b>I = S × J = ${vn(w.size, 2)} × ${J} = ${vn(w.size * J)} A</b>${I !== null ? `<br>Dòng điện đang chạy: <b>${vn(I, 2)} A</b> ${I > w.size * J ? '🔥 QUÁ TẢI' : ''}` : ''}${w.burnt ? '<br>🔥 Dây đã cháy đứt – xoá và đi dây mới có tiết diện lớn hơn.' : ''}</div>
       <div class="btnrow">${w.auto ? '' : '<button class="sbtn" data-act="clearBends">Đi dây tự động lại</button>'}<button class="sbtn dan" data-act="del" ${state.power ? 'disabled' : ''}>🗑️ Xoá dây</button></div>`;
   }
-  const d = dev(state.sel.d); if (!d) return ''; const def = DEF[d.type]; const lock = state.power || d.fixed; const k = KIND(d.type);
+  const d = dev(state.sel.d); if (!d) return ''; const def = DEF[d.type]; const lock = state.power || (d.fixed && !d.editable); const k = KIND(d.type);
   const s = devSim(d);
   let h = `<h3>${def.name}</h3><div class="muted">${def.info}</div>`;
   h += `<div class="row"><label>Kí hiệu</label><input type="text" data-dp="label" value="${esc(d.label)}" ${state.power || d.type === 'nguon' ? 'disabled' : ''}></div>`;
@@ -2125,7 +2136,7 @@ function finishWire(to, viaJunction) {
 function cancelWire() { state.hover = null; state.hintRings = null; if (state.active) { const f = dev(state.active.from.d); if (f && f.type === 'jn' && wireCount(f.id + ':j') === 2) mergeJunction(f); } state.active = null; hintOff(); renderSvg(); }
 function mergeJunction(j) { const ws = state.wires.filter(w => w.a.d === j.id || w.b.d === j.id); if (ws.length !== 2) return; const [w1, w2] = ws; const e1 = w1.a.d === j.id ? w1.b : w1.a, e2 = w2.a.d === j.id ? w2.b : w2.a; state.wires = state.wires.filter(w => w !== w1 && w !== w2); state.devices = state.devices.filter(d => d !== j); addWire(e1, e2, w1.color, w1.size, []); }
 function splitWire(wid, p) {
-  const w = state.wires.find(x => x.id === wid); if (!w) return null; if (w.fixed) { toast('Không rẽ nhánh trên dây của tủ điện ngoài trời – em lấy điện từ cực RA của aptomat 2 cực.', 'warn'); return null; } pushUndo();
+  const w = state.wires.find(x => x.id === wid); if (!w) return null; if (w.fixed) { toast('Không rẽ nhánh trên dây lắp sẵn của lưới điện / tủ điện – em lấy điện từ cực RA của aptomat 2 cực.', 'warn'); return null; } pushUndo();
   const pts = wirePts(w); let best = null;
   for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i]; const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy || 1; const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / L2)); const q = { x: a.x + dx * t, y: a.y + dy * t }; const dd = Math.hypot(q.x - p.x, q.y - p.y); if (!best || dd < best.dd) best = { i, q, dd }; }
   const q = { x: snap(best.q.x), y: snap(best.q.y) }; const seg0 = pts[best.i - 1], seg1 = pts[best.i];
@@ -2206,7 +2217,7 @@ function openQuick(sel, e) {
       <div class="q"><label>Màu dây</label><div class="cl">${Object.keys(WCOL).map(k => `<button data-qc="${k}" class="${w.color === k ? 'on' : ''}" style="background:${WCOL[k]}" title="${WCOLN[k]}" aria-label="${WCOLN[k]}"></button>`).join('')}</div></div>
       <div class="btnrow"><button class="sbtn dan" data-qa="del">Xoá dây</button></div>`;
   } else {
-    const d = dev(sel.d); if (!d) return hideQuick(); const def = DEF[d.type]; const lock = d.fixed || d.type === 'nguon';
+    const d = dev(sel.d); if (!d) return hideQuick(); const def = DEF[d.type]; const lock = (d.fixed && !d.editable) || d.type === 'nguon';
     h += `<h5>${esc(d.label)} · ${esc(def.name)}</h5>${lock ? '<div class="muted">Thiết bị cố định của bài – không đổi thông số.</div>' : ''}`;
     def.params.forEach(p => { if (p.opts.length < 2) return; h += `<div class="q"><label for="qp_${p.k}">${p.label}</label><select id="qp_${p.k}" data-qp="${p.k}" ${lock ? 'disabled' : ''}>${p.opts.map(o => `<option value="${o.v}" ${d.p[p.k] == o.v ? 'selected' : ''}>${o.t}</option>`).join('')}</select></div>`; });
     (def.num || []).forEach(p => { h += `<div class="q"><label for="qn_${p.k}">${p.label}</label><input id="qn_${p.k}" type="number" step="100" min="0" data-qn="${p.k}" value="${d.p[p.k]}" ${lock ? 'disabled' : ''}></div>`; });
@@ -2336,7 +2347,7 @@ function initLesson(key, fresh) {
     state.devices = []; state.wires = []; state.flags = {}; state.sheet = {};
     const LS0 = LESSONS[key], sc0 = LS0.src;
     const src0 = addDevice('nguon', sc0 ? sc0.x : Math.round(110 * SX), sc0 ? sc0.y : key === 'b8' ? 160 : 185); if (sc0 && sc0.sc) src0.scale = sc0.sc;
-    const fx = [src0]; (LS0.fixed || []).forEach(f => { const d = addDevice(f.type, sc0 ? f.x : Math.round(f.x * SX), f.y, f.p); if (f.sc) d.scale = f.sc; d.fixed = true; fx.push(d); });
+    const fx = [src0]; (LS0.fixed || []).forEach(f => { const d = addDevice(f.type, sc0 ? f.x : Math.round(f.x * SX), f.y, f.p); if (f.sc) d.scale = f.sc; if (f.label) d.label = f.label; if (f.editable) d.editable = true; d.fixed = true; fx.push(d); });
     (LS0.fixedW || []).forEach(([a, at, b, bt, c, sz, pts]) => { const w = addWire({ d: fx[a].id, t: at }, { d: fx[b].id, t: bt }, c, sz, pts.map(([x, y]) => ({ x, y }))); w.fixed = true; });
   }
   state.view = state.flags.view || (key === 'b10' || key === 'free' ? 'real' : 'schema');
@@ -2347,7 +2358,7 @@ function initLesson(key, fresh) {
    chia điện bằng MỐI NỐI RẼ NHÁNH (chấm đen) như hình vẽ trong sách.
    ===================================================================== */
 const SAMPLES = {
-  b10: { lesson: 'b10', name: 'Bài 10 · Đèn sân bật/tắt ở 2 nơi (cổng – hiên)', desc: 'Công tơ, aptomat tổng, aptomat nhánh, 2 công tắc 3 cực, 1 đèn.',
+  b10: { lesson: 'b10', name: 'Đèn sân bật/tắt ở 2 nơi (cổng – hiên)', desc: 'Công tơ, aptomat tổng, aptomat nhánh, 2 công tắc 3 cực, 1 đèn.',
     checks: ['Lưới điện → công tơ → aptomat tổng 2 cực (trong tủ điện).', 'Aptomat nhánh 1 cực đặt trong tủ điện, trên dây nóng (pha L).', 'Dây nóng sau aptomat → cực chung C của công tắc ở CỔNG.', 'Hai dây đảo chiều (vàng): cực 1 ↔ cực 2 và cực 2 ↔ cực 1 giữa hai công tắc 3 cực.', 'Cực chung C của công tắc ở HIÊN → một cực của đèn.', 'Cực còn lại của đèn → dây nguội (trung tính N).'] },
   m1: { lesson: 'free', name: 'Mạch 1 công tắc điều khiển 1 đèn', desc: 'Mạch cơ bản: công tơ → aptomat tổng → aptomat nhánh → công tắc → đèn.',
     checks: ['Lưới điện → công tơ → aptomat tổng → aptomat nhánh (luôn có trước mọi mạch).', 'Aptomat và công tắc nằm trên dây nóng (đỏ).', 'Công tắc mắc NỐI TIẾP với đèn.', 'Cực còn lại của đèn nối về dây nguội (xanh).'] },
@@ -2381,15 +2392,17 @@ function buildSample(key) {
     V(lamp, 'b', am, 'no', 'N', 1.5, [{ x: 880, y: 420 }, { x: 880, y: 500 }, { x: 312, y: 500 }]);
   }
   if (S.lesson === 'free') {
-    src.x = 105; src.y = 160;
-    const ct = D('congto', 290, 140, { r: 40 }), am = D('apt2', 400, 330, { r: 10 });
-    V(src, 'L', ct, 't1', 'L', 1.5, [{ x: 215, y: 145 }, { x: 215, y: 205 }, { x: 263, y: 205 }]);
-    V(src, 'N', ct, 't3', 'N', 1.5, [{ x: 200, y: 175 }, { x: 200, y: 222 }, { x: 299, y: 222 }]);
-    V(ct, 't2', am, 'li', 'L', 1.5, [{ x: 281, y: 250 }, { x: 388, y: 250 }]); V(ct, 't4', am, 'ni', 'N', 1.5, [{ x: 317, y: 238 }, { x: 412, y: 238 }]);
+    // lưới điện + tủ điện tổng đã lắp sẵn ở Trang 2 → dùng lại aptomat tổng có sẵn
+    let am = state.devices.find(d => d.type === 'apt2' && d.fixed);
+    if (!am) { src.x = 105; src.y = 160;
+      const ct = D('congto', 290, 140, { r: 40 }); am = D('apt2', 400, 330, { r: 10 });
+      V(src, 'L', ct, 't1', 'L', 1.5, [{ x: 215, y: 145 }, { x: 215, y: 205 }, { x: 263, y: 205 }]);
+      V(src, 'N', ct, 't3', 'N', 1.5, [{ x: 200, y: 175 }, { x: 200, y: 222 }, { x: 299, y: 222 }]);
+      V(ct, 't2', am, 'li', 'L', 1.5, [{ x: 281, y: 250 }, { x: 388, y: 250 }]); V(ct, 't4', am, 'ni', 'N', 1.5, [{ x: 317, y: 238 }, { x: 412, y: 238 }]); }
     const OX = 300, OY = 305; const D0 = D; const Jn0 = Jn;
     { const D = (t, x, y, p, rot) => D0(t, x + OX, y + OY, p, rot); const Jn = (x, y) => Jn0(x + OX, y + OY);
-      const at = D('apt1', 300, 145, { r: 6 }, 3); V(am, 'lo', at, 'i', 'L', 1.5, [{ x: 388, y: 450 }]);
-      const jN0 = Jn(720, 175); V(am, 'no', jN0, 'j', 'N', 1.5, [{ x: 412, y: 480 }]);
+      const at = D('apt1', 300, 145, { r: 6 }, 3); V(am, 'lo', at, 'i', 'L', 2.5);
+      const jN0 = Jn(720, 175); V(am, 'no', jN0, 'j', 'N', 2.5);
     if (key === 'm1' || key === 'm4') {
       const k = key === 'm1' ? D('sw2', 480, 145) : D('push', 480, 145); const ld = key === 'm1' ? D('den', 650, 300, { P: 18 }) : D('chuong', 650, 300);
       V(at, 'o', k, 'a', 'L', 1.5); V(k, 'b', ld, 'a', 'K', 1.5); V(ld, 'b', jN0, 'j', 'N', 1.5);
@@ -2545,7 +2558,7 @@ $('#btnPower').onclick = () => {
 };
 $('#btnGrade').onclick = () => { if (state.compare) { toast('Đang xem mạch mẫu – quay lại bài làm để chấm điểm.', 'warn'); return; } grade(); };
 $('#btnHelp').onclick = () => showModal('📘 Hướng dẫn sử dụng', `<ol>
-  <li><b>Chọn ở thanh trên</b>: <b>Bài 10</b> hoặc <b>Thực hành lắp mạch điện gia đình</b> (tự luyện tập). Đọc nhiệm vụ ở tab 📋.</li>
+  <li><b>Chọn phần ở thanh trên</b>: <b>Mạch điện hai công tắc điều khiển 1 bóng đèn</b> hoặc <b>Thực hành mạch điện gia đình</b> (tự thiết kế). Lưới điện và tủ điện tổng đã lắp sẵn ở cả hai phần. Đọc nhiệm vụ ở tab 📋.</li>
   <li><b>Chọn thiết bị</b> ở kho bên trái: chọn thông số (dòng định mức, công suất) trong ô chọn rồi bấm <b>+</b> hoặc kéo hình thiết bị thả vào bảng. Thiết bị dùng nhiều nhất được xếp đầu (★).</li>
   <li><b>Bố trí</b>: kéo thả thiết bị vào đúng khu vực (tủ điện, phòng, cổng, hiên…). Phím <b>R</b> xoay. Thanh trượt <b>Kích thước</b> ở thẻ Thuộc tính phóng to, thu nhỏ từng thiết bị.</li>
   <li><b>Phóng to, thu nhỏ bảng</b>: lăn chuột (phóng tại vị trí con trỏ), cụm nút góc phải dưới, phím + − ; phím 0 xem vừa khung, phím 1 về 100%. Kéo chỗ trống hoặc giữ phím cách rồi kéo để di chuyển. Bản đồ góc trái dưới giúp đến nhanh từng khu vực. Máy tính bảng: chụm hoặc mở hai ngón tay.</li>
@@ -2564,7 +2577,7 @@ $('#btnTeacher').onclick = () => {
   showModal('👩‍🏫 Công cụ giáo viên', `<p>Bài hiện tại: <b>${LESSON().title}</b></p>
     <label class="chk"><input type="checkbox" id="chkUnsafe" ${state.allowUnsafe ? 'checked' : ''}> Cho phép đóng điện khi chưa đạt kiểm tra an toàn (để minh hoạ chập điện, cháy dây, nhảy aptomat)</label>
     <label class="chk"><input type="checkbox" id="chkWrong" ${state.allowWrong ? 'checked' : ''}> Không chặn nối sai khi đang nối dây (để học sinh tự lắp rồi tự tìm lỗi)</label>`,
-    [{ t: '📐 Dựng mạch mẫu', c: 'pri', fn: () => { state.allowUnsafe = $('#chkUnsafe').checked; state.allowWrong = $('#chkWrong').checked; if (state.lesson === 'free') { toast('Phần Thực hành lắp mạch điện gia đình không có mạch mẫu.'); return; } buildSample(state.lesson); toast('Đã dựng mạch mẫu – hãy bấm Kiểm tra an toàn rồi Đóng điện.', 'ok'); } },
+    [{ t: '📐 Dựng mạch mẫu', c: 'pri', fn: () => { state.allowUnsafe = $('#chkUnsafe').checked; state.allowWrong = $('#chkWrong').checked; if (state.lesson === 'free') { toast('Phần Thực hành mạch điện gia đình không có mạch mẫu cố định – xem Thư viện mạch mẫu.'); return; } buildSample(state.lesson); toast('Đã dựng mạch mẫu – hãy bấm Kiểm tra an toàn rồi Đóng điện.', 'ok'); } },
      { t: '🧹 Làm lại từ đầu', c: 'dan', fn: () => { state.allowUnsafe = $('#chkUnsafe').checked; state.allowWrong = $('#chkWrong').checked; initLesson(state.lesson, true); } },
      { t: 'Lưu & đóng', fn: () => { state.allowUnsafe = $('#chkUnsafe').checked; state.allowWrong = $('#chkWrong').checked; renderPowerbar(); } }]);
 };
