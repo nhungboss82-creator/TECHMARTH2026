@@ -2694,7 +2694,7 @@ function mtLessons(k) {
 }
 const mtKey = r => r.type === 'bai' && lessonNo(r.value) < 999 ? 'B' + lessonNo(r.value) : (r.type === 'bai' ? 'T:' : 'C:') + r.value;
 
-const GB_MODES = [['ngaunhien', '📖', 'Theo bài / chủ đề', 'Chọn bài, chủ đề + số câu từng mức'], ['matran', '📊', 'Ma trận CV 7991', 'Giữa kì, cuối kì – điền sẵn số câu'], ['tuchon', '✏️', 'Ma trận tự chọn', 'Tự nhập số câu cho từng bài']];
+const GB_MODES = [['ngaunhien', '📖', 'Theo bài / chủ đề', 'Chọn bài, chủ đề + số câu từng mức'], ['matran', '📊', 'Ma trận CV 7991', 'Giữa kì, cuối kì – điền sẵn số câu'], ['tuchon', '✏️', 'Ma trận tự chọn', 'Tự nhập số câu cho từng bài'], ['gvsoan', '✍️', 'Câu GV tự soạn', 'Soạn câu mới (có hình) hoặc chọn câu của trường']];
 route(/^\/gv\/giaobai$/, async params => {
   if (!needGV()) return;
   const targetK = params ? (params.get('k') || '') : '';
@@ -2708,6 +2708,8 @@ route(/^\/gv\/giaobai$/, async params => {
   const keep = { t: targetK ? 'Kiểm tra Công nghệ ' + targetK : '', lb: 'Kiểm tra thường xuyên', cdd: 'dapan', mi: '', cl: null };
   const mt = { k: '', src: '', cells: {} };   // bảng ma trận: cells[mtKey] = {b,h,v,ds,tl}
   let schoolMx = store.get('matrices', []);
+  const own = new Set();   // câu GV tự soạn được chọn vào bài
+  const qcMemo = {};
   const curK = () => { const c = $$('input[name=cl]:checked')[0]; return targetK || (c && c.dataset.k) || selK || '10'; };
   const draw = () => {
     const sc = isAdm ? gvSchool(allCls) : { list: allCls, html: '', bind: () => {} };
@@ -2766,6 +2768,13 @@ route(/^\/gv\/giaobai$/, async params => {
           gen = () => { const x = buildFromMatrix({ khoi: curK(), rows }); if (x.miss.length && !warned) { warned = true; a._miss = x.miss; } return x.ids; };
         }
       }
+      if (mode === 'gvsoan') {
+        const k = curK(), ids = [...own].filter(id => bank.byId[id] && bank.byId[id].k === k);
+        if (!ids.length) { errBox($('#msg'), 'Hãy chọn ít nhất 1 câu khối ' + k + ' (hoặc bấm “Soạn câu mới”)'); return; }
+        a.cheDo = 'gvsoan';
+        const ord = q => q.t === 'M' ? 0 : q.t === 'T' ? 1 : 2;
+        a.ids = ids.sort((x, y) => ord(bank.byId[x]) - ord(bank.byId[y]));
+      }
       if (mode === 'ngaunhien') {
         const tps = $$('input[name=tp]:checked').map(i => i.value), lss = $$('input[name=ls]:checked').map(i => i.value), k = curK();
         const pool = bank.q.filter(q => (!tps.length && !lss.length) ? q.k === k : (tps.includes(q.cd) || lss.includes(q.bai)));
@@ -2774,7 +2783,7 @@ route(/^\/gv\/giaobai$/, async params => {
         gen = () => pickLevels(pool, n);
       }
       a.mode = 'chon';
-      a.ids = gen();
+      if (gen) a.ids = gen();
       if (!a.ids.length) { errBox($('#msg'), 'Không có câu hỏi phù hợp với lựa chọn'); return; }
       ($('#msg') || {}).innerHTML = '';
       preview(a, gen);
@@ -2799,7 +2808,7 @@ route(/^\/gv\/giaobai$/, async params => {
           <div class="hint">${qs.length} câu: ${mc.length} nhiều lựa chọn (Biết ${c.b} · Hiểu ${c.h} · Vận dụng ${c.v}) · ${tf.length} Đúng/Sai · ${tl.length} tự luận${a.minutes ? ' · ' + a.minutes + ' phút' : ''}</div></div></div>
         ${a._miss && a._miss.length ? `<div class="err" style="margin-top:8px">Ngân hàng chưa đủ câu ở: ${esc(a._miss.join('; '))}. App đã lấy bù câu cùng chương nếu có.</div>` : ''}
         <div class="row" style="margin-top:10px;flex-wrap:wrap"><button type="button" class="btn" id="pvp">🖨️ In / Lưu PDF đề</button><button type="button" class="btn ghost" id="pvk">🖨️ In kèm đáp án</button>
-          ${a.cheDo === 'de' || a.cheDo === 'bai' ? '' : '<button type="button" class="btn ghost" id="pvr">🎲 Bốc bộ câu khác</button>'}
+          ${a.cheDo === 'de' || a.cheDo === 'bai' || !gen ? '' : '<button type="button" class="btn ghost" id="pvr">🎲 Bốc bộ câu khác</button>'}
           <label class="chk" style="padding:5px 10px"><input type="checkbox" id="pvs" ${showKey ? 'checked' : ''}>Hiện đáp án</label></div>
         <p class="hint">HS làm trên app sẽ được đảo thứ tự câu và phương án. Bấm “In / Lưu PDF” rồi chọn “Lưu dưới dạng PDF” để có file đề.</p></div>
         <div class="card">${mc.length ? `<p class="sec"><b>PHẦN I. Trắc nghiệm nhiều phương án lựa chọn</b></p>${mc.map((q, i) => item(q, i + 1)).join('')}` : ''}
@@ -2890,8 +2899,38 @@ route(/^\/gv\/giaobai$/, async params => {
       <div><label for="ntl">Số câu tự luận</label><input id="ntl" type="number" min="0" value="0"></div></div>
       <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button type="button" class="btn ghost sm" data-pre="10,4,4,2">⏱ 10 phút</button><button type="button" class="btn ghost sm" data-pre="15,6,6,3">⏱ 15 phút</button><button type="button" class="btn ghost sm" data-pre="45,12,10,6">⏱ 45 phút</button></div>`;
   };
+  /* ✍️ Câu GV tự soạn: chọn câu GV đã soạn (của trường mình + câu chia sẻ chung) hoặc soạn câu mới ngay tại đây */
+  const closeQc = () => { const m = $('#qcmodal'); if (m) { if (m._off) m._off(); m.remove(); } document.body.classList.remove('modal-open'); };
+  cleanup = closeQc;
+  const gvBox = (k, box) => {
+    const list = bank.q.filter(q => q.k === k && /^GV_/.test(q.id)).reverse();
+    const pick = list.filter(q => own.has(q.id)).length;
+    const typ = q => q.t === 'M' ? 'Nhiều lựa chọn · ' + esc(q.md) : q.t === 'T' ? 'Đúng/Sai' : 'Tự luận';
+    box.innerHTML = `<div class="row" style="align-items:center"><div class="grow hint">Khối ${k}: ${list.length} câu GV soạn · <b>đã chọn ${pick}</b></div>
+        <button type="button" class="btn sm" id="qcnew">✍️ Soạn câu mới</button></div>
+      ${list.length ? `<div class="gvq-l">${list.map(q => `<label class="gvq${own.has(q.id) ? ' on' : ''}"><input type="checkbox" data-own="${esc(q.id)}" ${own.has(q.id) ? 'checked' : ''}>
+          <span class="grow"><span class="hint">${typ(q)}${q.rieng ? ' · 🔒 trường mình' : ''}${hasImg(q) ? ' · 🖼️ có hình' : ''} · ${esc(String(q.de || '').replace(/^.*– /, ''))}</span><br>${esc(plain(q.s).slice(0, 150)) || '(câu chỉ có hình)'}</span>${mineQ(q) ? `<button type="button" class="btn ghost sm" data-qdel="${esc(q.id)}" title="Xoá câu này khỏi ngân hàng">🗑</button>` : ''}</label>`).join('')}</div>`
+        : `<div class="card empty" style="margin-top:8px">Chưa có câu GV soạn cho khối ${k}. Bấm “✍️ Soạn câu mới” để soạn câu trắc nghiệm, Đúng/Sai hoặc tự luận (có thể chèn hình).</div>`}
+      ${list.length ? '<div class="row" style="margin-top:6px"><button type="button" class="btn ghost sm" id="gvqa">Chọn tất cả</button><button type="button" class="btn ghost sm" id="gvqn">Bỏ chọn</button></div>' : ''}`;
+    $$('[data-own]', box).forEach(i => i.onchange = () => { i.checked ? own.add(i.dataset.own) : own.delete(i.dataset.own); gvBox(k, box); });
+    $$('[data-qdel]', box).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); delQ(b.dataset.qdel, () => { own.delete(b.dataset.qdel); gvBox(k, box); }); });
+    if ($('#gvqa')) $('#gvqa').onclick = () => { list.forEach(q => own.add(q.id)); gvBox(k, box); };
+    if ($('#gvqn')) $('#gvqn').onclick = () => { list.forEach(q => own.delete(q.id)); gvBox(k, box); };
+    $('#qcnew').onclick = () => {
+      closeQc();
+      const m = document.createElement('div'); m.id = 'qcmodal'; m.className = 'qc-modal';
+      m.innerHTML = `<div class="qc-in"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">✍️ Soạn câu mới – khối ${k}</h2><button type="button" class="btn ghost sm" id="qcclose">✕</button></div>
+        <p class="hint">Câu lưu xong được chọn ngay vào bài đang giao. Có thể soạn tiếp nhiều câu.</p><div id="qcm"></div></div>`;
+      document.body.appendChild(m); document.body.classList.add('modal-open');
+      const back = () => { closeQc(); const b = $('#mbox'); if (b && mode === 'gvsoan') gvBox(curK(), b); };
+      m._off = qComposer($('#qcm'), { khoi: k, memo: qcMemo, saveLabel: '💾 Lưu câu & chọn vào bài', onCancel: back,
+        onSaved: id => { own.add(id); back(); toast('Đã chọn câu vào bài. Bấm “Soạn câu mới” để soạn tiếp.'); } });
+      $('#qcclose').onclick = back;
+    };
+  };
   const renderMode = () => {
     const k = curK(), box = $('#mbox'); if (!box) return;
+    if (mode === 'gvsoan') { gvBox(k, box); return; }
     box.innerHTML = mode === 'ngaunhien' ? rndBox(k) : mxBox(k, mode === 'tuchon');
     bindK();
     if (mode !== 'ngaunhien') {
@@ -3009,7 +3048,7 @@ route(/^\/gv\/nganhang$/, params => {
         <p class="hint">${list.length} câu phù hợp</p></div>
       <div class="list">${list.slice(page * P, page * P + P).map(q => `<div class="card" style="margin:0"><div class="row"><div class="grow" style="min-width:0"><b>${esc(q.id)}</b> ${q.t === 'L' ? '<span class="pill warn">Tự luận</span> ' : ''}<span class="pill">${esc(q.md)}</span>
         <div class="meta hint">${esc(q.cd)} · ${esc(q.bai)} · ${esc(q.de)}</div><div style="margin-top:4px">${esc(plain(q.s).slice(0, 180))}</div></div>
-        <button class="btn ghost sm" data-o="${esc(q.id)}">${open[q.id] ? 'Ẩn' : 'Xem'}</button></div>
+        ${q.rieng ? '<span class="pill" title="Chỉ trường mình dùng">🔒</span>' : ''}${mineQ(q) ? `<button class="btn ghost sm" data-qdel="${esc(q.id)}" title="Xoá câu do thầy/cô soạn">🗑</button>` : ''}<button class="btn ghost sm" data-o="${esc(q.id)}">${open[q.id] ? 'Ẩn' : 'Xem'}</button></div>
         ${open[q.id] ? `<div class="preview">${qHtml(q, { ids: [q.id], perm: { [q.id]: [0, 1, 2, 3] }, resp: {} }, 0, { showAns: true })}
           ${q.t === 'L' ? `<div class="expl ans"><b class="t">Đáp án mẫu (${fmt(q.p || 1)} điểm)</b>${sanitize(q.a)}${q.e ? `<div style="margin-top:6px"><b>Hướng dẫn chấm:</b> ${sanitize(q.e)}</div>` : ''}</div>`
             : `<div class="expl ans"><b class="t">Đáp án: ${esc(q.a)}</b>${q.t === 'T' ? (q.e || []).map((e, k) => e ? `<div><b>${'abcd'[k]})</b> ${sanitize(e)}</div>` : '').join('') : sanitize(q.e)}</div>`}${sgkLink(q)}</div>` : ''}</div>`).join('')}</div>
@@ -3020,6 +3059,7 @@ route(/^\/gv\/nganhang$/, params => {
     $('#fde').onchange = e => { f.de = e.target.value; page = 0; draw(); };
     $('#fs').onchange = e => { f.s = e.target.value; page = 0; draw(); };
     $$('[data-o]').forEach(b => b.onclick = () => { open[b.dataset.o] = !open[b.dataset.o]; draw(); });
+    $$('[data-qdel]').forEach(b => b.onclick = () => delQ(b.dataset.qdel, draw));
     $('#pp').onclick = () => { page--; draw(); }; $('#np').onclick = () => { page++; draw(); };
   };
   draw();
@@ -3118,46 +3158,80 @@ function aiReportHtml(r) {
     <p class="hint">Tên học sinh không gửi cho AI; AI chỉ nhận số liệu thống kê đã ẩn danh. Nhận xét của AI để thầy cô tham khảo.</p></div>`;
 }
 
-route(/^\/gv\/themcau$/, () => {
-  if (!needGV()) return;
-  let type = 'M';
+/* ================= GV tự soạn câu (dùng ở trang Thêm câu hỏi và ngay trong trang Giao bài) =================
+   28/11/2026: chèn hình vào câu hỏi (chụp / tải tệp / dán ảnh), mặc định câu chỉ trường mình thấy */
+const mineQ = q => /^GV_/.test(q.id) && session && (session.role === 'admin' || String(q.de || '').endsWith('– ' + ((session.user || {}).HoTen || '')));
+async function delQ(id, done) {
+  const q = bank.byId[id];
+  if (!confirm('Xoá hẳn câu ' + id + ' khỏi ngân hàng?\n' + (q ? plain(q.s).slice(0, 120) : '') + '\n\nBài đã giao có câu này sẽ không hiện câu đó nữa. Không hoàn tác được.')) return;
+  try { await api('delete_question', { id }); await syncBank(true); toast('Đã xoá câu ' + id); if (done) done(); } catch (e) { toast(e.message || 'Không xoá được'); }
+}
+function qComposer(root, opts = {}) {
+  let type = opts.type || 'M', img = null, rieng = true, kSel = opts.khoi || '12';
+  const keep = opts.memo || {};   // nhớ chủ đề, bài học… giữa các lần soạn
+  const Q = s => root.querySelector(s);
+  const unpaste = pasteImgTo('qcimg');
+  const save = () => { if (!Q('#qcf')) return; kSel = Q('#qck').value; rieng = Q('#qcr').checked;
+    ['cd', 'bai', 'md', 's', 'ans', 'pt', 'e', 'h', 'o0', 'o1', 'o2', 'o3'].forEach(k => { const el = Q('#qc' + k); if (el) keep[k] = el.value; }); };
+  const val = k => esc(keep[k] || '');
   const draw = () => {
     const tps = [...new Set(bank.q.map(q => q.cd))].sort((a, b) => a.localeCompare(b, 'vi'));
-    setView(`<h1>Thêm câu hỏi</h1><div class="card note">🤖 Muốn soạn nhanh nhiều câu? Dùng <a href="#/gv/aisoancau">AI soạn câu hỏi</a> – AI soạn theo bài, mức độ, thầy cô duyệt rồi thêm.</div><p class="sub">Soạn theo bản đặc tả và nội dung SGK. Có thể dùng &lt;b&gt;đậm&lt;/b&gt;, &lt;sub&gt;chỉ số&lt;/sub&gt;, dán link ảnh Google Drive (đã chia sẻ công khai) bằng &lt;img src="link"&gt;.</p>
-      <form class="card" id="f">
-        <div class="tabs"><button type="button" data-t="M" class="${type === 'M' ? 'on' : ''}">Nhiều lựa chọn</button><button type="button" data-t="T" class="${type === 'T' ? 'on' : ''}">Đúng/Sai</button><button type="button" data-t="L" class="${type === 'L' ? 'on' : ''}">Tự luận</button></div>
-        <div class="row"><div style="width:110px"><label for="k">Khối</label><select id="k"><option>10</option><option>11</option><option selected>12</option></select></div>
-          <div class="grow"><label for="cd">Chủ đề</label><input id="cd" type="text" list="tpl" required><datalist id="tpl">${tps.map(t => `<option value="${esc(t)}">`).join('')}</datalist></div></div>
-        <label for="bai">Bài học</label><input id="bai" type="text" maxlength="160">
-        ${type !== 'T' ? `<label for="md">Mức độ</label><select id="md"><option>Biết</option><option ${type === 'L' ? 'selected' : ''}>Hiểu</option><option>Vận dụng</option></select>` : ''}
-        <label for="s">Nội dung câu hỏi</label><textarea id="s" required></textarea>
-        ${type === 'L' ? `<label for="ans">Đáp án mẫu (các ý cần có – AI dựa vào đây để chấm)</label><textarea id="ans" required style="min-height:120px" placeholder="- Ý 1: …&#10;- Ý 2: …"></textarea>
-        <div class="row"><div style="width:140px"><label for="pt">Điểm tối đa</label><input id="pt" type="number" min="0.25" max="10" step="0.25" value="1"></div>
+    root.innerHTML = `<form class="card qc" id="qcf">
+        <div class="tabs"><button type="button" data-qt="M" class="${type === 'M' ? 'on' : ''}">Nhiều lựa chọn</button><button type="button" data-qt="T" class="${type === 'T' ? 'on' : ''}">Đúng/Sai</button><button type="button" data-qt="L" class="${type === 'L' ? 'on' : ''}">Tự luận</button></div>
+        <div class="row"><div style="width:110px"><label for="qck">Khối</label><select id="qck">${['10', '11', '12'].map(k => `<option ${k === kSel ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
+          <div class="grow"><label for="qccd">Chủ đề</label><input id="qccd" type="text" list="qctpl" required value="${val('cd')}"><datalist id="qctpl">${tps.map(t => `<option value="${esc(t)}">`).join('')}</datalist></div></div>
+        <label for="qcbai">Bài học</label><input id="qcbai" type="text" maxlength="160" value="${val('bai')}">
+        ${type !== 'T' ? `<label for="qcmd">Mức độ</label><select id="qcmd">${['Biết', 'Hiểu', 'Vận dụng'].map(m => `<option ${(keep.md || (type === 'L' ? 'Hiểu' : 'Biết')) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}
+        <label for="qcs">Nội dung câu hỏi</label><textarea id="qcs" required>${val('s')}</textarea>
+        <div class="bv-pick"><label class="btn ghost sm">📷 Chụp hình<input id="qccam" type="file" accept="image/*" capture="environment" hidden></label><span class="hint">hoặc tải tệp (ảnh, PDF, Word) / dán ảnh (Ctrl+V) vào ô dưới</span></div>
+        ${imgDrop('qcimg', 'Hình cho câu hỏi (không bắt buộc)', 'Bấm để tải tệp · kéo thả · Ctrl+V', img)}
+        ${type === 'L' ? `<label for="qcans">Đáp án mẫu (các ý cần có – AI dựa vào đây để chấm)</label><textarea id="qcans" required style="min-height:120px" placeholder="- Ý 1: …&#10;- Ý 2: …">${val('ans')}</textarea>
+        <div class="row"><div style="width:140px"><label for="qcpt">Điểm tối đa</label><input id="qcpt" type="number" min="0.25" max="10" step="0.25" value="${val('pt') || 1}"></div>
           <div class="grow hint" style="align-self:end">So với câu trắc nghiệm 0,25 điểm và câu Đúng/Sai 1 điểm.</div></div>` : ''}
-        ${type === 'L' ? '' : [0, 1, 2, 3].map(i => `<label for="o${i}">${type === 'M' ? 'Phương án ' + LETTERS[i] : 'Ý ' + 'abcd'[i] + ')'}</label><div class="row"><input id="o${i}" type="text" required style="flex:1">
-          ${type === 'M' ? `<label class="chk" style="margin:0"><input type="radio" name="ans" value="${LETTERS[i]}" ${i === 0 ? 'checked' : ''}>Đúng</label>` : `<select id="a${i}" style="width:100px"><option value="Đ">Đúng</option><option value="S">Sai</option></select>`}</div>`).join('')}
-        <label for="e">${type === 'L' ? 'Hướng dẫn chấm / phân bố điểm (không bắt buộc)' : 'Giải thích' + (type === 'T' ? ' (mỗi ý cách nhau bởi ||)' : '')}</label><textarea id="e" ${type === 'L' ? 'placeholder="Ý 1: 0,5 điểm; Ý 2: 0,5 điểm. Chấp nhận cách diễn đạt khác đúng bản chất."' : ''}></textarea>
-        <label for="h">Gợi ý ngắn (hiện trước giải thích)</label><input id="h" type="text">
-        ${type === 'M' ? '<label class="chk" style="margin-top:12px"><input type="checkbox" id="nd">Không đảo phương án (có “Cả A và B”…)</label>' : ''}
-        <h3>Xem trước</h3><div id="pv" class="preview"></div>
-        <div id="msg"></div><div style="margin-top:14px"><button class="btn block">Lưu vào ngân hàng</button></div></form>`);
-    $$('[data-t]').forEach(b => b.onclick = () => { type = b.dataset.t; draw(); });
-    const collect = () => type === 'L'
-      ? { type, khoi: $('#k').value, cd: $('#cd').value, bai: $('#bai').value, md: $('#md').value, stem: $('#s').value, answer: $('#ans').value, expl: $('#e').value, hint: $('#h').value, points: +$('#pt').value || 1 }
-      : { type, khoi: $('#k').value, cd: $('#cd').value, bai: $('#bai').value, md: type === 'M' ? $('#md').value : '', stem: $('#s').value,
-      o: [0, 1, 2, 3].map(i => $('#o' + i).value), answer: type === 'M' ? ($('input[name=ans]:checked') || {}).value : [0, 1, 2, 3].map(i => $('#a' + i).value).join(','),
-      expl: $('#e').value, hint: $('#h').value, noShuffle: type === 'M' && $('#nd').checked };
-    const pv = () => { const c = collect(); const q = { id: 'xem', t: type, s: c.stem, o: c.o || [], a: c.answer, md: c.md, p: c.points }; ($('#pv') || {}).innerHTML = qHtml(q, { ids: ['xem'], perm: { xem: [0, 1, 2, 3] }, resp: {} }, 0, type === 'L' ? undefined : { showAns: false }) + (type === 'L' && c.answer ? `<div class="expl ans"><b class="t">Đáp án mẫu</b>${sanitize(c.answer).replace(/\n/g, '<br>')}</div>` : ''); math($('#pv')); };
-    $('#f').oninput = pv; pv();
-    $('#f').onsubmit = async e => {
-      e.preventDefault();
-      await busy($('#f .btn'), async () => {
-        try { const r = await api('add_question', { question: collect() }); await syncBank(true); toast('Đã thêm câu ' + r.id); draw(); }
-        catch (err) { errBox($('#msg'), err); }
+        ${type === 'L' ? '' : [0, 1, 2, 3].map(i => `<label for="qco${i}">${type === 'M' ? 'Phương án ' + LETTERS[i] : 'Ý ' + 'abcd'[i] + ')'}</label><div class="row"><input id="qco${i}" type="text" required style="flex:1" value="${val('o' + i)}">
+          ${type === 'M' ? `<label class="chk" style="margin:0"><input type="radio" name="qcans" value="${LETTERS[i]}" ${i === 0 ? 'checked' : ''}>Đúng</label>` : `<select id="qca${i}" style="width:100px"><option value="Đ">Đúng</option><option value="S">Sai</option></select>`}</div>`).join('')}
+        <label for="qce">${type === 'L' ? 'Hướng dẫn chấm / phân bố điểm (không bắt buộc)' : 'Giải thích' + (type === 'T' ? ' (mỗi ý cách nhau bởi ||)' : '')}</label><textarea id="qce" ${type === 'L' ? 'placeholder="Ý 1: 0,5 điểm; Ý 2: 0,5 điểm. Chấp nhận cách diễn đạt khác đúng bản chất."' : ''}>${val('e')}</textarea>
+        <label for="qch">Gợi ý ngắn (hiện trước giải thích)</label><input id="qch" type="text" value="${val('h')}">
+        ${type === 'M' ? '<label class="chk" style="margin-top:12px"><input type="checkbox" id="qcnd">Không đảo phương án (có “Cả A và B”…)</label>' : ''}
+        <label class="chk" style="margin-top:8px"><input type="checkbox" id="qcr" ${rieng ? 'checked' : ''}>🔒 Chỉ GV và HS trường mình dùng câu này (bỏ chọn để chia sẻ cho mọi trường)</label>
+        <h3>Xem trước</h3><div id="qcpv" class="preview"></div>
+        <div id="qcmsg"></div><div class="row" style="margin-top:14px">${opts.onCancel ? '<button type="button" class="btn ghost" id="qcx">Đóng</button>' : ''}<button class="btn grow" id="qcgo">${opts.saveLabel || 'Lưu vào ngân hàng'}</button></div></form>`;
+    $$('[data-qt]', root).forEach(b => b.onclick = () => { save(); type = b.dataset.qt; draw(); });
+    bindImgDrop('qcimg', v => { save(); img = v; draw(); });
+    Q('#qccam').onchange = e => { const f = e.target.files[0]; if (f) Q('#qcimg')._take(f); };
+    if (Q('#qcx')) Q('#qcx').onclick = () => { unpaste(); opts.onCancel(); };
+    const collect = () => {
+      const c = type === 'L'
+        ? { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: Q('#qcmd').value, stem: Q('#qcs').value, answer: Q('#qcans').value, expl: Q('#qce').value, hint: Q('#qch').value, points: +Q('#qcpt').value || 1 }
+        : { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: type === 'M' ? Q('#qcmd').value : '', stem: Q('#qcs').value,
+          o: [0, 1, 2, 3].map(i => Q('#qco' + i).value), answer: type === 'M' ? (Q('input[name=qcans]:checked') || {}).value : [0, 1, 2, 3].map(i => Q('#qca' + i).value).join(','),
+          expl: Q('#qce').value, hint: Q('#qch').value, noShuffle: type === 'M' && Q('#qcnd').checked };
+      c.rieng = Q('#qcr').checked;
+      return c;
+    };
+    const pv = () => { const c = collect(); const q = { id: 'xem', t: type, s: c.stem + (img ? `<p><img src="${img}" alt=""></p>` : ''), o: c.o || [], a: c.answer, md: c.md, p: c.points };
+      Q('#qcpv').innerHTML = qHtml(q, { ids: ['xem'], perm: { xem: [0, 1, 2, 3] }, resp: {} }, 0, type === 'L' ? undefined : { showAns: false }) + (type === 'L' && c.answer ? `<div class="expl ans"><b class="t">Đáp án mẫu</b>${sanitize(c.answer).replace(/\n/g, '<br>')}</div>` : ''); math(Q('#qcpv')); };
+    Q('#qcf').oninput = pv; pv();
+    Q('#qcf').onsubmit = async e => {
+      e.preventDefault(); e.stopPropagation();
+      await busy(Q('#qcgo'), async () => {
+        try {
+          const c = collect(); if (img) c.image = img;
+          const r = await api('add_question', { question: c }); await syncBank(true); toast('Đã lưu câu ' + r.id);
+          img = null; ['s', 'ans', 'e', 'h', 'o0', 'o1', 'o2', 'o3'].forEach(k => delete keep[k]); save();
+          if (opts.onSaved) { unpaste(); opts.onSaved(r.id); } else draw();
+        } catch (err) { errBox(Q('#qcmsg'), err); }
       });
     };
   };
   draw();
+  return unpaste;
+}
+
+route(/^\/gv\/themcau$/, params => {
+  if (!needGV()) return;
+  setView(`<h1>Thêm câu hỏi</h1><div class="card note">🤖 Muốn soạn nhanh nhiều câu? Dùng <a href="#/gv/aisoancau">AI soạn câu hỏi</a> – AI soạn theo bài, mức độ, thầy cô duyệt rồi thêm.</div><p class="sub">Soạn theo bản đặc tả và nội dung SGK. Có thể dùng &lt;b&gt;đậm&lt;/b&gt;, &lt;sub&gt;chỉ số&lt;/sub&gt;; hình thì chụp, tải tệp hoặc dán vào ô “Hình cho câu hỏi”.</p><div id="qcbox"></div>`);
+  cleanup = qComposer($('#qcbox'), { khoi: params && params.get('k') || '12' });
 });
 
 route(/^\/admin$/, async () => {

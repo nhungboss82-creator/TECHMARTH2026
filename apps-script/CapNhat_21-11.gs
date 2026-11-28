@@ -796,3 +796,93 @@ function cn2811Flush_() {
 }
 try { cn2811Flush_(); } catch (e) { console.error('CapNhat_28_11 Flush: ' + e); }
 
+
+/* ===== Cập nhật 28/11: câu GV tự soạn – chèn hình, chỉ trường mình thấy (NganHang.TruongRieng) =====
+ * - add_question nhận thêm question.image (ảnh dataURL): lưu vào thư mục Drive "SmarttechCN 2026 – Ảnh câu hỏi",
+ *   chia sẻ "ai có đường liên kết thì xem" để HS xem được hình, chèn <img> vào cuối nội dung câu, ghi mã ảnh vào cột HinhAnh.
+ * - question.rieng (mặc định true): ghi tên trường của GV vào cột TruongRieng → chỉ GV/HS trường đó nhận câu này.
+ * - getBank / bankVersion: lọc câu riêng theo trường của người đang đăng nhập (Admin thấy tất cả, khách không thấy câu riêng).
+ */
+function cn2811QBank_() {
+  if (typeof API === 'undefined' || typeof SHEETS === 'undefined' || !SHEETS.NganHang) return;
+  if (SHEETS.NganHang.indexOf('TruongRieng') < 0) SHEETS.NganHang.push('TruongRieng');
+  const qImgFolder_ = () => {
+    const p = PropertiesService.getScriptProperties();
+    const id = p.getProperty('QIMG_FOLDER');
+    if (id) { try { return DriveApp.getFolderById(id); } catch (e) {} }
+    const f = DriveApp.createFolder('SmarttechCN 2026 – Ảnh câu hỏi');
+    p.setProperty('QIMG_FOLDER', f.getId());
+    return f;
+  };
+  /* phạm vi xem ngân hàng của người đang đăng nhập: { all } (Admin) hoặc { k: khoá trường } */
+  const scopeOf_ = req => {
+    let t; try { t = auth_(req || {}); } catch (e) { return { k: '' }; }
+    if (t.r === 'admin') return { all: true };
+    const c = CacheService.getScriptCache(), ck = 'BSC_' + t.r + '_' + t.u, hit = c.get(ck);
+    if (hit !== null) return { k: hit };
+    let tr = '';
+    if (t.r === 'hs') { const h = rows_('HocSinh').find(r => r.MaHS === t.u); tr = h ? String(h.Truong || '') : ''; }
+    else { const g = rows_('GiaoVien').find(r => r.MaGV === t.u); tr = g ? String(g.Truong || '') : ''; }
+    const k = schoolKey_(tr) || '';
+    c.put(ck, k, 3600);
+    return { k: k };
+  };
+  const verOf_ = s => bankV_() + '.' + (s.all ? 'all' : (s.k ? Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, s.k)).slice(0, 8) : 'pub'));
+  const seen_ = (r, s) => { const tr = String(r.TruongRieng || '').trim(); return !tr || s.all || (!!s.k && schoolKey_(tr) === s.k); };
+
+  if (API.bankVersion) API.bankVersion = req => ({ v: verOf_(scopeOf_(req)) });
+  if (API.getBank) API.getBank = req => {
+    const s = scopeOf_(req);
+    const q = [];
+    bankRows_().forEach(r => { if (!seen_(r, s)) return; const o = toClientQ_(r); if (String(r.TruongRieng || '').trim()) o.rieng = 1; q.push(o); });
+    return { v: verOf_(s), q: q };
+  };
+
+  const aq = API.add_question;
+  if (aq) API.add_question = req => {
+    const t = auth_(req, 'gv');
+    const g = teacher_(t);
+    const q = (req && req.question) || {};
+    let imgId = '';
+    if (q.image) {
+      const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(String(q.image));
+      if (!m) throw new Error('Hình không hợp lệ');
+      if (m[2].length > 6e6) throw new Error('Hình quá lớn, hãy chọn hình nhỏ hơn');
+      const f = qImgFolder_().createFile(Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], 'Cau_' + shortId_() + '.' + m[1].split('/')[1]));
+      try { f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }
+      catch (e) { f.setTrashed(true); throw new Error('Drive của tài khoản chủ app không cho chia sẻ hình qua đường liên kết, nên HS sẽ không xem được hình. Hãy dán link hình đã chia sẻ công khai vào nội dung câu.'); }
+      imgId = f.getId();
+      q.stem = String(q.stem || '') + '<p><img src="https://drive.google.com/file/d/' + imgId + '/view" alt="Hình"></p>';
+      delete q.image;
+    }
+    const o = aq(req);
+    const priv = q.rieng !== false && !!schoolKey_(g.Truong);
+    if (o && o.id && (priv || imgId)) {
+      ensureCols_('NganHang');
+      const r = rows_('NganHang').find(x => String(x.MaCau).trim() === o.id);
+      const patch = {}; if (priv) patch.TruongRieng = g.Truong; if (imgId) patch.HinhAnh = imgId;
+      if (r) { update_('NganHang', r._r, patch); bumpBank_(); }
+    }
+    return o;
+  };
+
+  /* GV xoá câu do chính mình soạn (Admin xoá được mọi câu GV_): xoá trắng dòng (trang có bộ lọc nên không xoá hẳn dòng), bỏ ảnh vào thùng rác */
+  API.delete_question = req => {
+    const t = auth_(req, 'gv');
+    const g = teacher_(t);
+    const id = String(req.id || '').trim();
+    if (!/^GV_/.test(id)) throw new Error('Chỉ xoá được câu GV tự soạn');
+    return withLock_(() => {
+      const r = rows_('NganHang').find(x => String(x.MaCau).trim() === id);
+      if (!r) throw new Error('Không tìm thấy câu ' + id);
+      if (t.r !== 'admin' && String(r.PhanLoai || '') !== 'GV ' + g.HoTen) throw new Error('Chỉ xoá được câu do chính thầy/cô soạn');
+      const sh = sheet_('NganHang');
+      sh.getRange(r._r, 1, 1, sh.getLastColumn()).clearContent();
+      SpreadsheetApp.flush();
+      if (String(r.HinhAnh || '').trim()) { try { DriveApp.getFileById(String(r.HinhAnh).trim()).setTrashed(true); } catch (e) {} }
+      bumpBank_();
+      return { id: id };
+    });
+  };
+}
+try { cn2811QBank_(); } catch (e) { console.error('CapNhat_28_11 QBank: ' + e); }
