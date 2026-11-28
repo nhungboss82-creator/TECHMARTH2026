@@ -1375,3 +1375,11 @@ h2.cls-h{margin:14px 0 6px;font-size:17px}
 .qc-in{max-width:760px;margin:0 auto;background:var(--bg,#f8fafc);border-radius:16px;padding:16px;box-shadow:0 20px 50px rgba(0,0,0,.3)}
 .qc-in .qc{margin-bottom:0}
 body.modal-open{overflow:hidden}
+/* 28/11/2026: ô hình – chế độ dán trên máy tính */
+.imgdrop.pm{cursor:text;position:relative;caret-color:transparent}
+.imgdrop .imgdrop-rd{display:none;font-size:13px;font-weight:700;color:var(--ok,#15803d)}
+.imgdrop.pm:focus{border-color:#22c55e;border-style:solid;background:#f0fdf4;box-shadow:0 0 0 3px rgba(34,197,94,.25)}
+.imgdrop.pm:focus .imgdrop-rd{display:block}
+.imgdrop .imgdrop-pk{margin-top:6px;cursor:pointer}
+.imgdrop.has .imgdrop-pk{position:absolute;left:6px;top:6px;margin:0;background:rgba(255,255,255,.92)}
+.imgdrop.has .imgdrop-rd{position:absolute;left:0;right:0;bottom:6px;background:rgba(240,253,244,.95);padding:4px}

@@ -3519,17 +3519,25 @@ async function readAnyFile(f, max = 1600) {
   throw new Error('Chưa đọc được tệp' + (ext ? ' .' + ext : '') + ' – hãy gửi ảnh hoặc PDF');
 }
 /* Ô nhận ảnh: bấm để chọn tệp, kéo thả, hoặc dán (Ctrl+V) ảnh vừa chụp màn hình/sao chép */
+/* 28/11/2026: máy tính (chuột): bấm vào ô = chọn ô để DÁN (Ctrl+V / chuột phải → Dán); nút "📁 Chọn tệp" để tải tệp.
+   Điện thoại / máy tính bảng (chạm): bấm vào ô = chụp / chọn ảnh như cũ */
+const PASTE_MODE = () => !!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches);
 function imgDrop(id, title, hint, val) {
-  return `<div class="imgdrop${val ? ' has' : ''}" id="${id}" tabindex="0" role="button" aria-label="${esc(title)}">
+  const pm = PASTE_MODE();
+  return `<div class="imgdrop${val ? ' has' : ''}${pm ? ' pm' : ''}" id="${id}" tabindex="0" role="button" aria-label="${esc(title)}">
     ${val ? `<img src="${val}" alt="${esc(title)}"><button type="button" class="imgdrop-x" data-x="${id}" title="Bỏ ảnh">✕</button>`
-      : `<span class="imgdrop-ic">🖼️</span><b>${esc(title)}</b><span class="hint">${hint}</span>`}
+      : `<span class="imgdrop-ic">🖼️</span><b>${esc(title)}</b><span class="hint">${pm ? 'Bấm vào ô này rồi nhấn <b>Ctrl+V</b> (hoặc chuột phải → <b>Dán</b>) · kéo thả tệp vào đây' : hint}</span>`}
+    ${pm ? `<span class="imgdrop-rd" contenteditable="false">✅ Đã chọn ô – nhấn Ctrl+V để dán ${val ? '(thay hình)' : ''}</span><button type="button" class="btn ghost sm imgdrop-pk" data-pick contenteditable="false">📁 Chọn tệp…</button>` : ''}
     <input type="file" accept="${FILE_ACCEPT}" hidden></div>`;
 }
 function bindImgDrop(id, onImg) {
   const box = $('#' + id); if (!box) return;
   const inp = $('input', box);
   const take = async f => { if (!f) return; box.classList.add('loading'); try { onImg(await readAnyFile(f)); } catch (e) { toast(e.message || 'Không đọc được tệp'); } finally { box.classList.remove('loading'); } };
-  box.onclick = e => { if (e.target.closest('[data-x]')) { e.stopPropagation(); onImg(null); return; } inp.click(); };
+  const pm = box.classList.contains('pm');
+  box.onclick = e => { if (e.target.closest('[data-x]')) { e.stopPropagation(); onImg(null); return; }
+    if (pm && !e.target.closest('[data-pick]')) { box.focus(); return; }   // máy tính: chỉ chọn ô để dán
+    e.preventDefault(); inp.click(); };
   box.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
   inp.onclick = e => e.stopPropagation();
   inp.onchange = () => take(inp.files[0]);
@@ -3538,7 +3546,7 @@ function bindImgDrop(id, onImg) {
   box.ondrop = e => { e.preventDefault(); box.classList.remove('over'); take(e.dataTransfer.files[0]); };
   box._take = take;
   /* 28/11/2026: ô hình nhận "Dán" khi bấm chuột phải (contenteditable), không cho gõ chữ vào ô */
-  box.setAttribute('contenteditable', 'true'); box.spellcheck = false;
+  if (pm) { box.setAttribute('contenteditable', 'true'); box.spellcheck = false; }
   box.addEventListener('beforeinput', e => { if (e.inputType !== 'insertFromPaste') e.preventDefault(); });
   box.addEventListener('paste', e => {
     const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
