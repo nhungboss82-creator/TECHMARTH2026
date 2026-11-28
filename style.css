@@ -1413,3 +1413,4 @@ body.modal-open{overflow:hidden}
 .qcs-bot .chk{margin:0;padding:4px 8px}
 .qcs-o input[type=text]{height:38px;min-height:0}
 .qcs .qcs-o + .qcs-o{margin-top:-2px}
+.imgdrop .imgdrop-err{display:block;margin-top:6px;padding:6px 10px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600}

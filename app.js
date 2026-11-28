@@ -3600,7 +3600,7 @@ function imgDrop(id, title, hint, val) {
 function bindImgDrop(id, onImg) {
   const box = $('#' + id); if (!box) return;
   const inp = $('input', box);
-  const take = async f => { if (!f) return; box.classList.add('loading'); try { onImg(await readAnyFile(f)); } catch (e) { toast(e.message || 'Không đọc được tệp'); } finally { box.classList.remove('loading'); } };
+  const take = async f => { if (!f) return; box.classList.add('loading'); try { onImg(await readAnyFile(f)); } catch (e) { boxMsg(box, e.message || 'Không đọc được tệp'); toast(e.message || 'Không đọc được tệp'); } finally { box.classList.remove('loading'); } };
   const pm = box.classList.contains('pm');
   box.onclick = e => { if (e.target.closest('[data-x]')) { e.stopPropagation(); onImg(null); return; }
     if (pm && !e.target.closest('[data-pick]')) { box.focus(); return; }   // máy tính: chỉ chọn ô để dán
@@ -3615,18 +3615,34 @@ function bindImgDrop(id, onImg) {
   /* 28/11/2026: ô hình nhận "Dán" khi bấm chuột phải (contenteditable), không cho gõ chữ vào ô */
   if (pm) { box.setAttribute('contenteditable', 'true'); box.spellcheck = false; }
   box.addEventListener('beforeinput', e => { if (e.inputType !== 'insertFromPaste') e.preventDefault(); });
-  box.addEventListener('paste', e => {
-    const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
-    if (it) return;   // pasteImgTo / bên dưới xử lý
-    e.preventDefault();
-    const f = [...((e.clipboardData && e.clipboardData.files) || [])][0];
-    if (f) { take(f); return; }
-    toast('Bộ nhớ tạm chưa có hình – hãy sao chép (Copy) hình trước rồi dán');
-  });
-  if (!box._pasteOwn) { box._pasteOwn = 1; box.addEventListener('paste', e => {
-    const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
-    if (it && !e.defaultPrevented) { e.preventDefault(); take(it.getAsFile()); toast('Đã dán hình'); }
-  }); }
+  box.addEventListener('paste', e => { e.preventDefault(); clipToImg(e.clipboardData).then(f => {
+    if (f) { take(f); toast('Đã dán hình'); return; }
+    boxMsg(box, 'Chưa có hình trong bộ nhớ tạm. Chuột phải vào hình → “Sao chép hình ảnh”, hoặc chụp màn hình bằng Win+Shift+S, rồi dán lại.');
+  }); });
+}
+/* 28/11/2026: lấy hình từ bộ nhớ tạm: ảnh, tệp ảnh copy từ thư mục, hình trong nội dung copy từ web / Word (data: hoặc https) */
+async function clipToImg(cd) {
+  if (!cd) return null;
+  const items = [...(cd.items || [])];
+  const it = items.find(x => x.kind === 'file' && /^image\//.test(x.type));
+  if (it) return it.getAsFile();
+  const f = [...(cd.files || [])].find(x => /^image\//.test(x.type) || /\.(png|jpe?g|gif|webp|bmp|heic|heif|pdf)$/i.test(x.name || ''));
+  if (f) return f;
+  const html = cd.getData && cd.getData('text/html') || '';
+  const m = /<img[^>]+src=["']([^"']+)["']/i.exec(html) || /^(https?:\/\/\S+\.(?:png|jpe?g|gif|webp))(\?\S*)?$/i.exec((cd.getData && cd.getData('text/plain') || '').trim());
+  if (m) {
+    const src = m[1];
+    try {
+      if (/^data:image\//.test(src)) { const b = await (await fetch(src)).blob(); return new File([b], 'dan.' + (b.type.split('/')[1] || 'png'), { type: b.type }); }
+      if (/^https?:/.test(src)) { const r = await fetch(src, { mode: 'cors' }); if (r.ok) { const b = await r.blob(); if (/^image\//.test(b.type)) return new File([b], 'dan.' + b.type.split('/')[1], { type: b.type }); } }
+    } catch (e) {}
+  }
+  return null;
+}
+function boxMsg(box, msg) {
+  let el = box.querySelector('.imgdrop-err');
+  if (!el) { el = document.createElement('span'); el.className = 'imgdrop-err'; el.setAttribute('contenteditable', 'false'); box.appendChild(el); }
+  el.textContent = msg; clearTimeout(box._mt); box._mt = setTimeout(() => el.remove(), 9000);
 }
 /* nút "📋 Dán hình": đọc hình trong bộ nhớ tạm (trình duyệt có thể hỏi quyền) */
 async function pasteFromClipboard(boxId) {
