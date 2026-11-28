@@ -1294,3 +1294,55 @@ function cn2811ChoDuyet_() {
   };
 }
 try { cn2811ChoDuyet_(); } catch (e) { console.error('CapNhat_28_11 ChoDuyet: ' + e); }
+
+/* ===== Cập nhật 28/11 (5): THỐNG NHẤT TÊN TRƯỜNG =====
+ * Mã.gs so tên trường đúng từng chữ (c.Truong === g.Truong) khi giao bài, giao bài vẽ, xem lớp… → lớp ghi
+ * "THPT LƯƠNG THẾ VINH" còn GV ghi "THPT Lương Thế Vinh" thì lớp đó bị bỏ qua khi giao bài (HS không nhận được bài).
+ * - GV đăng ký mới: tên trường tự đổi về đúng cách viết đang dùng của trường đó.
+ * - chuanHoaTenTruong(): chạy 1 lần trong trình soạn thảo (hoặc Admin gọi norm_schools) để đổi mọi cách viết
+ *   khác nhau của cùng một trường về một cách viết chung (ưu tiên cách viết của GV đang hoạt động). */
+function cn2811TenTruongChuan_() {
+  const cnt = {}, pick = {};
+  const add = (s, w) => { const v = String(s || '').trim(), k = schoolKey_(v); if (!k || !v) return; const m = (cnt[k] = cnt[k] || {}); m[v] = (m[v] || 0) + w; };
+  rows_('GiaoVien').forEach(g => add(g.Truong, g.TrangThai === 'hoat_dong' || !g.TrangThai ? 1000 : 1));
+  rows_('Lop').forEach(c => add(c.Truong, 10));
+  Object.keys(cnt).forEach(k => { const m = cnt[k]; pick[k] = Object.keys(m).sort((a, b) => m[b] - m[a] || a.localeCompare(b))[0]; });
+  return pick;
+}
+function chuanHoaTenTruong(dry) {
+  const pick = cn2811TenTruongChuan_(), out = {};
+  ['Lop', 'HocSinh', 'GiaoVien', 'BaiGiao', 'BaiVe', 'MaTran', 'DeThi', 'DuAn'].forEach(name => {
+    const sh = SpreadsheetApp.getActive().getSheetByName(name);
+    if (!sh || sh.getLastRow() < 2) return;
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String), ic = head.indexOf('Truong');
+    if (ic < 0) return;
+    const rg = sh.getRange(2, ic + 1, sh.getLastRow() - 1, 1), vals = rg.getValues();
+    let n = 0;
+    vals.forEach(r => { const v = String(r[0] || '').trim(), k = schoolKey_(v), p = k && pick[k]; if (p && v !== p) { if (!dry) r[0] = p; n++; } });
+    if (n && !dry) { rg.setNumberFormat('@'); rg.setValues(vals); }
+    out[name] = n;
+  });
+  try { CacheService.getScriptCache().removeAll(['REG_SCHOOLS']); } catch (e) {}
+  console.log(JSON.stringify({ dry: !!dry, doi: out, cachViet: pick }));
+  return { dry: !!dry, doi: out, cachViet: pick };
+}
+function cn2811Truong_() {
+  if (typeof API === 'undefined') return;
+  const rg = API.register_gv;
+  if (rg) API.register_gv = req => {
+    const k = schoolKey_(req && req.school), p = k ? cn2811TenTruongChuan_()[k] : '';
+    if (p) req.school = p;
+    return rg(req);
+  };
+  API.norm_schools = req => { auth_(req, 'admin'); return withLock_(() => chuanHoaTenTruong(!!req.dry)); };
+  /* chạy tự động 1 lần sau khi triển khai bản này */
+  const pr = PropertiesService.getScriptProperties();
+  if (!pr.getProperty('NORM_TRUONG_2811')) {
+    const lock = LockService.getScriptLock();
+    if (lock.tryLock(1000)) {
+      try { if (!pr.getProperty('NORM_TRUONG_2811')) { const r = chuanHoaTenTruong(false); pr.setProperty('NORM_TRUONG_2811', JSON.stringify(r.doi)); } }
+      catch (e) { console.error('chuanHoaTenTruong: ' + e); } finally { lock.releaseLock(); }
+    }
+  }
+}
+try { cn2811Truong_(); } catch (e) { console.error('CapNhat_28_11 Truong: ' + e); }

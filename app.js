@@ -644,12 +644,13 @@ route(/^\/dangky$/, params => {
   (async () => {
     try {
       schools = await api('reg_schools', {});
+      if (!$('#sc')) return;   // em đã rời trang đăng ký
       if (!schools.length) { $('#sc').innerHTML = '<option value="">Chưa có trường nào có giáo viên đăng ký</option>'; return; }
       $('#sc').innerHTML = '<option value="">— Chọn trường —</option>' + schools.map((s, i) => `<option value="${i}">${esc(s.Truong)}</option>`).join('');
       let si = pre ? schools.findIndex(s => s.lop.some(c => c.MaLop === pre)) : -1;
       if (si < 0 && schools.length === 1) si = 0;
       if (si >= 0) { $('#sc').value = String(si); fillLop(); if (pre) $('#lop').value = pre; }
-    } catch (err) { $('#sc').innerHTML = '<option value="">Không tải được danh sách trường</option>'; errBox($('#msg'), err); }
+    } catch (err) { if (!$('#sc')) return; $('#sc').innerHTML = '<option value="">Không tải được danh sách trường</option>'; errBox($('#msg'), err); }
   })();
   $('#f').onsubmit = async e => {
     e.preventDefault();
