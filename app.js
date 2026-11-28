@@ -2948,13 +2948,26 @@ route(/^\/gv\/baigiao$/, async () => {
   if (!needGV()) return;
   setView('<h1>Bài đã giao</h1><div id="l"><div class="card empty">Đang tải…</div></div>');
   try {
-    const l = await api('list_assignments');
-    ($('#l') || {}).innerHTML = l.length ? '<div class="list">' + l.map(a => `<a class="item" href="#/gv/bai/${a.MaBai}"><div class="grow"><b>${esc(a.TieuDe)}</b> ${a.LoaiBai ? `<span class="pill">${esc(a.LoaiBai)}</span>` : ''}
+    const all = await api('list_assignments');
+    const show = () => { const f = schFilter(all, show), l = f.list;
+    ($('#l') || {}).innerHTML = f.html + (l.length ? '<div class="list">' + l.map(a => `<a class="item" href="#/gv/bai/${a.MaBai}"><div class="grow"><b>${esc(a.TieuDe)}</b> ${a.LoaiBai ? `<span class="pill">${esc(a.LoaiBai)}</span>` : ''}
       <div class="meta">Khối ${esc(a.Khoi)} · ${a.DanhSachLop.length} lớp · ${a.DanhSachCau.length} câu · ${a.soHS} HS đã nộp · ${esc(a.TenGV)} · ${dt(a.NgayTao)}</div></div>›</a>`).join('') + '</div>'
-      : '<div class="card empty">Chưa giao bài nào. <a href="#/gv/giaobai">Giao bài ngay</a></div>';
+      : '<div class="card empty">Chưa giao bài nào. <a href="#/gv/giaobai">Giao bài ngay</a></div>'); };
+    show();
   } catch (e) { errBox($('#l'), e); }
 });
 
+/* 28/11/2026: danh sách bài giao / bài vẽ – trường nào thấy trường đó. Admin chọn trường để xem (mặc định trường mình) */
+function schFilter(l, rerender) {
+  if (!session || session.role !== 'admin') return { list: l, html: '' };
+  const m = {}; l.forEach(o => { const k = schKey(o.Truong || ''); if (!m[k]) m[k] = { k, name: String(o.Truong || '').trim() || '(chưa ghi trường)', n: 0 }; m[k].n++; });
+  const mine = schKey(session.user.Truong || '');
+  let cur = store.get('sch_filter', mine); if (cur !== '*' && !m[cur]) cur = m[mine] ? mine : '*';
+  const opts = Object.values(m).sort((a, b) => (b.k === mine) - (a.k === mine) || a.name.localeCompare(b.name, 'vi'));
+  const html = `<div class="row" style="align-items:center;margin:0 0 10px"><label for="schf" style="margin:0">🏫 Trường</label><select id="schf" style="max-width:340px">${opts.map(o => `<option value="${esc(o.k)}" ${o.k === cur ? 'selected' : ''}>${esc(o.name)} (${o.n})</option>`).join('')}<option value="*" ${cur === '*' ? 'selected' : ''}>Tất cả trường (${l.length})</option></select></div>`;
+  setTimeout(() => { const el = $('#schf'); if (el) el.onchange = () => { store.set('sch_filter', el.value); rerender(); }; });
+  return { list: cur === '*' ? l : l.filter(o => schKey(o.Truong || '') === cur), html };
+}
 const asgLink = maBai => location.origin + location.pathname + '#/baigiao?mo=' + maBai;
 function printQR(a, svg, lops) {
   const w = window.open('', '_blank'); if (!w) { toast('Hãy cho phép cửa sổ bật lên'); return; }
@@ -3920,10 +3933,12 @@ route(/^\/gv\/baive$/, async params => {
     return;
   }
   try {
-    const l = await api('list_drawing_tasks');
-    ($('#l') || {}).innerHTML = l.length ? '<div class="list">' + l.map(t => `<a class="item" href="#/gv/baive/${t.MaBV}"><div class="grow"><b>${esc(t.TieuDe)}</b>
+    const all = await api('list_drawing_tasks');
+    const show = () => { const f = schFilter(all, show), l = f.list;
+    ($('#l') || {}).innerHTML = f.html + (l.length ? '<div class="list">' + l.map(t => `<a class="item" href="#/gv/baive/${t.MaBV}"><div class="grow"><b>${esc(t.TieuDe)}</b>
       <div class="meta">${esc(t.LoaiTen)} · khối ${esc(t.Khoi)} · ${t.soBai} bài nộp · ${esc(t.TenGV)}</div></div>${t.choCham ? `<span class="pill warn">${t.choCham} chờ xác nhận</span>` : ''}›</a>`).join('') + '</div>'
-      : '<div class="card empty">Chưa có bài vẽ nào.</div>';
+      : '<div class="card empty">Chưa có bài vẽ nào.</div>'); };
+    show();
   } catch (e) { errBox($('#l'), e); }
 });
 /** bảng lượt HS tự luyện bài vẽ: mỗi HS – mỗi đề: số lần nộp, số lần sửa, số lỗi từng lần */

@@ -856,7 +856,7 @@ function cn2811QBank_() {
       delete q.image;
     }
     const o = aq(req);
-    const priv = q.rieng !== false && !!schoolKey_(g.Truong);
+    const priv = !q.ai && q.rieng !== false && !!schoolKey_(g.Truong);   // câu AI soạn: dùng chung mọi trường
     if (o && o.id && (priv || imgId)) {
       ensureCols_('NganHang');
       const r = rows_('NganHang').find(x => String(x.MaCau).trim() === o.id);
@@ -886,3 +886,41 @@ function cn2811QBank_() {
   };
 }
 try { cn2811QBank_(); } catch (e) { console.error('CapNhat_28_11 QBank: ' + e); }
+
+/* ===== Cập nhật 28/11: bài giao / bài vẽ – trường nào thấy trường đó =====
+ * GV chỉ thấy, mở, xem kết quả bài giao và bài vẽ của trường mình (so tên trường đã chuẩn hoá hoa/thường, dấu cách).
+ * Admin thấy mọi trường; danh sách trả kèm Truong để app lọc theo trường. Bảng xếp hạng: GV không xem được trường khác.
+ */
+function cn2811Scope_() {
+  if (typeof API === 'undefined') return;
+  const sameSch_ = (g, tr) => !!schoolKey_(g.Truong) && schoolKey_(tr) === schoolKey_(g.Truong);
+  const canSee_ = (t, g, row) => t.r === 'admin' || row.MaGV === g.MaGV || sameSch_(g, row.Truong);
+  const wrapList_ = (name, sheet, idKey) => {
+    const f = API[name]; if (!f) return;
+    API[name] = req => {
+      const t = auth_(req, 'gv'), g = teacher_(t);
+      const m = {}; rows_(sheet).forEach(r => { m[r[idKey]] = r; });
+      return (f(req) || []).filter(o => { const r = m[o[idKey]]; if (r && o.Truong === undefined) o.Truong = r.Truong; return !r || canSee_(t, g, r); });
+    };
+  };
+  wrapList_('list_assignments', 'BaiGiao', 'MaBai');
+  wrapList_('list_drawing_tasks', 'BaiVe', 'MaBV');
+  const guard_ = (name, sheet, idKey, reqKey, msg) => {
+    const f = API[name]; if (!f) return;
+    API[name] = req => {
+      const t = auth_(req, 'gv'), g = teacher_(t);
+      const r = rows_(sheet).find(x => x[idKey] === req[reqKey]);
+      if (r && !canSee_(t, g, r)) throw new Error(msg);
+      return f(req);
+    };
+  };
+  guard_('assignment_status', 'BaiGiao', 'MaBai', 'maBai', 'Bài này thuộc trường khác');
+  guard_('drawing_submissions', 'BaiVe', 'MaBV', 'maBV', 'Bài vẽ này thuộc trường khác');
+  const lb = API.leaderboard;
+  if (lb) API.leaderboard = req => {
+    const t = auth_(req);
+    if (t.r === 'gv') delete req.truong;   // GV chỉ xem bảng xếp hạng trường mình
+    return lb(req);
+  };
+}
+try { cn2811Scope_(); } catch (e) { console.error('CapNhat_28_11 Scope: ' + e); }
