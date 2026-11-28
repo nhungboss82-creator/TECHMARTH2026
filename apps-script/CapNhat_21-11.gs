@@ -1420,3 +1420,34 @@ function cn2811ChamVe_() {
   };
 }
 try { cn2811ChamVe_(); } catch (e) { console.error('CapNhat_28_11 ChamVe: ' + e); }
+
+/* ===== Cập nhật 28/11 (7): BÀI VẼ – AI CHẤM: nhận xét ngắn gọn, điểm khớp bảng chấm =====
+ * - Nhận xét chung tối đa 2 câu; mỗi lỗi và cách sửa dưới 15 từ, đánh số đúng thứ tự khoanh trên ảnh.
+ * - Điểm AI = tổng điểm đạt của các tiêu chí trong bảng chấm (tránh điểm tổng lệch với bảng chấm);
+ *   dưới 50% thang điểm thì luôn là "Chưa đạt".
+ */
+function cn2811ChamVe2_() {
+  if (typeof drawPrompt_ === 'function') {
+    const dp = drawPrompt_;
+    drawPrompt_ = function () {
+      return dp.apply(this, arguments) + '\nVIẾT NGẮN GỌN, DỄ HIỂU cho học sinh: "nhan_xet_chung" tối đa 2 câu ngắn (kết quả chung + lỗi chính); mỗi "mo_ta" dưới 15 từ, nói rõ sai ở hình chiếu / chỗ nào; mỗi "cach_sua" dưới 15 từ; liệt kê "loi" theo thứ tự lỗi 1, 2, 3… đúng với ô khoanh trên ảnh; không lặp lại cùng một lỗi.';
+    };
+  }
+  if (typeof geminiCall_ === 'function') {
+    const gc = geminiCall_;
+    geminiCall_ = function () {
+      const r = gc.apply(this, arguments);
+      try {
+        if (r && Array.isArray(r.bang_diem) && r.bang_diem.length) {
+          const s = r.bang_diem.reduce((t, x) => t + (Number(x && x.dat) || 0), 0);
+          if (isFinite(s)) r.diem = s;
+          const mx = r.bang_diem.reduce((t, x) => t + (Number(x && x.toi_da) || 0), 0);
+          if (mx > 0 && s < mx / 2) r.dat_yeu_cau = false;
+        }
+        if (r && Array.isArray(r.loi)) r.loi = r.loi.filter(x => x && String(x.mo_ta || x).trim());
+      } catch (e) {}
+      return r;
+    };
+  }
+}
+try { cn2811ChamVe2_(); } catch (e) { console.error('CapNhat_28_11 ChamVe2: ' + e); }
