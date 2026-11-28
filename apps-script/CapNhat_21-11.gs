@@ -1210,3 +1210,87 @@ function cn2811MKNhieu_() {
   });
 }
 try { cn2811MKNhieu_(); } catch (e) { console.error('CapNhat_28_11 MKNhieu: ' + e); }
+
+/* ===== Cập nhật 28/11 (4): HS đăng ký mới mà lớp đã có bạn cùng họ tên (không phân biệt hoa/thường, khoảng trắng)
+ * → tài khoản mới ở trạng thái "chờ duyệt" (HocSinh.TrangThai = 'cho_duyet'), chưa đăng nhập được cho đến khi GV duyệt.
+ * GV duyệt / từ chối trong trang lớp (approve_hs). Tài khoản do GV tự thêm hoặc tài khoản cũ không bị ảnh hưởng. */
+function cn2811ChoDuyet_() {
+  if (typeof API === 'undefined' || typeof SHEETS === 'undefined' || !SHEETS.HocSinh) return;
+  if (SHEETS.HocSinh.indexOf('TrangThai') < 0) SHEETS.HocSinh.push('TrangThai');
+  const nm = x => String(x || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+  const MSG = 'Lớp đã có bạn tên này nên tài khoản của em đang chờ thầy cô duyệt. Khi thầy cô duyệt xong em đăng nhập lại nhé.';
+  /* đánh dấu chờ duyệt nếu cùng lớp đã có tài khoản khác trùng họ tên; trả về true nếu bị đánh dấu */
+  const markDup_ = maHS => {
+    ensureCols_('HocSinh');
+    const all = rows_('HocSinh'), h = all.find(r => r.MaHS === maHS);
+    if (!h) return false;
+    const dup = all.some(r => r.MaHS !== h.MaHS && r.MaLop === h.MaLop && nm(r.HoTen) === nm(h.HoTen) && String(r.TrangThai || '') !== 'cho_duyet');
+    if (!dup) return false;
+    update_('HocSinh', h._r, { TrangThai: 'cho_duyet' });
+    return true;
+  };
+  const pending_ = u => ({ pending: true, message: MSG, TenDN: u && u.TenDN, HoTen: u && u.HoTen, TenLop: u && u.TenLop });
+  let REG_ = false;
+
+  const lh = API.login_hs;
+  if (lh) API.login_hs = req => {
+    const s = lh(req);
+    const id = s && s.user && s.user.MaHS;
+    const h = id ? rows_('HocSinh').find(r => r.MaHS === id) : null;
+    if (h && String(h.TrangThai || '') === 'cho_duyet') {
+      if (REG_) return pending_(h);
+      throw new Error('Tài khoản của em đang chờ thầy cô duyệt (lớp đã có bạn trùng họ tên). Em nhờ thầy cô vào trang lớp bấm Duyệt nhé.');
+    }
+    return s;
+  };
+  const rs = API.register_simple;
+  if (rs) API.register_simple = req => {
+    REG_ = true;
+    const lh0 = API.login_hs;
+    try {
+      /* register_simple tạo tài khoản rồi gọi API.login_hs: chen bước kiểm tra trùng tên trước khi đăng nhập */
+      API.login_hs = r => { const u = rows_('HocSinh').find(x => String(x.TenDN) === normUser_(r.username)); if (u) markDup_(u.MaHS); return lh0(r); };
+      return rs(req);
+    } finally { API.login_hs = lh0; REG_ = false; }
+  };
+  const rh = API.register_hs;
+  if (rh) API.register_hs = req => {
+    const s = rh(req);
+    const id = s && s.user && s.user.MaHS;
+    if (id && markDup_(id)) return pending_(s.user);
+    return s;
+  };
+
+  /* trang lớp của GV: biết em nào đang chờ duyệt */
+  const cs = API.class_students;
+  if (cs) API.class_students = req => {
+    const l = cs(req), st = {};
+    rows_('HocSinh').forEach(h => { st[h.MaHS] = String(h.TrangThai || ''); });
+    l.forEach(o => { if (st[o.MaHS] === 'cho_duyet') o.choDuyet = true; });
+    return l;
+  };
+  const mc = API.my_classes;
+  if (mc) API.my_classes = req => {
+    const l = mc(req), n = {};
+    rows_('HocSinh').forEach(h => { if (String(h.TrangThai || '') === 'cho_duyet') n[h.MaLop] = (n[h.MaLop] || 0) + 1; });
+    (l || []).forEach(c => { if (n[c.MaLop]) c.choDuyet = n[c.MaLop]; });
+    return l;
+  };
+  /* GV duyệt (ok = true) hoặc từ chối (xoá tài khoản chờ duyệt) */
+  API.approve_hs = req => {
+    const t = auth_(req, 'gv');
+    const ids = (Array.isArray(req.ids) ? req.ids : [req.maHS]).map(x => String(x || '').trim()).filter(Boolean);
+    if (!ids.length) throw new Error('Chưa chọn học sinh');
+    const want = {}; ids.forEach(id => { want[id] = 1; });
+    const list = rows_('HocSinh').filter(h => want[h.MaHS]);
+    list.forEach(h => ownClass_(t, h.MaLop));
+    if (req.ok) {
+      withLock_(() => { rows_('HocSinh').filter(h => want[h.MaHS]).forEach(h => update_('HocSinh', h._r, { TrangThai: '' })); });
+      return { n: list.length, ok: true };
+    }
+    let n = 0;
+    list.filter(h => String(h.TrangThai || '') === 'cho_duyet').forEach(h => { API.delete_student({ token: req.token, maHS: h.MaHS }); n++; });
+    return { n: n, ok: false };
+  };
+}
+try { cn2811ChoDuyet_(); } catch (e) { console.error('CapNhat_28_11 ChoDuyet: ' + e); }
