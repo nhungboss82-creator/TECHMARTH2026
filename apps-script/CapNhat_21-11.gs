@@ -956,3 +956,78 @@ function cn2811Nhanh_() {
   };
 }
 try { cn2811Nhanh_(); } catch (e) { console.error('CapNhat_28_11 Nhanh: ' + e); }
+
+/* ===== Cập nhật 28/11: điểm từng câu do GV chọn khi giao bài (BaiGiao.DiemCau = JSON {maCau: điểm}) =====
+ * Chấm: câu nhiều lựa chọn đúng được đủ điểm câu; Đúng/Sai theo tỉ lệ 0,1/0,25/0,5/1 × điểm câu; tự luận AI chấm theo tỉ lệ × điểm câu.
+ * Tổng quy về thang 10. Bài không có DiemCau chấm như cũ.
+ */
+var CUR_PTS_ = null;
+function cn2811Diem_() {
+  if (typeof API === 'undefined' || typeof SHEETS === 'undefined' || !SHEETS.BaiGiao) return;
+  if (SHEETS.BaiGiao.indexOf('DiemCau') < 0) SHEETS.BaiGiao.push('DiemCau');
+  const parse_ = s => { try { const o = JSON.parse(String(s || '')); return o && typeof o === 'object' ? o : null; } catch (e) { return null; } };
+  const ca = API.create_assignment;
+  if (ca) API.create_assignment = req => {
+    const a = (req && req.assignment) || {};
+    const o = ca(req);
+    const raw = a.diemCau && typeof a.diemCau === 'object' ? a.diemCau : null;
+    if (raw && o && o.MaBai) {
+      const m = {}; (o.DanhSachCau || []).forEach(id => { const v = Number(raw[id]); if (isFinite(v) && v >= 0) m[id] = Math.min(100, Math.round(v * 100) / 100); });
+      if (Object.keys(m).length) {
+        ensureCols_('BaiGiao');
+        const r = rows_('BaiGiao').find(x => x.MaBai === o.MaBai);
+        if (r) { update_('BaiGiao', r._r, { DiemCau: JSON.stringify(m) }); o.DiemCau = m; }
+      }
+    }
+    return o;
+  };
+  const attach_ = name => {
+    const f = API[name]; if (!f) return;
+    API[name] = req => {
+      const l = f(req);
+      if (!Array.isArray(l)) return l;
+      const m = {}; rows_('BaiGiao').forEach(b => { if (String(b.DiemCau || '').trim()) m[b.MaBai] = parse_(b.DiemCau); });
+      l.forEach(o => { if (o && m[o.MaBai]) o.DiemCau = m[o.MaBai]; });
+      return l;
+    };
+  };
+  attach_('my_assignments');
+  attach_('list_assignments');
+  const sb = API.submit;
+  if (sb) API.submit = req => {
+    const s = (req && req.result) || {};
+    CUR_PTS_ = null;
+    if (s.loai === 'baigiao') { const b = rows_('BaiGiao').find(r => r.MaBai === String(s.key || '')); if (b) CUR_PTS_ = parse_(b.DiemCau); }
+    try { return sb(req); } finally { CUR_PTS_ = null; }
+  };
+  const g0 = grade_;
+  grade_ = function (items) {
+    const P = CUR_PTS_;
+    if (!P) return g0(items);
+    const pt = (id, d) => Number(P[id]) > 0 ? Number(P[id]) : d;
+    let got = 0, max = 0, dung = 0;
+    const sai = [];
+    items.forEach(it => {
+      if (!it.a) return;
+      if (it.a === '#L') {
+        if (!it.tl || it.tl.cho_cham) return;
+        const mx0 = Number(it.tl.max) || 1, d0 = Math.max(0, Math.min(mx0, Number(it.tl.diem) || 0)), p = pt(it.id, mx0);
+        max += p; got += d0 / mx0 * p;
+        if (d0 >= mx0 * 0.8) dung++; else sai.push(it.id);
+        return;
+      }
+      if (it.a.length === 1) {
+        const p = pt(it.id, 0.25); max += p;
+        if (String(it.r) === it.a) { got += p; dung++; } else sai.push(it.id);
+      } else {
+        const p = pt(it.id, 1); max += p;
+        const r = String(it.r || ''); let k = 0;
+        for (let i = 0; i < 4; i++) if (r.charAt(i) === it.a.charAt(i)) k++;
+        got += TF_POINTS[k] * p;
+        if (k === 4) dung++; else sai.push(it.id);
+      }
+    });
+    return { diem: max ? round2_(got / max * 10) : 0, dung: dung, tong: items.filter(i => i.a && !(i.a === '#L' && (!i.tl || i.tl.cho_cham))).length, sai: sai };
+  };
+}
+try { cn2811Diem_(); } catch (e) { console.error('CapNhat_28_11 Diem: ' + e); }

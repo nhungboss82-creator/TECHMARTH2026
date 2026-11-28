@@ -213,7 +213,8 @@ function hasImg(q) { return /<img/i.test(String(q.s) + (q.o || []).join('')); }
 /** ước lượng thời gian làm (phút): TN 1,25 – Đ/S 2,5 – tự luận 6 */
 function estMin(ids) { return Math.max(5, Math.ceil(ids.reduce((s, id) => { const q = bank.byId[id]; return s + (!q ? 0 : q.t === 'L' ? 6 : q.t === 'T' ? 2.5 : 1.25); }, 0))); }
 /** chấm điểm; câu tự luận dùng kết quả AI/tự chấm trong tl, chưa có thì không tính vào điểm */
-function grade(ids, resp, tl = {}, tlw = 0) {
+function grade(ids, resp, tl = {}, tlw = 0, pts = null) {
+  const P = id => pts && +pts[id] > 0 ? +pts[id] : null;   // 28/11: điểm từng câu do GV chọn khi giao bài
   let got = 0, max = 0, dung = 0; const sai = [], detail = {}, pending = [];
   const nTL = tlw ? ids.filter(id => bank.byId[id] && bank.byId[id].t === 'L').length : 0;
   ids.forEach(id => {
@@ -223,18 +224,18 @@ function grade(ids, resp, tl = {}, tlw = 0) {
       const x = tl[id];
       if (!x || x.cho_cham) { detail[id] = { ok: false, pending: true }; pending.push(id); return; }
       const mx0 = +x.max || q.p || 1, d0 = Math.max(0, Math.min(mx0, +x.diem || 0));
-      const mx = nTL ? tlw / nTL : mx0, d = nTL ? d0 / mx0 * mx : d0;
+      const mx = P(id) || (nTL ? tlw / nTL : mx0), d = d0 / mx0 * mx;
       max += mx; got += d; const ok = d >= mx * 0.8; if (ok) dung++; else sai.push(id); detail[id] = { ok, k: d, mx };
     }
-    else if (q.t === 'M') { max += 0.25; const ok = r === a; if (ok) { got += 0.25; dung++; } else sai.push(id); detail[id] = { ok, k: ok ? 1 : 0 }; }
-    else { max += 1; let k = 0; for (let i = 0; i < 4; i++) if (r[i] === a[i]) k++; got += TF_POINTS[k]; if (k === 4) dung++; else sai.push(id); detail[id] = { ok: k === 4, k }; }
+    else if (q.t === 'M') { const p = P(id) || 0.25; max += p; const ok = r === a; if (ok) { got += p; dung++; } else sai.push(id); detail[id] = { ok, k: ok ? 1 : 0 }; }
+    else { const p = P(id) || 1; max += p; let k = 0; for (let i = 0; i < 4; i++) if (r[i] === a[i]) k++; got += TF_POINTS[k] * p; if (k === 4) dung++; else sai.push(id); detail[id] = { ok: k === 4, k }; }
   });
   return { diem: max ? Math.round(got / max * 1000) / 100 : 0, dung, tong: ids.filter(id => bank.byId[id]).length - pending.length, sai, detail, pending };
 }
 /** ghép kết quả chấm tự luận (AI hoặc tự chấm) vào lượt làm, cập nhật điểm, lịch sử, sổ tay */
 function applyTL(L, tl) {
   L.tl = Object.assign({}, L.tl || {}, tl || {});
-  const g = grade(L.ids, L.resp, L.tl, L.tlw || 0);
+  const g = grade(L.ids, L.resp, L.tl, L.tlw || 0, L.pts);
   Object.assign(L, { diem: g.diem, dung: g.dung, tong: g.tong, sai: g.sai, detail: g.detail, pendingTL: g.pending.length ? g.pending : null });
   const hk = 'hist_' + uid(), hist = store.get(hk, []), h = hist.find(x => x.attemptId === L.attemptId);
   if (h) { h.diem = g.diem; h.dung = g.dung; h.tong = g.tong; store.set(hk, hist); }
@@ -1020,7 +1021,7 @@ async function homeTasks(box, openId) {
       if (a.DanhSachCau.some(id => !bank.byId[id])) { toast('Đang tải câu hỏi mới…'); await syncBank(true); }
       const ids = a.DanhSachCau.filter(id => bank.byId[id]);
       if (!ids.length) { toast('Chưa tải được câu hỏi của bài này'); return; }
-      startQuiz({ title: a.TieuDe, key: a.MaBai, loai: 'baigiao', ids, minutes: a.ThoiGian, hints: a.HienGoiY, dm: a.CheDoDiem || '' });
+      startQuiz({ title: a.TieuDe, key: a.MaBai, loai: 'baigiao', ids, minutes: a.ThoiGian, hints: a.HienGoiY, dm: a.CheDoDiem || '', pts: a.DiemCau || null });
     });
   };
   draw();
@@ -1564,7 +1565,7 @@ function startQuiz(o) {
   const perm = {};
   order.forEach(id => { const q = bank.byId[id]; if (q.t === 'M') perm[id] = q.nd || o.keep ? [0, 1, 2, 3] : shuffle([0, 1, 2, 3]); });
   const a = { attemptId: newId(), title: o.title, key: o.key || '', loai: o.loai, ids: order, perm, resp: {}, flags: {}, cur: 0,
-    start: Date.now(), minutes: +o.minutes || 0, hints: o.hints !== false, done: false, tlw: +o.tlw || 0, note: o.note || '', dm: o.dm || '' };
+    start: Date.now(), minutes: +o.minutes || 0, hints: o.hints !== false, done: false, tlw: +o.tlw || 0, note: o.note || '', dm: o.dm || '', pts: o.pts || null };
   store.set('attempt_' + uid(), a);
   location.hash = '#/lambai';
 }
@@ -1638,7 +1639,7 @@ route(/^\/lambai$/, () => {
   const finish = () => {
     if (finished) return; finished = true;
     clearInterval(tick);
-    const g = grade(a.ids, a.resp, {}, a.tlw || 0);
+    const g = grade(a.ids, a.resp, {}, a.tlw || 0, a.pts);
     const seconds = Math.round(((deadline ? Math.min(Date.now(), deadline) : Date.now()) - a.start) / 1000);
     a.done = true; save();
     // sổ tay câu sai
@@ -1652,7 +1653,7 @@ route(/^\/lambai$/, () => {
     const answers = {}; a.ids.forEach(id => { answers[id] = respStr(bank.byId[id], a.resp[id]); });
     const last = { attemptId: a.attemptId, title: a.title, key: a.key, loai: a.loai, ids: a.ids, perm: a.perm, resp: a.resp, hints: a.hints, dm: a.dm || '',
       diem: g.diem, dung: g.dung, tong: g.tong, sai: g.sai, detail: g.detail, seconds, synced: false,
-      tl: {}, tlw: a.tlw || 0, pendingTL: g.pending.length ? g.pending : null, selfTL: !!g.pending.length && (DEMO || !session || session.role !== 'hs') };
+      tl: {}, tlw: a.tlw || 0, pts: a.pts || null, pendingTL: g.pending.length ? g.pending : null, selfTL: !!g.pending.length && (DEMO || !session || session.role !== 'hs') };
     saveLast(last);
     if (!DEMO && session && session.role === 'hs') {
       const q = store.get('queue', []);
@@ -2798,12 +2799,20 @@ route(/^\/gv\/giaobai$/, async params => {
     const tag = q => `${q.t === 'M' ? 'Nhiều lựa chọn' : q.t === 'T' ? 'Đúng/Sai' : 'Tự luận'}${q.t === 'M' ? ' · ' + esc(q.md) : ''} · ${esc((q.bai || q.cd || '').replace(/^Lớp \d+ – /, ''))}`;
     const keyOf = q => q.t === 'M' ? normAns(q) : q.t === 'T' ? normAns(q).split('').map((x, k) => 'abcd'[k] + ') ' + (x === 'Đ' ? 'Đúng' : 'Sai')).join('; ') : 'xem đáp án mẫu';
     const v0 = { ma: '', ids: a.ids, perm: {} };
+    /* 28/11/2026: điểm từng câu do GV chọn (mặc định: chia theo quy định app, tổng 10) */
+    let ptsEdited = false; a.pts = {};
+    const wOf = q => q.t === 'M' ? 0.25 : q.t === 'T' ? 1 : (q.p || 1);
+    const r2 = x => Math.round(x * 100) / 100;
+    const defPts = () => { const qs = a.ids.map(id => bank.byId[id]).filter(Boolean), sw = qs.reduce((t, q) => t + wOf(q), 0) || 1; a.pts = {}; qs.forEach(q => { a.pts[q.id] = r2(wOf(q) / sw * 10); }); };
+    const evenPts = () => { const n = a.ids.length || 1; a.pts = {}; a.ids.forEach(id => { a.pts[id] = r2(10 / n); }); };
+    const fixPts = () => { if (!ptsEdited) { defPts(); return; } const keep = {}; a.ids.forEach(id => { keep[id] = a.pts[id] != null ? a.pts[id] : r2(10 / a.ids.length); }); a.pts = keep; };
+    const sumPts = () => r2(a.ids.reduce((t, id) => t + (+a.pts[id] || 0), 0));
     const render = () => {
-      v0.ids = a.ids;
+      v0.ids = a.ids; fixPts();
       const qs = a.ids.map(id => bank.byId[id]).filter(Boolean), mc = qs.filter(q => q.t === 'M'), tf = qs.filter(q => q.t === 'T'), tl = qs.filter(q => q.t === 'L');
       const c = lvCount(qs);
-      const item = (q, n) => `<div class="pvq"><div class="row" style="gap:6px;align-items:flex-start"><div class="grow">${examQ(q, v0, n)}</div>
-          <div class="pvact"><button type="button" class="btn ghost sm" data-sw="${q.id}" title="Thay bằng câu khác cùng bài, cùng mức">🔄 Đổi</button><button type="button" class="btn ghost sm" data-rm="${q.id}" title="Bỏ câu này">✕</button></div></div>
+      const item = (q, n) => `<div class="pvq"><div class="row" style="gap:6px;align-items:flex-start"><div class="grow">${examQ(q.t === 'L' ? Object.assign({}, q, { p: a.pts[q.id] }) : q, v0, n)}</div>
+          <div class="pvact"><label class="pv-pt"><input type="number" min="0" max="10" step="0.25" data-pt="${q.id}" value="${a.pts[q.id]}"> đ</label><button type="button" class="btn ghost sm" data-sw="${q.id}" title="Thay bằng câu khác cùng bài, cùng mức">🔄 Đổi</button><button type="button" class="btn ghost sm" data-rm="${q.id}" title="Bỏ câu này">✕</button></div></div>
         <div class="hint">${tag(q)}${showKey ? ` · <b style="color:var(--ok)">Đáp án: ${esc(keyOf(q))}</b>` : ''}</div></div>`;
       box.innerHTML = `<div class="card"><div class="row"><div class="grow"><h2 style="margin:0">📄 Xem trước đề: ${esc(a.title || 'Bài kiểm tra')}</h2>
           <div class="hint">${qs.length} câu: ${mc.length} nhiều lựa chọn (Biết ${c.b} · Hiểu ${c.h} · Vận dụng ${c.v}) · ${tf.length} Đúng/Sai · ${tl.length} tự luận${a.minutes ? ' · ' + a.minutes + ' phút' : ''}</div></div></div>
@@ -2811,6 +2820,7 @@ route(/^\/gv\/giaobai$/, async params => {
         <div class="row" style="margin-top:10px;flex-wrap:wrap"><button type="button" class="btn" id="pvp">🖨️ In / Lưu PDF đề</button><button type="button" class="btn ghost" id="pvk">🖨️ In kèm đáp án</button>
           ${a.cheDo === 'de' || a.cheDo === 'bai' || !gen ? '' : '<button type="button" class="btn ghost" id="pvr">🎲 Bốc bộ câu khác</button>'}
           <label class="chk" style="padding:5px 10px"><input type="checkbox" id="pvs" ${showKey ? 'checked' : ''}>Hiện đáp án</label></div>
+        <div class="pv-tot">Tổng điểm: <b id="pvsum">${fmt(sumPts())}</b> <span id="pvwarn" class="hint"></span><button type="button" class="btn ghost sm" id="pveven">Chia đều 10 điểm</button></div>
         <p class="hint">HS làm trên app sẽ được đảo thứ tự câu và phương án. Bấm “In / Lưu PDF” rồi chọn “Lưu dưới dạng PDF” để có file đề.</p></div>
         <div class="card">${mc.length ? `<p class="sec"><b>PHẦN I. Trắc nghiệm nhiều phương án lựa chọn</b></p>${mc.map((q, i) => item(q, i + 1)).join('')}` : ''}
           ${tf.length ? `<p class="sec"><b>PHẦN II. Trắc nghiệm đúng sai</b></p>${tf.map((q, i) => item(q, i + 1)).join('')}` : ''}
@@ -2822,6 +2832,10 @@ route(/^\/gv\/giaobai$/, async params => {
       $('#pvk').onclick = () => printExam(d, 'all', true, { noQr: true });
       if ($('#pvr')) $('#pvr').onclick = () => { a.ids = gen(); render(); toast('Đã bốc bộ câu mới'); };
       $('#pvs').onchange = e => { showKey = e.target.checked; render(); };
+      const tot = () => { const t = sumPts(); $('#pvsum').textContent = fmt(t); $('#pvwarn').textContent = Math.abs(t - 10) > 0.001 ? '(khác 10 – app quy về thang 10)' : ''; };
+      $$('[data-pt]', box).forEach(i => i.oninput = () => { ptsEdited = true; a.pts[i.dataset.pt] = Math.max(0, +i.value || 0); tot(); });
+      $('#pveven').onclick = () => { ptsEdited = true; evenPts(); render(); };
+      tot();
       $$('[data-rm]', box).forEach(b => b.onclick = () => { if (a.ids.length <= 1) { toast('Đề phải có ít nhất 1 câu'); return; } a.ids = a.ids.filter(x => x !== b.dataset.rm); render(); });
       $$('[data-sw]', box).forEach(b => b.onclick = () => {
         const q = bank.byId[b.dataset.sw], used = new Set(a.ids);
@@ -2833,7 +2847,9 @@ route(/^\/gv\/giaobai$/, async params => {
       });
       $('#pvb').onclick = () => { box.remove(); f.style.display = ''; window.scrollTo(0, 0); };
       $('#pvok').onclick = e => busy(e.currentTarget, async () => {
-        try { const send = Object.assign({}, a); delete send._miss; const b = await api('create_assignment', { assignment: send }); toast('Đã giao bài: ' + b.DanhSachCau.length + ' câu'); location.hash = '#/gv/bai/' + b.MaBai + '?moi=1'; }
+        try { const send = Object.assign({}, a); delete send._miss; delete send.pts; send.diemCau = {}; a.ids.forEach(id => { send.diemCau[id] = +a.pts[id] || 0; });
+          if (!sumPts()) { errBox($('#pvmsg'), 'Tổng điểm phải lớn hơn 0'); return; }
+          const b = await api('create_assignment', { assignment: send }); toast('Đã giao bài: ' + b.DanhSachCau.length + ' câu'); location.hash = '#/gv/bai/' + b.MaBai + '?moi=1'; }
         catch (err) { errBox($('#pvmsg'), err); }
       });
     };

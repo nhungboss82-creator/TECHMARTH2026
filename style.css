@@ -1414,3 +1414,8 @@ body.modal-open{overflow:hidden}
 .qcs-o input[type=text]{height:38px;min-height:0}
 .qcs .qcs-o + .qcs-o{margin-top:-2px}
 .imgdrop .imgdrop-err{display:block;margin-top:6px;padding:6px 10px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:13px;font-weight:600}
+/* 28/11/2026: điểm từng câu khi giao bài */
+.pv-pt{display:inline-flex;align-items:center;gap:3px;margin:0 4px 0 0;font-weight:600;font-size:13px}
+.pv-pt input{width:68px;padding:4px 6px;height:32px;text-align:right}
+.pv-tot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.pv-tot .btn{margin-left:auto}
