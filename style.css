@@ -1390,3 +1390,26 @@ body.modal-open{overflow:hidden}
 .gn-cta{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit;border:2px solid #c7d2fe;background:linear-gradient(90deg,#eef2ff,#fff)}
 .gn-cta:hover{border-color:#6366f1}
 .gn-cta .gn-ic{font-size:30px}
+/* 28/11/2026: hộp soạn câu gọn (Giao bài) */
+.qc-modal{padding:16px 10px}
+.qc-in{max-width:640px;padding:12px 14px}
+.qcs-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.qcs{display:flex;flex-direction:column;gap:8px}
+.qcs label{margin:0}
+.qcs-top{display:flex;gap:8px;align-items:center}
+.qcs-seg{display:flex;flex:1;border:1px solid var(--line,#e2e8f0);border-radius:10px;overflow:hidden;background:#fff}
+.qcs-seg button{flex:1;border:0;background:none;padding:7px 4px;font:inherit;font-weight:600;color:#64748b;cursor:pointer}
+.qcs-seg button.on{background:#e0e7ff;color:#1d4ed8}
+.qcs-top select{width:auto;min-width:110px;padding:6px 8px}
+.qcs textarea#qcs{min-height:64px}
+.qcs .qcs-ans{min-height:70px}
+.qcs .imgdrop{min-height:64px;padding:8px}
+.qcs .imgdrop .imgdrop-ic{font-size:20px}
+.qcs-o{display:flex;gap:6px;align-items:center}
+.qcs-o input[type=text]{flex:1;padding:7px 10px}
+.qcs-o select{width:auto;padding:6px}
+.qcs-r{display:flex;align-items:center;gap:4px;min-width:42px;margin:0}
+.qcs-bot{display:flex;align-items:center;gap:8px}
+.qcs-bot .chk{margin:0;padding:4px 8px}
+.qcs-o input[type=text]{height:38px;min-height:0}
+.qcs .qcs-o + .qcs-o{margin-top:-2px}

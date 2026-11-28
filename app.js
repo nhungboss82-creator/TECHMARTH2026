@@ -2907,12 +2907,12 @@ route(/^\/gv\/giaobai$/, async params => {
     const list = bank.q.filter(q => q.k === k && /^GV_/.test(q.id)).reverse();
     const pick = list.filter(q => own.has(q.id)).length;
     const typ = q => q.t === 'M' ? 'Nhiều lựa chọn · ' + esc(q.md) : q.t === 'T' ? 'Đúng/Sai' : 'Tự luận';
-    box.innerHTML = `<div class="row" style="align-items:center"><div class="grow hint">Khối ${k}: ${list.length} câu GV soạn · <b>đã chọn ${pick}</b></div>
-        <button type="button" class="btn sm" id="qcnew">✍️ Soạn câu mới</button></div>
+    box.innerHTML = `<div class="row" style="align-items:center"><div class="grow hint">Đã chọn <b>${pick}</b>/${list.length}</div>
+        <button type="button" class="btn sm" id="qcnew">✍️ Câu mới</button></div>
       ${list.length ? `<div class="gvq-l">${list.map(q => `<label class="gvq${own.has(q.id) ? ' on' : ''}"><input type="checkbox" data-own="${esc(q.id)}" ${own.has(q.id) ? 'checked' : ''}>
-          <span class="grow"><span class="hint">${typ(q)}${q.rieng ? ' · 🔒 trường mình' : ''}${hasImg(q) ? ' · 🖼️ có hình' : ''} · ${esc(String(q.de || '').replace(/^.*– /, ''))}</span><br>${esc(plain(q.s).slice(0, 150)) || '(câu chỉ có hình)'}</span>${mineQ(q) ? `<button type="button" class="btn ghost sm" data-qdel="${esc(q.id)}" title="Xoá câu này khỏi ngân hàng">🗑</button>` : ''}</label>`).join('')}</div>`
-        : `<div class="card empty" style="margin-top:8px">Chưa có câu GV soạn cho khối ${k}. Bấm “✍️ Soạn câu mới” để soạn câu trắc nghiệm, Đúng/Sai hoặc tự luận (có thể chèn hình).</div>`}
-      ${list.length ? '<div class="row" style="margin-top:6px"><button type="button" class="btn ghost sm" id="gvqa">Chọn tất cả</button><button type="button" class="btn ghost sm" id="gvqn">Bỏ chọn</button></div>' : ''}`;
+          <span class="grow"><span class="hint">${typ(q)}${q.rieng ? ' · 🔒' : ''}${hasImg(q) ? ' · 🖼️' : ''}</span><br>${esc(plain(q.s).slice(0, 150)) || '(câu chỉ có hình)'}</span>${mineQ(q) ? `<button type="button" class="btn ghost sm" data-qdel="${esc(q.id)}" title="Xoá câu này khỏi ngân hàng">🗑</button>` : ''}</label>`).join('')}</div>`
+        : ''}
+      ${list.length > 1 ? '<div class="row" style="margin-top:6px"><button type="button" class="btn ghost sm" id="gvqa">Chọn tất cả</button><button type="button" class="btn ghost sm" id="gvqn">Bỏ chọn</button></div>' : ''}`;
     $$('[data-own]', box).forEach(i => i.onchange = () => { i.checked ? own.add(i.dataset.own) : own.delete(i.dataset.own); gvBox(k, box); });
     $$('[data-qdel]', box).forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); delQ(b.dataset.qdel, () => { own.delete(b.dataset.qdel); gvBox(k, box); }); });
     if ($('#gvqa')) $('#gvqa').onclick = () => { list.forEach(q => own.add(q.id)); gvBox(k, box); };
@@ -2920,12 +2920,11 @@ route(/^\/gv\/giaobai$/, async params => {
     $('#qcnew').onclick = () => {
       closeQc();
       const m = document.createElement('div'); m.id = 'qcmodal'; m.className = 'qc-modal';
-      m.innerHTML = `<div class="qc-in"><div class="row" style="align-items:center"><h2 class="grow" style="margin:0">✍️ Soạn câu mới – khối ${k}</h2><button type="button" class="btn ghost sm" id="qcclose">✕</button></div>
-        <p class="hint">Câu lưu xong được chọn ngay vào bài đang giao. Có thể soạn tiếp nhiều câu.</p><div id="qcm"></div></div>`;
+      m.innerHTML = `<div class="qc-in"><div class="qcs-h"><b>✍️ Câu mới · K${k}</b><button type="button" class="btn ghost sm" id="qcclose">✕</button></div><div id="qcm"></div></div>`;
       document.body.appendChild(m); document.body.classList.add('modal-open');
       const back = () => { closeQc(); const b = $('#mbox'); if (b && mode === 'gvsoan') gvBox(curK(), b); };
-      m._off = qComposer($('#qcm'), { khoi: k, memo: qcMemo, simple: true, saveLabel: '💾 Lưu câu & chọn vào bài', onCancel: back,
-        onSaved: id => { own.add(id); back(); toast('Đã chọn câu vào bài. Bấm “Soạn câu mới” để soạn tiếp.'); } });
+      m._off = qComposer($('#qcm'), { khoi: k, memo: qcMemo, simple: true, onCancel: back,
+        onSaved: id => { own.add(id); back(); toast('Đã lưu và chọn câu'); } });
       $('#qcclose').onclick = back;
     };
   };
@@ -3243,6 +3242,19 @@ function qComposer(root, opts = {}) {
   const val = k => esc(keep[k] || '');
   const draw = () => {
     const tps = [...new Set(bank.q.map(q => q.cd))].sort((a, b) => a.localeCompare(b, 'vi'));
+    if (S) {   // Giao bài: hộp soạn câu gọn – không mô tả, không mục phụ
+      root.innerHTML = `<form class="qc qcs" id="qcf"><input type="hidden" id="qck" value="${esc(kSel)}"><input type="hidden" id="qccd" value="${val('cd') || 'Câu GV soạn'}"><input type="hidden" id="qcbai" value="${val('bai')}">
+        <div class="qcs-top"><div class="qcs-seg">${[['M', 'Trắc nghiệm'], ['T', 'Đúng/Sai'], ['L', 'Tự luận']].map(([t, n]) => `<button type="button" data-qt="${t}" class="${type === t ? 'on' : ''}">${n}</button>`).join('')}</div>
+          ${type !== 'T' ? `<select id="qcmd" aria-label="Mức độ">${['Biết', 'Hiểu', 'Vận dụng'].map(m => `<option ${(keep.md || (type === 'L' ? 'Hiểu' : 'Biết')) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}</div>
+        <textarea id="qcs" required placeholder="Nội dung câu hỏi">${val('s')}</textarea>
+        ${imgDrop('qcimg', 'Hình', '', img)}
+        ${type === 'L' ? `<textarea id="qcans" class="qcs-ans" placeholder="Đáp án (để trống: AI tự chấm theo SGK)">${val('ans')}</textarea>`
+          : [0, 1, 2, 3].map(i => `<div class="qcs-o">${type === 'M' ? `<label class="qcs-r"><input type="radio" name="qcans" value="${LETTERS[i]}" ${i === 0 ? 'checked' : ''}><b>${LETTERS[i]}</b></label>` : `<b class="qcs-r">${'abcd'[i]})</b>`}
+            <input id="qco${i}" type="text" required placeholder="${type === 'M' ? 'Phương án ' + LETTERS[i] : 'Ý ' + 'abcd'[i]}" value="${val('o' + i)}">
+            ${type === 'T' ? `<select id="qca${i}" aria-label="Đúng hoặc Sai"><option value="Đ">Đúng</option><option value="S">Sai</option></select>` : ''}</div>`).join('')}
+        <div id="qcmsg"></div>
+        <div class="qcs-bot"><label class="chk"><input type="checkbox" id="qcr" ${rieng ? 'checked' : ''}>🔒 Trường mình</label><span class="spacer"></span>${opts.onCancel ? '<button type="button" class="btn ghost sm" id="qcx">Đóng</button>' : ''}<button class="btn sm" id="qcgo">💾 Lưu</button></div></form>`;
+    } else
     root.innerHTML = `<form class="card qc" id="qcf">
         <div class="tabs"><button type="button" data-qt="M" class="${type === 'M' ? 'on' : ''}">Nhiều lựa chọn</button><button type="button" data-qt="T" class="${type === 'T' ? 'on' : ''}">Đúng/Sai</button><button type="button" data-qt="L" class="${type === 'L' ? 'on' : ''}">Tự luận</button></div>
         <div class="row"><div style="width:110px"><label for="qck">Khối</label><select id="qck">${['10', '11', '12'].map(k => `<option ${k === kSel ? 'selected' : ''}>${k}</option>`).join('')}</select></div>
@@ -3266,19 +3278,19 @@ function qComposer(root, opts = {}) {
         <div id="qcmsg"></div><div class="row" style="margin-top:14px">${opts.onCancel ? '<button type="button" class="btn ghost" id="qcx">Đóng</button>' : ''}<button class="btn grow" id="qcgo">${opts.saveLabel || 'Lưu vào ngân hàng'}</button></div></form>`;
     $$('[data-qt]', root).forEach(b => b.onclick = () => { save(); type = b.dataset.qt; draw(); });
     bindImgDrop('qcimg', v => { save(); img = v; draw(); });
-    Q('#qccam').onchange = e => { const f = e.target.files[0]; if (f) Q('#qcimg')._take(f); };
-    Q('#qcpaste').onclick = () => pasteFromClipboard('qcimg');
+    if (Q('#qccam')) Q('#qccam').onchange = e => { const f = e.target.files[0]; if (f) Q('#qcimg')._take(f); };
+    if (Q('#qcpaste')) Q('#qcpaste').onclick = () => pasteFromClipboard('qcimg');
     if (Q('#qcx')) Q('#qcx').onclick = () => { unpaste(); opts.onCancel(); };
     const collect = () => {
       const c = type === 'L'
         ? { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: Q('#qcmd').value, stem: Q('#qcs').value, answer: Q('#qcans').value.trim() || (S ? AI_TU_CHAM : ''), expl: V_('#qce'), hint: V_('#qch'), points: S ? 1 : +Q('#qcpt').value || 1 }
         : { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: type === 'M' ? Q('#qcmd').value : '', stem: Q('#qcs').value,
           o: [0, 1, 2, 3].map(i => Q('#qco' + i).value), answer: type === 'M' ? (Q('input[name=qcans]:checked') || {}).value : [0, 1, 2, 3].map(i => Q('#qca' + i).value).join(','),
-          expl: V_('#qce'), hint: V_('#qch'), noShuffle: type === 'M' && Q('#qcnd').checked };
+          expl: V_('#qce'), hint: V_('#qch'), noShuffle: type === 'M' && !!Q('#qcnd') && Q('#qcnd').checked };
       c.rieng = Q('#qcr').checked;
       return c;
     };
-    const pv = () => { const c = collect(); const q = { id: 'xem', t: type, s: c.stem + (img ? `<p><img src="${img}" alt=""></p>` : ''), o: c.o || [], a: c.answer, md: c.md, p: c.points };
+    const pv = () => { if (!Q('#qcpv')) return; const c = collect(); const q = { id: 'xem', t: type, s: c.stem + (img ? `<p><img src="${img}" alt=""></p>` : ''), o: c.o || [], a: c.answer, md: c.md, p: c.points };
       Q('#qcpv').innerHTML = qHtml(q, { ids: ['xem'], perm: { xem: [0, 1, 2, 3] }, resp: {} }, 0, type === 'L' ? undefined : { showAns: false }) + (type === 'L' && c.answer ? `<div class="expl ans"><b class="t">Đáp án mẫu</b>${sanitize(c.answer).replace(/\n/g, '<br>')}</div>` : ''); math(Q('#qcpv')); };
     Q('#qcf').oninput = pv; pv();
     Q('#qcf').onsubmit = async e => {
