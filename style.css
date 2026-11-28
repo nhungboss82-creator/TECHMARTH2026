@@ -1350,3 +1350,14 @@ h2.cls-h{margin:14px 0 6px;font-size:17px}
 }
 @media (min-width:980px){.gh-stats,.gh-stats:has(> .gh-stat:nth-child(4)){grid-template-columns:repeat(4,104px);gap:6px}.gh-hero{padding-right:14px}}
 @media (max-width:700px){.gh-khoi button{flex-direction:column;gap:2px;padding:8px 4px}}
+
+/* 28/11/2026 – hàng đợi AI chấm bài vẽ */
+.aiq{margin:6px 0 10px;padding:10px 12px;border-radius:12px;background:#fff7e6;border:1px solid #f5c26b;color:#7a4b00;font-size:14px;line-height:1.45}
+.aiq-n{color:#b45309}
+.rv-lv{margin:6px 0 8px;padding:8px 12px;border-radius:10px;font-size:15px;text-align:center;background:#eef6ff;color:#1e3a8a}
+.rv-lv.ok{background:#e8f8ee;color:#166534}.rv-lv.mid{background:#fff7e6;color:#92400e}.rv-lv.bad{background:#fdecec;color:#991b1b}
+.rv-lv span{font-size:13px;opacity:.8}
+.pill.best{background:#fff4cc;color:#8a5a00;border-color:#f3cf63}
+.dv-kq{overflow:auto}.dv-kq .tbl{width:100%;border-collapse:collapse;font-size:14px}
+.dv-kq th,.dv-kq td{padding:6px 8px;border-bottom:1px solid #e5e9f0;text-align:left;white-space:nowrap}
+.kq-l{display:inline-block;padding:1px 6px;margin:1px 2px;border-radius:8px;background:#f1f5f9;font-size:13px}.kq-l.best{background:#fff4cc;font-weight:700}

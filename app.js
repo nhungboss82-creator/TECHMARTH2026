@@ -3469,6 +3469,8 @@ function aiHtml(sub, max) {
   return `<div class="expl ans"><b class="t">🤖 AI đề xuất: ${fmt(ai.diem)} / ${max} điểm</b>${esc(ai.nhan_xet_chung || '')}</div>`;
 }
 function subStatus(s, max) {
+  if (s.TrangThai === 'cho_ai') return '<span class="pill warn">⏳ Chờ AI chấm</span>';
+  if (s.TrangThai === 'dang_cham') return '<span class="pill warn">🤖 AI đang chấm</span>';
   if (s.TrangThai === 'da_cham') return `<span class="pill ok">Điểm chính thức: ${fmt(s.GVDiem)}/${max}</span>`;
   if (s.AIDiem != null) return `<span class="pill warn">AI đề xuất ${fmt(s.AIDiem)}/${max} · chờ thầy cô xác nhận</span>`;
   return '<span class="pill warn">Chờ thầy cô chấm</span>';
@@ -3497,6 +3499,8 @@ function scoreCol(t, s, box) {
   if (s.TrangThai === 'da_cham') h += `<div class="rv-big ok"><span>Điểm</span><b>${fmt(s.GVDiem)}</b><i>/${max}</i></div>`;
   else if (s.AIDiem != null) h += `<div class="rv-big"><span>${box ? 'AI đề xuất' : 'Điểm AI chấm'}</span><b>${fmt(s.AIDiem)}</b><i>/${max}</i></div>`;
   else h += `<div class="rv-big none"><span>Điểm</span><b>–</b><i>/${max}</i></div>`;
+  { const v = s.TrangThai === 'da_cham' ? s.GVDiem : s.AIDiem; if (v != null && max) { const r = v / max; const lv = r >= 0.8 ? ['Tốt', 'ok'] : r >= 0.65 ? ['Khá', 'ok'] : r >= 0.5 ? ['Đạt', 'mid'] : ['Chưa đạt', 'bad'];
+    h += `<div class="rv-lv ${lv[1]}">Mức đạt: <b>${lv[0]}</b> <span>(${fmt(v)}/${max} điểm)</span></div>`; } }
   if (ai && ai.doc_duoc !== false) {
     const ok = ai.dat_yeu_cau != null ? !!ai.dat_yeu_cau : (ai.diem >= max / 2 && !(ai.loi || []).filter(Boolean).length);
     h += `<div class="rv-verdict ${ok ? 'ok' : 'bad'}">${ok ? '✔ Đạt yêu cầu' : '✘ Chưa đạt – cần sửa'}</div>`;
@@ -3577,6 +3581,12 @@ async function mountReview(el, t, s, opts = {}) {
   return marks;
 }
 
+/* 28/11/2026: hàng đợi AI chấm bài vẽ – bài nộp được lưu ngay, máy đang mở trang tự gọi ai_pump để AI chấm lần lượt */
+const aiQ = s => !!s && (s.TrangThai === 'cho_ai' || s.TrangThai === 'dang_cham');
+const aiQText = s => s.TrangThai === 'dang_cham' ? '🤖 AI đang chấm bài này…'
+  : `⏳ Đang xếp hàng chờ AI chấm${s.HangDoi && s.HangDoi.vi_tri ? ` – thứ tự <b>${s.HangDoi.vi_tri}</b>/${s.HangDoi.tong}` : ''}. Bài đã lưu, không cần nộp lại; có thể ở lại trang hoặc quay lại sau.`;
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
+
 route(/^\/baive\/(\w+)$/, async (params, maBV) => {
   /* 22/11/2026: 3 bước gọn – ① Đề bài · ② Nộp bài làm (chụp ảnh / tải tệp) · ③ Kết quả AI chấm (trái: điểm + bảng chấm; phải: lỗi sai & yêu cầu sửa) */
   if (!session || session.role !== 'hs') { location.hash = '#/'; return; }
@@ -3585,13 +3595,29 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
   try { list = await api('my_drawing_tasks'); store.set('drw_' + uid(), list); } catch (e) { list = store.get('drw_' + uid(), []); }
   const t = (list || []).find(x => x.MaBV === maBV);
   if (!t) { errBox(V, 'Không tìm thấy bài vẽ'); return; }
-  let img = null, open = t.bai.length ? t.bai[0].MaNop : null, sending = false, deSrc = null;
+  let img = null, open = t.bai.length ? t.bai[0].MaNop : null, sending = false, deSrc = null, pumping = false;
+  const here = () => location.hash.indexOf('#/baive/' + maBV) === 0;
+  const pump = async () => {
+    if (pumping) return; pumping = true;
+    try {
+      for (let k = 0; k < 400 && here(); k++) {
+        const p = t.bai.find(aiQ); if (!p) break;
+        await sleepMs(k ? 7000 + Math.random() * 6000 : 1500);
+        if (!here()) break;
+        let r; try { r = await api('ai_pump', { maNop: p.MaNop }); } catch (e) { continue; }
+        if (!r || !r.mine) continue;
+        Object.assign(p, r.mine);
+        if (!aiQ(p)) { toast(p.AI ? '✅ AI đã chấm xong bài vẽ' : 'AI chưa chấm được – thầy/cô sẽ chấm trực tiếp'); if (here() && !sending) draw(); }
+        else { const q = $('#aiq'); if (q && open === p.MaNop) q.innerHTML = aiQText(p); }
+      }
+    } finally { pumping = false; }
+  };
   const late = t.HanNop && new Date(t.HanNop) < new Date();
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('hsimg');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
   const draw = () => {
-    const isTK = t.Loai === 'thietke', n = t.bai.length, max = t.SoLan || 0, left = max ? Math.max(0, max - n) : null;
+    const isTK = t.Loai === 'thietke', n = t.bai.length, max = Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 3, 3), left = Math.max(0, max - n);
     const out = max && n >= max;
     setView(`<a href="#/">← Trang chủ</a><h1 class="bv-h1">${isTK ? '💡 ' : '✏️ '}${esc(t.TieuDe)}</h1>
       <div class="bv-steps">
@@ -3602,11 +3628,12 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
           <div class="bv-pick"><label class="btn">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
             <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
           <div id="hsimg" class="imgdrop imgdrop-lite bv-drop">${img ? `<img src="${img}" alt="Ảnh bài vẽ">` : '<span class="hint">Bài vẽ tay (chụp thẳng, đủ sáng) hoặc vẽ máy · nhận ảnh, ảnh iPhone (HEIC), PDF</span>'}</div>
-          <div id="msg"></div><button class="btn block" id="send" ${img && !sending ? '' : 'disabled'}>${sending ? '🤖 AI đang chấm (khoảng 1–2 phút)…' : '📤 Nộp bài – AI chấm'}</button>`}</section>
+          <div id="msg"></div><button class="btn block" id="send" ${img && !sending ? '' : 'disabled'}>${sending ? '📤 Đang gửi bài…' : '📤 Nộp bài – AI chấm'}</button>`}</section>
       </div>
       <section class="card bv-st bv-kq"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">3</span><b>Kết quả AI chấm</b>
         ${n > 1 ? `<span class="bv-lan">${t.bai.map((s, i) => `<button type="button" class="${open === s.MaNop ? 'on' : ''}" data-o="${s.MaNop}" title="${dt(s.ThoiDiem)}">Lần ${n - i}</button>`).join('')}</span>` : ''}</div>
-        ${open ? `<div id="rv"></div>` : `<div class="hint" style="padding:8px 0">${sending ? '<span class="tl-spin"></span> AI đang chấm, em chờ chút…' : 'Chưa nộp lần nào.'}</div>`}</section>`);
+        ${open && aiQ(t.bai.find(x => x.MaNop === open)) ? `<div id="aiq" class="aiq">${aiQText(t.bai.find(x => x.MaNop === open))}</div>` : ''}
+        ${open ? `<div id="rv"></div>` : `<div class="hint" style="padding:8px 0">${sending ? '<span class="tl-spin"></span> Đang gửi bài…' : 'Chưa nộp lần nào.'}</div>`}</section>`);
     const pick = async f => { if (!f) return; try { img = await readAnyFile(f); draw(); } catch (err) { toast(err.message || 'Không đọc được tệp'); } };
     if ($('#cam')) $('#cam').onchange = e => pick(e.target.files[0]);
     if ($('#file')) $('#file').onchange = e => pick(e.target.files[0]);
@@ -3616,13 +3643,13 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
       if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để nộp ảnh và nhận kết quả AI'); return; }
       sending = true; draw();
       try { const s = await api('submit_drawing', { maBV, image: img }); drwImgCache['n_' + s.MaNop] = img; t.bai.unshift(s); img = null; open = s.MaNop; sending = false;
-        if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast('AI đã chấm xong bài vẽ – mở lại bài để xem kết quả'); return; } draw(); toast(s.AI ? 'AI đã chấm xong' : 'Đã nộp bài'); const k = $('.bv-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast('AI đã chấm xong bài vẽ – mở lại bài để xem kết quả'); return; } draw(); toast(s.AI ? 'AI đã chấm xong' : aiQ(s) ? '📤 Đã nộp! AI sẽ chấm lần lượt – kết quả hiện ngay tại đây' : 'Đã nộp bài'); pump(); const k = $('.bv-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       catch (err) { sending = false; if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast(err.message || String(err)); return; } draw(); errBox($('#msg'), err); }
     };
     $$('[data-o]').forEach(b => b.onclick = () => { open = b.dataset.o; draw(); });
     if (open && $('#rv')) mountReview($('#rv'), t, t.bai.find(x => x.MaNop === open));
   };
-  draw();
+  draw(); pump();
   if (t.CoAnhDe) drwImg('d_' + t.MaBV, { maBV: t.MaBV, de: 1 }).then(src => { deSrc = src; if (!sending && location.hash.indexOf(maBV) > 0) draw(); }).catch(() => {});
 });
 
@@ -3892,6 +3919,22 @@ route(/^\/gv\/baive\/moi$/, async params => {
   draw();
 });
 
+/* 28/11/2026: nhật ký nộp bài vẽ – mỗi em: các lần nộp (lần 1, 2, 3) và điểm cao nhất (điểm GV xác nhận, chưa có thì điểm AI) */
+const drwScore = s => s.TrangThai === 'da_cham' && s.GVDiem != null ? Number(s.GVDiem) : (s.AIDiem != null ? Number(s.AIDiem) : null);
+function drwStats(items) {
+  const by = {};
+  items.forEach(s => { const k = s.MaHS || ('_' + s.HoTen); (by[k] = by[k] || { k, HoTen: s.HoTen, TenLop: s.TenLop, lan: [] }).lan.push(s); });
+  const out = Object.values(by);
+  out.forEach(h => {
+    h.lan.sort((a, b) => String(a.ThoiDiem).localeCompare(String(b.ThoiDiem)));
+    h.lan.forEach((s, i) => { s._lan = i + 1; s._n = h.lan.length; });
+    let best = null; h.lan.forEach(s => { const v = drwScore(s); if (v != null && (best == null || v > drwScore(best))) best = s; });
+    h.best = best; h.diem = best ? drwScore(best) : null;
+    h.lan.forEach(s => { s._best = s === best; });
+  });
+  return out.sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }) || viNameCmp(a.HoTen, b.HoTen));
+}
+
 route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
   if (!needGV()) return;
   setView('<div class="card empty">Đang tải…</div>');
@@ -3899,7 +3942,24 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
   const sortItems = () => d.items.sort((a, b) => String(a.TenLop).localeCompare(String(b.TenLop), 'vi', { numeric: true }) || viNameCmp(a.HoTen, b.HoTen) || String(b.ThoiDiem).localeCompare(String(a.ThoiDiem)));
   sortItems();
   const t = d.task, max = t.DiemToiDa;
-  let open = null, marks = [], pn = d.items.length ? '' : 'up', up = { img: null, hs: '', ten: '' }, roster = null, mauSrc = null;
+  let open = null, marks = [], pn = d.items.length ? '' : 'up', up = { img: null, hs: '', ten: '' }, roster = null, mauSrc = null, pumping = false;
+  const hereGV = () => location.hash === '#/gv/baive/' + maBV;
+  const pumpGV = async () => {
+    if (pumping) return; pumping = true;
+    try {
+      for (let k = 0; k < 600 && hereGV() && d.items.some(aiQ); k++) {
+        await sleepMs(k ? 5000 + Math.random() * 4000 : 1000);
+        if (!hereGV()) break;
+        let r; try { r = await api('ai_pump', {}); } catch (e) { continue; }
+        if (!r || !r.done) { const q = $('#aiqn'); if (q) q.textContent = `${d.items.filter(aiQ).length} bài chờ AI chấm${r && r.wait ? ' (AI đang nghỉ ít giây vì quá tải)' : ''}`; continue; }
+        let d2; try { d2 = await api('drawing_submissions', { maBV }); } catch (e) { continue; }
+        let openChanged = false;
+        d2.items.forEach(n => { const o = d.items.find(x => x.MaNop === n.MaNop); if (!o) d.items.push(n); else if (o.TrangThai !== n.TrangThai || (o.AIDiem !== n.AIDiem)) { if (o.MaNop === open) openChanged = true; Object.assign(o, { TrangThai: n.TrangThai, AI: n.AI, AIDiem: n.AIDiem, AINhanXet: n.AINhanXet }); } });
+        sortItems();
+        if (!open || openChanged || !$('#gd')) draw(); else { const q = $('#aiqn'); if (q) q.textContent = `${d.items.filter(aiQ).length} bài chờ AI chấm`; }
+      }
+    } finally { pumping = false; }
+  };
   document.body.classList.add('wide');
   const unpaste = pasteImgTo('dropbai');
   cleanup = () => { document.body.classList.remove('wide'); unpaste && unpaste(); };
@@ -3915,17 +3975,19 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
         <select id="uhs"><option value="">${roster ? '— Chọn học sinh —' : 'Đang tải danh sách…'}</option>${(roster || []).map(h => `<option value="${h.maHS}" ${up.hs === h.maHS ? 'selected' : ''}>${esc(h.hoTen)} – ${esc(h.lop)}</option>`).join('')}<option value="_" ${up.hs === '_' ? 'selected' : ''}>Khác (nhập tên)…</option></select>
         ${up.hs === '_' ? `<input id="uten" type="text" maxlength="60" placeholder="Họ tên học sinh" value="${esc(up.ten)}" style="margin-top:6px">` : ''}
         <button class="btn block" id="usend" style="margin-top:8px" ${up.img ? '' : 'disabled'}>📤 Gửi & AI chấm</button>
-        <div class="hint" style="margin-top:4px">Ảnh chụp bài vẽ tay hoặc ảnh xuất từ phần mềm vẽ (PNG/JPG). AI chấm mất khoảng 1–2 phút.</div><div id="umsg"></div></div>
+        <div class="hint" style="margin-top:4px">Ảnh chụp bài vẽ tay hoặc ảnh xuất từ phần mềm vẽ (PNG/JPG). Bài được lưu ngay; AI chấm lần lượt trong lúc thầy/cô gửi tiếp bài khác.</div><div id="umsg"></div></div>
       <div class="dv-upi">${imgDrop('dropbai', 'Ảnh bài làm của HS', 'Bấm để chụp/chọn ảnh · kéo thả · hoặc Ctrl+V', up.img)}</div></div>`;
   const draw = () => {
     const pending = d.items.filter(s => s.TrangThai !== 'da_cham').length;
+    const stats = drwStats(d.items);
     const tab = (k, lb) => `<button class="btn ${pn === k ? '' : 'ghost'} sm" data-pn="${k}">${lb}</button>`;
-    setView(`<div class="dv-hd"><a href="#/gv/baive">← Bài vẽ</a><h1>${esc(t.TieuDe)}</h1><span class="hint">${esc(t.LoaiTen)} · lớp ${esc(t.DanhSachLop.join(', '))} · ${d.items.length} bài · ${pending} chờ xác nhận</span></div>
-      <div class="card dv-bar"><div class="row">${tab('up', '📷 Gửi bài làm của HS')}${tab('de', '📄 Đề & bảng chấm')}${t.CoAnhMau ? tab('mau', '🖼 Đáp án mẫu') : ''}<span class="grow"></span><button class="btn ghost sm" id="ex">⬇ Xuất điểm</button><button class="btn danger sm" id="del">Xóa bài</button></div>
+    setView(`<div class="dv-hd"><a href="#/gv/baive">← Bài vẽ</a><h1>${esc(t.TieuDe)}</h1><span class="hint">${esc(t.LoaiTen)} · lớp ${esc(t.DanhSachLop.join(', '))} · ${d.items.length} bài · ${pending} chờ xác nhận${d.items.some(aiQ) ? ` · <b id="aiqn" class="aiq-n">${d.items.filter(aiQ).length} bài chờ AI chấm</b>` : ''}</span></div>
+      <div class="card dv-bar"><div class="row">${tab('up', '📷 Gửi bài làm của HS')}${tab('kq', '🏆 Điểm cao nhất')}${tab('de', '📄 Đề & bảng chấm')}${t.CoAnhMau ? tab('mau', '🖼 Đáp án mẫu') : ''}<span class="grow"></span><button class="btn ghost sm" id="ex">⬇ Xuất điểm</button><button class="btn danger sm" id="del">Xóa bài</button></div>
         ${pn === 'up' ? upPanel() : ''}
+        ${pn === 'kq' ? `<div class="dv-kq"><table class="tbl"><thead><tr><th>STT</th><th>Họ và tên</th><th>Lớp</th><th>Số lần nộp</th><th>Điểm từng lần</th><th>Điểm cao nhất</th></tr></thead><tbody>${stats.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(h.HoTen)}</td><td>${esc(h.TenLop || '')}</td><td>${h.lan.length}</td><td>${h.lan.map(s => { const v = drwScore(s); return `<span class="kq-l${s._best ? ' best' : ''}" title="${dt(s.ThoiDiem)}">L${s._lan}: ${v == null ? (aiQ(s) ? '⏳' : '–') : fmt(v)}</span>`; }).join(' ')}</td><td><b>${h.diem == null ? '–' : fmt(h.diem) + '/' + max}</b></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Chưa có bài nộp</td></tr>'}</tbody></table><div class="hint" style="margin-top:6px">Điểm cao nhất lấy điểm thầy/cô đã xác nhận; lần nào chưa xác nhận thì lấy điểm AI chấm.</div></div>` : ''}
         ${pn === 'de' ? `<div class="dv-de"><div style="white-space:pre-wrap">${esc(t.DeBai)}</div><b>Tiêu chí</b><div style="white-space:pre-wrap" class="hint">${esc(t.TieuChi)}</div></div>` : ''}
         ${pn === 'mau' ? `<div class="dv-mau">${mauSrc ? `<img src="${mauSrc}" alt="Đáp án mẫu">` : '<span class="hint">Đang tải…</span>'}</div>` : ''}</div>
-      <div class="dv-list">${d.items.map(s => `<div class="dv-it${open === s.MaNop ? ' on' : ''}"><div class="dv-row" data-o="${s.MaNop}"><b class="grow">${esc(s.HoTen)} <span class="hint">${esc(s.TenLop || '')} · ${dt(s.ThoiDiem)}</span></b>${s.AI && s.AI.loi ? `<span class="pill ${s.AI.loi.filter(Boolean).length ? 'bad' : 'ok'}">${s.AI.loi.filter(Boolean).length} lỗi</span>` : ''}${subStatus(s, max)}<span class="chev">${open === s.MaNop ? '▴' : '▾'}</span></div>
+      <div class="dv-list">${d.items.map(s => `<div class="dv-it${open === s.MaNop ? ' on' : ''}"><div class="dv-row" data-o="${s.MaNop}"><b class="grow">${esc(s.HoTen)} <span class="hint">${esc(s.TenLop || '')} · ${dt(s.ThoiDiem)}</span></b><span class="pill">Lần ${s._lan}/${s._n}</span>${s._best && s._n > 1 ? '<span class="pill best">⭐ Cao nhất</span>' : ''}${s.AI && s.AI.loi ? `<span class="pill ${s.AI.loi.filter(Boolean).length ? 'bad' : 'ok'}">${s.AI.loi.filter(Boolean).length} lỗi</span>` : ''}${subStatus(s, max)}<span class="chev">${open === s.MaNop ? '▴' : '▾'}</span></div>
         ${open === s.MaNop ? `<div id="rv"></div>` : ''}</div>`).join('') || '<div class="card empty">Chưa có bài làm. Bấm “📷 Gửi bài làm của HS” để chụp bài và cho AI chấm.</div>'}</div>`);
     $$('[data-pn]').forEach(b => b.onclick = () => { pn = pn === b.dataset.pn ? '' : b.dataset.pn; draw(); });
     $$('[data-o]').forEach(b => b.onclick = () => { open = open === b.dataset.o ? null : b.dataset.o; draw(); if (open) setTimeout(() => { const r = $('.dv-it.on'); r && r.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30); });
@@ -3942,7 +4004,7 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
             const r = await api('gv_submit_drawing', { maBV, maHS: hs, ten, maLop: hs ? '' : (t.DanhSachLop[0] || ''), image: up.img });
             drwImgCache['n_' + r.MaNop] = up.img;
             d.items.push(r); sortItems(); open = r.MaNop; pn = ''; up = { img: null, hs: '', ten: '' };
-            toast(r.AI ? 'AI đã chấm xong' : 'Đã lưu bài – AI chưa trả kết quả'); draw();
+            toast(r.AI ? 'AI đã chấm xong' : aiQ(r) ? 'Đã lưu bài – AI sẽ chấm lần lượt, thầy/cô gửi tiếp bài khác được' : 'Đã lưu bài – AI chưa trả kết quả'); draw(); pumpGV();
           } catch (e) { errBox($('#umsg'), e); }
         });
       };
@@ -3968,11 +4030,11 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
         });
       });
     }
-    $('#ex').onclick = () => csv('BaiVe_' + t.TieuDe.replace(/[^\wÀ-ỹ]+/g, '_') + '.csv', [['Họ tên', 'Lớp', 'Nộp lúc', 'Số lỗi AI', 'Điểm AI đề xuất', 'Điểm chính thức', 'Thang điểm', 'Nhận xét GV'],
-      ...d.items.map(s => [s.HoTen, s.TenLop, dt(s.ThoiDiem), s.AI && s.AI.loi ? s.AI.loi.filter(Boolean).length : '', s.AIDiem == null ? '' : s.AIDiem, s.GVDiem == null ? '' : s.GVDiem, max, s.GVNhanXet || ''])]);
+    $('#ex').onclick = () => csv('BaiVe_' + t.TieuDe.replace(/[^\wÀ-ỹ]+/g, '_') + '_DiemCaoNhat.csv', [['STT', 'Họ và tên', 'Lớp', 'Số lần nộp', 'Điểm lần 1', 'Điểm lần 2', 'Điểm lần 3', 'Điểm cao nhất', 'Thang điểm', 'Nộp lần cuối'],
+      ...stats.map((h, i) => [i + 1, h.HoTen, h.TenLop || '', h.lan.length, ...[0, 1, 2].map(k => { const s = h.lan[k]; const v = s ? drwScore(s) : null; return v == null ? '' : v; }), h.diem == null ? '' : h.diem, max, dt(h.lan[h.lan.length - 1].ThoiDiem)])]);
     $('#del').onclick = async () => { if (!confirm('Xóa bài vẽ này? Ảnh HS đã nộp vẫn giữ trong Drive.')) return; try { await api('delete_drawing_task', { maBV }); location.hash = '#/gv/baive'; } catch (e) { toast(e.message); } };
   };
-  draw();
+  draw(); pumpGV();
 });
 
 

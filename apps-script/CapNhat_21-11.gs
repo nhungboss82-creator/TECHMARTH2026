@@ -622,3 +622,166 @@ function cn2511Reg_() {
   };
 }
 try { cn2511Reg_(); } catch (e) { console.error('CapNhat_25_11 Reg: ' + e); }
+
+/* ===== Cập nhật 28/11: HÀNG ĐỢI AI CHẤM BÀI VẼ – cả lớp 45 em (và nhiều trường) nộp cùng lúc vẫn kịp =====
+ * - Nộp bài (HS hoặc GV gửi hộ): chỉ lưu ảnh + ghi dòng NopVe với TrangThai 'cho_ai' (vài giây), không chờ AI.
+ * - ai_pump: mỗi lần gọi chấm 1 bài cũ nhất trong hàng; tối đa AIQ_SLOTS bài được chấm cùng lúc (mặc định 4,
+ *   đổi bằng Thuộc tính tập lệnh AIQ_SLOTS). Máy HS đang chờ / trang GV đang mở tự gọi ai_pump định kỳ.
+ * - AI báo quá tải / hết lượt → bài quay lại hàng, cả hàng tạm nghỉ 45 giây; thử tối đa 8 lần rồi chuyển GV chấm.
+ */
+function cn2811Queue_() {
+  if (typeof API === 'undefined') return;
+  const CLAIM_SEC = 300, WAIT_SEC = 45, MSG_Q = 'Bài đã nộp, đang xếp hàng chờ AI chấm – em không cần nộp lại.';
+  const slots_ = () => Math.max(1, Math.min(20, Number(PropertiesService.getScriptProperties().getProperty('AIQ_SLOTS')) || 4));
+  const cache_ = () => CacheService.getScriptCache();
+  const isQ_ = r => r.TrangThai === 'cho_ai' || r.TrangThai === 'dang_cham';
+  const act_ = () => { let a = {}; try { a = JSON.parse(cache_().get('AIQ_ACT') || '{}'); } catch (e) {} const now = Date.now(); Object.keys(a).forEach(k => { if (a[k] < now) delete a[k]; }); return a; };
+  const queueOf_ = () => rows_('NopVe').filter(isQ_).sort((a, b) => new Date(a.ThoiDiem) - new Date(b.ThoiDiem));
+
+  /* Nộp bài: chạy đúng hàm nộp gốc nhưng thay bước gọi AI bằng "xếp hàng" */
+  const queued_ = orig => req => {
+    const g0 = geminiCall_, i0 = imagePart_;
+    geminiCall_ = () => { throw new Error('__AIQ__'); };
+    imagePart_ = () => ({ text: '' });
+    let s;
+    try { s = orig(req); } finally { geminiCall_ = g0; imagePart_ = i0; }
+    if (s && s.TrangThai === 'cho_gv' && /__AIQ__/.test(String(s.AINhanXet || ''))) {
+      const patch = { TrangThai: 'cho_ai', AINhanXet: MSG_Q };
+      withLock_(() => { const r = rows_('NopVe').find(x => x.MaNop === s.MaNop); if (r) update_('NopVe', r._r, patch); });
+      Object.assign(s, patch);
+      const q = queueOf_(); s.HangDoi = { vi_tri: q.findIndex(x => x.MaNop === s.MaNop) + 1, tong: q.length };
+    }
+    return s;
+  };
+  /* mỗi HS nộp tối đa 3 lần cho một bài vẽ được giao (GV đặt ít hơn thì theo GV) */
+  const MAX_LAN = 3;
+  const limit_ = orig => req => {
+    const t = auth_(req, 'hs');
+    const b = rows_('BaiVe').find(r => r.MaBV === req.maBV);
+    const max = Math.min(MAX_LAN, Number(b && b.SoLan) > 0 ? Number(b.SoLan) : MAX_LAN);
+    const n = rows_('NopVe').filter(r => r.MaBV === req.maBV && r.MaHS === t.u).length;
+    if (n >= max) throw new Error('Em đã dùng hết ' + max + ' lần nộp bài này');
+    return orig(req);
+  };
+  if (API.submit_drawing) API.submit_drawing = limit_(queued_(API.submit_drawing));
+  if (API.gv_submit_drawing) API.gv_submit_drawing = queued_(API.gv_submit_drawing);
+
+  const grade_ = s => {
+    const b = rows_('BaiVe').find(r => r.MaBV === s.MaBV);
+    if (!b) throw new Error('Bài vẽ không còn tồn tại');
+    const parts = [{ text: drawPrompt_(b, !!b.AnhMau, !!b.AnhDe) }];
+    if (b.AnhDe) parts.push({ text: 'ẢNH ĐỀ BÀI (vật thể hoặc yêu cầu của giáo viên):' }, imagePart_(b.AnhDe));
+    parts.push({ text: 'ẢNH BÀI LÀM CỦA HỌC SINH (vẽ tay hoặc vẽ máy; toạ độ vi_tri tính trên ảnh này):' }, imagePart_(s.AnhId));
+    if (b.AnhMau) parts.push({ text: 'ẢNH ĐÁP ÁN MẪU của giáo viên (chỉ để so sánh, KHÔNG phải bài làm):' }, imagePart_(b.AnhMau));
+    const ai = geminiCall_(parts);
+    ai.diem = clampScore_(ai.diem, b.DiemToiDa);
+    return ai;
+  };
+
+  API.ai_pump = req => {
+    const t = auth_(req);
+    const c = cache_();
+    const mineOf = () => {
+      if (!req.maNop) return null;
+      const r = rows_('NopVe').find(x => x.MaNop === req.maNop);
+      if (!r || (t.r === 'hs' && r.MaHS !== t.u)) return null;
+      const out = publicSubmission_(r);
+      if (isQ_(r)) { const q = queueOf_(); out.HangDoi = { vi_tri: q.findIndex(x => x.MaNop === r.MaNop) + 1, tong: q.length }; }
+      return out;
+    };
+    /* kiểm tra nhanh không khoá: đang nghỉ vì AI quá tải, hoặc đã đủ số bài chấm cùng lúc */
+    if (c.get('AIQ_WAIT')) return { done: null, wait: true, mine: mineOf() };
+    if (Object.keys(act_()).length >= slots_()) return { done: null, busy: true, mine: mineOf() };
+    const got = withLock_(() => {
+      const a = act_();
+      if (Object.keys(a).length >= slots_()) return { busy: true };
+      const q = queueOf_();
+      const next = q.find(r => r.TrangThai === 'cho_ai' || !a[r.MaNop]);
+      if (!next) return { left: 0 };
+      a[next.MaNop] = Date.now() + CLAIM_SEC * 1000;
+      c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60);
+      update_('NopVe', next._r, { TrangThai: 'dang_cham' });
+      return { row: next, left: q.length };
+    });
+    if (!got.row) return { done: null, busy: !!got.busy, left: got.left || 0, mine: mineOf() };
+    const s = got.row;
+    let patch;
+    try {
+      const ai = grade_(s);
+      patch = { AIDiem: ai.doc_duoc !== false ? ai.diem : '', AINhanXet: clean_(ai.nhan_xet_chung, 1500), AIChiTiet: JSON.stringify(ai).slice(0, 40000), TrangThai: 'ai_da_cham' };
+    } catch (e) {
+      const msg = String(e && e.message || e);
+      const tooBusy = /hết lượt|quá tải|429|500|502|503|504|timed? ?out|Timeout|Address unavailable|DNS/i.test(msg);
+      const n = Number(c.get('AIQN_' + s.MaNop) || 0) + 1;
+      c.put('AIQN_' + s.MaNop, String(n), 21600);
+      if (tooBusy) c.put('AIQ_WAIT', '1', WAIT_SEC);
+      patch = (tooBusy ? n < 8 : n < 2) ? { TrangThai: 'cho_ai', AINhanXet: MSG_Q }
+        : { TrangThai: 'cho_gv', AINhanXet: 'Chưa có nhận xét AI: ' + msg };
+    }
+    withLock_(() => {
+      const r = rows_('NopVe').find(x => x.MaNop === s.MaNop);
+      if (r && r.TrangThai === 'dang_cham') update_('NopVe', r._r, patch);
+      const a = act_(); delete a[s.MaNop]; c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60);
+    });
+    return { done: s.MaNop, ok: patch.TrangThai === 'ai_da_cham', left: Math.max(0, got.left - 1), mine: mineOf() };
+  };
+
+  /* GV: xem hàng đợi (số bài chờ, đang chấm) */
+  API.ai_queue = req => { auth_(req, 'gv'); const q = queueOf_(); return { cho: q.filter(r => r.TrangThai === 'cho_ai').length, dang: q.filter(r => r.TrangThai === 'dang_cham').length, wait: !!cache_().get('AIQ_WAIT'), slots: slots_() }; };
+}
+try { cn2811Queue_(); } catch (e) { console.error('CapNhat_28_11 Queue: ' + e); }
+
+/* ===== Cập nhật 28/11 (2): NHIỀU KHÓA AI – "AI chấm số 2, số 3…" =====
+ * Thêm khóa Gemini thứ hai, thứ ba… vào Thuộc tính tập lệnh: GEMINI_KEY2, GEMINI_KEY3, … (mỗi khóa lấy từ MỘT dự án
+ * Google khác nhau trên aistudio.google.com/apikey thì mới được cộng thêm lượt miễn phí).
+ * Bài được chia lần lượt cho các khóa; khóa nào báo hết lượt (429) thì nghỉ 60 giây, bài chuyển ngay sang khóa khác.
+ * Chỉ có 1 khóa thì chạy y như cũ.
+ */
+function cn2811Keys_() {
+  const props = () => PropertiesService.getScriptProperties();
+  const keys_ = () => { const p = props().getProperties(); return ['GEMINI_KEY'].concat(Object.keys(p).filter(k => /^GEMINI_KEY\d+$/.test(k)).sort()).map(k => ({ n: k, v: String(p[k] || '').trim() })).filter(k => k.v); };
+  geminiCall_ = function (parts) {
+    const keys = keys_();
+    if (!keys.length) throw new Error('Chưa cài khóa Gemini API (menu SmarttechCN > 5)');
+    const c = CacheService.getScriptCache();
+    const models = [geminiModel_()].concat(GEMINI_FALLBACK.filter(x => x !== geminiModel_()));
+    const payload = JSON.stringify({ contents: [{ role: 'user', parts: parts }], generationConfig: { temperature: 0.2, responseMimeType: 'application/json' } });
+    const start = (Number(c.get('GK_RR') || 0) + 1) % keys.length; c.put('GK_RR', String(start), 21600);
+    let order = keys.slice(start).concat(keys.slice(0, start));
+    const fresh = order.filter(k => !c.get('GK_COOL_' + k.n)); if (fresh.length) order = fresh.concat(order.filter(k => fresh.indexOf(k) < 0));
+    let lastCode = 0, lastMsg = '';
+    for (let mi = 0; mi < models.length; mi++) {
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(models[mi]) + ':generateContent';
+      let modelMissing = false;
+      for (let ki = 0; ki < order.length; ki++) {
+        const k = order[ki];
+        for (let tryN = 0; tryN < (mi === 0 && order.length === 1 ? 2 : 1); tryN++) {
+          const res = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', muteHttpExceptions: true, headers: { 'x-goog-api-key': k.v }, payload: payload });
+          const code = res.getResponseCode(), body = res.getContentText();
+          if (code === 200) {
+            const j = JSON.parse(body);
+            const text = ((((j.candidates || [])[0] || {}).content || {}).parts || []).map(p => p.text || '').join('');
+            const m = text.match(/\{[\s\S]*\}/);
+            if (!m) throw new Error('AI không trả về kết quả hợp lệ, thầy cô bấm thử lại');
+            return JSON.parse(m[0]);
+          }
+          lastCode = code; lastMsg = body.slice(0, 300); try { lastMsg = JSON.parse(body).error.message; } catch (e) {}
+          if (code === 404) { modelMissing = true; break; }
+          if (code === 400 || code === 401 || code === 403) {
+            if (order.length === 1) throw new Error('Khóa Gemini không hợp lệ hoặc chưa được cấp quyền (Gemini ' + code + ': ' + lastMsg + ')');
+            c.put('GK_COOL_' + k.n, '1', 600); break;               // khóa hỏng → bỏ qua 10 phút, dùng khóa khác
+          }
+          if ([429, 500, 502, 503, 504].indexOf(code) < 0) throw new Error('Gemini ' + code + ': ' + lastMsg);
+          if (code === 429) { c.put('GK_COOL_' + k.n, '1', 60); break; } // khóa này hết lượt → sang khóa khác ngay
+          Utilities.sleep(1500 + tryN * 2500);
+        }
+        if (modelMissing) break;
+      }
+    }
+    if (lastCode === 429) throw new Error('AI đã hết lượt miễn phí trong phút này hoặc hôm nay. Thầy cô thử lại sau ít phút.');
+    throw new Error('Máy chủ AI của Google đang quá tải (Gemini ' + lastCode + '). Thầy cô thử lại sau 1–2 phút.');
+  };
+  /* GV/Admin xem đang có mấy khóa AI (không lộ khóa) */
+  if (typeof API !== 'undefined') API.ai_keys = req => { auth_(req, 'gv'); const c = CacheService.getScriptCache(); return keys_().map(k => ({ ten: k.n, cuoi: k.v.slice(-4), nghi: !!c.get('GK_COOL_' + k.n) })); };
+}
+try { cn2811Keys_(); } catch (e) { console.error('CapNhat_28_11 Keys: ' + e); }
