@@ -77,7 +77,14 @@ function math(el) {
 }
 
 /* ================= Máy chủ ================= */
+/* 28/11/2026: máy chủ báo "đang bận" (nhiều người gửi cùng lúc) → tự thử lại tối đa 4 lần, mỗi lần chờ lâu hơn một chút */
 async function api(action, data = {}) {
+  for (let k = 0; ; k++) {
+    try { return await api1(action, data); }
+    catch (e) { if (k >= 4 || e.auth || !/đang bận|too many|simultaneous|Service invoked/i.test(e.message || '')) throw e; await new Promise(r => setTimeout(r, 1500 + k * 2000 + Math.random() * 2500)); }
+  }
+}
+async function api1(action, data = {}) {
   if (DEMO) throw new Error('Chế độ dùng thử chưa kết nối máy chủ');
   const ctl = new AbortController();
   // AI soạn câu, chấm tự luận, chấm bài vẽ, phân tích kết quả có thể mất 1–2 phút (Google bận thì máy chủ tự thử lại)

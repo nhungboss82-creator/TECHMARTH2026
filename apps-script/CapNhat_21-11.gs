@@ -647,7 +647,7 @@ function cn2811Queue_() {
     try { s = orig(req); } finally { geminiCall_ = g0; imagePart_ = i0; }
     if (s && s.TrangThai === 'cho_gv' && /__AIQ__/.test(String(s.AINhanXet || ''))) {
       const patch = { TrangThai: 'cho_ai', AINhanXet: MSG_Q };
-      withLock_(() => { const r = rows_('NopVe').find(x => x.MaNop === s.MaNop); if (r) update_('NopVe', r._r, patch); });
+      const r = rows_('NopVe').find(x => x.MaNop === s.MaNop); if (r) update_('NopVe', r._r, patch);
       Object.assign(s, patch);
       const q = queueOf_(); s.HangDoi = { vi_tri: q.findIndex(x => x.MaNop === s.MaNop) + 1, tong: q.length };
     }
@@ -692,19 +692,23 @@ function cn2811Queue_() {
     /* kiểm tra nhanh không khoá: đang nghỉ vì AI quá tải, hoặc đã đủ số bài chấm cùng lúc */
     if (c.get('AIQ_WAIT')) return { done: null, wait: true, mine: mineOf() };
     if (Object.keys(act_()).length >= slots_()) return { done: null, busy: true, mine: mineOf() };
-    const got = withLock_(() => {
+    /* đọc hàng đợi KHÔNG khoá; chỉ khoá (khoá riêng của hàng đợi, không dùng chung với khoá nộp bài) vài phần nghìn giây để nhận bài */
+    const q = queueOf_(), a0 = act_();
+    const cands = q.filter(r => r.TrangThai === 'cho_ai' || !a0[r.MaNop]);
+    if (!cands.length) return { done: null, left: q.length, mine: mineOf() };
+    const L = LockService.getDocumentLock() || LockService.getUserLock();
+    if (!L.tryLock(5000)) return { done: null, busy: true, mine: mineOf() };
+    let s = null;
+    try {
       const a = act_();
-      if (Object.keys(a).length >= slots_()) return { busy: true };
-      const q = queueOf_();
-      const next = q.find(r => r.TrangThai === 'cho_ai' || !a[r.MaNop]);
-      if (!next) return { left: 0 };
-      a[next.MaNop] = Date.now() + CLAIM_SEC * 1000;
-      c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60);
-      update_('NopVe', next._r, { TrangThai: 'dang_cham' });
-      return { row: next, left: q.length };
-    });
-    if (!got.row) return { done: null, busy: !!got.busy, left: got.left || 0, mine: mineOf() };
-    const s = got.row;
+      if (Object.keys(a).length < slots_()) {
+        s = cands.find(r => !a[r.MaNop] && !c.get('AIQD_' + r.MaNop)) || null;
+        if (s) { a[s.MaNop] = Date.now() + CLAIM_SEC * 1000; c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60); }
+      }
+    } finally { L.releaseLock(); }
+    if (!s) return { done: null, busy: true, left: q.length, mine: mineOf() };
+    const got = { left: q.length };
+    update_('NopVe', s._r, { TrangThai: 'dang_cham' });
     let patch;
     try {
       const ai = grade_(s);
@@ -718,11 +722,10 @@ function cn2811Queue_() {
       patch = (tooBusy ? n < 8 : n < 2) ? { TrangThai: 'cho_ai', AINhanXet: MSG_Q }
         : { TrangThai: 'cho_gv', AINhanXet: 'Chưa có nhận xét AI: ' + msg };
     }
-    withLock_(() => {
-      const r = rows_('NopVe').find(x => x.MaNop === s.MaNop);
-      if (r && r.TrangThai === 'dang_cham') update_('NopVe', r._r, patch);
-      const a = act_(); delete a[s.MaNop]; c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60);
-    });
+    const cur = rows_('NopVe').find(x => x.MaNop === s.MaNop);
+    if (cur && cur.TrangThai === 'dang_cham') update_('NopVe', cur._r, patch);
+    if (patch.TrangThai !== 'cho_ai') c.put('AIQD_' + s.MaNop, '1', 21600);   /* đã xong: không cho máy khác nhận lại theo danh sách cũ */
+    if (L.tryLock(5000)) { try { const a = act_(); delete a[s.MaNop]; c.put('AIQ_ACT', JSON.stringify(a), CLAIM_SEC + 60); } finally { L.releaseLock(); } }
     return { done: s.MaNop, ok: patch.TrangThai === 'ai_da_cham', left: Math.max(0, got.left - 1), mine: mineOf() };
   };
 
@@ -785,3 +788,4 @@ function cn2811Keys_() {
   if (typeof API !== 'undefined') API.ai_keys = req => { auth_(req, 'gv'); const c = CacheService.getScriptCache(); return keys_().map(k => ({ ten: k.n, cuoi: k.v.slice(-4), nghi: !!c.get('GK_COOL_' + k.n) })); };
 }
 try { cn2811Keys_(); } catch (e) { console.error('CapNhat_28_11 Keys: ' + e); }
+
