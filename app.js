@@ -2923,7 +2923,7 @@ route(/^\/gv\/giaobai$/, async params => {
         <p class="hint">Câu lưu xong được chọn ngay vào bài đang giao. Có thể soạn tiếp nhiều câu.</p><div id="qcm"></div></div>`;
       document.body.appendChild(m); document.body.classList.add('modal-open');
       const back = () => { closeQc(); const b = $('#mbox'); if (b && mode === 'gvsoan') gvBox(curK(), b); };
-      m._off = qComposer($('#qcm'), { khoi: k, memo: qcMemo, saveLabel: '💾 Lưu câu & chọn vào bài', onCancel: back,
+      m._off = qComposer($('#qcm'), { khoi: k, memo: qcMemo, simple: true, saveLabel: '💾 Lưu câu & chọn vào bài', onCancel: back,
         onSaved: id => { own.add(id); back(); toast('Đã chọn câu vào bài. Bấm “Soạn câu mới” để soạn tiếp.'); } });
       $('#qcclose').onclick = back;
     };
@@ -3173,6 +3173,7 @@ function aiReportHtml(r) {
 
 /* ================= GV tự soạn câu (dùng ở trang Thêm câu hỏi và ngay trong trang Giao bài) =================
    28/11/2026: chèn hình vào câu hỏi (chụp / tải tệp / dán ảnh), mặc định câu chỉ trường mình thấy */
+const AI_TU_CHAM = 'GV không ghi đáp án mẫu. AI chấm theo kiến thức SGK Công nghệ: đúng, đủ ý, đúng thuật ngữ thì cho điểm tối đa; thiếu ý hoặc sai thì trừ điểm tương ứng.';
 const mineQ = q => /^GV_/.test(q.id) && session && (session.role === 'admin' || String(q.de || '').endsWith('– ' + ((session.user || {}).HoTen || '')));
 async function delQ(id, done) {
   const q = bank.byId[id];
@@ -3183,6 +3184,8 @@ function qComposer(root, opts = {}) {
   let type = opts.type || 'M', img = null, rieng = true, kSel = opts.khoi || '12';
   const keep = opts.memo || {};   // nhớ chủ đề, bài học… giữa các lần soạn
   const Q = s => root.querySelector(s);
+  const V_ = s => { const el = Q(s); return el ? el.value : ''; };
+  const S = !!opts.simple;   // Giao bài: chỉ câu hỏi + phương án + đáp án đúng (không gợi ý, không hướng dẫn chấm, điểm theo quy định của app)
   const unpaste = pasteImgTo('qcimg');
   const save = () => { if (!Q('#qcf')) return; kSel = Q('#qck').value; rieng = Q('#qcr').checked;
     ['cd', 'bai', 'md', 's', 'ans', 'pt', 'e', 'h', 'o0', 'o1', 'o2', 'o3'].forEach(k => { const el = Q('#qc' + k); if (el) keep[k] = el.value; }); };
@@ -3198,13 +3201,14 @@ function qComposer(root, opts = {}) {
         <label for="qcs">Nội dung câu hỏi</label><textarea id="qcs" required>${val('s')}</textarea>
         <div class="bv-pick"><label class="btn ghost sm">📷 Chụp hình<input id="qccam" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn ghost sm" id="qcpaste">📋 Dán hình</button><span class="hint">hoặc tải tệp (ảnh, PDF, Word) · chuột phải vào ô dưới → Dán · Ctrl+V</span></div>
         ${imgDrop('qcimg', 'Hình cho câu hỏi (không bắt buộc)', 'Bấm để tải tệp · kéo thả · Ctrl+V', img)}
-        ${type === 'L' ? `<label for="qcans">Đáp án mẫu (các ý cần có – AI dựa vào đây để chấm)</label><textarea id="qcans" required style="min-height:120px" placeholder="- Ý 1: …&#10;- Ý 2: …">${val('ans')}</textarea>
+        ${type === 'L' && S ? `<label for="qcans">Đáp án đúng để AI chấm <span class="hint">(HS không thấy khi làm bài · có thể để trống: AI tự chấm theo kiến thức SGK)</span></label><textarea id="qcans" style="min-height:100px" placeholder="- Ý 1: …&#10;- Ý 2: …">${val('ans')}</textarea>` : ''}
+        ${type === 'L' && !S ? `<label for="qcans">Đáp án mẫu (các ý cần có – AI dựa vào đây để chấm)</label><textarea id="qcans" required style="min-height:120px" placeholder="- Ý 1: …&#10;- Ý 2: …">${val('ans')}</textarea>
         <div class="row"><div style="width:140px"><label for="qcpt">Điểm tối đa</label><input id="qcpt" type="number" min="0.25" max="10" step="0.25" value="${val('pt') || 1}"></div>
           <div class="grow hint" style="align-self:end">So với câu trắc nghiệm 0,25 điểm và câu Đúng/Sai 1 điểm.</div></div>` : ''}
         ${type === 'L' ? '' : [0, 1, 2, 3].map(i => `<label for="qco${i}">${type === 'M' ? 'Phương án ' + LETTERS[i] : 'Ý ' + 'abcd'[i] + ')'}</label><div class="row"><input id="qco${i}" type="text" required style="flex:1" value="${val('o' + i)}">
           ${type === 'M' ? `<label class="chk" style="margin:0"><input type="radio" name="qcans" value="${LETTERS[i]}" ${i === 0 ? 'checked' : ''}>Đúng</label>` : `<select id="qca${i}" style="width:100px"><option value="Đ">Đúng</option><option value="S">Sai</option></select>`}</div>`).join('')}
-        <label for="qce">${type === 'L' ? 'Hướng dẫn chấm / phân bố điểm (không bắt buộc)' : 'Giải thích' + (type === 'T' ? ' (mỗi ý cách nhau bởi ||)' : '')}</label><textarea id="qce" ${type === 'L' ? 'placeholder="Ý 1: 0,5 điểm; Ý 2: 0,5 điểm. Chấp nhận cách diễn đạt khác đúng bản chất."' : ''}>${val('e')}</textarea>
-        <label for="qch">Gợi ý ngắn (hiện trước giải thích)</label><input id="qch" type="text" value="${val('h')}">
+        ${S ? '' : `<label for="qce">${type === 'L' ? 'Hướng dẫn chấm / phân bố điểm (không bắt buộc)' : 'Giải thích' + (type === 'T' ? ' (mỗi ý cách nhau bởi ||)' : '')}</label><textarea id="qce" ${type === 'L' ? 'placeholder="Ý 1: 0,5 điểm; Ý 2: 0,5 điểm. Chấp nhận cách diễn đạt khác đúng bản chất."' : ''}>${val('e')}</textarea>
+        <label for="qch">Gợi ý ngắn (hiện trước giải thích)</label><input id="qch" type="text" value="${val('h')}">`}
         ${type === 'M' ? '<label class="chk" style="margin-top:12px"><input type="checkbox" id="qcnd">Không đảo phương án (có “Cả A và B”…)</label>' : ''}
         <label class="chk" style="margin-top:8px"><input type="checkbox" id="qcr" ${rieng ? 'checked' : ''}>🔒 Chỉ GV và HS trường mình dùng câu này (bỏ chọn để chia sẻ cho mọi trường)</label>
         <h3>Xem trước</h3><div id="qcpv" class="preview"></div>
@@ -3216,10 +3220,10 @@ function qComposer(root, opts = {}) {
     if (Q('#qcx')) Q('#qcx').onclick = () => { unpaste(); opts.onCancel(); };
     const collect = () => {
       const c = type === 'L'
-        ? { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: Q('#qcmd').value, stem: Q('#qcs').value, answer: Q('#qcans').value, expl: Q('#qce').value, hint: Q('#qch').value, points: +Q('#qcpt').value || 1 }
+        ? { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: Q('#qcmd').value, stem: Q('#qcs').value, answer: Q('#qcans').value.trim() || (S ? AI_TU_CHAM : ''), expl: V_('#qce'), hint: V_('#qch'), points: S ? 1 : +Q('#qcpt').value || 1 }
         : { type, khoi: Q('#qck').value, cd: Q('#qccd').value, bai: Q('#qcbai').value, md: type === 'M' ? Q('#qcmd').value : '', stem: Q('#qcs').value,
           o: [0, 1, 2, 3].map(i => Q('#qco' + i).value), answer: type === 'M' ? (Q('input[name=qcans]:checked') || {}).value : [0, 1, 2, 3].map(i => Q('#qca' + i).value).join(','),
-          expl: Q('#qce').value, hint: Q('#qch').value, noShuffle: type === 'M' && Q('#qcnd').checked };
+          expl: V_('#qce'), hint: V_('#qch'), noShuffle: type === 'M' && Q('#qcnd').checked };
       c.rieng = Q('#qcr').checked;
       return c;
     };
