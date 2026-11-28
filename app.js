@@ -3016,6 +3016,46 @@ function printQR(a, svg, lops) {
     <div class="qr">${svg}</div><ol><li>Mở camera điện thoại, quét mã QR</li><li>Đăng nhập tài khoản học sinh SmarttechCN 2026</li><li>Bấm <b>Làm bài</b> ở bài được tô viền xanh</li></ol><p class="l">${esc(asgLink(a.MaBai))}</p></div></body></html>`);
   w.document.close();
 }
+/* 28/11/2026: GV xem bài làm của từng HS (đáp án đã chọn, bài tự luận kèm ảnh, nhận xét AI) */
+async function xemBaiHS(a, maHS, ten) {
+  const old = $('#xbmodal'); if (old) old.remove();
+  const m = document.createElement('div'); m.id = 'xbmodal'; m.className = 'qc-modal';
+  m.innerHTML = `<div class="qc-in xb-in"><div class="qcs-h"><b>👁 Bài làm: ${esc(ten || '')}</b><button type="button" class="btn ghost sm" id="xbx">✕</button></div><div id="xbb"><div class="card empty">Đang tải…</div></div></div>`;
+  document.body.appendChild(m); document.body.classList.add('modal-open');
+  const close = () => { m.remove(); document.body.classList.remove('modal-open'); };
+  $('#xbx').onclick = close; m.onclick = e => { if (e.target === m) close(); };
+  let L;
+  try { L = await api('assignment_answers', { maBai: a.MaBai, maHS }); } catch (e) { errBox($('#xbb'), e); return; }
+  if (!L.length) { $('#xbb').innerHTML = '<div class="card empty">Chưa có bài làm.</div>'; return; }
+  if (a.DanhSachCau.some(id => !bank.byId[id])) await syncBank(true);
+  let k = L.length - 1;
+  const one = (id, n, ans, tl) => {
+    const q = bank.byId[id]; if (!q) return `<div class="card xb-q"><b>Câu ${n}.</b> <span class="hint">(câu ${esc(id)} không còn trong ngân hàng)</span></div>`;
+    const A = normAns(q); let body = '', ok = null;
+    if (q.t === 'M') {
+      const r = String(ans || ''); ok = r === A;
+      body = `<div class="xb-opts">${[0, 1, 2, 3].map(i => { const L1 = LETTERS[i]; return `<div class="xb-o${L1 === A ? ' right' : ''}${L1 === r && r !== A ? ' wrong' : ''}"><b>${L1}.</b> ${sanitize(q.o[i])}${L1 === r ? ' <span class="pill">HS chọn</span>' : ''}</div>`; }).join('')}</div>${r ? '' : '<div class="hint">HS bỏ trống</div>'}`;
+    } else if (q.t === 'T') {
+      const r = String(ans || '').padEnd(4, '-'); let d = 0;
+      body = `<div class="xb-opts">${[0, 1, 2, 3].map(i => { const g = r[i] === A[i]; if (g) d++; return `<div class="xb-o ${r[i] === '-' ? '' : g ? 'right' : 'wrong'}"><b>${'abcd'[i]})</b> ${sanitize(q.o[i])} <span class="pill">HS: ${r[i] === 'Đ' ? 'Đúng' : r[i] === 'S' ? 'Sai' : '—'}</span> <span class="hint">đáp án: ${A[i] === 'Đ' ? 'Đúng' : 'Sai'}</span></div>`; }).join('')}</div>`;
+      ok = d === 4;
+    } else {
+      const t = essText(ans), im = essImgs(ans);
+      body = `<div class="essay-ans"><div class="lbl">Bài làm của HS</div>${t || im.length ? esc(t).replace(/\n/g, '<br>') + essImgHtml(im) : '<i class="hint">(Bỏ trống)</i>'}</div>`
+        + (tl ? (tl.cho_cham ? `<div class="hint">AI chưa chấm được: ${esc(tl.loi || '')}</div>` : `<div class="expl"><b class="t">AI chấm: ${fmt(tl.diem)}/${fmt(tl.max)} điểm</b>${esc(tl.nhan_xet || '')}${(tl.y_thieu || []).length ? '<br><b>Còn thiếu:</b> ' + tl.y_thieu.map(esc).join('; ') : ''}</div>`) : '');
+    }
+    return `<div class="card xb-q"><div class="row" style="align-items:center"><b class="grow">Câu ${n}${q.t === 'T' ? ' (Đúng/Sai)' : q.t === 'L' ? ' (Tự luận)' : ''}</b>${ok === null ? '' : ok ? '<span class="pill ok">✔ Đúng</span>' : '<span class="pill bad">✘ Chưa đúng</span>'}</div><div class="xb-s">${sanitize(q.s)}</div>${body}</div>`;
+  };
+  const draw = () => {
+    const at = L[k], ans = at.ans || {}, tl = ans._tl || {};
+    $('#xbb').innerHTML = `${L.length > 1 ? `<div class="bv-lan" style="margin-bottom:8px">${L.map((x, i) => `<button type="button" class="${i === k ? 'on' : ''}" data-xk="${i}">Lần ${x.lan} · ${fmt(x.diem)}đ</button>`).join('')}</div>` : ''}
+      <div class="hint" style="margin-bottom:8px">Lần ${at.lan} · nộp ${dt(at.t)} · <b>${fmt(at.diem)} điểm</b></div>
+      ${a.DanhSachCau.map((id, i) => one(id, i + 1, ans[id], tl[id])).join('')}`;
+    $$('[data-xk]', m).forEach(b => b.onclick = () => { k = +b.dataset.xk; draw(); });
+    math($('#xbb'));
+  };
+  draw();
+}
 route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
   if (!needGV()) return;
   setView('<div class="card empty">Đang tải…</div>');
@@ -3053,9 +3093,10 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
       <div class="card aicard"><div class="row" style="align-items:center"><div class="grow"><h3 style="margin:0">🤖 AI phân tích kết quả</h3><div class="hint">Chỉ ra nội dung lớp còn hổng, câu sai nhiều, nhóm học sinh cần kèm và gợi ý dạy lại cho tiết sau.</div></div>
         <button class="btn sm" id="aian" ${fr.length < 3 ? 'disabled title="Cần ít nhất 3 HS nộp bài"' : ''}>✨ Phân tích</button></div><div id="aiout"></div></div>
       <h2>🏆 Top 20 khối ${esc(a.Khoi)}</h2>${lbHtml(lb20)}
-      <h2>Chi tiết lớp tôi</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Lớp</th><th class="n">Lần</th><th class="n">Điểm</th><th class="n" title="Hạng trong cả khối ${esc(a.Khoi)} (tính lần làm đầu tiên)">Hạng khối</th><th class="n">Đúng</th><th class="n">T.gian</th><th>Nộp lúc</th></tr></thead><tbody>
-      ${all.map(r => { const c = my.find(x => x.MaLop === r.maLop); return `<tr><td>${esc(r.hoTen)}</td><td>${esc(c ? c.TenLop : '')}</td><td class="n">${r.lan}</td><td class="n"><b>${fmt(r.diem)}</b></td><td class="n">${first[r.maHS] === r && hangK[r.maHS] ? `<b>${hangK[r.maHS]}</b>/${lb.total}` : ''}</td><td class="n">${r.dung}/${r.tong}</td><td class="n">${mmss(r.giay)}</td><td>${dt(r.t)}</td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Chưa có bài nộp</td></tr>'}</tbody></table></div>
+      <h2>Chi tiết lớp tôi</h2><div class="card"><div class="tablewrap"><table><thead><tr><th>Họ tên</th><th>Lớp</th><th class="n">Lần</th><th class="n">Điểm</th><th class="n" title="Hạng trong cả khối ${esc(a.Khoi)} (tính lần làm đầu tiên)">Hạng khối</th><th class="n">Đúng</th><th class="n">T.gian</th><th>Nộp lúc</th><th>Bài làm</th></tr></thead><tbody>
+      ${all.map(r => { const c = my.find(x => x.MaLop === r.maLop); return `<tr><td>${esc(r.hoTen)}</td><td>${esc(c ? c.TenLop : '')}</td><td class="n">${r.lan}</td><td class="n"><b>${fmt(r.diem)}</b></td><td class="n">${first[r.maHS] === r && hangK[r.maHS] ? `<b>${hangK[r.maHS]}</b>/${lb.total}` : ''}</td><td class="n">${r.dung}/${r.tong}</td><td class="n">${mmss(r.giay)}</td><td>${dt(r.t)}</td><td>${r.lan === 1 || !all.some(z => z.maHS === r.maHS && z.lan < r.lan) ? `<button class="btn ghost sm" data-xb="${esc(r.maHS)}" data-ten="${esc(r.hoTen)}">👁 Xem bài</button>` : ''}</td></tr>`; }).join('') || '<tr><td colspan="9" class="empty">Chưa có bài nộp</td></tr>'}</tbody></table></div>
       <p class="hint">Hạng khối: xếp chung tất cả HS khối ${esc(a.Khoi)} đã làm bài này (theo điểm lần đầu, bằng điểm thì ai làm nhanh hơn đứng trước).</p></div>`);
+    $$('[data-xb]').forEach(b => b.onclick = () => xemBaiHS(a, b.dataset.xb, b.dataset.ten));
     const exam = { TieuDe: a.TieuDe, Truong: session.user.Truong || '', Khoi: a.Khoi, ThoiGian: a.ThoiGian || '…', versions: [{ ma: '', ids: a.DanhSachCau.filter(id => bank.byId[id]), perm: {} }] };
     $('#dprint').onclick = () => printExam(exam, 'all', false, { link, note: 'HS quét mã QR để làm bài này trực tuyến trên SmarttechCN 2026.' });
     $('#dkey').onclick = () => printExam(exam, 'all', true, { link, note: 'HS quét mã QR để làm bài này trực tuyến trên SmarttechCN 2026.' });

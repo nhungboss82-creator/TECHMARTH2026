@@ -1108,3 +1108,42 @@ function cn2811AnhTL_() {
   };
 }
 try { cn2811AnhTL_(); } catch (e) { console.error('CapNhat_28_11 AnhTL: ' + e); }
+
+/* ===== Cập nhật 28/11: GV xem bài làm từng HS của bài giao; Admin cập nhật câu hỏi ngân hàng =====
+ * - assignment_answers {maBai, maHS}: các lần làm của HS (câu trả lời, ảnh bài làm, AI chấm tự luận). GV cùng trường / người giao / Admin.
+ * - admin_upsert_bank {rows:[{MaCau,…}]}: thêm mới hoặc cập nhật câu theo MaCau (ghi theo tên cột của trang NganHang).
+ */
+function cn2811XemBai_() {
+  if (typeof API === 'undefined') return;
+  API.assignment_answers = req => {
+    const t = auth_(req, 'gv'), g = teacher_(t);
+    const b = rows_('BaiGiao').find(r => r.MaBai === String(req.maBai || ''));
+    if (!b) throw new Error('Không tìm thấy bài');
+    if (t.r !== 'admin' && b.MaGV !== g.MaGV && !(schoolKey_(g.Truong) && schoolKey_(b.Truong) === schoolKey_(g.Truong))) throw new Error('Bài này thuộc trường khác');
+    const sh = sheet_('KetQua');
+    const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String);
+    const ci = head.indexOf('ChiTiet') + 1;
+    return rows_('KetQua').filter(r => r.MaBai === b.MaBai && r.MaHS === String(req.maHS || '')).map(r => {
+      let ans = {}; if (ci > 0) { try { ans = JSON.parse(String(sh.getRange(r._r, ci).getValue() || '{}')); } catch (e) {} }
+      return { lan: Number(r.LanThu) || 1, diem: Number(r.Diem), t: r.ThoiDiem, hoTen: r.HoTen, ans: ans };
+    }).sort((x, y) => x.lan - y.lan);
+  };
+  API.admin_upsert_bank = req => {
+    auth_(req, 'admin');
+    const list = Array.isArray(req.rows) ? req.rows : [];
+    if (!list.length) throw new Error('Chưa có câu nào');
+    return withLock_(() => {
+      ensureCols_('NganHang');
+      const have = {}; rows_('NganHang').forEach(r => { const id = String(r.MaCau).trim(); if (id) have[id] = r._r; });
+      let add = 0, upd = 0;
+      list.forEach(o => {
+        const id = String(o.MaCau || '').trim(); if (!id) return;
+        const row = {}; Object.keys(o).forEach(k => { row[k] = typeof o[k] === 'string' ? safeHtml_(o[k]) : o[k]; });
+        if (have[id]) { update_('NganHang', have[id], row); upd++; } else { append_('NganHang', row); add++; }
+      });
+      bumpBank_();
+      return { add: add, upd: upd };
+    });
+  };
+}
+try { cn2811XemBai_(); } catch (e) { console.error('CapNhat_28_11 XemBai: ' + e); }
