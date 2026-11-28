@@ -233,6 +233,8 @@ const essJoin = (t, ids) => (String(t || '') + (ids.length ? '\n' + ids.map(x =>
 const essMarks = (marks, k) => (marks || []).filter(l => (+l.anh || 1) === k + 1 && Array.isArray(l.vi_tri) && l.vi_tri.length === 4).map(l => { const v = l.vi_tri;
   return `<div class="mk ai" style="top:${v[0] / 10}%;left:${v[1] / 10}%;height:${Math.max(2, (v[2] - v[0]) / 10)}%;width:${Math.max(2, (v[3] - v[1]) / 10)}%" title="${esc(l.mo_ta || '')}"><span>${+l.so || ''}</span></div>`; }).join('');
 const essImgHtml = (ids, edit, marks, big) => ids.length ? `<div class="ess-ths${big ? ' big' : ''}">${ids.map((x, k) => `<span class="ess-th"><img data-aimg="${esc(x)}" alt="Ảnh bài làm ${k + 1}">${essMarks(marks, k)}${ids.length > 1 ? `<i class="ess-no">Ảnh ${k + 1}</i>` : ''}${edit ? `<button type="button" data-rmimg="${esc(x)}" title="Bỏ ảnh">✕</button>` : ''}</span>`).join('')}</div>` : '';
+/* câu tự luận đề yêu cầu VẼ → bắt buộc nộp ảnh bài vẽ mới được nộp bài và AI chấm */
+const needVe = q => !!q && q.t === 'L' && /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(plain(q.s));
 const ptsOf = v => { if (!v) return {}; if (typeof v === 'string') { try { return JSON.parse(v) || {}; } catch (e) { return {}; } } return v; };
 /* điểm câu tự luận theo điểm GV đặt cho câu (DiemCau), không hiện kiểu 1/1 */
 const tlScore = (x, P) => { const mx = +x.max || 1, p = +P > 0 ? +P : 0; return p && Math.abs(p - mx) > 1e-9 ? { d: Math.round((+x.diem || 0) / mx * p * 100) / 100, m: p } : { d: +x.diem || 0, m: mx }; };
@@ -1625,7 +1627,7 @@ function qHtml(q, a, i, review) {
   if (q.t === 'L') {
     const et = essText(r), ei = essImgs(r);
     body = review ? (review.mine ? `<div class="essay-ans"><div class="lbl">Bài làm của em</div>${et || ei.length ? esc(et) + essImgHtml(ei, false, review.marks, true) : '<i class="hint">(Bỏ trống)</i>'}</div>` : '')
-      : (/(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(plain(q.s)) ? '<div class="ess-need">✏️ Đề yêu cầu <b>vẽ</b>: em vẽ ra giấy rồi bấm <b>📷 Chụp / tải ảnh bài làm</b> để nộp hình. Chỉ viết chữ mô tả sẽ không được tính đủ điểm.</div>' : '')
+      : (needVe(q) ? `<div class="ess-need">✏️ Đề yêu cầu <b>vẽ</b>: em vẽ ra giấy rồi bấm <b>📷 Chụp / tải ảnh bài làm</b>. ${ei.length ? '✅ Đã có ' + ei.length + ' ảnh bài vẽ.' : '<b>Phải có ảnh bài vẽ mới nộp bài được và AI mới chấm.</b>'}</div>` : '')
         + `<textarea class="essay" id="essay" maxlength="2800" placeholder="Nhập câu trả lời của em… (bài vẽ / viết tay: bấm “Chụp / tải ảnh bài làm” bên dưới)">${esc(et)}</textarea>
         <div class="ess-img">${essImgHtml(ei, true)}${ei.length < 3 ? '<label class="btn ghost sm ess-up">📷 Chụp / tải ảnh bài làm<input type="file" id="essf" accept="' + FILE_ACCEPT + '" hidden></label>' : ''}</div>
         <div class="hint" id="ecount">${et.length}/2800 ký tự${ei.length ? ' · ' + ei.length + ' ảnh' : ''} · bài được AI chấm sau khi nộp</div>`;
@@ -1690,6 +1692,8 @@ route(/^\/lambai$/, () => {
     $('#fl').onclick = () => { a.flags[id] = !a.flags[id]; save(); draw(); };
     $$('.pal button').forEach(b => b.onclick = () => { a.cur = +b.dataset.j; save(); draw(); });
     $('#sub').onclick = () => {
+      const noVe = a.ids.findIndex(x => needVe(bank.byId[x]) && !essImgs(a.resp[x]).length);
+      if (noVe >= 0) { a.cur = noVe; save(); draw(); alert(`Câu ${noVe + 1} yêu cầu vẽ: em vẽ ra giấy, bấm "📷 Chụp / tải ảnh bài làm" để nộp ảnh bài vẽ rồi mới nộp bài nhé.`); return; }
       const left = a.ids.length - a.ids.filter(answered).length;
       if (confirm(left ? `Em còn ${left} câu chưa làm xong. Vẫn nộp bài?` : 'Nộp bài ngay?')) finish();
     };
