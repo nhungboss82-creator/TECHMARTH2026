@@ -653,8 +653,8 @@ function cn2811Queue_() {
     }
     return s;
   };
-  /* mỗi HS nộp tối đa 3 lần cho một bài vẽ được giao (GV đặt ít hơn thì theo GV) */
-  const MAX_LAN = 3;
+  /* mỗi HS nộp tối đa 2 lần cho một bài vẽ được giao (GV đặt ít hơn thì theo GV) */
+  const MAX_LAN = 2;
   const limit_ = orig => req => {
     const t = auth_(req, 'hs');
     const b = rows_('BaiVe').find(r => r.MaBV === req.maBV);

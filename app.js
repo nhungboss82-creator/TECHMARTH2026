@@ -3617,14 +3617,14 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
   const unpaste = pasteImgTo('hsimg');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
   const draw = () => {
-    const isTK = t.Loai === 'thietke', n = t.bai.length, max = Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 3, 3), left = Math.max(0, max - n);
+    const isTK = t.Loai === 'thietke', n = t.bai.length, max = Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 2, 2), left = Math.max(0, max - n);
     const out = max && n >= max;
     setView(`<a href="#/">← Trang chủ</a><h1 class="bv-h1">${isTK ? '💡 ' : '✏️ '}${esc(t.TieuDe)}</h1>
       <div class="bv-steps">
         <section class="card bv-st"><div class="bv-sh"><span class="lt-n done">1</span><b>Đề bài</b><span class="pill">${esc(isTK ? 'Thiết kế kĩ thuật' : t.LoaiTen)}</span>${t.HanNop ? `<span class="hint">hạn ${dt(t.HanNop)}</span>` : ''}</div>
           <div class="bv-de">${t.CoAnhDe ? (deSrc ? `<img src="${deSrc}" alt="Ảnh đề bài" class="de-img">` : '<div class="hint">Đang tải ảnh đề…</div>') : ''}<div class="bv-de-t">${esc(t.DeBai)}</div></div></section>
-        <section class="card bv-st"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">2</span><b>Nộp bài làm</b><span class="hint">${max ? `còn <b>${left}</b>/${max} lần` : 'không giới hạn số lần'}</span></div>
-          ${late ? '<div class="hint">Đã hết hạn nộp.</div>' : out ? '<div class="hint">Em đã dùng hết số lần nộp.</div>' : `
+        <section class="card bv-st"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">2</span><b>Nộp bài làm</b><span class="bv-cnt${out ? ' out' : ''}">Đã nộp <b>${Math.min(n, max)}/${max}</b> lần</span></div>
+          ${late ? '<div class="hint">Đã hết hạn nộp.</div>' : out ? `<div class="hint">Em đã nộp đủ ${max}/${max} lần cho bài này.</div>` : `
           <div class="bv-pick"><label class="btn">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
             <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
           <div id="hsimg" class="imgdrop imgdrop-lite bv-drop">${img ? `<img src="${img}" alt="Ảnh bài vẽ">` : '<span class="hint">Bài vẽ tay (chụp thẳng, đủ sáng) hoặc vẽ máy · nhận ảnh, ảnh iPhone (HEIC), PDF</span>'}</div>
