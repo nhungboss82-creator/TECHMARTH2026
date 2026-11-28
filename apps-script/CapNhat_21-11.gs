@@ -789,3 +789,10 @@ function cn2811Keys_() {
 }
 try { cn2811Keys_(); } catch (e) { console.error('CapNhat_28_11 Keys: ' + e); }
 
+/* 28/11: ghi dòng mới xong (flush) rồi mới mở khoá – tránh 2 bài nộp cùng lúc ghi đè lên cùng 1 dòng */
+function cn2811Flush_() {
+  const a0 = append_;
+  append_ = function (name, obj) { const r = a0(name, obj); SpreadsheetApp.flush(); return r; };
+}
+try { cn2811Flush_(); } catch (e) { console.error('CapNhat_28_11 Flush: ' + e); }
+
