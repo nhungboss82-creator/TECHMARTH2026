@@ -3196,7 +3196,7 @@ function qComposer(root, opts = {}) {
         <label for="qcbai">Bài học</label><input id="qcbai" type="text" maxlength="160" value="${val('bai')}">
         ${type !== 'T' ? `<label for="qcmd">Mức độ</label><select id="qcmd">${['Biết', 'Hiểu', 'Vận dụng'].map(m => `<option ${(keep.md || (type === 'L' ? 'Hiểu' : 'Biết')) === m ? 'selected' : ''}>${m}</option>`).join('')}</select>` : ''}
         <label for="qcs">Nội dung câu hỏi</label><textarea id="qcs" required>${val('s')}</textarea>
-        <div class="bv-pick"><label class="btn ghost sm">📷 Chụp hình<input id="qccam" type="file" accept="image/*" capture="environment" hidden></label><span class="hint">hoặc tải tệp (ảnh, PDF, Word) / dán ảnh (Ctrl+V) vào ô dưới</span></div>
+        <div class="bv-pick"><label class="btn ghost sm">📷 Chụp hình<input id="qccam" type="file" accept="image/*" capture="environment" hidden></label><button type="button" class="btn ghost sm" id="qcpaste">📋 Dán hình</button><span class="hint">hoặc tải tệp (ảnh, PDF, Word) · chuột phải vào ô dưới → Dán · Ctrl+V</span></div>
         ${imgDrop('qcimg', 'Hình cho câu hỏi (không bắt buộc)', 'Bấm để tải tệp · kéo thả · Ctrl+V', img)}
         ${type === 'L' ? `<label for="qcans">Đáp án mẫu (các ý cần có – AI dựa vào đây để chấm)</label><textarea id="qcans" required style="min-height:120px" placeholder="- Ý 1: …&#10;- Ý 2: …">${val('ans')}</textarea>
         <div class="row"><div style="width:140px"><label for="qcpt">Điểm tối đa</label><input id="qcpt" type="number" min="0.25" max="10" step="0.25" value="${val('pt') || 1}"></div>
@@ -3212,6 +3212,7 @@ function qComposer(root, opts = {}) {
     $$('[data-qt]', root).forEach(b => b.onclick = () => { save(); type = b.dataset.qt; draw(); });
     bindImgDrop('qcimg', v => { save(); img = v; draw(); });
     Q('#qccam').onchange = e => { const f = e.target.files[0]; if (f) Q('#qcimg')._take(f); };
+    Q('#qcpaste').onclick = () => pasteFromClipboard('qcimg');
     if (Q('#qcx')) Q('#qcx').onclick = () => { unpaste(); opts.onCancel(); };
     const collect = () => {
       const c = type === 'L'
@@ -3536,12 +3537,39 @@ function bindImgDrop(id, onImg) {
   box.ondragleave = () => box.classList.remove('over');
   box.ondrop = e => { e.preventDefault(); box.classList.remove('over'); take(e.dataTransfer.files[0]); };
   box._take = take;
+  /* 28/11/2026: ô hình nhận "Dán" khi bấm chuột phải (contenteditable), không cho gõ chữ vào ô */
+  box.setAttribute('contenteditable', 'true'); box.spellcheck = false;
+  box.addEventListener('beforeinput', e => { if (e.inputType !== 'insertFromPaste') e.preventDefault(); });
+  box.addEventListener('paste', e => {
+    const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
+    if (it) return;   // pasteImgTo / bên dưới xử lý
+    e.preventDefault();
+    const f = [...((e.clipboardData && e.clipboardData.files) || [])][0];
+    if (f) { take(f); return; }
+    toast('Bộ nhớ tạm chưa có hình – hãy sao chép (Copy) hình trước rồi dán');
+  });
+  if (!box._pasteOwn) { box._pasteOwn = 1; box.addEventListener('paste', e => {
+    const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
+    if (it && !e.defaultPrevented) { e.preventDefault(); take(it.getAsFile()); toast('Đã dán hình'); }
+  }); }
+}
+/* nút "📋 Dán hình": đọc hình trong bộ nhớ tạm (trình duyệt có thể hỏi quyền) */
+async function pasteFromClipboard(boxId) {
+  const box = $('#' + boxId); if (!box || !box._take) return;
+  try {
+    if (!navigator.clipboard || !navigator.clipboard.read) throw new Error('x');
+    for (const item of await navigator.clipboard.read()) {
+      const ty = item.types.find(t => /^image\//.test(t));
+      if (ty) { const b = await item.getType(ty); box._take(new File([b], 'dan.' + (ty.split('/')[1] || 'png'), { type: ty })); return; }
+    }
+    toast('Bộ nhớ tạm chưa có hình – hãy sao chép (Copy) hình trước');
+  } catch (e) { box.focus(); toast('Bấm chuột phải vào ô hình → Dán, hoặc bấm vào ô rồi nhấn Ctrl+V'); }
 }
 /* Dán ảnh từ bộ nhớ tạm vào ô đang chọn (hoặc ô mặc định) */
 function pasteImgTo(defId) {
   const h = e => {
     const it = [...((e.clipboardData && e.clipboardData.items) || [])].find(x => /^image\//.test(x.type));
-    if (!it) return;
+    if (!it || e.defaultPrevented) return;
     const focusBox = document.activeElement && document.activeElement.closest && document.activeElement.closest('.imgdrop');
     const box = focusBox || $('#' + defId);
     if (!box || !box._take) return;
