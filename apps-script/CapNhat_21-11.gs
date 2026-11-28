@@ -1531,3 +1531,86 @@ function cn2811LamLai_() {
   };
 }
 try { cn2811LamLai_(); } catch (e) { console.error('CapNhat_28_11 LamLai: ' + e); }
+
+/* ===== Cập nhật 28/11 (9): BÁO HS LÀM LẠI BÀI TẬP VẼ / THIẾT KẾ KĨ THUẬT CHƯA ĐẠT YÊU CẦU =====
+ * Lần nộp gần nhất: ảnh không đọc được / không đúng bài, hoặc dưới 50% thang điểm, hoặc AI đánh giá "chưa đạt yêu cầu"
+ * (GV đã chấm thì theo điểm GV) → HS được báo làm lại và được nộp thêm (tối đa 2 lượt thêm). Còn hạn nộp mới báo.
+ */
+function cn2811LamLaiVe_() {
+  if (typeof API === 'undefined') return;
+  const MAX_LAN = 2, THEM = 2;
+  const base_ = b => Math.min(MAX_LAN, Number(b && b.SoLan) > 0 ? Number(b.SoLan) : MAX_LAN);
+  const fmt_ = x => String(Math.round((Number(x) || 0) * 100) / 100).replace('.', ',');
+  const late_ = b => !!(b.HanNop && new Date() > new Date(b.HanNop));
+  /* l: các lần nộp của MỘT HS cho MỘT bài vẽ */
+  const check_ = (b, l) => {
+    if (!b || !l.length) return null;
+    const last = l.reduce((a, r) => new Date(r.ThoiDiem) >= new Date(a.ThoiDiem) ? r : a, l[0]);
+    const mx = Number(b.DiemToiDa) || 10;
+    let ly = '';
+    if (last.GVDiem !== '' && last.GVDiem != null) {
+      if (Number(last.GVDiem) < mx / 2) ly = 'Thầy/cô chấm ' + fmt_(last.GVDiem) + '/' + mx + ' điểm – chưa đạt yêu cầu. Em xem nhận xét, vẽ lại rồi nộp lại nhé.';
+    } else if (last.TrangThai === 'ai_da_cham') {
+      let ai = {}; try { ai = JSON.parse(String(last.AIChiTiet || '{}')); } catch (e) {}
+      if (ai.doc_duoc === false) ly = 'Ảnh bài nộp không đọc được hoặc không đúng bài. Em chụp lại thẳng, rõ nét, đủ sáng rồi nộp lại nhé.';
+      else if (Number(last.AIDiem) < mx / 2) ly = 'AI chấm ' + fmt_(last.AIDiem) + '/' + mx + ' điểm – chưa đạt yêu cầu (cần từ ' + fmt_(mx / 2) + ' điểm). Em xem các lỗi được đánh dấu, vẽ lại rồi nộp lại nhé.';
+      else if (ai.dat_yeu_cau === false) ly = 'AI chấm ' + fmt_(last.AIDiem) + '/' + mx + ' điểm nhưng bài vẽ còn lỗi nặng – chưa đạt yêu cầu. Em xem các lỗi được đánh dấu, sửa rồi nộp lại nhé.';
+    }
+    if (!ly) return null;
+    const base = base_(b), n = l.length, con = n < base + THEM;
+    return { MaNop: last.MaNop, n: n, con: con, max: con ? Math.max(base, n + 1) : Math.max(base, n),
+      ly_do: con ? ly : ly + ' Em đã dùng hết lượt nộp thêm – hỏi thầy/cô nhé.' };
+  };
+
+  const md = API.my_drawing_tasks;
+  if (md) API.my_drawing_tasks = req => {
+    const l = md(req);
+    try {
+      const t = auth_(req, 'hs'), bv = {};
+      rows_('BaiVe').forEach(b => { bv[b.MaBV] = b; });
+      const nv = rows_('NopVe').filter(r => r.MaHS === t.u);
+      (l || []).forEach(o => {
+        const b = bv[o.MaBV]; if (!b || late_(b)) return;
+        const r = check_(b, nv.filter(x => x.MaBV === o.MaBV));
+        if (r) o.lamLai = { ly_do: r.ly_do, con: r.con, max: r.max };
+      });
+    } catch (e) { console.error('lamLaiVe: ' + e); }
+    return l;
+  };
+  /* nộp lại: bỏ qua giới hạn số lần khi lần trước chưa đạt (ẩn các lần cũ của HS này khỏi phép đếm) */
+  const sd = API.submit_drawing;
+  if (sd) API.submit_drawing = req => {
+    let hide = null;
+    try {
+      const t = auth_(req, 'hs'), b = rows_('BaiVe').find(r => r.MaBV === String(req.maBV || ''));
+      if (b && !late_(b)) {
+        const l = rows_('NopVe').filter(r => r.MaBV === b.MaBV && r.MaHS === t.u);
+        const r = check_(b, l);
+        if (r && r.con && l.length >= base_(b)) { hide = {}; l.forEach(x => { hide[x.MaNop] = 1; }); }
+      }
+    } catch (e) {}
+    if (!hide) return sd(req);
+    const r0 = rows_;
+    rows_ = name => { const l = r0(name); return name === 'NopVe' ? l.filter(x => !hide[x.MaNop]) : l; };
+    try { return sd(req); } finally { rows_ = r0; }
+  };
+  /* GV: đánh dấu bài đã báo làm lại */
+  const ds = API.drawing_submissions;
+  if (ds) API.drawing_submissions = req => {
+    const d = ds(req);
+    try {
+      const b = rows_('BaiVe').find(r => r.MaBV === String(req.maBV || ''));
+      if (b && d && d.items) {
+        const by = {};
+        rows_('NopVe').filter(r => r.MaBV === b.MaBV).forEach(r => { (by[r.MaHS] = by[r.MaHS] || []).push(r); });
+        Object.keys(by).forEach(k => {
+          const r = check_(b, by[k]); if (!r) return;
+          const it = d.items.find(x => x.MaNop === r.MaNop);
+          if (it) it.lamLai = late_(b) ? 'Chưa đạt yêu cầu (đã hết hạn nộp)' : r.con ? 'Đã báo HS làm lại' : 'Chưa đạt – HS đã hết lượt nộp thêm';
+        });
+      }
+    } catch (e) { console.error('lamLaiVe GV: ' + e); }
+    return d;
+  };
+}
+try { cn2811LamLaiVe_(); } catch (e) { console.error('CapNhat_28_11 LamLaiVe: ' + e); }

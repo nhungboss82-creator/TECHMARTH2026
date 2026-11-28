@@ -841,7 +841,7 @@ async function homeTodo(box) {
     quiz = Array.isArray(quiz) ? quiz : []; drw = Array.isArray(drw) ? drw : [];
     const items = [
       ...quiz.filter(a => (!a.soLanDaLam || a.lamLai) && !lateOf(a.HanNop)).map(a => ({ ic: a.lamLai ? '⚠️' : '📝', c: '', t: (a.lamLai ? 'Làm lại: ' : '') + a.TieuDe, m: [a.lamLai ? 'Bài chưa đạt yêu cầu' : '', a.LoaiBai, (a.soCau || a.DanhSachCau.length) + ' câu', a.chuaMo && a.BatDau ? '🔒 mở ' + dt(a.BatDau) : '', a.HanNop ? 'hạn ' + dt(a.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baigiao?mo=' + a.MaBai })),
-      ...drw.filter(t => !t.bai.length && !lateOf(t.HanNop)).map(t => ({ ic: t.Loai === 'thietke' ? '💡' : '✏️', c: 'amber', t: t.TieuDe, m: [t.Loai === 'thietke' ? 'Thiết kế kĩ thuật' : 'Bài tập vẽ', t.HanNop ? 'hạn ' + dt(t.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baive/' + t.MaBV }))];
+      ...drw.filter(t => (!t.bai.length || (t.lamLai && t.lamLai.con)) && !lateOf(t.HanNop)).map(t => ({ ic: t.lamLai ? '⚠️' : t.Loai === 'thietke' ? '💡' : '✏️', c: 'amber', t: (t.lamLai ? 'Làm lại: ' : '') + t.TieuDe, m: [t.lamLai ? 'Bài chưa đạt yêu cầu' : '', t.Loai === 'thietke' ? 'Thiết kế kĩ thuật' : 'Bài tập vẽ', t.HanNop ? 'hạn ' + dt(t.HanNop) : ''].filter(Boolean).join(' – '), href: '#/baive/' + t.MaBV }))];
     setTabDot(items.length);
     if (!items.length) { box.innerHTML = `<div class="card empty">${err ? esc(err) : 'Em đã làm hết bài thầy cô giao. Ôn thêm bên dưới nhé!'}</div>`; return; }
     box.innerHTML = '<div class="rows">' + items.slice(0, 3).map(x => `<a href="${x.href}"><span class="ic ${x.c}">${x.ic}</span><span class="tx"><b>${esc(x.t)}</b><span>${esc(x.m)}</span></span><span class="chev">›</span></a>`).join('')
@@ -1035,7 +1035,7 @@ async function homeTasks(box, openId) {
     const quiz = Array.isArray(st.quiz) ? st.quiz : [], drw = Array.isArray(st.drw) ? st.drw : [];
     const ve = drw.filter(t => t.Loai !== 'thietke'), tk = drw.filter(t => t.Loai === 'thietke');
     const pq = quiz.filter(a => (!a.soLanDaLam || a.lamLai) && !lateOf(a.HanNop)).length;
-    const pd = l => l.filter(t => !t.bai.length && !lateOf(t.HanNop)).length;
+    const pd = l => l.filter(t => (!t.bai.length || (t.lamLai && t.lamLai.con)) && !lateOf(t.HanNop)).length;
     const tabs = [['quiz', '📝 Bài kiểm tra', quiz, pq], ['ve', '✏️ Bài tập vẽ', ve, pd(ve)], ['tk', '💡 Thiết kế kĩ thuật', tk, pd(tk)]];
     if (!st.tab) { const f = tabs.find(t => t[3]); st.tab = f ? f[0] : 'quiz'; }
     setTabDot(tabs.reduce((s, t) => s + t[3], 0));
@@ -1061,7 +1061,7 @@ async function homeTasks(box, openId) {
       body = l.length ? '<div class="list">' + l.map(t => {
         const last = t.bai[0];
         return `<a class="item" href="#/baive/${t.MaBV}"><div class="grow"><b>${esc(t.TieuDe)}</b><div class="meta">${esc(isTK ? 'Nộp ảnh bản phác thảo thiết kế' : t.LoaiTen)} · thang ${t.DiemToiDa} điểm${t.HanNop ? ' · hạn ' + dt(t.HanNop) : ''} · ${esc(t.TenGV)}</div>
-          <div class="row" style="margin-top:4px">${last ? subStatus(last, t.DiemToiDa) : '<span class="pill warn">Chưa nộp</span>'}${lateOf(t.HanNop) ? '<span class="pill bad">Hết hạn</span>' : ''}</div></div>›</a>`;
+          <div class="row" style="margin-top:4px">${last ? subStatus(last, t.DiemToiDa) : '<span class="pill warn">Chưa nộp</span>'}${lateOf(t.HanNop) ? '<span class="pill bad">Hết hạn</span>' : ''}</div>${t.lamLai ? `<div class="redo-box">⚠️ <b>Bài chưa đạt yêu cầu${t.lamLai.con ? ' – em làm lại nhé.' : '.'}</b> ${esc(t.lamLai.ly_do || '')}</div>` : ''}</div>›</a>`;
       }).join('') + '</div>' : `<div class="card empty">${isTK ? 'Chưa có bài thiết kế kĩ thuật nào được giao.' : 'Chưa có bài tập vẽ nào được giao.'}</div>`;
     }
     box.innerHTML = `<div class="tabs asgtabs">${tabs.map(([k, n, l, p]) => `<button data-at="${k}" class="${cur[0] === k ? 'on' : ''}">${n} ${p ? `<span class="badge" title="Chưa làm">${p}</span>` : `<span class="cnt">${l.length}</span>`}</button>`).join('')}</div>${body}`;
@@ -3979,13 +3979,14 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
   const unpaste = pasteImgTo('hsimg');
   cleanup = () => { unpaste(); document.body.classList.remove('wide'); };
   const draw = () => {
-    const isTK = t.Loai === 'thietke', n = t.bai.length, max = Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 2, 2), left = Math.max(0, max - n);
+    const isTK = t.Loai === 'thietke', n = t.bai.length, max = t.lamLai && t.lamLai.max ? Math.max(Number(t.lamLai.max), Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 2, 2)) : Math.min(Number(t.SoLan) > 0 ? Number(t.SoLan) : 2, 2), left = Math.max(0, max - n);
     const out = max && n >= max;
     setView(`<a href="#/">← Trang chủ</a><h1 class="bv-h1">${isTK ? '💡 ' : '✏️ '}${esc(t.TieuDe)}</h1>
       <div class="bv-steps">
         <section class="card bv-st"><div class="bv-sh"><span class="lt-n done">1</span><b>Đề bài</b><span class="pill">${esc(isTK ? 'Thiết kế kĩ thuật' : t.LoaiTen)}</span>${t.HanNop ? `<span class="hint">hạn ${dt(t.HanNop)}</span>` : ''}</div>
           <div class="bv-de">${t.CoAnhDe ? (deSrc ? `<img src="${deSrc}" alt="Ảnh đề bài" class="de-img">` : '<div class="hint">Đang tải ảnh đề…</div>') : ''}<div class="bv-de-t">${esc(t.DeBai)}</div></div></section>
         <section class="card bv-st"><div class="bv-sh"><span class="lt-n ${n ? 'done' : ''}">2</span><b>Nộp bài làm</b><span class="bv-cnt${out ? ' out' : ''}">Đã nộp <b>${Math.min(n, max)}/${max}</b> lần</span></div>
+          ${t.lamLai && t.lamLai.ly_do && !late ? `<div class="redo-box">⚠️ <b>Bài chưa đạt yêu cầu${t.lamLai.con ? ' – em làm lại nhé.' : '.'}</b> ${esc(t.lamLai.ly_do || '')}</div>` : ''}
           ${late ? '<div class="hint">Đã hết hạn nộp.</div>' : out ? `<div class="hint">Em đã nộp đủ ${max}/${max} lần cho bài này.</div>` : `
           <div class="bv-pick"><label class="btn">📷 Chụp ảnh<input id="cam" type="file" accept="image/*" capture="environment" hidden></label>
             <label class="btn ghost">📁 Tải tệp<input id="file" type="file" accept="${FILE_ACCEPT}" hidden></label></div>
@@ -4004,7 +4005,7 @@ route(/^\/baive\/(\w+)$/, async (params, maBV) => {
     if ($('#send')) $('#send').onclick = async () => {
       if (!navigator.onLine) { errBox($('#msg'), 'Cần có mạng để nộp ảnh và nhận kết quả AI'); return; }
       sending = true; draw();
-      try { const s = await api('submit_drawing', { maBV, image: img }); drwImgCache['n_' + s.MaNop] = img; t.bai.unshift(s); img = null; open = s.MaNop; sending = false;
+      try { const s = await api('submit_drawing', { maBV, image: img }); drwImgCache['n_' + s.MaNop] = img; t.bai.unshift(s); if (t.lamLai) t.lamLai = { max: Math.max(Number(t.lamLai.max) || 0, t.bai.length) }; img = null; open = s.MaNop; sending = false;
         if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast('AI đã chấm xong bài vẽ – mở lại bài để xem kết quả'); return; } draw(); toast(s.AI ? 'AI đã chấm xong' : aiQ(s) ? '📤 Đã nộp! AI sẽ chấm lần lượt – kết quả hiện ngay tại đây' : 'Đã nộp bài'); pump(); const k = $('.bv-kq'); k && k.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
       catch (err) { sending = false; if (location.hash.indexOf('#/baive/' + maBV) !== 0) { toast(err.message || String(err)); return; } draw(); errBox($('#msg'), err); }
     };
@@ -4351,7 +4352,7 @@ route(/^\/gv\/baive\/(V\w+)$/, async (params, maBV) => {
         ${pn === 'kq' ? `<div class="dv-kq"><table class="tbl"><thead><tr><th>STT</th><th>Họ và tên</th><th>Lớp</th><th>Số lần nộp</th><th>Điểm từng lần</th><th>Điểm cao nhất</th></tr></thead><tbody>${stats.map((h, i) => `<tr><td>${i + 1}</td><td>${esc(h.HoTen)}</td><td>${esc(h.TenLop || '')}</td><td>${h.lan.length}</td><td>${h.lan.map(s => { const v = drwScore(s); return `<span class="kq-l${s._best ? ' best' : ''}" title="${dt(s.ThoiDiem)}">L${s._lan}: ${v == null ? (aiQ(s) ? '⏳' : '–') : fmt(v)}</span>`; }).join(' ')}</td><td><b>${h.diem == null ? '–' : fmt(h.diem) + '/' + max}</b></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Chưa có bài nộp</td></tr>'}</tbody></table><div class="hint" style="margin-top:6px">Điểm cao nhất lấy điểm thầy/cô đã xác nhận; lần nào chưa xác nhận thì lấy điểm AI chấm.</div></div>` : ''}
         ${pn === 'de' ? `<div class="dv-de"><div style="white-space:pre-wrap">${esc(t.DeBai)}</div><b>Tiêu chí</b><div style="white-space:pre-wrap" class="hint">${esc(t.TieuChi)}</div></div>` : ''}
         ${pn === 'mau' ? `<div class="dv-mau">${mauSrc ? `<img src="${mauSrc}" alt="Đáp án mẫu">` : '<span class="hint">Đang tải…</span>'}</div>` : ''}</div>
-      <div class="dv-list">${d.items.map(s => `<div class="dv-it${open === s.MaNop ? ' on' : ''}"><div class="dv-row" data-o="${s.MaNop}"><b class="grow">${esc(s.HoTen)} <span class="hint">${esc(s.TenLop || '')} · ${dt(s.ThoiDiem)}</span></b><span class="pill">Lần ${s._lan}/${s._n}</span>${s._best && s._n > 1 ? '<span class="pill best">⭐ Cao nhất</span>' : ''}${s.AI && s.AI.loi ? `<span class="pill ${s.AI.loi.filter(Boolean).length ? 'bad' : 'ok'}">${s.AI.loi.filter(Boolean).length} lỗi</span>` : ''}${subStatus(s, max)}<span class="chev">${open === s.MaNop ? '▴' : '▾'}</span></div>
+      <div class="dv-list">${d.items.map(s => `<div class="dv-it${open === s.MaNop ? ' on' : ''}"><div class="dv-row" data-o="${s.MaNop}"><b class="grow">${esc(s.HoTen)} <span class="hint">${esc(s.TenLop || '')} · ${dt(s.ThoiDiem)}</span></b><span class="pill">Lần ${s._lan}/${s._n}</span>${s._best && s._n > 1 ? '<span class="pill best">⭐ Cao nhất</span>' : ''}${s.AI && s.AI.loi ? `<span class="pill ${s.AI.loi.filter(Boolean).length ? 'bad' : 'ok'}">${s.AI.loi.filter(Boolean).length} lỗi</span>` : ''}${subStatus(s, max)}${s.lamLai ? `<span class="pill warn" title="${esc(s.lamLai)}">⚠️ ${esc(s.lamLai)}</span>` : ''}<span class="chev">${open === s.MaNop ? '▴' : '▾'}</span></div>
         ${open === s.MaNop ? `<div id="rv"></div>` : ''}</div>`).join('') || '<div class="card empty">Chưa có bài làm. Bấm “📷 Gửi bài làm của HS” để chụp bài và cho AI chấm.</div>'}</div>`);
     $$('[data-pn]').forEach(b => b.onclick = () => { pn = pn === b.dataset.pn ? '' : b.dataset.pn; draw(); });
     $$('[data-o]').forEach(b => b.onclick = () => { open = open === b.dataset.o ? null : b.dataset.o; draw(); if (open) setTimeout(() => { const r = $('.dv-it.on'); r && r.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 30); });
