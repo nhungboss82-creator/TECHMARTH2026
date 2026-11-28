@@ -1188,3 +1188,25 @@ function cn2811LayCau_() {
   };
 }
 try { cn2811LayCau_(); } catch (e) { console.error('CapNhat_28_11 LayCau: ' + e); }
+
+/* ===== Cập nhật 28/11 (3): GV chọn nhiều HS → cấp lại mật khẩu chung PD2026 một lần (reset_pw_hs_many) ===== */
+function cn2811MKNhieu_() {
+  if (typeof API === 'undefined') return;
+  API.reset_pw_hs_many = req => withLock_(() => {
+    const t = auth_(req, 'gv');
+    const ids = (Array.isArray(req.ids) ? req.ids : []).map(x => String(x || '').trim()).filter(Boolean).slice(0, 300);
+    if (!ids.length) throw new Error('Chưa chọn học sinh nào');
+    const want = {}; ids.forEach(id => { want[id] = 1; });
+    const pw = 'PD2026', okLop = {}, done = [], fail = [];
+    rows_('HocSinh').forEach(h => {
+      if (!want[h.MaHS]) return;
+      if (!(h.MaLop in okLop)) { try { ownClass_(t, h.MaLop); okLop[h.MaLop] = true; } catch (e) { okLop[h.MaLop] = false; } }
+      if (!okLop[h.MaLop]) { fail.push(h.HoTen || h.MaHS); return; }
+      const salt = Utilities.getUuid();
+      update_('HocSinh', h._r, { Salt: salt, Hash: hash_(pw, salt), DoiMK: 1 });
+      done.push(h.MaHS);
+    });
+    return { n: done.length, fail: fail, matKhau: pw };
+  });
+}
+try { cn2811MKNhieu_(); } catch (e) { console.error('CapNhat_28_11 MKNhieu: ' + e); }

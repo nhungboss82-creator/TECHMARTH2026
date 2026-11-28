@@ -2344,7 +2344,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     <div class="row" style="align-items:center;flex-wrap:wrap;gap:6px"><h2 class="grow lop-h2">👥 Tài khoản học sinh (${students.length})</h2><button class="btn sm accent" id="hsadd">➕ Thêm học sinh</button>${extra.size ? `<button class="btn sm warnbtn" id="pickdup" title="Tích sẵn các tài khoản thừa để xoá">🧹 Xoá ${extra.size} tài khoản trùng</button>` : ''}${dupN ? `<button class="btn sm ghost" id="merge" title="Dồn kết quả làm bài về 1 tài khoản rồi xoá tài khoản thừa">🔗 Gộp kết quả & xoá trùng tên</button>` : ''}<a class="btn sm" href="#/gv/diem?lop=${code}">📊 Xem điểm lớp này ›</a></div>
     <div id="addBox"></div>
     ${extra.size ? `<p class="hint" style="margin-top:0">Có <b>${extra.size}</b> tài khoản thừa (cùng họ tên hoặc cùng Gmail với một tài khoản khác, đánh dấu <span class="pill warn">trùng</span>). Bấm <b>🧹 Xoá tài khoản trùng</b>: app tự tích các tài khoản thừa, giữ lại tài khoản làm nhiều bài nhất, cô xem lại rồi bấm Xoá. Muốn giữ cả kết quả của tài khoản thừa thì bấm <b>🔗 Gộp</b>.</p>` : ''}
-    <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><button class="btn ghost sm" id="hsnone" type="button">Bỏ chọn</button><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
+    <div class="card">${students.length ? `<div class="hsbulk" id="hsbulk"><label class="chk"><input type="checkbox" id="hsall"> Chọn tất cả</label><button class="btn ghost sm" id="hsnone" type="button">Bỏ chọn</button><span class="hint" id="hscnt">Tích ô ở đầu dòng để chọn học sinh</span><span class="grow"></span><button class="btn sm" id="hspw" disabled title="Đặt lại mật khẩu chung PD2026 cho các em đã chọn">🔑 Cấp lại MK chung</button><button class="btn danger sm" id="hsdel" disabled>🗑 Xoá HS đã chọn</button></div>
       <div class="tablewrap"><table class="hstable hs-compact"><thead><tr><th class="ck"><input type="checkbox" id="hsall2" title="Chọn tất cả" aria-label="Chọn tất cả"></th><th class="n">STT</th><th>Họ tên</th><th>Tài khoản</th><th class="n" title="Tổng số lần em mở app vào học">Lần vào học</th><th class="n" title="Tổng số lượt làm bài trên app">Lượt làm bài</th><th class="n">ĐTB</th><th class="n">Lần cuối</th><th></th></tr></thead><tbody>
       ${(rIx = rosterIdx({ DanhSach: roster }), '')}${students.map((s, i) => { const idle = !s.lanCuoi || now - new Date(s.lanCuoi).getTime() > 7 * 864e5; return `<tr class="${extra.has(s.MaHS) || dupK[nk(s.HoTen)] > 1 ? 'duprow' : ''}"><td class="ck"><input type="checkbox" class="hsck" value="${s.MaHS}" aria-label="Chọn ${esc(s.HoTen)}"></td><td class="n">${rIx[normName(s.HoTen)] != null ? rIx[normName(s.HoTen)] + 1 : roster.length ? '–' : i + 1}</td><td><a href="#/gv/hs/${s.MaHS}?lop=${code}">${esc(s.HoTen)}</a>${roster.length && rIx[normName(s.HoTen)] == null ? ' <span class="pill bad" title="Họ tên không có trong danh sách lớp">ngoài DS</span>' : ''}${extra.has(s.MaHS) ? ` <span class="pill warn" title="Trùng với tài khoản ${esc(mainOf[s.MaHS].TenDN)} (giữ lại)">trùng · thừa</span>` : ''}${s.chuaDoiMK ? ' <span class="pill warn">chưa đổi MK</span>' : ''}${idle ? ' <span class="pill bad" title="7 ngày chưa luyện">⏰</span>' : ''}${s.Truong && c.Truong && schKey(s.Truong) !== schKey(c.Truong) ? ` <span class="pill warn" title="Học sinh khai trường khác trường của lớp – bấm ✏️ để sửa">🏫 ${esc(s.Truong)}</span>` : ''}</td><td title="${esc(s.Email || '')}">${esc(s.TenDN)}${s.Email ? ' <span class="hint">✉</span>' : ''}</td>
         <td class="n"><b>${s.luotVao == null ? '–' : s.luotVao}</b></td><td class="n">${s.soLuot}</td><td class="n">${s.diemTB == null ? '–' : fmt(s.diemTB)}</td><td class="n" title="${s.lanCuoi ? dt(s.lanCuoi) : ''}">${s.lanCuoi ? new Date(s.lanCuoi).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }) : '–'}</td><td class="hsact"><button class="btn ghost sm" data-e="${s.MaHS}" title="Sửa thông tin / chuyển lớp / đổi trường">✏️</button><button class="btn ghost sm" data-r="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Cấp lại mật khẩu PD2026">🔑 MK</button><button class="btn ghost sm delbtn" data-x="${s.MaHS}" data-n="${esc(s.HoTen)}" title="Xoá học sinh này">🗑</button></td></tr><tr class="hsedit" id="he_${s.MaHS}" hidden><td colspan="9"></td></tr>`; }).join('')}
@@ -2506,6 +2506,7 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     const all = cks(), n = all.filter(x => x.checked).length;
     ['#hsall', '#hsall2'].forEach(id => { const x = $(id); if (x) { x.checked = n > 0 && n === all.length; x.indeterminate = n > 0 && n < all.length; } });
     const d = $('#hsdel'), t = $('#hscnt'); if (d) { d.disabled = !n; d.textContent = n ? `🗑 Xoá ${n} HS đã chọn` : '🗑 Xoá HS đã chọn'; }
+    const p = $('#hspw'); if (p) { p.disabled = !n; p.textContent = n ? `🔑 Cấp lại MK chung (${n} HS)` : '🔑 Cấp lại MK chung'; }
     if (t) t.innerHTML = n ? `Đã chọn <b>${n}</b>/${all.length} học sinh` : 'Tích ô ở đầu dòng để chọn học sinh';
     all.forEach(x => x.closest('tr').classList.toggle('hssel', x.checked));
   };
@@ -2516,6 +2517,20 @@ route(/^\/gv\/lop\/([A-Z0-9]+)$/, async (params, code) => {
     cks().forEach(x => { x.checked = extra.has(x.value); }); syncSel();
     const f = cks().find(x => x.checked); if (f) f.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
     toast(`Đã tích ${extra.size} tài khoản thừa – xem lại rồi bấm "Xoá HS đã chọn"`);
+  };
+  /* 28/11/2026: chọn nhiều HS → cấp lại mật khẩu chung PD2026 một lần */
+  if ($('#hspw')) $('#hspw').onclick = async () => {
+    const ids = cks().filter(x => x.checked).map(x => x.value);
+    if (!ids.length) return;
+    const names = ids.map(id => (students.find(s => s.MaHS === id) || {}).HoTen).filter(Boolean);
+    if (!confirm(`Cấp lại mật khẩu chung cho ${ids.length} học sinh?\n\n${names.slice(0, 12).join('\n')}${names.length > 12 ? '\n… và ' + (names.length - 12) + ' em khác' : ''}\n\nMật khẩu mới: PD2026 (lần đầu đăng nhập các em sẽ được nhắc đổi mật khẩu riêng).`)) return;
+    await busy($('#hspw'), async () => {
+      try {
+        const r = await api('reset_pw_hs_many', { ids });
+        alert(`Đã cấp lại mật khẩu cho ${r.n} học sinh.\nMật khẩu mới: ${r.matKhau || 'PD2026'}\nCác em đăng nhập rồi đổi sang mật khẩu riêng.` + (r.fail && r.fail.length ? `\n\nChưa cấp được (lớp không thuộc cô quản lý): ${r.fail.join(', ')}` : ''));
+        reload();
+      } catch (e) { toast(e.message); }
+    });
   };
   if ($('#hsdel')) $('#hsdel').onclick = async () => {
     const ids = cks().filter(x => x.checked).map(x => x.value);
