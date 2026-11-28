@@ -1357,7 +1357,7 @@ function cn2811ChamVe_() {
   if (typeof API === 'undefined') return;
   const RE = /\[\[ANH:([\w-]{10,})\]\]/g;
   const deImg_ = html => { const m = /drive\.google\.com\/file\/d\/([\w-]{10,})/.exec(String(html || '')); return m ? m[1] : ''; };
-  const canVe_ = s => /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(String(s || ''));
+  const canVe_ = s => /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)|(^|[\s.:;(])(vẽ|tìm|tình|xác định|biểu diễn)\s+(các\s+|ba\s+|3\s+|đủ\s+)?hình\s+chiếu/i.test(String(s || ''));
   gradeEssays_ = function (ids, answers, khoi) {
     const rows = {};
     bankRows_().forEach(q => { const id = String(q.MaCau).trim(); if (ids.indexOf(id) >= 0) rows[id] = q; });
@@ -1460,7 +1460,7 @@ try { cn2811ChamVe2_(); } catch (e) { console.error('CapNhat_28_11 ChamVe2: ' + 
 function cn2811LamLai_() {
   if (typeof API === 'undefined') return;
   const RE = /\[\[ANH:([\w-]{10,})\]\]/;
-  const canVe_ = s => /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(String(s || ''));
+  const canVe_ = s => /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)|(^|[\s.:;(])(vẽ|tìm|tình|xác định|biểu diễn)\s+(các\s+|ba\s+|3\s+|đủ\s+)?hình\s+chiếu/i.test(String(s || ''));
   /* các câu yêu cầu vẽ trong danh sách mã câu */
   const veIds_ = ids => {
     const want = {}; ids.forEach(id => { want[id] = 1; });
@@ -1479,7 +1479,7 @@ function cn2811LamLai_() {
     const last = att.reduce((a, r) => (Number(r.LanThu) || 0) >= (Number(a.LanThu) || 0) ? r : a, att[0]);
     let ans = {}; try { ans = JSON.parse(String(sh.getRange(last._r, ci).getValue() || '{}')); } catch (e) { return null; }
     const thieu = []; ids.forEach((id, i) => { if (ve[id] && !RE.test(String(ans[id] || ''))) thieu.push(i + 1); });
-    return thieu.length ? { cau: thieu, ly_do: 'Câu ' + thieu.join(', ') + ' yêu cầu vẽ nhưng em chưa nộp ảnh bài vẽ. Em vẽ ra giấy, chụp ảnh nộp lại nhé.' } : null;
+    return thieu.length ? { n: att.length, cau: thieu, ly_do: 'Câu ' + thieu.join(', ') + ' yêu cầu vẽ nhưng em chưa nộp ảnh bài vẽ. Em vẽ ra giấy, chụp ảnh nộp lại nhé.' } : null;
   };
   const ctx_ = () => { const sh = sheet_('KetQua'); const head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(String); return { sh: sh, ci: head.indexOf('ChiTiet') + 1 }; };
 
@@ -1498,7 +1498,7 @@ function cn2811LamLai_() {
         const r = check_(bg[o.MaBai], t.u, kq, c.sh, c.ci, ve);
         if (!r) return;
         o.lamLai = r;
-        if (Number(o.SoLan) > 0 && o.soLanDaLam >= Number(o.SoLan)) o.SoLan = o.soLanDaLam + 1;
+        if (Number(o.SoLan) > 0) o.SoLan = Math.max(Number(o.SoLan), r.n + 1);
       });
     } catch (e) { console.error('lamLai: ' + e); }
     return l;
@@ -1508,14 +1508,14 @@ function cn2811LamLai_() {
   if (sb) API.submit = req => {
     const s = (req && req.result) || {};
     if (s.loai !== 'baigiao') return sb(req);
-    let extra = false;
+    let extra = null;
     try {
       const t = auth_(req, 'hs'), b = rows_('BaiGiao').find(r => r.MaBai === String(s.key || ''));
-      if (b && Number(b.SoLan) > 0) { const ve = veIds_(idsOf_(b)); if (Object.keys(ve).length) { const c = ctx_(); extra = !!check_(b, t.u, rows_('KetQua'), c.sh, c.ci, ve); } }
+      if (b && Number(b.SoLan) > 0) { const ve = veIds_(idsOf_(b)); if (Object.keys(ve).length) { const c = ctx_(); extra = check_(b, t.u, rows_('KetQua'), c.sh, c.ci, ve); } }
     } catch (e) {}
     if (!extra) return sb(req);
     const r0 = rows_;
-    rows_ = name => { const l = r0(name); if (name === 'BaiGiao') l.forEach(b => { if (b.MaBai === String(s.key || '') && Number(b.SoLan) > 0) b.SoLan = Number(b.SoLan) + 1; }); return l; };
+    rows_ = name => { const l = r0(name); if (name === 'BaiGiao') l.forEach(b => { if (b.MaBai === String(s.key || '') && Number(b.SoLan) > 0) b.SoLan = Math.max(Number(b.SoLan), extra.n + 1); }); return l; };
     try { return sb(req); } finally { rows_ = r0; }
   };
   /* GV: danh sách HS cần làm lại của một bài */

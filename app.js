@@ -234,7 +234,7 @@ const essMarks = (marks, k) => (marks || []).filter(l => (+l.anh || 1) === k + 1
   return `<div class="mk ai" style="top:${v[0] / 10}%;left:${v[1] / 10}%;height:${Math.max(2, (v[2] - v[0]) / 10)}%;width:${Math.max(2, (v[3] - v[1]) / 10)}%" title="${esc(l.mo_ta || '')}"><span>${+l.so || ''}</span></div>`; }).join('');
 const essImgHtml = (ids, edit, marks, big) => ids.length ? `<div class="ess-ths${big ? ' big' : ''}">${ids.map((x, k) => `<span class="ess-th"><img data-aimg="${esc(x)}" alt="Ảnh bài làm ${k + 1}">${essMarks(marks, k)}${ids.length > 1 ? `<i class="ess-no">Ảnh ${k + 1}</i>` : ''}${edit ? `<button type="button" data-rmimg="${esc(x)}" title="Bỏ ảnh">✕</button>` : ''}</span>`).join('')}</div>` : '';
 /* câu tự luận đề yêu cầu VẼ → bắt buộc nộp ảnh bài vẽ mới được nộp bài và AI chấm */
-const needVe = q => !!q && q.t === 'L' && /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(plain(q.s));
+const needVe = q => !!q && q.t === 'L' && /(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)|(^|[\s.:;(])(vẽ|tìm|tình|xác định|biểu diễn)\s+(các\s+|ba\s+|3\s+|đủ\s+)?hình\s+chiếu/i.test(plain(q.s));
 const ptsOf = v => { if (!v) return {}; if (typeof v === 'string') { try { return JSON.parse(v) || {}; } catch (e) { return {}; } } return v; };
 /* điểm câu tự luận theo điểm GV đặt cho câu (DiemCau), không hiện kiểu 1/1 */
 const tlScore = (x, P) => { const mx = +x.max || 1, p = +P > 0 ? +P : 0; return p && Math.abs(p - mx) > 1e-9 ? { d: Math.round((+x.diem || 0) / mx * p * 100) / 100, m: p } : { d: +x.diem || 0, m: mx }; };
