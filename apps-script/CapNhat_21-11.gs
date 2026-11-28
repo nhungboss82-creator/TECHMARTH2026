@@ -1147,3 +1147,44 @@ function cn2811XemBai_() {
   };
 }
 try { cn2811XemBai_(); } catch (e) { console.error('CapNhat_28_11 XemBai: ' + e); }
+
+/* ===== Cập nhật 28/11 (2): HS lấy riêng các câu của bài được giao (get_questions) =====
+ * Trước đây HS thiếu câu (câu GV tự soạn, câu mới thêm) phải tải lại cả ngân hàng (~2,7 MB) – điện thoại mạng yếu quá 30 giây thì
+ * không mở được bài ("Chưa tải được câu hỏi của bài này"). Nay app chỉ xin đúng các câu còn thiếu của bài.
+ * HS: chỉ lấy được câu nằm trong bài giao cho lớp mình. GV: câu dùng chung hoặc câu riêng của trường mình. Admin: mọi câu.
+ */
+function cn2811LayCau_() {
+  if (typeof API === 'undefined') return;
+  API.get_questions = req => {
+    const t = auth_(req);
+    const want = (Array.isArray(req.ids) ? req.ids : []).map(x => String(x || '').trim()).filter(Boolean).slice(0, 200);
+    if (!want.length) return [];
+    let ok;
+    if (t.r === 'hs') {
+      const hs = rows_('HocSinh').find(r => r.MaHS === t.u);
+      if (!hs) throw new Error('Tài khoản không còn tồn tại');
+      const allow = {};
+      rows_('BaiGiao').forEach(b => {
+        if (b.TrangThai === 'xoa' || String(b.DanhSachLop).split(',').indexOf(hs.MaLop) < 0) return;
+        if (b.BatDau && new Date() < new Date(b.BatDau)) return;   // bài chưa đến giờ mở
+        String(b.DanhSachCau || '').split(',').forEach(id => { allow[String(id).trim()] = 1; });
+      });
+      ok = r => !!allow[String(r.MaCau).trim()];
+    } else if (t.r === 'admin') {
+      ok = () => true;
+    } else {
+      const g = teacher_(t), k = schoolKey_(g.Truong);
+      ok = r => { const tr = String(r.TruongRieng || '').trim(); return !tr || (!!k && schoolKey_(tr) === k); };
+    }
+    const set = {}; want.forEach(id => { set[id] = 1; });
+    const out = [];
+    bankRows_().forEach(r => {
+      const id = String(r.MaCau).trim();
+      if (!set[id] || !ok(r)) return;
+      const o = toClientQ_(r); if (String(r.TruongRieng || '').trim()) o.rieng = 1;
+      out.push(o);
+    });
+    return out;
+  };
+}
+try { cn2811LayCau_(); } catch (e) { console.error('CapNhat_28_11 LayCau: ' + e); }

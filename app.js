@@ -110,6 +110,7 @@ const bank = { v: null, q: [], byId: {} };
 function setBank(b) {
   bank.v = b.v; bank.q = b.q || []; bank.byId = {};
   bank.q.forEach(q => { bank.byId[q.id] = q; });
+  try { Object.values(store.get('qx', {})).forEach(q => { if (q && q.id && !bank.byId[q.id]) { bank.q.push(q); bank.byId[q.id] = q; } }); } catch (e) {}
 }
 async function loadBank() {
   const local = store.get('bank', null);
@@ -119,6 +120,24 @@ async function loadBank() {
     catch (e) { toast('Chưa tải được ngân hàng câu hỏi'); }
   }
   syncBank();
+}
+/* 28/11/2026: lấy riêng các câu còn thiếu (câu GV tự soạn, câu mới thêm) thay vì tải lại cả ngân hàng ~2,7 MB – điện thoại mạng yếu vẫn mở được bài */
+function addQs(list) {
+  (list || []).forEach(q => { if (!q || !q.id) return; if (bank.byId[q.id]) Object.assign(bank.byId[q.id], q); else { bank.q.push(q); bank.byId[q.id] = q; } });
+}
+async function fillQs(ids, pre) {
+  if (pre && !bank.q.length) return false;   // tải sẵn: chờ ngân hàng nạp xong mới xét câu thiếu
+  const miss = [...new Set((ids || []).filter(id => id && !bank.byId[id]))];
+  if (!miss.length || DEMO || !navigator.onLine) return !miss.length;
+  try {
+    const l = await api('get_questions', { ids: miss.slice(0, 200) });
+    addQs(l);
+    const ex = store.get('qx', {}); (l || []).forEach(q => { ex[q.id] = q; });
+    const keys = Object.keys(ex); if (keys.length > 300) keys.slice(0, keys.length - 300).forEach(k => delete ex[k]);
+    store.set('qx', ex);
+  } catch (e) {}
+  if (!pre && miss.some(id => !bank.byId[id])) await syncBank(true);
+  return miss.every(id => bank.byId[id]);
 }
 async function syncBank(force) {
   if (DEMO || !navigator.onLine) return false;
@@ -812,7 +831,7 @@ async function homeTodo(box) {
   };
   draw(store.get('asg_' + uid(), null), store.get('drw_' + uid(), null));
   const [q, d] = await Promise.allSettled([api('my_assignments'), api('my_drawing_tasks')]);
-  if (q.status === 'fulfilled') store.set('asg_' + uid(), q.value);
+  if (q.status === 'fulfilled') { store.set('asg_' + uid(), q.value); fillQs([].concat(...q.value.filter(a => !a.chuaMo).map(a => a.DanhSachCau || [])), 1); }
   if (d.status === 'fulfilled') store.set('drw_' + uid(), d.value);
   draw(store.get('asg_' + uid(), null), store.get('drw_' + uid(), null), q.status === 'rejected' && !store.get('asg_' + uid(), null) ? (q.reason.network ? 'Đang ngoại tuyến – bài giao sẽ hiện khi có mạng.' : q.reason.message) : '');
 }
@@ -1032,7 +1051,7 @@ async function homeTasks(box, openId) {
     $$('[data-i]', box).forEach(b => b.onclick = async () => {
       const a = quiz[+b.dataset.i];
       if (a.chuaMo && a.BatDau && new Date(a.BatDau) > new Date()) { toast('Bài mở lúc ' + dt(a.BatDau)); return; }
-      if (a.DanhSachCau.some(id => !bank.byId[id])) { toast('Đang tải câu hỏi mới…'); await syncBank(true); }
+      if (a.DanhSachCau.some(id => !bank.byId[id])) { toast('Đang tải câu hỏi của bài…'); await fillQs(a.DanhSachCau); }
       const ids = a.DanhSachCau.filter(id => bank.byId[id]);
       if (!ids.length) { toast('Chưa tải được câu hỏi của bài này'); return; }
       startQuiz({ title: a.TieuDe, key: a.MaBai, loai: 'baigiao', ids, minutes: a.ThoiGian, hints: a.HienGoiY, dm: a.CheDoDiem || '', pts: a.DiemCau || null });
@@ -1040,7 +1059,7 @@ async function homeTasks(box, openId) {
   };
   draw();
   const [q, d] = await Promise.allSettled([api('my_assignments'), api('my_drawing_tasks')]);
-  if (q.status === 'fulfilled') { st.quiz = q.value; store.set('asg_' + uid(), q.value); }
+  if (q.status === 'fulfilled') { st.quiz = q.value; store.set('asg_' + uid(), q.value); fillQs([].concat(...q.value.filter(a => !a.chuaMo).map(a => a.DanhSachCau || [])), 1); }
   else if (st.quiz == null) st.err = q.reason.network ? 'Đang ngoại tuyến – danh sách bài giao sẽ hiện khi có mạng.' : q.reason.message;
   if (d.status === 'fulfilled') { st.drw = d.value; store.set('drw_' + uid(), d.value); }
   if (box.isConnected) draw();
@@ -1159,7 +1178,7 @@ route(/^\/gv\/thitn$/, async params => {
   let res;
   try { res = await api('tn_results', Object.assign({ key, code }, session.role === 'admin' && truong != null ? { school: truong } : {})); } catch (e) { errBox(V, e); return; }
   const isAdm = session.role === 'admin', schoolNow = res.school || (isAdm ? '' : session.user.Truong || '');
-  if (bank.q.length && res.rows.some(r => r.sai.some(id => !bank.byId[id]))) await syncBank(true);
+  if (bank.q.length && res.rows.some(r => r.sai.some(id => !bank.byId[id]))) await fillQs([].concat(...res.rows.map(r => r.sai)));
   const exams = deList(), rows = res.rows, classes = res.classes || {};
   const nm = d => (/(\d+)\s*$/.exec(d) || [])[1] || d;
   const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
@@ -3027,7 +3046,7 @@ async function xemBaiHS(a, maHS, ten) {
   let L;
   try { L = await api('assignment_answers', { maBai: a.MaBai, maHS }); } catch (e) { errBox($('#xbb'), e); return; }
   if (!L.length) { $('#xbb').innerHTML = '<div class="card empty">Chưa có bài làm.</div>'; return; }
-  if (a.DanhSachCau.some(id => !bank.byId[id])) await syncBank(true);
+  if (a.DanhSachCau.some(id => !bank.byId[id])) await fillQs(a.DanhSachCau);
   let k = L.length - 1;
   const one = (id, n, ans, tl) => {
     const q = bank.byId[id]; if (!q) return `<div class="card xb-q"><b>Câu ${n}.</b> <span class="hint">(câu ${esc(id)} không còn trong ngân hàng)</span></div>`;
@@ -3069,7 +3088,7 @@ route(/^\/gv\/bai\/(\w+)$/, async (params, maBai) => {
     const lb20 = Object.assign({}, lb, { top: (lb.top || []).slice(0, 20) });
     const cddName = (DIEM_MODES.find(x => x[0] === (a.CheDoDiem || 'dapan')) || DIEM_MODES[0])[1];
     const link = asgLink(maBai), qrBig = await qrSvg(link, 6), lopNames = a.DanhSachLop.map(c => (cls.find(x => x.MaLop === c) || {}).TenLop || c).join(', ');
-    if (a.DanhSachCau.some(id => !bank.byId[id])) await syncBank(true);
+    if (a.DanhSachCau.some(id => !bank.byId[id])) await fillQs(a.DanhSachCau);
     res.forEach((rs, i) => rs.forEach(r => { r.maLop = my[i].MaLop; }));
     const all = res.flat().sort((x, y) => viNameCmp(x.hoTen, y.hoTen) || x.lan - y.lan);
     const first = {}; all.forEach(r => { if (!first[r.maHS] || r.lan < first[r.maHS].lan) first[r.maHS] = r; });
