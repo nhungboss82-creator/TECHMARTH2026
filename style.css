@@ -1440,3 +1440,11 @@ body.modal-open{overflow:hidden}
 /* 28/11/2026: HS đăng ký trùng tên chờ GV duyệt */
 .pend-box{border:2px solid #f59e0b;background:#fffbeb;margin:8px 0}
 .pend{color:#b45309}
+/* 28/11/2026: ảnh bài làm tự luận có khoanh lỗi đánh số */
+.ess-ths.big .ess-th img{max-width:min(100%,640px);max-height:none;width:auto}
+.ess-ths.big .ess-th{max-width:100%}
+.ess-no{position:absolute;left:6px;bottom:6px;background:rgba(15,23,42,.7);color:#fff;font:600 11px/1.6 system-ui,sans-serif;font-style:normal;padding:0 6px;border-radius:6px}
+.loi-ve{margin:6px 0 0;padding-left:0;list-style:none}
+.loi-ve li{margin:3px 0}
+.loi-ve li b{color:#e11d48}
+.ess-need{background:#fff7ed;border:1px solid #fdba74;border-radius:10px;padding:8px 10px;margin-bottom:8px;font-size:14px}

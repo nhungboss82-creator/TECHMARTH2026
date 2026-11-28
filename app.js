@@ -229,7 +229,14 @@ const ESS_RE = /\[\[ANH:([\w-]{10,})\]\]/g, essCache = {};
 const essText = r => String(r || '').replace(ESS_RE, '').trim();
 const essImgs = r => { const o = []; String(r || '').replace(ESS_RE, (m, id) => { o.push(id); return m; }); return o; };
 const essJoin = (t, ids) => (String(t || '') + (ids.length ? '\n' + ids.map(x => '[[ANH:' + x + ']]').join('\n') : '')).slice(0, 3000);
-const essImgHtml = (ids, edit) => ids.length ? `<div class="ess-ths">${ids.map(x => `<span class="ess-th"><img data-aimg="${esc(x)}" alt="Ảnh bài làm">${edit ? `<button type="button" data-rmimg="${esc(x)}" title="Bỏ ảnh">✕</button>` : ''}</span>`).join('')}</div>` : '';
+/* 28/11/2026: ảnh bài làm có khoanh lỗi đánh số 1, 2, 3… (AI chấm trả loi_ve: [{so, anh, vi_tri:[ymin,xmin,ymax,xmax] 0–1000, mo_ta}]) */
+const essMarks = (marks, k) => (marks || []).filter(l => (+l.anh || 1) === k + 1 && Array.isArray(l.vi_tri) && l.vi_tri.length === 4).map(l => { const v = l.vi_tri;
+  return `<div class="mk ai" style="top:${v[0] / 10}%;left:${v[1] / 10}%;height:${Math.max(2, (v[2] - v[0]) / 10)}%;width:${Math.max(2, (v[3] - v[1]) / 10)}%" title="${esc(l.mo_ta || '')}"><span>${+l.so || ''}</span></div>`; }).join('');
+const essImgHtml = (ids, edit, marks, big) => ids.length ? `<div class="ess-ths${big ? ' big' : ''}">${ids.map((x, k) => `<span class="ess-th"><img data-aimg="${esc(x)}" alt="Ảnh bài làm ${k + 1}">${essMarks(marks, k)}${ids.length > 1 ? `<i class="ess-no">Ảnh ${k + 1}</i>` : ''}${edit ? `<button type="button" data-rmimg="${esc(x)}" title="Bỏ ảnh">✕</button>` : ''}</span>`).join('')}</div>` : '';
+const ptsOf = v => { if (!v) return {}; if (typeof v === 'string') { try { return JSON.parse(v) || {}; } catch (e) { return {}; } } return v; };
+/* điểm câu tự luận theo điểm GV đặt cho câu (DiemCau), không hiện kiểu 1/1 */
+const tlScore = (x, P) => { const mx = +x.max || 1, p = +P > 0 ? +P : 0; return p && Math.abs(p - mx) > 1e-9 ? { d: Math.round((+x.diem || 0) / mx * p * 100) / 100, m: p } : { d: +x.diem || 0, m: mx }; };
+const loiList = x => (x && x.loi_ve || []).length ? `<ol class="loi-ve">${x.loi_ve.map(l => `<li><b>Lỗi ${+l.so || ''}:</b> ${esc(l.mo_ta || '')}</li>`).join('')}</ol>` : '';
 async function loadEssImgs(root) {
   for (const im of $$('img[data-aimg]', root || document)) {
     const id = im.dataset.aimg; if (im.getAttribute('src') || im.dataset.ld) continue; im.dataset.ld = '1';
@@ -1617,8 +1624,9 @@ function qHtml(q, a, i, review) {
   let body = '';
   if (q.t === 'L') {
     const et = essText(r), ei = essImgs(r);
-    body = review ? (review.mine ? `<div class="essay-ans"><div class="lbl">Bài làm của em</div>${et || ei.length ? esc(et) + essImgHtml(ei) : '<i class="hint">(Bỏ trống)</i>'}</div>` : '')
-      : `<textarea class="essay" id="essay" maxlength="2800" placeholder="Nhập câu trả lời của em… (bài vẽ / viết tay: bấm “Chụp / tải ảnh bài làm” bên dưới)">${esc(et)}</textarea>
+    body = review ? (review.mine ? `<div class="essay-ans"><div class="lbl">Bài làm của em</div>${et || ei.length ? esc(et) + essImgHtml(ei, false, review.marks, true) : '<i class="hint">(Bỏ trống)</i>'}</div>` : '')
+      : (/(^|[\s.:;(])(hãy\s+)?vẽ\s+(lại\s+)?(các\s+|ba\s+|3\s+|đủ\s+)?(hình|bản vẽ|sơ đồ)/i.test(plain(q.s)) ? '<div class="ess-need">✏️ Đề yêu cầu <b>vẽ</b>: em vẽ ra giấy rồi bấm <b>📷 Chụp / tải ảnh bài làm</b> để nộp hình. Chỉ viết chữ mô tả sẽ không được tính đủ điểm.</div>' : '')
+        + `<textarea class="essay" id="essay" maxlength="2800" placeholder="Nhập câu trả lời của em… (bài vẽ / viết tay: bấm “Chụp / tải ảnh bài làm” bên dưới)">${esc(et)}</textarea>
         <div class="ess-img">${essImgHtml(ei, true)}${ei.length < 3 ? '<label class="btn ghost sm ess-up">📷 Chụp / tải ảnh bài làm<input type="file" id="essf" accept="' + FILE_ACCEPT + '" hidden></label>' : ''}</div>
         <div class="hint" id="ecount">${et.length}/2800 ký tự${ei.length ? ' · ' + ei.length + ' ảnh' : ''} · bài được AI chấm sau khi nộp</div>`;
   } else if (q.t === 'M') {
@@ -1820,12 +1828,13 @@ route(/^\/ketquabai$/, params => {
     const x = (L.tl || {})[id], mx = q.p || 1;
     const canSelf = L.loai !== 'baigiao' && (L.selfTL || (x && x.cho_cham) || (x && x.self));
     const list = (arr, cls, mark) => (arr || []).length ? `<div class="${cls}">${arr.map(v => mark + ' ' + esc(v)).join('<br>')}</div>` : '';
-    const ai = x && !x.cho_cham ? `<div class="expl ai"><b class="t">${x.self ? '✍️ Em tự chấm' : '🤖 AI chấm'}: ${fmt(x.diem)}/${fmt(x.max || mx)} điểm</b>${x.nhan_xet ? esc(x.nhan_xet) : ''}${list(x.y_dung, 'ok-list', '✔')}${list(x.y_thieu, 'miss-list', '✘')}</div>`
+    const sc = x && !x.cho_cham ? tlScore({ diem: x.diem, max: x.max || mx }, ptsOf(L.pts)[id]) : null;
+    const ai = x && !x.cho_cham ? `<div class="expl ai"><b class="t">${x.self ? '✍️ Em tự chấm' : '🤖 AI chấm'}: ${fmt(sc.d)}/${fmt(sc.m)} điểm</b>${x.nhan_xet ? esc(x.nhan_xet) : ''}${loiList(x)}${(x.loi_ve || []).length ? '' : list(x.y_dung, 'ok-list', '✔') + list(x.y_thieu, 'miss-list', '✘')}</div>`
       : (x && x.cho_cham ? `<div class="hint">AI chưa chấm được câu này${x.loi ? ' (' + esc(x.loi) + ')' : ''}.</div>`
         : (L.pendingTL && !L.selfTL ? '<div class="hint">🤖 Đang chờ AI chấm…</div>' : ''));
     const model = hintAllowed ? `<div class="expl ans"><b class="t">Đáp án mẫu</b>${sanitize(q.a)}${q.e ? `<div style="margin-top:6px"><b>Hướng dẫn chấm:</b> ${sanitize(q.e)}</div>` : ''}</div>` : '';
     const self = canSelf ? `<div class="row" style="margin-top:8px"><span class="hint">Tự chấm theo đáp án mẫu:</span>${[0, 0.25, 0.5, 0.75, 1].map(f => `<button class="btn ghost sm${x && x.self && +x.diem === f * mx ? ' on' : ''}" data-self="${id}" data-v="${f * mx}">${fmt(f * mx)} đ</button>`).join('')}</div>` : '';
-    return `<div style="margin-bottom:12px">${qHtml(q, { ids: L.ids, perm: L.perm, resp: L.resp }, i, { showAns: true, mine: true })}${ai}${model}${self}${sgkLink(q)}</div>`;
+    return `<div style="margin-bottom:12px">${qHtml(q, { ids: L.ids, perm: L.perm, resp: L.resp }, i, { showAns: true, mine: true, marks: x && x.loi_ve })}${ai}${model}${self}${sgkLink(q)}</div>`;
   };
   const reviewHtml = id => {
     const q = bank.byId[id]; if (!q) return '';
@@ -3093,8 +3102,9 @@ async function xemBaiHS(a, maHS, ten) {
       ok = d === 4;
     } else {
       const t = essText(ans), im = essImgs(ans);
-      body = `<div class="essay-ans"><div class="lbl">Bài làm của HS</div>${t || im.length ? esc(t).replace(/\n/g, '<br>') + essImgHtml(im) : '<i class="hint">(Bỏ trống)</i>'}</div>`
-        + (tl ? (tl.cho_cham ? `<div class="hint">AI chưa chấm được: ${esc(tl.loi || '')}</div>` : `<div class="expl"><b class="t">AI chấm: ${fmt(tl.diem)}/${fmt(tl.max)} điểm</b>${esc(tl.nhan_xet || '')}${(tl.y_thieu || []).length ? '<br><b>Còn thiếu:</b> ' + tl.y_thieu.map(esc).join('; ') : ''}</div>`) : '');
+      const sc = tl && !tl.cho_cham ? tlScore(tl, ptsOf(a.DiemCau)[id]) : null;
+      body = `<div class="essay-ans"><div class="lbl">Bài làm của HS${im.length ? ` · ${im.length} ảnh` : ' · <span class="pill warn">không có ảnh bài vẽ</span>'}</div>${t || im.length ? esc(t).replace(/\n/g, '<br>') + essImgHtml(im, false, tl && tl.loi_ve, true) : '<i class="hint">(Bỏ trống)</i>'}</div>`
+        + (tl ? (tl.cho_cham ? `<div class="hint">AI chưa chấm được: ${esc(tl.loi || '')}</div>` : `<div class="expl"><b class="t">AI chấm: ${fmt(sc.d)}/${fmt(sc.m)} điểm</b>${esc(tl.nhan_xet || '')}${loiList(tl)}${!(tl.loi_ve || []).length && (tl.y_thieu || []).length ? '<br><b>Còn thiếu:</b> ' + tl.y_thieu.map(esc).join('; ') : ''}</div>`) : '');
     }
     return `<div class="card xb-q"><div class="row" style="align-items:center"><b class="grow">Câu ${n}${q.t === 'T' ? ' (Đúng/Sai)' : q.t === 'L' ? ' (Tự luận)' : ''}</b>${ok === null ? '' : ok ? '<span class="pill ok">✔ Đúng</span>' : '<span class="pill bad">✘ Chưa đúng</span>'}</div><div class="xb-s">${sanitize(q.s)}</div>${body}</div>`;
   };
