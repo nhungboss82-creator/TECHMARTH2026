@@ -391,16 +391,22 @@ function render() {
   }
   location.hash = '#/';
 }
+let lastHash = '';   // trang vừa xem trước đó (ghi trước khi vẽ trang mới)
+window.addEventListener('hashchange', e => { try { lastHash = new URL(e.oldURL).hash; } catch (er) {} });
 window.addEventListener('hashchange', render);
 /* nút "← …" quay về đúng trang vừa xem (như nút Back), nếu chưa có trang trước thì mới đi theo link */
 let navDepth = 0;
 window.addEventListener('hashchange', () => { navDepth++; });
 document.addEventListener('click', e => {
   const a = e.target.closest && e.target.closest('a[href^="#/"]');
-  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || a.target) return;
+  if (!a || e.ctrlKey || e.metaKey || e.shiftKey || a.target || a.hasAttribute('data-direct')) return;
   if (!/^\s*←/.test(a.textContent || '')) return;
   if (navDepth > 0 && history.length > 1) { e.preventDefault(); navDepth -= 2; history.back(); }
 });
+/* 28/11/2026: Esc / nút ← trong bài học → về đúng trang vừa xem trước đó (chưa có trang trước thì mới về trang mặc định).
+   Ghi lại trang trước bằng oldURL (không dùng history.back vì khung bài học bên trong cũng ghi lịch sử) */
+const prevPage = (self, fallback) => { const p = lastHash || ''; return p && p !== '#' && !/^#\/(dangnhap|dangky|doimk)/.test(p) && p.replace(/\?.*/, '') !== self ? p : fallback; };
+function goBack(fallback) { location.hash = fallback; }
 function setView(html) {
   V.innerHTML = html; math(V);
   V.classList.toggle('gbwide', /^#\/gv\/giaobai/.test(location.hash));
@@ -869,14 +875,14 @@ route(/^\/(hcat|hctd|bai8|khoan|tien|phay|quytrinh|k11b18|k11b19|k11b20|k12b8|k1
   const T = K12_TOPICS[key], b = params && params.get('bai');
   const src = T.file + '?v=' + LESSON_V + (T.bai && T.bai.includes(b) ? '#bai-' + b : (T.hash || ''));
   const khoi = T.k || ((key === 'hcat' || key === 'hctd') ? '10' : '12');
-  const back = isGV() ? '#/gv?khoi=' + khoi : '#/onluyen';
+  const back = prevPage('#/' + key, isGV() ? '#/gv?khoi=' + khoi : '#/onluyen');
   document.body.classList.add('immersive');
   setView(`<iframe class="lessonfull" src="${src}" title="${T.name}" allow="autoplay; fullscreen"></iframe>
-    <a class="lessonback" href="${back}" title="Quay lại (Esc)" aria-label="Quay lại trang chủ">←</a>
-    <div class="lessonhint" id="lhint">Bấm <kbd>Esc</kbd> để trở về ${isGV() ? 'trang giáo viên' : 'trang ôn luyện'}</div>`);
+    <a class="lessonback" data-direct href="${back}" title="Quay lại trang trước (Esc)" aria-label="Quay lại trang trước">←</a>
+    <div class="lessonhint" id="lhint">Bấm <kbd>Esc</kbd> để trở về trang trước</div>`);
   // mở toàn màn hình ngay khi chọn bài; bấm Esc (thoát toàn màn hình) → trở về trang giáo viên
   let wasFs = false, gone = false;
-  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/' + key) location.hash = back; };
+  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/' + key) goBack(back); };
   const onFs = () => { if (fsEl()) wasFs = true; else if (wasFs) leave(); };
   const onKey = e => { if (e.key === 'Escape' && !fsEl()) setTimeout(() => { if (!e.defaultPrevented) leave(); }, 0); };
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
@@ -5851,14 +5857,14 @@ route(/^\/hcvg$/, params => {
   let qs = [], qi = 0, qm = 1, slots = {}, held = null, done = false, score = 0, cards = [];
   const TABS = [['g1', '①', 'Góc chiếu thứ nhất'], ['g3', '②', 'Góc chiếu thứ ba'], ['ss', '③', 'So sánh'], ['lt', '④', 'Luyện tập']];
   // giao diện toàn màn hình, không cuộn (cập nhật 10/11/2026)
-  const back = isGV() ? '#/gv?khoi=10' : '#/onluyen';
+  const back = prevPage('#/hcvg', isGV() ? '#/gv?khoi=10' : '#/onluyen');
   document.body.classList.add('immersive', 'hvfs');
-  const head = () => `<header class="hvbar"><a class="hvback" href="${back}" title="Quay lại (Esc)" aria-label="Quay lại">←</a>
+  const head = () => `<header class="hvbar"><a class="hvback" data-direct href="${back}" title="Quay lại trang trước (Esc)" aria-label="Quay lại">←</a>
       <div class="hvttl"><small>Công nghệ 10 · Thiết kế và vẽ kĩ thuật</small><b>Bài 9. Hình chiếu vuông góc</b></div>
       <nav class="hvtabs">${TABS.map(([k, n, t]) => `<button data-tab="${k}" class="t-${k}${tab === k ? ' on' : ''}"><i>${n}</i>${t}</button>`).join('')}</nav>
       <button class="hvfsbtn" id="hvfs" title="Bật / tắt toàn màn hình">⛶</button></header>`;
   let wasFs = false, gone = false;
-  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/hcvg') location.hash = back; };
+  const leave = () => { if (gone) return; gone = true; if (location.hash.replace(/\?.*/, '') === '#/hcvg') goBack(back); };
   const onFs = () => { if (fsEl()) wasFs = true; else if (wasFs) leave(); };
   const onKey = e => { if (e.key === 'Escape' && !fsEl()) leave(); };
   document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs); document.addEventListener('keydown', onKey);
