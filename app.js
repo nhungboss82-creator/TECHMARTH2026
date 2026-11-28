@@ -205,6 +205,20 @@ function matrixPick() {
 
 /* ================= Chấm điểm (giống máy chủ) ================= */
 function normAns(q) { return q.t === 'T' ? String(q.a).replace(/[\s,]/g, '').toUpperCase().replace(/D/g, 'Đ') : String(q.a).trim().toUpperCase(); }
+/* 28/11/2026: câu tự luận có ảnh bài làm – lưu trong câu trả lời dạng [[ANH:mã]] */
+const ESS_RE = /\[\[ANH:([\w-]{10,})\]\]/g, essCache = {};
+const essText = r => String(r || '').replace(ESS_RE, '').trim();
+const essImgs = r => { const o = []; String(r || '').replace(ESS_RE, (m, id) => { o.push(id); return m; }); return o; };
+const essJoin = (t, ids) => (String(t || '') + (ids.length ? '\n' + ids.map(x => '[[ANH:' + x + ']]').join('\n') : '')).slice(0, 3000);
+const essImgHtml = (ids, edit) => ids.length ? `<div class="ess-ths">${ids.map(x => `<span class="ess-th"><img data-aimg="${esc(x)}" alt="Ảnh bài làm">${edit ? `<button type="button" data-rmimg="${esc(x)}" title="Bỏ ảnh">✕</button>` : ''}</span>`).join('')}</div>` : '';
+async function loadEssImgs(root) {
+  for (const im of $$('img[data-aimg]', root || document)) {
+    const id = im.dataset.aimg; if (im.getAttribute('src') || im.dataset.ld) continue; im.dataset.ld = '1';
+    if (essCache[id]) { im.src = essCache[id]; continue; }
+    try { const r = await api('get_answer_image', { id }); essCache[id] = 'data:' + r.mime + ';base64,' + r.data; im.src = essCache[id]; } catch (e) { im.alt = 'Không tải được ảnh'; }
+  }
+}
+try { new MutationObserver(() => { if (document.querySelector('img[data-aimg]:not([src]):not([data-ld])')) loadEssImgs(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
 function respStr(q, r) { if (q.t === 'T') return (r || []).map(x => x || '-').join('').padEnd(4, '-'); if (q.t === 'L') return String(r || '').slice(0, 3000); return r || ''; }
 const TYPE_NAME = { M: 'Trắc nghiệm nhiều lựa chọn', T: 'Đúng/Sai', L: 'Tự luận' };
 const TYPE_ICON = { M: '🔘', T: '✅', L: '✍️' };
@@ -1574,9 +1588,11 @@ function qHtml(q, a, i, review) {
   const r = a.resp[q.id];
   let body = '';
   if (q.t === 'L') {
-    body = review ? (review.mine ? `<div class="essay-ans"><div class="lbl">Bài làm của em</div>${r && String(r).trim() ? esc(r) : '<i class="hint">(Bỏ trống)</i>'}</div>` : '')
-      : `<textarea class="essay" id="essay" maxlength="3000" placeholder="Nhập câu trả lời của em… (trình bày theo ý, có thể xuống dòng)">${esc(r || '')}</textarea>
-        <div class="hint" id="ecount">${String(r || '').length}/3000 ký tự · bài được AI chấm sau khi nộp</div>`;
+    const et = essText(r), ei = essImgs(r);
+    body = review ? (review.mine ? `<div class="essay-ans"><div class="lbl">Bài làm của em</div>${et || ei.length ? esc(et) + essImgHtml(ei) : '<i class="hint">(Bỏ trống)</i>'}</div>` : '')
+      : `<textarea class="essay" id="essay" maxlength="2800" placeholder="Nhập câu trả lời của em… (bài vẽ / viết tay: bấm “Chụp / tải ảnh bài làm” bên dưới)">${esc(et)}</textarea>
+        <div class="ess-img">${essImgHtml(ei, true)}${ei.length < 3 ? '<label class="btn ghost sm ess-up">📷 Chụp / tải ảnh bài làm<input type="file" id="essf" accept="' + FILE_ACCEPT + '" hidden></label>' : ''}</div>
+        <div class="hint" id="ecount">${et.length}/2800 ký tự${ei.length ? ' · ' + ei.length + ' ảnh' : ''} · bài được AI chấm sau khi nộp</div>`;
   } else if (q.t === 'M') {
     const p = a.perm[q.id] || [0, 1, 2, 3];
     const ans = normAns(q);
@@ -1624,7 +1640,14 @@ route(/^\/lambai$/, () => {
       <div class="pal">${a.ids.map((x, i) => `<button data-j="${i}" class="${answered(x) ? 'done' : ''}${a.flags[x] ? ' flag' : ''}${i === a.cur ? ' cur' : ''}">${i + 1}</button>`).join('')}</div>`);
     $$('.opt').forEach(b => b.onclick = () => { a.resp[id] = b.dataset.o; save(); setTimeout(() => { if (a.ids[a.cur] !== id || !$('.qcard')) return; if (a.cur < a.ids.length - 1) { a.cur++; save(); } draw(); }, 180); $$('.opt').forEach(x => x.classList.toggle('sel', x === b)); });
     const ta = $('#essay');
-    if (ta) ta.oninput = () => { a.resp[id] = ta.value; save(); $('#ecount').textContent = ta.value.length + '/3000 ký tự · bài được AI chấm sau khi nộp'; const pb = $(`.pal button[data-j="${a.cur}"]`); if (pb) pb.classList.toggle('done', !!ta.value.trim()); };
+    if (ta) ta.oninput = () => { a.resp[id] = essJoin(ta.value, essImgs(a.resp[id])); save(); $('#ecount').textContent = ta.value.length + '/3000 ký tự · bài được AI chấm sau khi nộp'; const pb = $(`.pal button[data-j="${a.cur}"]`); if (pb) pb.classList.toggle('done', !!ta.value.trim()); };
+    const ef = $('#essf');
+    if (ef) ef.onchange = async e => { const f = e.target.files[0]; if (!f) return; const lb = ef.closest('label'); if (lb) lb.classList.add('busy');
+      try { const img = await readAnyFile(f, 1600); const r0 = await api('upload_answer_image', { image: img }); essCache[r0.id] = img;
+        const cur = a.resp[id]; a.resp[id] = essJoin(essText(cur), essImgs(cur).concat(r0.id)); save(); toast('Đã thêm ảnh bài làm'); draw();
+      } catch (err) { toast(err.message || 'Không gửi được ảnh – kiểm tra mạng rồi thử lại'); if (lb) lb.classList.remove('busy'); } };
+    $$('[data-rmimg]').forEach(b => b.onclick = () => { const cur = a.resp[id]; a.resp[id] = essJoin(essText(cur), essImgs(cur).filter(x => x !== b.dataset.rmimg)); save(); draw(); });
+    loadEssImgs();
     $$('.tfb button').forEach(b => b.onclick = () => { const r = a.resp[id] || [null, null, null, null]; r[+b.dataset.k] = b.dataset.v; a.resp[id] = r; save(); draw(); });
     $('#pv').onclick = () => { a.cur--; save(); draw(); };
     $('#nx').onclick = () => { if (a.cur < a.ids.length - 1) { a.cur++; save(); draw(); } else { const k = a.ids.findIndex(x => !answered(x)); if (k >= 0) { a.cur = k; save(); draw(); toast('Còn câu chưa làm'); } else toast('Em đã làm hết. Bấm "Nộp bài" khi sẵn sàng.'); } };

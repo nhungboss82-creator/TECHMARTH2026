@@ -1419,3 +1419,12 @@ body.modal-open{overflow:hidden}
 .pv-pt input{width:68px;padding:4px 6px;height:32px;text-align:right}
 .pv-tot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .pv-tot .btn{margin-left:auto}
+/* 28/11/2026: ảnh bài làm câu tự luận */
+.ess-img{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.ess-ths{display:flex;flex-wrap:wrap;gap:8px}
+.ess-th{position:relative;display:inline-block}
+.ess-th img{display:block;max-width:220px;max-height:220px;border-radius:10px;border:1px solid var(--line,#e2e8f0);background:#fff}
+.ess-th button{position:absolute;top:4px;right:4px;border:0;border-radius:50%;width:26px;height:26px;background:rgba(15,23,42,.75);color:#fff;cursor:pointer}
+.ess-up.busy{opacity:.6;pointer-events:none}
+.ess-up.busy::after{content:' – đang gửi…'}
+.essay-ans .ess-ths{margin-top:8px}
